@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "sangtian_phase2_input_boundary_v1",
+  "originMainSha": "8584867d20cc089126f458afa82636e5ad570cd4",
+  "contextArchive": {
+    "fileName": "sangtian_phase2_runtime_dev_test_context_origin-main-8584867.zip",
+    "byteSize": 3037012,
+    "sha256": "FFB1F6DED0D1A581848EE0FC3EFA09E441D42037929735308483CB51D81DE315",
+    "expectedGroups": { "CONTEXT_README.md": 1, "accepted-content-package": 95, "origin-main-source": 935, "post-2026-08-05-docs": 12 }
+  },
+  "acceptedContentArchive": {
+    "fileName": "sangtian_complete_story_content_package_v1_1.zip",
+    "byteSize": 277041,
+    "sha256": "38AC19ABFBB89288F80C5E128141B705535D2A9E11D370B293402DC106760317",
+    "fileCount": 95,
+    "packageId": "sangtian_complete_story_content_package_v1_1",
+    "packageVersion": "1.1.0-repair-final"
+  },
+  "source": { "sourceId": "DM1566-T0", "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238", "lineCount": 30547 },
+  "legacyStrategyLocks": { "sangtian_v1_1": "E4047A888450E589A0E3AD2C9F702218BAAE54737C713A217ABAAF3CAC17D8BD", "sangtian_v1_2": "D21757ACD32D29BE647E9A3796E85886138A3C7AEACAD1541CEDE947198242B2" },
+  "phase2Artifacts": [
+    { "fileName": "Our_Many_Worlds_桑田诏_MVP游戏运行机制开发与测试统一规格_v1.0.1.md", "byteSize": 120894, "sha256": "16777C998B2CC247395B5079E52FB0693897DC5E862C3778AB54B4453C33FF80" },
+    { "fileName": "sangtian_phase2_runtime_contracts_v1_0_1.json", "byteSize": 28712, "sha256": "2FFA2825E5744D9097ECD1C3E017C0F8936A766C58E66EDEB0F800A0A753EDBA" },
+    { "fileName": "sangtian_phase2_test_matrix_v1_0_1.csv", "byteSize": 33069, "sha256": "4A605B47064D699AD2BAC5BE793741835E277D2AA6926251B96FD93E6FE69F41" },
+    { "fileName": "sangtian_phase2_reviewed_input_inventory_v1_0_1.json", "byteSize": 496060, "sha256": "7871CD94B6E284BAEC88702C778303D6599415DCAF53DE87C40173A3B3D8E287" }
+  ]
+}

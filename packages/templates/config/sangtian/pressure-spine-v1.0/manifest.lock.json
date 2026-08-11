@@ -1,0 +1,497 @@
+{
+  "artifactIndex": [
+    {
+      "byteSize": 6334,
+      "path": "source/finale/ending-rules.json",
+      "sha256": "6EEE2ABEA284AFBE4FC0BF08B2818152F1009E7B265D8937B12242B9866955D0"
+    },
+    {
+      "byteSize": 1448,
+      "path": "source/finale/replay-hooks.json",
+      "sha256": "4CBD9521CC190A3138A228207C34F0C577068AFC43C980911EDA3C4E3B4B6136"
+    },
+    {
+      "byteSize": 3541,
+      "path": "source/finale/seat-verdict-scenes.md",
+      "sha256": "A40CE2F1F5E0043043195E74B218FA115DA9775AED51C7548EF95C3E088CF35F"
+    },
+    {
+      "byteSize": 6568,
+      "path": "source/finale/world-ending-scenes.md",
+      "sha256": "B8C0EEEE0C52F69AB9F058AEBB606911BB5DF691A3278EED8CF5F73340E8D940"
+    },
+    {
+      "byteSize": 4902,
+      "path": "source/global/actors.json",
+      "sha256": "138B640415D6C0DA21E89D92EBA6311156A8AF753746612B8D56CA78D8897D52"
+    },
+    {
+      "byteSize": 1412,
+      "path": "source/global/historical-boundaries.md",
+      "sha256": "AE8515A2E53E68E4E4F61425031CF0FE55A3F79D38B08D9BEC74177466B03D5A"
+    },
+    {
+      "byteSize": 3428,
+      "path": "source/global/knowledge-and-handoffs.json",
+      "sha256": "E709C76443AA96BD493F2A40DCF63A76CCE6F57D085E24B5E1A6A673EF7F61D7"
+    },
+    {
+      "byteSize": 1394,
+      "path": "source/global/narrative-style.md",
+      "sha256": "8D5A5A44BAF6F55962BF496337285907E1B9A638F1865BBEAC4E04B5151E526A"
+    },
+    {
+      "byteSize": 10035,
+      "path": "source/global/objects.json",
+      "sha256": "245795FF598BD2B4F8FE4E8C8BE7B4F89AC69A5087E63B997A8E2408F764FF17"
+    },
+    {
+      "byteSize": 5301,
+      "path": "source/global/pressure-spine.json",
+      "sha256": "6B2B7F6A3E8FC4C7735756601D1EFA972FC051CA1FEB921B2D6E0BA50CADB616"
+    },
+    {
+      "byteSize": 4809,
+      "path": "source/global/seats.json",
+      "sha256": "309179D062D3D12FB1CE6374E5D13EE794D40A359D3A8B36A3E33BA87772A233"
+    },
+    {
+      "byteSize": 1553,
+      "path": "source/global/world-tracks.json",
+      "sha256": "0877D2E62436C34DC98AB175289C6CB14A21FC7D55275513B578DD2F2A8FC30C"
+    },
+    {
+      "byteSize": 15589,
+      "path": "source/inventory.json",
+      "sha256": "8D874C22ACF124F793B7A67088BACE5FBF05A7746EC76E54CA730CCF793A8D87"
+    },
+    {
+      "byteSize": 11117,
+      "path": "source/manifest.json",
+      "sha256": "44D92E4083FFC8E92B94DF47219A4BA3472D161A88977947143BE6BDB144F046"
+    },
+    {
+      "byteSize": 2724,
+      "path": "source/nodes/N1/adaptations.json",
+      "sha256": "0F562E4EDE4CE1BC54446C1660368950936643DF157E9E87800727DD1CD13B73"
+    },
+    {
+      "byteSize": 1952,
+      "path": "source/nodes/N1/node.json",
+      "sha256": "379DD1F9547652C90F145F1F9C5C793424CDEFB3D438700F20912C1A1FBB4F76"
+    },
+    {
+      "byteSize": 9601,
+      "path": "source/nodes/N1/npc-defaults.json",
+      "sha256": "700D40641939ADF5B81B4BD1639235B14DCD36BB6899A7D4F1F577C9ABC0EBE1"
+    },
+    {
+      "byteSize": 2266,
+      "path": "source/nodes/N1/overview.md",
+      "sha256": "24CF5125200EC81BD47393701B7129B752D6FE8E5D47E77D791E9A4351D5D62F"
+    },
+    {
+      "byteSize": 34360,
+      "path": "source/nodes/N1/scene-flow.json",
+      "sha256": "59606F6DAC4BBC573848FEA8A2AF6AB66C6EC9D378246956485962A6F831530C"
+    },
+    {
+      "byteSize": 42386,
+      "path": "source/nodes/N1/seat-content.json",
+      "sha256": "9A6EAB5893BC12045DB6244B8D6C2D5CD8F8B07FF7DFA3770EBAC89BE518E514"
+    },
+    {
+      "byteSize": 20462,
+      "path": "source/nodes/N1/settlement.json",
+      "sha256": "8FD2080563981572AAD0C06824D4223E8642AD1E5AC1C9F8FC24D7386E6F79CC"
+    },
+    {
+      "byteSize": 4590,
+      "path": "source/nodes/N1/source-evidence.jsonl",
+      "sha256": "9B7F2C800D289A11A136C4952FE90FC091BED7CCE6F40DF6B4370279EB0DDE2F"
+    },
+    {
+      "byteSize": 681,
+      "path": "source/nodes/N1/transitions.md",
+      "sha256": "435F7A0303708A5699A7794939619331B77EC280DC10D0B410874B1917DAD5E8"
+    },
+    {
+      "byteSize": 3555,
+      "path": "source/nodes/N2/adaptations.json",
+      "sha256": "DC0507676E85A2E2B87D54EF67B0F7C2B8060AB81F49E53F29EA58DF242C2C75"
+    },
+    {
+      "byteSize": 1892,
+      "path": "source/nodes/N2/node.json",
+      "sha256": "4D95435E1B08C7B2837FF8C9D781A7C902D32945C8A4D58BAAF7D67DF3E57E49"
+    },
+    {
+      "byteSize": 9529,
+      "path": "source/nodes/N2/npc-defaults.json",
+      "sha256": "154E35B3FD4DBAFE6B6566D28ED261C44496FC11B32F690D59F91CB966782555"
+    },
+    {
+      "byteSize": 2152,
+      "path": "source/nodes/N2/overview.md",
+      "sha256": "FEC64CA98A20BF67D154A2D72E5279471519D7A6CA1FFF0ABC4C0FA046798AA1"
+    },
+    {
+      "byteSize": 48381,
+      "path": "source/nodes/N2/scene-flow.json",
+      "sha256": "169B080686B1C9CE01D6EE7ABFB9CFC70377762E2F9F11EC9F9CEE4F11ADBDD9"
+    },
+    {
+      "byteSize": 42518,
+      "path": "source/nodes/N2/seat-content.json",
+      "sha256": "13FC935BC490951FA2C0265311E409CA526A0732A3BDC7B4C2C38F9DF7F96E9D"
+    },
+    {
+      "byteSize": 22079,
+      "path": "source/nodes/N2/settlement.json",
+      "sha256": "908D1D8B9E2445A2C131BB29533E9655D2AA24648F76332B0E0D9ECD686D3D30"
+    },
+    {
+      "byteSize": 4504,
+      "path": "source/nodes/N2/source-evidence.jsonl",
+      "sha256": "A08670F9E3F6F443FBAEA12A38DD965A2D512CB5E553C4D3CA4B15DD21727899"
+    },
+    {
+      "byteSize": 606,
+      "path": "source/nodes/N2/transitions.md",
+      "sha256": "6923CD82900A7CFA934C0E948980F0BAB101ECB40DFB0946E2688B18D525D079"
+    },
+    {
+      "byteSize": 2733,
+      "path": "source/nodes/N3/adaptations.json",
+      "sha256": "B90A8628B7F2B9EA2BF53136F0EB918F61C9F26582F9D81A7A699D720542C9B0"
+    },
+    {
+      "byteSize": 1843,
+      "path": "source/nodes/N3/node.json",
+      "sha256": "9A1268250FD879F85B4D13479AEA50C1E4A6A26C1085DC72B5BF2593C5290079"
+    },
+    {
+      "byteSize": 9463,
+      "path": "source/nodes/N3/npc-defaults.json",
+      "sha256": "93D081CFC4EED2C8C7793B62406C02060FF597062DCC45FB1AB88F15E25FC3E4"
+    },
+    {
+      "byteSize": 2116,
+      "path": "source/nodes/N3/overview.md",
+      "sha256": "27BB454C1584C9D8E03A8B00A528C50637AE64D88001D3DFE73CAE2B5316A8CC"
+    },
+    {
+      "byteSize": 45751,
+      "path": "source/nodes/N3/scene-flow.json",
+      "sha256": "B2D9D22285D1A9D49E9AB58DABCB5AC8B439C1E553A7046C59EDF15B0B3A3DC0"
+    },
+    {
+      "byteSize": 44610,
+      "path": "source/nodes/N3/seat-content.json",
+      "sha256": "F6B47E468B13FB98796131706D2DA52FD1307B4DEC62B765C9824F42C7EB5AB0"
+    },
+    {
+      "byteSize": 20676,
+      "path": "source/nodes/N3/settlement.json",
+      "sha256": "C3C666D1C10F4B6E1DBA914E1FD81E7362FF77A2E6CF225CCFDC2481ACF02192"
+    },
+    {
+      "byteSize": 4592,
+      "path": "source/nodes/N3/source-evidence.jsonl",
+      "sha256": "C32FEF76DB8C98F451408FEC8AF788FB8BB005E1E66EB2E6BEE255C2F176A773"
+    },
+    {
+      "byteSize": 573,
+      "path": "source/nodes/N3/transitions.md",
+      "sha256": "5A2494177D9F50387856B88B26EB004066522F1BF167DD7238F1021E24C9497C"
+    },
+    {
+      "byteSize": 3575,
+      "path": "source/nodes/N4/adaptations.json",
+      "sha256": "B46312BF252A8EFDCCAF4F69F13C2767803062DC05F7319619591B9074EAE4AE"
+    },
+    {
+      "byteSize": 1943,
+      "path": "source/nodes/N4/node.json",
+      "sha256": "4245FFEF92FA707716BEF399EB8ECCBDC32EEFB81D0C16A6B1F66C002069A7ED"
+    },
+    {
+      "byteSize": 9406,
+      "path": "source/nodes/N4/npc-defaults.json",
+      "sha256": "14A606805B1E8E54C0887A0F25DAECDED5C1706706C13977A163502DB200A3F5"
+    },
+    {
+      "byteSize": 2143,
+      "path": "source/nodes/N4/overview.md",
+      "sha256": "D935CD40744CC5EF352F9B2AD2FCA4EBDC82AC83F650DB4FD527E4EB7A81BD49"
+    },
+    {
+      "byteSize": 48854,
+      "path": "source/nodes/N4/scene-flow.json",
+      "sha256": "D8A07BCFB0099D9BDD98F5A6C8B3518F13E273C7DCA0EF0D0B6D5208534BCAB7"
+    },
+    {
+      "byteSize": 42583,
+      "path": "source/nodes/N4/seat-content.json",
+      "sha256": "C0655570E09F3182D43429DFF1FB1E626B04CD2AE9C00D02A459AF5C22DB618E"
+    },
+    {
+      "byteSize": 20763,
+      "path": "source/nodes/N4/settlement.json",
+      "sha256": "A341F80F4D9F5509634E97AAB1C92ABE12E169CCEDE586E0BA924AF9399ED192"
+    },
+    {
+      "byteSize": 4411,
+      "path": "source/nodes/N4/source-evidence.jsonl",
+      "sha256": "351841BEAE6E6C3C86DDA8F947C53A8133052D402B044BCC8D6CD40254B9A4CA"
+    },
+    {
+      "byteSize": 603,
+      "path": "source/nodes/N4/transitions.md",
+      "sha256": "FD2310C78B514222E00A4AC13B06564F8AF58B64D563D6CB680D24AA95085194"
+    },
+    {
+      "byteSize": 2751,
+      "path": "source/nodes/N5/adaptations.json",
+      "sha256": "780933980FF9C1EBB0492B3D16210C6165FA4558C07652823D5471BFC1FE9E01"
+    },
+    {
+      "byteSize": 1897,
+      "path": "source/nodes/N5/node.json",
+      "sha256": "D172E3A200E8AFC8F6B562FA91D386E93AEBBD2698F21125543A313EFD1B624F"
+    },
+    {
+      "byteSize": 9442,
+      "path": "source/nodes/N5/npc-defaults.json",
+      "sha256": "2489C4CD89DD5FB8401ED1B28091DAC773BA6F1E2F21235D22DE2564981B7B27"
+    },
+    {
+      "byteSize": 2179,
+      "path": "source/nodes/N5/overview.md",
+      "sha256": "02B4A05D2DA61E63096D2C213CC323B94FB70285DA1793111A6B2A8F6C0B6FAA"
+    },
+    {
+      "byteSize": 45258,
+      "path": "source/nodes/N5/scene-flow.json",
+      "sha256": "C5EE471B5690DDEC464C153525DB3FE733FE8735C6B6032403D0030F5FBE6E91"
+    },
+    {
+      "byteSize": 41368,
+      "path": "source/nodes/N5/seat-content.json",
+      "sha256": "CE8EE243EE9A5320A1EB9BFEDC6FAF41321B72E6FFC0BC003E61417F78BB4034"
+    },
+    {
+      "byteSize": 20872,
+      "path": "source/nodes/N5/settlement.json",
+      "sha256": "DA6A81A4360DD3380C5559AAA367E8676C506792C7406813DB2DD95ECE8AF3B9"
+    },
+    {
+      "byteSize": 4610,
+      "path": "source/nodes/N5/source-evidence.jsonl",
+      "sha256": "7C8C1CC2F5E2365C56C58ABE6D53666BDE1C44201E7017F42C4BA8554BB50E5D"
+    },
+    {
+      "byteSize": 615,
+      "path": "source/nodes/N5/transitions.md",
+      "sha256": "D899CDC3CEA6C0D2386B03540BB1F33EA8AAE2CA2C70BA533ADA401D1D698E26"
+    },
+    {
+      "byteSize": 2946,
+      "path": "source/nodes/N6/adaptations.json",
+      "sha256": "15B165A32F328262DEA6F0CEA2DF81447729773AE2CE927350505C4328E72B05"
+    },
+    {
+      "byteSize": 2028,
+      "path": "source/nodes/N6/node.json",
+      "sha256": "22EB93A7E18AA564860537D2206B93717D7B674F09A22FD566E77E578BD06241"
+    },
+    {
+      "byteSize": 9442,
+      "path": "source/nodes/N6/npc-defaults.json",
+      "sha256": "AAA7C695039BF04D71DA49DF51EE3D7876CABE65C6FB1A45A68E0E91A5EE94A1"
+    },
+    {
+      "byteSize": 2288,
+      "path": "source/nodes/N6/overview.md",
+      "sha256": "D20BB3AE5BB652496151450CF44AFE1B6E32F26D1AFB19AA2D81562A88450085"
+    },
+    {
+      "byteSize": 46921,
+      "path": "source/nodes/N6/scene-flow.json",
+      "sha256": "56364F6E5F05856AB34EF0EDD7CA3EB2AAF194D107DE5F0A01801972DB35F19A"
+    },
+    {
+      "byteSize": 42489,
+      "path": "source/nodes/N6/seat-content.json",
+      "sha256": "6B9864DF8769DCA0130FBB84344D505119C6C4BA7CF811C5E5B65FD17012ABBA"
+    },
+    {
+      "byteSize": 24193,
+      "path": "source/nodes/N6/settlement.json",
+      "sha256": "DF29530FA67F8D67B532C4C7B55BC82B44D0E3A2EA1BF4AE68A6F6AFD1BD4C93"
+    },
+    {
+      "byteSize": 5955,
+      "path": "source/nodes/N6/source-evidence.jsonl",
+      "sha256": "83132DCBB5E21D1F5D4BA6B5D84BDCD5A0751A4600A9CD9BE7811C9388759273"
+    },
+    {
+      "byteSize": 729,
+      "path": "source/nodes/N6/transitions.md",
+      "sha256": "E2858128CC8F43C6CFCA862D4F36C380349343D792CDFF01D6162AE34A9ED05D"
+    },
+    {
+      "byteSize": 3599,
+      "path": "source/nodes/N7/adaptations.json",
+      "sha256": "DEBCD50D3EBF979F63E8F9856BBE953795D64A7E985A9692867FBFD704D75883"
+    },
+    {
+      "byteSize": 1968,
+      "path": "source/nodes/N7/node.json",
+      "sha256": "57CDD6BA78C48A66080549A47E5B54E9737F44A4BC107BA43936B4B50A606BD7"
+    },
+    {
+      "byteSize": 9506,
+      "path": "source/nodes/N7/npc-defaults.json",
+      "sha256": "8CDFDA8DAB3BC1C15764A6B643B90752D15BD044BBD04C25ED161DDAD79EA4A3"
+    },
+    {
+      "byteSize": 2227,
+      "path": "source/nodes/N7/overview.md",
+      "sha256": "9B910C01B280004B57D41B5C8880BD05EAAC67063D08F900740AE028C4F2E88B"
+    },
+    {
+      "byteSize": 49962,
+      "path": "source/nodes/N7/scene-flow.json",
+      "sha256": "883A8E0479203B9448C0D1ED5CFDF90A34F72A540262DAF402CAEB9A447765C5"
+    },
+    {
+      "byteSize": 47096,
+      "path": "source/nodes/N7/seat-content.json",
+      "sha256": "75B607F86CD1DC220089A05A60FAE96766449976CA1AF8B0BA9333C1660DF716"
+    },
+    {
+      "byteSize": 22217,
+      "path": "source/nodes/N7/settlement.json",
+      "sha256": "7A468CF08265E01360EB6BC3972CDC528D2625F6525FE14F4EFF32E06680B4A5"
+    },
+    {
+      "byteSize": 4628,
+      "path": "source/nodes/N7/source-evidence.jsonl",
+      "sha256": "A556347512DE1E337EB4BC83612776BB35A23400068338776639093DDE931C10"
+    },
+    {
+      "byteSize": 619,
+      "path": "source/nodes/N7/transitions.md",
+      "sha256": "5715AC43636D6D9A0EF9BA2CD134DF9C1405056FFCBEEA8F0E15BA89B8544F4C"
+    },
+    {
+      "byteSize": 2712,
+      "path": "source/nodes/P0/adaptations.json",
+      "sha256": "336767EF8A9A7D9F69EC50A02FA2CA750B4A90FAEC5F90B5073FDDE63EAF30F0"
+    },
+    {
+      "byteSize": 1701,
+      "path": "source/nodes/P0/node.json",
+      "sha256": "0D1118E10DBB090E8F1413F8C3C01683977DC8D4152F6380FCDA11C983DE77BE"
+    },
+    {
+      "byteSize": 9127,
+      "path": "source/nodes/P0/npc-defaults.json",
+      "sha256": "C20684FEA77F9D4C95E057CA291EC33C65E84D26D5800686D928160D90F60B23"
+    },
+    {
+      "byteSize": 2050,
+      "path": "source/nodes/P0/overview.md",
+      "sha256": "6E157FB1566370CC1F27FFD837C63D6FD7676125759CC2D6087D92BC5843E4E4"
+    },
+    {
+      "byteSize": 14793,
+      "path": "source/nodes/P0/scene-flow.json",
+      "sha256": "0D202AFB6BFC5B082FF8CC05BCEDBADA8696C2CEA2162403646AC09614614A44"
+    },
+    {
+      "byteSize": 46143,
+      "path": "source/nodes/P0/seat-content.json",
+      "sha256": "6B88E14CFE8857D93BAD1BFC4B918925D9BEDF30A097B99A8029CAC12D090C82"
+    },
+    {
+      "byteSize": 3407,
+      "path": "source/nodes/P0/settlement.json",
+      "sha256": "0F493010BFFCAE9FA6385609D8B71846AC035605702713EECBBD0242D96A0EC0"
+    },
+    {
+      "byteSize": 4579,
+      "path": "source/nodes/P0/source-evidence.jsonl",
+      "sha256": "CF52CB74DCC46B2F9A88397FE57F1E1DA171A1E117414D4DAC178C0020909A0F"
+    },
+    {
+      "byteSize": 368,
+      "path": "source/nodes/P0/transitions.md",
+      "sha256": "420CCC41D5C5C75D451333080BB2CC1777B1AF3F72AE5790A288D162F9569E72"
+    },
+    {
+      "byteSize": 1098,
+      "path": "source/README.md",
+      "sha256": "C186E6C7997C6C36F385E3DDF2F0BEEB0572B306CFD04E4A23DF32636AACE558"
+    },
+    {
+      "byteSize": 21537,
+      "path": "source/tools/validate_package.py",
+      "sha256": "B86C3F97DFF1C85337EC9ADE94D20CF81929A7C8AC39590151FB0BF0C2EDDF28"
+    },
+    {
+      "byteSize": 962,
+      "path": "source/validation/continuity-audit.json",
+      "sha256": "CF1A24C23D6D8FAA5FA8E6B13CAB91245DBA55024ABFC8F6A9CECB78BFF70E9B"
+    },
+    {
+      "byteSize": 6786,
+      "path": "source/validation/coverage-report.json",
+      "sha256": "159999034B4153C9E37CF780A8FD419DBF36F4A26E56327F608FE618267B0FAB"
+    },
+    {
+      "byteSize": 576,
+      "path": "source/validation/knowledge-boundary-audit.json",
+      "sha256": "FE0518F53A431F929283C20FDF198209A9FB1E8920C717EB2DA38E4FF25C65DA"
+    },
+    {
+      "byteSize": 57326,
+      "path": "source/validation/source-index-reference-map.json",
+      "sha256": "F79C44B9350476AC067EE2CB1627B11B375F205F6D66BF7B39ECC8A55DD24924"
+    },
+    {
+      "byteSize": 333,
+      "path": "source/validation/source-ref-audit.json",
+      "sha256": "84BBF1A1201B163823DFD6CC4484F101B3F71FF32F7A3E8EB9FD658419693958"
+    },
+    {
+      "byteSize": 1095,
+      "path": "source/validation/unresolved-unknowns.json",
+      "sha256": "1CC71015011BDCA5A3F3871D8D039852777C92377E465EA1620C68FEA8CDC648"
+    },
+    {
+      "byteSize": 364,
+      "path": "source/validation/validator-last-run.txt",
+      "sha256": "CE8CA7A49C1F33E78F8756F1CC64D7B61B2B46B38740389B43768C9A442BD8F4"
+    }
+  ],
+  "contentTreeSha256": "E0297FFC7FCB24BAB86F8B549C563E85DE434627D026FD745A5F2F0DD50FDE39",
+  "importerVersion": "pressure-spine-importer-v1",
+  "legacyStrategyLocks": {
+    "sangtian_v1_1": "E4047A888450E589A0E3AD2C9F702218BAAE54737C713A217ABAAF3CAC17D8BD",
+    "sangtian_v1_2": "D21757ACD32D29BE647E9A3796E85886138A3C7AEACAD1541CEDE947198242B2"
+  },
+  "packageId": "sangtian_complete_story_content_package_v1_1",
+  "packageVersion": "1.1.0-repair-final",
+  "registeredPackageVersion": "sangtian_pressure_v1_0",
+  "runtimeIndexSha256": "313D6F8B1057C4D44CE86C7AE34B6FBC12A47B19211CF3CA0EA0ADCC615196B3",
+  "runtimeProfile": "SANGTIAN_PRESSURE_SPINE_V1",
+  "schemaVersion": "pressure_spine_manifest_lock_v1",
+  "sourceLineCount": 30547,
+  "sourcePackageArchivePath": "source-package/sangtian_complete_story_content_package_v1_1.zip",
+  "sourcePackageByteSize": 277041,
+  "sourcePackageSha256": "38AC19ABFBB89288F80C5E128141B705535D2A9E11D370B293402DC106760317",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "worldId": "sangtian"
+}

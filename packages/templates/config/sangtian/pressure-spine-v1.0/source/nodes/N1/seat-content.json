@@ -1,0 +1,1121 @@
+{
+  "schemaVersion": "sangtian_node_seat_content_v1",
+  "nodeId": "N1",
+  "seatCount": 6,
+  "seats": [
+    {
+      "seatContentId": "seatcontent.n1.zhejiang_governor",
+      "nodeId": "N1",
+      "seatId": "seat.zhejiang_governor",
+      "roleKey": "zhejiang_governor",
+      "currentActorId": "actor.hu_zongxian",
+      "institutionalMission": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n1.zhejiang_governor.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N1",
+          "statement": "毁堤命令已进入执行链，汛水到来；玩家能改变受灾程度、疏散、证据和责任，不能让密谋与汛期从未存在。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n1.zhejiang_governor.claim.n1-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-02",
+          "statement": "九个县、九个堰口出现异常破坏，现场人物意识到有人在追求堰口失守的结果。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n1.zhejiang_governor.object.weir_troop_deployment",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.weir_troop_deployment",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：守堰、分洪与疏散兵力。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n1.zhejiang_governor.claim.n1-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-01",
+          "statement": "有人要求利用端午汛决开九县闸口，再让丝绸大户以粮买田。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n1.zhejiang_governor.system.n1-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-UNK-01",
+          "statement": "每一处堰口的精确先后与本局伤亡数由结算产生，Narrator 不得自行报数。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易高估一纸总督令在地方执行链中的即时效力。"
+      ],
+      "resources": [
+        "总督军令",
+        "军驿",
+        "跨省协调",
+        "奏报担保"
+      ],
+      "permissions": [
+        "调兵与分洪",
+        "总督担保",
+        "领衔奏疏",
+        "军饷划拨"
+      ],
+      "privatePressure": "调兵守堰会削弱海防，袖手会让灾情和罪责扩大。",
+      "keyLeverage": "调兵守堰、分洪或疏散，并承担军务机会成本",
+      "defaultPrepare": "调两营守关键堰口，并命地方先疏散",
+      "defaultCommit": "在军务损耗可控的前提下选择局部分洪并封存调令",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_governor.01",
+          "text": "“先报哪几处堰口还能守，别拿一句水势危急把兵全调空。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.weir_troop_deployment"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_governor.02",
+          "text": "“调兵令一出，海上的防线就少一层；谁来给我补这道缺口？”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.weir_troop_deployment"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_governor.03",
+          "text": "“分洪可以救多数人，先把要淹的地方和疏散时辰报明。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.weir_troop_deployment"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        }
+      ],
+      "privateOpening": "胡宗宪把河图推到案边。调兵守堰能救人，也会抽空海防；不调兵，堰口与责任都会先落到别人手里。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.governor_office",
+          "afterNode": "N2",
+          "seatId": "seat.zhejiang_governor",
+          "fromActorId": "actor.hu_zongxian",
+          "toActorId": "actor.hu_zongxian",
+          "permissionChange": [
+            "失去浙江巡抚兼任的直接地方民政权限",
+            "保留浙直总督军务、跨省协调、军饷与奏报渠道"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n1.zhejiang_governor.pressure",
+        "known.n1.zhejiang_governor.claim.n1-sf-02",
+        "known.n1.zhejiang_governor.object.weir_troop_deployment"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.zhejiang_governor.claim.n1-sf-01",
+        "unknown.n1.zhejiang_governor.system.n1-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.weir_troop_deployment"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n1.zhejiang_administration",
+      "nodeId": "N1",
+      "seatId": "seat.zhejiang_administration",
+      "roleKey": "zhejiang_administration",
+      "currentActorId": "actor.zheng_michang",
+      "institutionalMission": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n1.zhejiang_administration.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N1",
+          "statement": "毁堤命令已进入执行链，汛水到来；玩家能改变受灾程度、疏散、证据和责任，不能让密谋与汛期从未存在。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n1.zhejiang_administration.claim.n1-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-01",
+          "statement": "有人要求利用端午汛决开九县闸口，再让丝绸大户以粮买田。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n1.zhejiang_administration.object.breach_order_chain",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.breach_order_chain",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：毁堤命令与经手责任链。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n1.zhejiang_administration.claim.n1-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-02",
+          "statement": "九个县、九个堰口出现异常破坏，现场人物意识到有人在追求堰口失守的结果。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n1.zhejiang_administration.claim.n1-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-03",
+          "statement": "现场提出分洪并安排疏散，说明灾害范围仍可通过行动改变。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n1.zhejiang_administration.system.n1-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-UNK-01",
+          "statement": "每一处堰口的精确先后与本局伤亡数由结算产生，Narrator 不得自行报数。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把先形成的公文误认为最终会被朝廷接受的事实。"
+      ],
+      "resources": [
+        "省府印信",
+        "府县官吏",
+        "差役与押解",
+        "田契登记"
+      ],
+      "permissions": [
+        "签发地方命令",
+        "控制人犯与案卷",
+        "登记契约",
+        "查封商产"
+      ],
+      "privatePressure": "执行链中已有异常命令，撤令会暴露省府，继续执行会留下天灾之外的痕迹。",
+      "keyLeverage": "通过府县行政链调动守堰官兵与民夫",
+      "defaultPrepare": "维持既有堰口执行链并核对各县回报",
+      "defaultCommit": "优先保住省府命令链，允许有限抢险但不公开上级来源",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_administration.01",
+          "text": "“堰口若守不住，先保住府县号令，不许各处自行撤人。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_administration.02",
+          "text": "“谁说上游有人动手，拿出经手名册和原令再来。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_administration.03",
+          "text": "“省府可以发疏散令，但不得借疏散把改桑人手全撤走。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        }
+      ],
+      "privateOpening": "郑泌昌掌握府县行政链，却不能公开承认其中是否有人传过异常命令。守堰、疏散与继续催办，任何一项都会留下省府印记。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.administration",
+          "afterNode": "N6",
+          "seatId": "seat.zhejiang_administration",
+          "fromActorId": "actor.zheng_michang",
+          "toActorId": "actor.zheng_michang",
+          "permissionChange": [
+            "进入在押状态后只能签供、翻供、拒签、交代旧令和使用获准通信",
+            "不得继续调动省府差役、粮市与查封权限"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n1.zhejiang_administration.pressure",
+        "known.n1.zhejiang_administration.claim.n1-sf-01",
+        "known.n1.zhejiang_administration.object.breach_order_chain"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.zhejiang_administration.claim.n1-sf-02",
+        "unknown.n1.zhejiang_administration.claim.n1-sf-03",
+        "unknown.n1.zhejiang_administration.system.n1-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.breach_order_chain"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n1.qingliu_law",
+      "nodeId": "N1",
+      "seatId": "seat.qingliu_law",
+      "roleKey": "qingliu_law",
+      "currentActorId": "actor.tan_lun",
+      "institutionalMission": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n1.qingliu_law.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N1",
+          "statement": "毁堤命令已进入执行链，汛水到来；玩家能改变受灾程度、疏散、证据和责任，不能让密谋与汛期从未存在。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun"
+        },
+        {
+          "factRefId": "known.n1.qingliu_law.claim.n1-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-02",
+          "statement": "九个县、九个堰口出现异常破坏，现场人物意识到有人在追求堰口失守的结果。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun"
+        },
+        {
+          "factRefId": "known.n1.qingliu_law.object.sealed_evidence_index",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.sealed_evidence_index",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：封存证据索引。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n1.qingliu_law.claim.n1-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-01",
+          "statement": "有人要求利用端午汛决开九县闸口，再让丝绸大户以粮买田。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n1.qingliu_law.system.n1-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-UNK-01",
+          "statement": "每一处堰口的精确先后与本局伤亡数由结算产生，Narrator 不得自行报数。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信只要事实真实就会自然生效。"
+      ],
+      "resources": [
+        "调查权限",
+        "拒签权",
+        "证人保护",
+        "证据索引"
+      ],
+      "permissions": [
+        "审查案卷",
+        "拒绝签押",
+        "保护证人",
+        "制作封印与索引"
+      ],
+      "privatePressure": "你掌握的只是预警与现场观察，尚不足以指认最高层。",
+      "keyLeverage": "把毁堤预警、命令副本或见证送入可核验渠道",
+      "defaultPrepare": "把毁堤预警和现场见证送入总督与军营双路",
+      "defaultCommit": "拒绝让未核实口令替代可见证的命令记录",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n1.qingliu_law.01",
+          "text": "“我只问那道调令从谁手里出、到谁手里改过。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.sealed_evidence_index"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.qingliu_law.02",
+          "text": "“救堤的人要活，见过命令的人也要活，否则明日只有天灾一说。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.sealed_evidence_index"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.qingliu_law.03",
+          "text": "“谭纶可把副本送军营，原件仍须有人当面签收。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.sealed_evidence_index"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        }
+      ],
+      "privateOpening": "谭纶掌握的是预警、见证和可能存在的命令痕迹，还不足以指认最高层。若不先把材料送进安全渠道，水退后便只剩口头说法。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.qingliu",
+          "afterNode": "N2",
+          "seatId": "seat.qingliu_law",
+          "fromActorId": "actor.tan_lun",
+          "toActorId": "actor.hai_rui",
+          "inheritIf": [
+            "PUBLIC",
+            "SEAT_RECORD",
+            "TRANSFERRED_AND_RECEIVED"
+          ],
+          "neverAutoInherit": [
+            "私下猜测",
+            "未送达信件",
+            "玩家屏幕上见过但海瑞未获知的秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n1.qingliu_law.pressure",
+        "known.n1.qingliu_law.claim.n1-sf-02",
+        "known.n1.qingliu_law.object.sealed_evidence_index"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.qingliu_law.claim.n1-sf-01",
+        "unknown.n1.qingliu_law.system.n1-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.sealed_evidence_index"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n1.jiangnan_merchant",
+      "nodeId": "N1",
+      "seatId": "seat.jiangnan_merchant",
+      "roleKey": "jiangnan_merchant",
+      "currentActorId": "actor.shen_yishi",
+      "institutionalMission": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n1.jiangnan_merchant.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N1",
+          "statement": "毁堤命令已进入执行链，汛水到来；玩家能改变受灾程度、疏散、证据和责任，不能让密谋与汛期从未存在。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi"
+        },
+        {
+          "factRefId": "known.n1.jiangnan_merchant.object.merchant_fleet",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.merchant_fleet",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：商船与运输队。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n1.jiangnan_merchant.claim.n1-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-01",
+          "statement": "有人要求利用端午汛决开九县闸口，再让丝绸大户以粮买田。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n1.jiangnan_merchant.claim.n1-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-02",
+          "statement": "九个县、九个堰口出现异常破坏，现场人物意识到有人在追求堰口失守的结果。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n1.jiangnan_merchant.system.n1-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-UNK-01",
+          "statement": "每一处堰口的精确先后与本局伤亡数由结算产生，Narrator 不得自行报数。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信实际贡献能自动换来政治保护。"
+      ],
+      "resources": [
+        "粮仓",
+        "银票与信用",
+        "商船",
+        "契约与账目"
+      ],
+      "permissions": [
+        "分配商粮",
+        "签借据与买田合同",
+        "转运",
+        "留下遗命"
+      ],
+      "privatePressure": "救堤会消耗船队并耽误粮船，保商路又会被指见死不救。",
+      "keyLeverage": "投入船只、沙包、运输队并选择救灾或保商路",
+      "defaultPrepare": "投入最低船只与沙包保住主要商路和一处堰口",
+      "defaultCommit": "优先保运输与灾民撤离，保留粮船能力",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n1.jiangnan_merchant.01",
+          "text": "“船若全去救堤，后面的粮就到不了；请先指出最要紧的水道。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.merchant_fleet"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.jiangnan_merchant.02",
+          "text": "“商会能出沙袋与船夫，但征用清单必须当场写下。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.merchant_fleet"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.jiangnan_merchant.03",
+          "text": "“我不收救命钱，只要官府别把损失算成商会自愿捐掉。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.merchant_fleet"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        }
+      ],
+      "privateOpening": "沈一石的船可以救堤，也必须为后面的粮路留出运力。救人越多，商路越弱；保船越多，见死不救的罪名越近。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.merchant",
+          "afterNode": "N6",
+          "seatId": "seat.jiangnan_merchant",
+          "fromActorId": "actor.shen_yishi",
+          "toActorId": "actor.merchant_legacy_executor",
+          "inheritIf": [
+            "N6 冻结前形成的遗命",
+            "已登记债权",
+            "已启动递送",
+            "商会正式档案"
+          ],
+          "neverAutoInherit": [
+            "死后新计划",
+            "未留下的口头秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n1.jiangnan_merchant.pressure",
+        "known.n1.jiangnan_merchant.object.merchant_fleet"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.jiangnan_merchant.claim.n1-sf-01",
+        "unknown.n1.jiangnan_merchant.claim.n1-sf-02",
+        "unknown.n1.jiangnan_merchant.system.n1-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.merchant_fleet"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n1.sili_weaving",
+      "nodeId": "N1",
+      "seatId": "seat.sili_weaving",
+      "roleKey": "sili_weaving",
+      "currentActorId": "actor.yang_jinshui",
+      "institutionalMission": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n1.sili_weaving.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N1",
+          "statement": "毁堤命令已进入执行链，汛水到来；玩家能改变受灾程度、疏散、证据和责任，不能让密谋与汛期从未存在。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.n1.sili_weaving.claim.n1-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-02",
+          "statement": "九个县、九个堰口出现异常破坏，现场人物意识到有人在追求堰口失守的结果。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.n1.sili_weaving.object.weaving_records",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.weaving_records",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：织造局供货与银路记录。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n1.sili_weaving.claim.n1-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-01",
+          "statement": "有人要求利用端午汛决开九县闸口，再让丝绸大户以粮买田。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n1.sili_weaving.claim.n1-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-03",
+          "statement": "现场提出分洪并安排疏散，说明灾害范围仍可通过行动改变。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n1.sili_weaving.system.n1-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-UNK-01",
+          "statement": "每一处堰口的精确先后与本局伤亡数由结算产生，Narrator 不得自行报数。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易以为内廷渠道足以压过所有地方见证。"
+      ],
+      "resources": [
+        "织造局名义",
+        "密奏",
+        "锦衣卫递送",
+        "供货记录"
+      ],
+      "permissions": [
+        "使用或撤回织造名义",
+        "密奏",
+        "内廷递送",
+        "核验织造记录"
+      ],
+      "privatePressure": "河道记录若落入外廷可能牵出宫廷人员，若销毁又会留下灭证责任。",
+      "keyLeverage": "封存河道监管记录或用内廷差使追查异常命令",
+      "defaultPrepare": "封存河道监管簿并派差使核查异常调令",
+      "defaultCommit": "保护内廷名义，不让织造人员公开承担毁堤责任",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n1.sili_weaving.01",
+          "text": "“河道簿里若真有改动，先封簿，不要先把人惊散。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.weaving_records"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.sili_weaving.02",
+          "text": "“织造局的人若被点名参与毁堤，我要看见原令，不听转述。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.weaving_records"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.sili_weaving.03",
+          "text": "“内廷差使可以查经手，却不能替省府撤一纸已经发出的命令。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.weaving_records"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        }
+      ],
+      "privateOpening": "杨金水知道河道监管簿可能牵出织造人员，却不能让这层担忧出现在公共回令里。封簿与追查都必须沿内廷可控的手走。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.weaving",
+          "afterNode": "N6",
+          "seatId": "seat.sili_weaving",
+          "fromActorId": "actor.yang_jinshui",
+          "toActorId": "actor.weaving_retainer",
+          "inheritIf": [
+            "织造局正式档案",
+            "已签发命令",
+            "已启动的锦衣卫交接"
+          ],
+          "unknownInvariant": "杨金水真实精神状态保持 UNKNOWN。"
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n1.sili_weaving.pressure",
+        "known.n1.sili_weaving.claim.n1-sf-02",
+        "known.n1.sili_weaving.object.weaving_records"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.sili_weaving.claim.n1-sf-01",
+        "unknown.n1.sili_weaving.claim.n1-sf-03",
+        "unknown.n1.sili_weaving.system.n1-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.weaving_records"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n1.cabinet_finance",
+      "nodeId": "N1",
+      "seatId": "seat.cabinet_finance",
+      "roleKey": "cabinet_finance",
+      "currentActorId": "actor.yan_shifan",
+      "institutionalMission": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n1.cabinet_finance.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N1",
+          "statement": "毁堤命令已进入执行链，汛水到来；玩家能改变受灾程度、疏散、证据和责任，不能让密谋与汛期从未存在。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n1.cabinet_finance.claim.n1-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-01",
+          "statement": "有人要求利用端午汛决开九县闸口，再让丝绸大户以粮买田。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n1.cabinet_finance.object.cabinet_urgent_dispatch",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.cabinet_urgent_dispatch",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：内阁急递与廷寄渠道。",
+          "availableFrom": "N1",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n1.cabinet_finance.claim.n1-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-02",
+          "statement": "九个县、九个堰口出现异常破坏，现场人物意识到有人在追求堰口失守的结果。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n1.cabinet_finance.claim.n1-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-SF-03",
+          "statement": "现场提出分洪并安排疏散，说明灾害范围仍可通过行动改变。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n1.cabinet_finance.system.n1-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N1-UNK-01",
+          "statement": "每一处堰口的精确先后与本局伤亡数由结算产生，Narrator 不得自行报数。",
+          "availableFrom": "N1",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把地方资源当作可随时征用的财政余额。"
+      ],
+      "resources": [
+        "急递与廷寄",
+        "财政目标",
+        "中央收件",
+        "抄没归属"
+      ],
+      "permissions": [
+        "设定期限",
+        "调整财政认定",
+        "指定收件路径",
+        "决定抄没归属"
+      ],
+      "privatePressure": "若期限不松，地方会用更激烈手段完成国策；若公开松动，中央财政先失去威信。",
+      "keyLeverage": "通过急递维持或缓和国策期限，但受路线时限限制",
+      "defaultPrepare": "维持原财政期限但允许地方提交紧急灾情补充",
+      "defaultCommit": "不撤国策，要求责任与损失进入下一道奏疏",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n1.cabinet_finance.01",
+          "text": "“水患可以报急，改桑期限却不会因一句急报自行作废。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.cabinet_urgent_dispatch"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.cabinet_finance.02",
+          "text": "“地方要缓办，须同时说明损失、替代银源和军饷影响。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.cabinet_urgent_dispatch"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.cabinet_finance.03",
+          "text": "“急递只来得及送一份，先决定是求援还是求免责。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.nine_weirs",
+            "obj.breach_order_chain",
+            "obj.cabinet_urgent_dispatch"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        }
+      ],
+      "privateOpening": "京师只收到水患急报和地方求缓的可能。期限若不松，地方会用更激烈手段；期限若公开松动，财政威信先受损。",
+      "handoffRules": [],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n1.cabinet_finance.pressure",
+        "known.n1.cabinet_finance.claim.n1-sf-01",
+        "known.n1.cabinet_finance.object.cabinet_urgent_dispatch"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.cabinet_finance.claim.n1-sf-02",
+        "unknown.n1.cabinet_finance.claim.n1-sf-03",
+        "unknown.n1.cabinet_finance.system.n1-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.cabinet_urgent_dispatch"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    }
+  ]
+}

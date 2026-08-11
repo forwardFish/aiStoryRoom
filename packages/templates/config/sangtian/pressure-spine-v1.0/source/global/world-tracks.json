@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "sangtian_world_tracks_v1",
+  "tracks": [
+    {
+      "trackId": "track.civilian_land",
+      "name": "民生与土地",
+      "low": "断粮、失序与低价兼并扩大",
+      "mid": "赈济有限，部分田契转移",
+      "high": "赈粮稳定且多数家庭保有耕作权"
+    },
+    {
+      "trackId": "track.mulberry_silk",
+      "name": "改桑与丝绸",
+      "low": "国策失速且织造能力受损",
+      "mid": "局部改桑与织造维持",
+      "high": "改桑路径可执行且未以全面失田为代价"
+    },
+    {
+      "trackId": "track.fiscal_military",
+      "name": "财政与军饷",
+      "low": "缺口未解，前线军饷严重迟滞",
+      "mid": "只解一时，仍需后续筹款",
+      "high": "最低军饷按时送达且财政责任可追溯"
+    },
+    {
+      "trackId": "track.evidence_responsibility",
+      "name": "证据与责任",
+      "low": "证人或材料灭失，责任封在替罪者",
+      "mid": "省级责任生效，更高层关联封存",
+      "high": "多路材料相互印证并取得更高采用层级"
+    },
+    {
+      "trackId": "track.court_imperial_face",
+      "name": "朝局与皇权颜面",
+      "low": "朝局震荡或皇权公开受损",
+      "mid": "有限追责，材料内部封存",
+      "high": "朝局可继续运行且制度责任未被完全抹去"
+    }
+  ],
+  "scale": {
+    "LOW": "0-39",
+    "MID": "40-69",
+    "HIGH": "70-100"
+  },
+  "note": "数值只用于确定性结算与测试，Narrator 不向玩家展示后台分数。"
+}

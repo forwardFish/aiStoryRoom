@@ -95,7 +95,9 @@
     "typecheck": "pnpm -r --workspace-concurrency=1 typecheck",
     "test:story:convergence": "pnpm --filter @ai-story/templates build && node scripts/acceptance/verify-ai-story-convergence.mjs",
     "test:story:real-model": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs",
-    "test:story:real-model:g00-t20": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs"
+    "test:story:real-model:g00-t20": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs",
+    "test:sangtian:input": "node scripts/acceptance/run-sangtian-phase2-suite.mjs input-boundary",
+    "test:sangtian:content": "node scripts/acceptance/run-sangtian-phase2-suite.mjs content"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

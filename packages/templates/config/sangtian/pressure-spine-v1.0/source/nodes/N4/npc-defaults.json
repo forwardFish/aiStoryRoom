@@ -1,0 +1,215 @@
+{
+  "schemaVersion": "sangtian_npc_defaults_v1",
+  "nodeId": "N4",
+  "seatDefaults": [
+    {
+      "defaultPolicyId": "default.n4.zhejiang_governor",
+      "nodeId": "N4",
+      "seatId": "seat.zhejiang_governor",
+      "currentActorId": "actor.hu_zongxian",
+      "normalNoSubmission": {
+        "prepare": "要求联合审查并准备转押渠道",
+        "commit": "把案件转入可复核保管，避免先杀后审"
+      },
+      "objective": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n4.zhejiang_administration",
+      "nodeId": "N4",
+      "seatId": "seat.zhejiang_administration",
+      "currentActorId": "actor.zheng_michang",
+      "normalNoSubmission": {
+        "prepare": "控制人犯与现有案卷",
+        "commit": "维持通倭急案口径，争取补足文书与签押"
+      },
+      "objective": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n4.qingliu_law",
+      "nodeId": "N4",
+      "seatId": "seat.qingliu_law",
+      "currentActorId": "actor.hai_rui",
+      "normalNoSubmission": {
+        "prepare": "审问、核时序并保护证人",
+        "commit": "拒绝没有案卷和合法签押的处置"
+      },
+      "objective": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n4.jiangnan_merchant",
+      "nodeId": "N4",
+      "seatId": "seat.jiangnan_merchant",
+      "currentActorId": "actor.shen_yishi",
+      "normalNoSubmission": {
+        "prepare": "出示粮船与交易痕迹",
+        "commit": "以实际买粮目的证明灾民不知通倭"
+      },
+      "objective": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n4.sili_weaving",
+      "nodeId": "N4",
+      "seatId": "seat.sili_weaving",
+      "currentActorId": "actor.yang_jinshui",
+      "normalNoSubmission": {
+        "prepare": "预置暂缓核查令",
+        "commit": "在不承认内廷责任的前提下保住关键证人"
+      },
+      "objective": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n4.cabinet_finance",
+      "nodeId": "N4",
+      "seatId": "seat.cabinet_finance",
+      "currentActorId": "actor.yan_shifan",
+      "normalNoSubmission": {
+        "prepare": "维持抗倭优先分类",
+        "commit": "要求地方迅速形成可引用案卷"
+      },
+      "objective": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    }
+  ],
+  "inputFallbackPolicies": [
+    {
+      "fallbackId": "inputfallback.n4.silence",
+      "nodeId": "N4",
+      "inputClass": "SILENCE",
+      "playerFacingMeaning": "沉默",
+      "actionRealization": "消耗当前机会；按席位默认政策执行。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "其他席位取得先手",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "通倭死局 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n4.small_talk",
+      "nodeId": "N4",
+      "inputClass": "SMALL_TALK",
+      "playerFacingMeaning": "反复闲聊",
+      "actionRealization": "第一次编译为 DELAY；后续直接等待超时。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "默认政策继续",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "通倭死局 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n4.rest_delay",
+      "nodeId": "N4",
+      "inputClass": "REST_DELAY",
+      "playerFacingMeaning": "休息或等待",
+      "actionRealization": "休息成功，恢复少量精力，消耗 PREPARE。",
+      "timeAdvance": "+半日",
+      "npcMove": "五个 AI/NPC 先手",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "通倭死局 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n4.fabricated_success",
+      "nodeId": "N4",
+      "inputClass": "FABRICATED_SUCCESS",
+      "playerFacingMeaning": "声称已经取得命令、账册或同意",
+      "actionRealization": "编译为尝试取得；无来源则 FAILED_ATTEMPT。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "目标保管人加强防护或继续原计划",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "通倭死局 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n4.overreach",
+      "nodeId": "N4",
+      "inputClass": "OVERREACH",
+      "playerFacingMeaning": "越权调兵、替皇帝裁决或控制他人",
+      "actionRealization": "动作失败；保留真实目标但不改写成别的政策选择。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "被越权对象留下可观察反应",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "通倭死局 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n4.insufficient_resource",
+      "nodeId": "N4",
+      "inputClass": "INSUFFICIENT_RESOURCE",
+      "playerFacingMeaning": "资源不足",
+      "actionRealization": "允许部分执行或失败，已投入资源仍可能消耗。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "竞争方利用资源缺口",
+      "pressureDelta": "0 或 +1",
+      "nextSceneSeed": "通倭死局 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n4.timeout",
+      "nodeId": "N4",
+      "inputClass": "TIMEOUT",
+      "playerFacingMeaning": "超时",
+      "actionRealization": "注入该席位 defaultPrepare 或 defaultCommit。",
+      "timeAdvance": "推进到阶段截止",
+      "npcMove": "AI/NPC 完成默认行动",
+      "pressureDelta": "至少 +1",
+      "nextSceneSeed": "通倭死局 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n4.normal_no_submission",
+      "nodeId": "N4",
+      "inputClass": "NORMAL_NO_SUBMISSION",
+      "playerFacingMeaning": "无人提交有效替代行动",
+      "actionRealization": "六席默认政策合成推进。",
+      "timeAdvance": "推进到本拍截止",
+      "npcMove": "按席位目标同时执行",
+      "pressureDelta": "按节点默认轨迹",
+      "nextSceneSeed": "通倭死局 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    }
+  ],
+  "composedDefaultProgression": "总督要求联合复核，省府控制人犯，清流拒绝执行签押，商会提供交易痕迹，织造局发暂缓核查，内阁指令未及时改变地方；无人被处决，证人存活，案件进入争议状态。"
+}

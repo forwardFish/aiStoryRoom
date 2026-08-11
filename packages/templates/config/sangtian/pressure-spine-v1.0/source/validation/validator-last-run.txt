@@ -1,0 +1,16 @@
+{
+  "verdict": "PASS",
+  "nodeCount": 8,
+  "seatCount": 6,
+  "sceneCount": 145,
+  "reachableSceneCount": 145,
+  "sourceFactCount": 33,
+  "adaptationCount": 27,
+  "inferenceCount": 8,
+  "unknownCount": 9,
+  "dialogueSeedCount": 144,
+  "uniqueDialogueSeedCount": 144,
+  "openingProjectionVariantCount": 18,
+  "authoredHanCharacters": 82508,
+  "inventoryFiles": 95
+}

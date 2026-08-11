@@ -1,0 +1,1141 @@
+{
+  "schemaVersion": "sangtian_node_seat_content_v1",
+  "nodeId": "N4",
+  "seatCount": 6,
+  "seats": [
+    {
+      "seatContentId": "seatcontent.n4.zhejiang_governor",
+      "nodeId": "N4",
+      "seatId": "seat.zhejiang_governor",
+      "roleKey": "zhejiang_governor",
+      "currentActorId": "actor.hu_zongxian",
+      "institutionalMission": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n4.zhejiang_governor.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N4",
+          "statement": "拒绝卖田与自购粮者被卷入通倭案；一旦人犯死亡，毁堤、买田与倭商之间的证言链会断。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n4.zhejiang_governor.object.military_dispatch_channel",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.military_dispatch_channel",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：总督军驿与前线渠道。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        },
+        {
+          "factRefId": "known.n4.zhejiang_governor.handoff.N2.governor_office",
+          "sourceKind": "HANDOFF",
+          "handoffId": "handoff.N2.governor_office",
+          "handoffEventId": "event.handoff.N2.governor_office",
+          "statement": "当前人物只继承 handoff.N2.governor_office 中正式交接并可验证的记录。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "accessVia": "HANDOFF"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n4.zhejiang_governor.claim.n4-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-01",
+          "statement": "地方官员提出用“通倭”把灾民自购粮行为转成重罪。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n4.zhejiang_governor.claim.n4-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-02",
+          "statement": "省府以三日粮尽、国策与民变相威胁，要求海瑞迅速执行。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n4.zhejiang_governor.system.n4-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-UNK-01",
+          "statement": "三项门槛不得被 Narrator 写成普遍明代司法制度。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易高估一纸总督令在地方执行链中的即时效力。"
+      ],
+      "resources": [
+        "总督军令",
+        "军驿",
+        "跨省协调",
+        "奏报担保"
+      ],
+      "permissions": [
+        "调兵与分洪",
+        "总督担保",
+        "领衔奏疏",
+        "军饷划拨"
+      ],
+      "privatePressure": "救人可能被指阻挠抗倭，放任处置会让关键证言永远消失。",
+      "keyLeverage": "改变案件管辖或命令联合审查",
+      "defaultPrepare": "要求联合审查并准备转押渠道",
+      "defaultCommit": "把案件转入可复核保管，避免先杀后审",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n4.zhejiang_governor.01",
+          "text": "“人先押回，案卷随后补；谁敢反过来办，谁就在处置簿上具名。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.military_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.zhejiang_governor.02",
+          "text": "“我能改管辖，不能替海瑞在监斩文书上画押。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.military_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.zhejiang_governor.03",
+          "text": "“若以抗倭为名急杀人，先说这几个人与倭寇究竟有哪一项实证。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.military_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        }
+      ],
+      "privateOpening": "胡宗宪能改变管辖和转押，却不能替监斩者签字。救人可能被说成阻挠抗倭，放任处置又会让证言永久消失。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.governor_office",
+          "afterNode": "N2",
+          "seatId": "seat.zhejiang_governor",
+          "fromActorId": "actor.hu_zongxian",
+          "toActorId": "actor.hu_zongxian",
+          "permissionChange": [
+            "失去浙江巡抚兼任的直接地方民政权限",
+            "保留浙直总督军务、跨省协调、军饷与奏报渠道"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n4.pressure_lock",
+        "adapt.n4.two_beats",
+        "adapt.n4.object_contest",
+        "adapt.n4.reaction"
+      ],
+      "knownFactIds": [
+        "known.n4.zhejiang_governor.pressure",
+        "known.n4.zhejiang_governor.object.military_dispatch_channel",
+        "known.n4.zhejiang_governor.handoff.N2.governor_office"
+      ],
+      "unknownFactIds": [
+        "unknown.n4.zhejiang_governor.claim.n4-sf-01",
+        "unknown.n4.zhejiang_governor.claim.n4-sf-02",
+        "unknown.n4.zhejiang_governor.system.n4-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.military_dispatch_channel"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n4.zhejiang_administration",
+      "nodeId": "N4",
+      "seatId": "seat.zhejiang_administration",
+      "roleKey": "zhejiang_administration",
+      "currentActorId": "actor.zheng_michang",
+      "institutionalMission": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n4.zhejiang_administration.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N4",
+          "statement": "拒绝卖田与自购粮者被卷入通倭案；一旦人犯死亡，毁堤、买田与倭商之间的证言链会断。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n4.zhejiang_administration.claim.n4-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-01",
+          "statement": "地方官员提出用“通倭”把灾民自购粮行为转成重罪。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n4.zhejiang_administration.claim.n4-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-02",
+          "statement": "省府以三日粮尽、国策与民变相威胁，要求海瑞迅速执行。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n4.zhejiang_administration.object.tongwo_prisoners",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.tongwo_prisoners",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：齐大柱、井上十四郎及相关人犯。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n4.zhejiang_administration.claim.n4-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-04",
+          "statement": "午时三刻到达后，海瑞令先押回人犯并向上司禀报，实际阻止了当场处决。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n4.zhejiang_administration.system.n4-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-UNK-01",
+          "statement": "三项门槛不得被 Narrator 写成普遍明代司法制度。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把先形成的公文误认为最终会被朝廷接受的事实。"
+      ],
+      "resources": [
+        "省府印信",
+        "府县官吏",
+        "差役与押解",
+        "田契登记"
+      ],
+      "permissions": [
+        "签发地方命令",
+        "控制人犯与案卷",
+        "登记契约",
+        "查封商产"
+      ],
+      "privatePressure": "省府若失去人犯控制，通倭口径会崩；强行处置则留下程序责任。",
+      "keyLeverage": "控制人犯、差役与案卷现场",
+      "defaultPrepare": "控制人犯与现有案卷",
+      "defaultCommit": "维持通倭急案口径，争取补足文书与签押",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n4.zhejiang_administration.01",
+          "text": "“人犯在省府差役手里，午时前没有新令，原定处置照行。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.zhejiang_administration.02",
+          "text": "“案卷缺页可以补问，不能因此让通倭嫌犯随意脱押。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.zhejiang_administration.03",
+          "text": "“海瑞若拒签，就把拒签缘由写全，日后别只说省府催得急。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        }
+      ],
+      "privateOpening": "郑泌昌仍控制人犯与大部分差役。失去控制会使通倭口径崩解，强行处置则会把缺卷与催杀写进省府责任。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.administration",
+          "afterNode": "N6",
+          "seatId": "seat.zhejiang_administration",
+          "fromActorId": "actor.zheng_michang",
+          "toActorId": "actor.zheng_michang",
+          "permissionChange": [
+            "进入在押状态后只能签供、翻供、拒签、交代旧令和使用获准通信",
+            "不得继续调动省府差役、粮市与查封权限"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n4.pressure_lock",
+        "adapt.n4.two_beats",
+        "adapt.n4.object_contest",
+        "adapt.n4.reaction"
+      ],
+      "knownFactIds": [
+        "known.n4.zhejiang_administration.pressure",
+        "known.n4.zhejiang_administration.claim.n4-sf-01",
+        "known.n4.zhejiang_administration.claim.n4-sf-02",
+        "known.n4.zhejiang_administration.object.tongwo_prisoners"
+      ],
+      "unknownFactIds": [
+        "unknown.n4.zhejiang_administration.claim.n4-sf-04",
+        "unknown.n4.zhejiang_administration.system.n4-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.tongwo_prisoners"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n4.qingliu_law",
+      "nodeId": "N4",
+      "seatId": "seat.qingliu_law",
+      "roleKey": "qingliu_law",
+      "currentActorId": "actor.hai_rui",
+      "institutionalMission": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n4.qingliu_law.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N4",
+          "statement": "拒绝卖田与自购粮者被卷入通倭案；一旦人犯死亡，毁堤、买田与倭商之间的证言链会断。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui"
+        },
+        {
+          "factRefId": "known.n4.qingliu_law.claim.n4-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-02",
+          "statement": "省府以三日粮尽、国策与民变相威胁，要求海瑞迅速执行。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui"
+        },
+        {
+          "factRefId": "known.n4.qingliu_law.object.tongwo_case_file",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.tongwo_case_file",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：通倭案卷、口供与执行签押。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        },
+        {
+          "factRefId": "known.n4.qingliu_law.handoff.N2.qingliu",
+          "sourceKind": "HANDOFF",
+          "handoffId": "handoff.N2.qingliu",
+          "handoffEventId": "event.handoff.N2.qingliu",
+          "statement": "当前人物只继承 handoff.N2.qingliu 中正式交接并可验证的记录。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "accessVia": "HANDOFF"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n4.qingliu_law.claim.n4-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-01",
+          "statement": "地方官员提出用“通倭”把灾民自购粮行为转成重罪。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n4.qingliu_law.system.n4-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-UNK-01",
+          "statement": "三项门槛不得被 Narrator 写成普遍明代司法制度。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信只要事实真实就会自然生效。"
+      ],
+      "resources": [
+        "调查权限",
+        "拒签权",
+        "证人保护",
+        "证据索引"
+      ],
+      "permissions": [
+        "审查案卷",
+        "拒绝签押",
+        "保护证人",
+        "制作封印与索引"
+      ],
+      "privatePressure": "拒签必须建立可执行的转押和审查路径，否则只是道德姿态。",
+      "keyLeverage": "通过拒签、审讯和证人保护阻断错杀",
+      "defaultPrepare": "审问、核时序并保护证人",
+      "defaultCommit": "拒绝没有案卷和合法签押的处置",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n4.qingliu_law.01",
+          "text": "“没有案卷，我不画红；有案卷，也要先看抓人和成供的时序。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.qingliu_law.02",
+          "text": "“齐大柱若只为灾民买粮，谁把买粮写成通倭，谁来当堂说明。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.qingliu_law.03",
+          "text": "“人犯可以转押，口供可以再问，午时三刻不能替真相作证。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        }
+      ],
+      "privateOpening": "海瑞面对的是人犯、案卷和午时三刻，不是抽象的忠奸。拒签若没有转押与再审安排，只会把生死推给下一道强令。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.qingliu",
+          "afterNode": "N2",
+          "seatId": "seat.qingliu_law",
+          "fromActorId": "actor.tan_lun",
+          "toActorId": "actor.hai_rui",
+          "inheritIf": [
+            "PUBLIC",
+            "SEAT_RECORD",
+            "TRANSFERRED_AND_RECEIVED"
+          ],
+          "neverAutoInherit": [
+            "私下猜测",
+            "未送达信件",
+            "玩家屏幕上见过但海瑞未获知的秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n4.pressure_lock",
+        "adapt.n4.two_beats",
+        "adapt.n4.object_contest",
+        "adapt.n4.reaction"
+      ],
+      "knownFactIds": [
+        "known.n4.qingliu_law.pressure",
+        "known.n4.qingliu_law.claim.n4-sf-02",
+        "known.n4.qingliu_law.object.tongwo_case_file",
+        "known.n4.qingliu_law.handoff.N2.qingliu"
+      ],
+      "unknownFactIds": [
+        "unknown.n4.qingliu_law.claim.n4-sf-01",
+        "unknown.n4.qingliu_law.system.n4-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.tongwo_case_file"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n4.jiangnan_merchant",
+      "nodeId": "N4",
+      "seatId": "seat.jiangnan_merchant",
+      "roleKey": "jiangnan_merchant",
+      "currentActorId": "actor.shen_yishi",
+      "institutionalMission": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n4.jiangnan_merchant.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N4",
+          "statement": "拒绝卖田与自购粮者被卷入通倭案；一旦人犯死亡，毁堤、买田与倭商之间的证言链会断。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi"
+        },
+        {
+          "factRefId": "known.n4.jiangnan_merchant.object.merchant_fleet",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.merchant_fleet",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：商船与运输队。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n4.jiangnan_merchant.claim.n4-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-01",
+          "statement": "地方官员提出用“通倭”把灾民自购粮行为转成重罪。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n4.jiangnan_merchant.claim.n4-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-02",
+          "statement": "省府以三日粮尽、国策与民变相威胁，要求海瑞迅速执行。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n4.jiangnan_merchant.system.n4-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-UNK-01",
+          "statement": "三项门槛不得被 Narrator 写成普遍明代司法制度。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信实际贡献能自动换来政治保护。"
+      ],
+      "resources": [
+        "粮仓",
+        "银票与信用",
+        "商船",
+        "契约与账目"
+      ],
+      "permissions": [
+        "分配商粮",
+        "签借据与买田合同",
+        "转运",
+        "留下遗命"
+      ],
+      "privatePressure": "公开交易记录能救灾民，却会暴露商会与倭商接触。",
+      "keyLeverage": "提交交易、船单和粮路记录解释灾民行为",
+      "defaultPrepare": "出示粮船与交易痕迹",
+      "defaultCommit": "以实际买粮目的证明灾民不知通倭",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n4.jiangnan_merchant.01",
+          "text": "“船单能证明粮从哪来，却也会暴露商会同谁做过生意。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.merchant_fleet"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.jiangnan_merchant.02",
+          "text": "“我愿交交易记录，前提是不得把所有海上往来一概写成通倭。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.merchant_fleet"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.jiangnan_merchant.03",
+          "text": "“救人要靠可核验的货单，不靠商会会首一句求情。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.merchant_fleet"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        }
+      ],
+      "privateOpening": "沈一石能用船单和交易记录解释灾民为何买粮，也会因此暴露商会的海上往来。交多少，必须与保护谁同时考虑。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.merchant",
+          "afterNode": "N6",
+          "seatId": "seat.jiangnan_merchant",
+          "fromActorId": "actor.shen_yishi",
+          "toActorId": "actor.merchant_legacy_executor",
+          "inheritIf": [
+            "N6 冻结前形成的遗命",
+            "已登记债权",
+            "已启动递送",
+            "商会正式档案"
+          ],
+          "neverAutoInherit": [
+            "死后新计划",
+            "未留下的口头秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n4.pressure_lock",
+        "adapt.n4.two_beats",
+        "adapt.n4.object_contest",
+        "adapt.n4.reaction"
+      ],
+      "knownFactIds": [
+        "known.n4.jiangnan_merchant.pressure",
+        "known.n4.jiangnan_merchant.object.merchant_fleet"
+      ],
+      "unknownFactIds": [
+        "unknown.n4.jiangnan_merchant.claim.n4-sf-01",
+        "unknown.n4.jiangnan_merchant.claim.n4-sf-02",
+        "unknown.n4.jiangnan_merchant.system.n4-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.merchant_fleet"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n4.sili_weaving",
+      "nodeId": "N4",
+      "seatId": "seat.sili_weaving",
+      "roleKey": "sili_weaving",
+      "currentActorId": "actor.yang_jinshui",
+      "institutionalMission": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n4.sili_weaving.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N4",
+          "statement": "拒绝卖田与自购粮者被卷入通倭案；一旦人犯死亡，毁堤、买田与倭商之间的证言链会断。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.n4.sili_weaving.object.inner_court_dispatch_channel",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.inner_court_dispatch_channel",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：司礼监与锦衣卫递送渠道。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n4.sili_weaving.claim.n4-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-01",
+          "statement": "地方官员提出用“通倭”把灾民自购粮行为转成重罪。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n4.sili_weaving.claim.n4-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-02",
+          "statement": "省府以三日粮尽、国策与民变相威胁，要求海瑞迅速执行。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n4.sili_weaving.system.n4-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-UNK-01",
+          "statement": "三项门槛不得被 Narrator 写成普遍明代司法制度。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易以为内廷渠道足以压过所有地方见证。"
+      ],
+      "resources": [
+        "织造局名义",
+        "密奏",
+        "锦衣卫递送",
+        "供货记录"
+      ],
+      "permissions": [
+        "使用或撤回织造名义",
+        "密奏",
+        "内廷递送",
+        "核验织造记录"
+      ],
+      "privatePressure": "暂缓令若无合法理由会被视为护短，若不发则宫廷失去控制案情的机会。",
+      "keyLeverage": "用内廷差使发暂缓核查令但受预置时限",
+      "defaultPrepare": "预置暂缓核查令",
+      "defaultCommit": "在不承认内廷责任的前提下保住关键证人",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n4.sili_weaving.01",
+          "text": "“暂缓令必须在刑场动手前送到，迟到一刻便只剩追责。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.inner_court_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.sili_weaving.02",
+          "text": "“内廷可以核查织造与船路，不能替地方编出一份完整案卷。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.inner_court_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.sili_weaving.03",
+          "text": "“若有人借通倭案遮买田，我要把两件事分开送报。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.inner_court_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        }
+      ],
+      "privateOpening": "杨金水的暂缓核查令必须赶在刑场动手前到达。迟到以后，内廷渠道只能追责，不能让死去的人重新作证。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.weaving",
+          "afterNode": "N6",
+          "seatId": "seat.sili_weaving",
+          "fromActorId": "actor.yang_jinshui",
+          "toActorId": "actor.weaving_retainer",
+          "inheritIf": [
+            "织造局正式档案",
+            "已签发命令",
+            "已启动的锦衣卫交接"
+          ],
+          "unknownInvariant": "杨金水真实精神状态保持 UNKNOWN。"
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n4.pressure_lock",
+        "adapt.n4.two_beats",
+        "adapt.n4.object_contest",
+        "adapt.n4.reaction"
+      ],
+      "knownFactIds": [
+        "known.n4.sili_weaving.pressure",
+        "known.n4.sili_weaving.object.inner_court_dispatch_channel"
+      ],
+      "unknownFactIds": [
+        "unknown.n4.sili_weaving.claim.n4-sf-01",
+        "unknown.n4.sili_weaving.claim.n4-sf-02",
+        "unknown.n4.sili_weaving.system.n4-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.inner_court_dispatch_channel"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n4.cabinet_finance",
+      "nodeId": "N4",
+      "seatId": "seat.cabinet_finance",
+      "roleKey": "cabinet_finance",
+      "currentActorId": "actor.yan_shifan",
+      "institutionalMission": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n4.cabinet_finance.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N4",
+          "statement": "拒绝卖田与自购粮者被卷入通倭案；一旦人犯死亡，毁堤、买田与倭商之间的证言链会断。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n4.cabinet_finance.claim.n4-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-01",
+          "statement": "地方官员提出用“通倭”把灾民自购粮行为转成重罪。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n4.cabinet_finance.object.cabinet_urgent_dispatch",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.cabinet_urgent_dispatch",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：内阁急递与廷寄渠道。",
+          "availableFrom": "N4",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n4.cabinet_finance.claim.n4-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-02",
+          "statement": "省府以三日粮尽、国策与民变相威胁，要求海瑞迅速执行。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n4.cabinet_finance.claim.n4-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-SF-03",
+          "statement": "海瑞在监斩现场追问为什么没有案卷，并表示有真实通倭才依法处置。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n4.cabinet_finance.system.n4-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N4-UNK-01",
+          "statement": "三项门槛不得被 Narrator 写成普遍明代司法制度。",
+          "availableFrom": "N4",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把地方资源当作可随时征用的财政余额。"
+      ],
+      "resources": [
+        "急递与廷寄",
+        "财政目标",
+        "中央收件",
+        "抄没归属"
+      ],
+      "permissions": [
+        "设定期限",
+        "调整财政认定",
+        "指定收件路径",
+        "决定抄没归属"
+      ],
+      "privatePressure": "中央分类越急，越可能压过地方查验；越慢，越难控制舆论。",
+      "keyLeverage": "以中央分类令改变急案或疑案口径，但不能替地方签押",
+      "defaultPrepare": "维持抗倭优先分类",
+      "defaultCommit": "要求地方迅速形成可引用案卷",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n4.cabinet_finance.01",
+          "text": "“抗倭急案可以从速，前提是地方交得出能引用的案卷。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.cabinet_urgent_dispatch"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.cabinet_finance.02",
+          "text": "“中央分类令到不了午时前，地方就得为自己的先行处置负责。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.cabinet_urgent_dispatch"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n4.cabinet_finance.03",
+          "text": "“不要拿前线军情作万能印信；错杀证人同样会断军饷来源。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.tongwo_prisoners",
+            "obj.tongwo_case_file",
+            "obj.cabinet_urgent_dispatch"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        }
+      ],
+      "privateOpening": "内阁财政席能改变急案分类，却不能替地方补齐案卷与签押。中央命令若赶不上时辰，地方先行者必须独自担责。",
+      "handoffRules": [],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n4.pressure_lock",
+        "adapt.n4.two_beats",
+        "adapt.n4.object_contest",
+        "adapt.n4.reaction"
+      ],
+      "knownFactIds": [
+        "known.n4.cabinet_finance.pressure",
+        "known.n4.cabinet_finance.claim.n4-sf-01",
+        "known.n4.cabinet_finance.object.cabinet_urgent_dispatch"
+      ],
+      "unknownFactIds": [
+        "unknown.n4.cabinet_finance.claim.n4-sf-02",
+        "unknown.n4.cabinet_finance.claim.n4-sf-03",
+        "unknown.n4.cabinet_finance.system.n4-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.cabinet_urgent_dispatch"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "sangtian_pressure_node_v1",
+  "nodeId": "P0",
+  "sequence": 0,
+  "title": "桑田诏下",
+  "subtitle": "国库亏空，国策压向浙江",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "entryCondition": "P0 为新局起点。",
+  "deadline": "不可操作序章；急递发出后立即进入 N1。",
+  "pressure": "国库、军饷与丝绸收入共同逼出改稻为桑；玩家不能让财政危机从未发生。",
+  "contestedObjectIds": [
+    "obj.sangtian_edict",
+    "obj.fiscal_gap"
+  ],
+  "secondaryObjectIds": [],
+  "startState": {
+    "pressureLevel": 1,
+    "timeUsed": 0,
+    "sceneBudget": 1,
+    "frozen": false
+  },
+  "lockedFacts": [
+    "桑田诏已经形成并压向浙江。",
+    "财政和军饷需求不会因玩家否认而消失。",
+    "六席以不同知识与职责入场，人物记忆不跨席自动共享。"
+  ],
+  "freeTextBoundary": [
+    "输入只形成意图或尝试。",
+    "休息、等待、饮酒、回避可以成功，但必须消耗时间或行动机会。",
+    "编造已成功事实、越权命令和不存在资源必须失败并推进世界。",
+    "固定压力不能被“换故事”或假设句取消。"
+  ],
+  "actionBudget": {
+    "preparePerSeat": 0,
+    "commitPerSeat": 0,
+    "reactionPerSeat": 0
+  },
+  "earlySettlementCondition": null,
+  "forcedSettlementCondition": "序章完成即进入 N1。",
+  "nextNodeId": "N1",
+  "provenanceClaimIds": [
+    "P0-SF-01",
+    "P0-SF-02",
+    "P0-SF-03",
+    "P0-SF-04",
+    "P0-INF-01",
+    "P0-UNK-01"
+  ],
+  "adaptationDecisionIds": [
+    "adapt.p0.pressure_lock",
+    "adapt.p0.two_beats",
+    "adapt.p0.object_contest"
+  ]
+}

@@ -1,0 +1,1233 @@
+{
+  "schemaVersion": "sangtian_node_seat_content_v1",
+  "nodeId": "N7",
+  "seatCount": 6,
+  "seats": [
+    {
+      "seatContentId": "seatcontent.n7.zhejiang_governor",
+      "nodeId": "N7",
+      "seatId": "seat.zhejiang_governor",
+      "roleKey": "zhejiang_governor",
+      "currentActorId": "actor.hu_zongxian",
+      "institutionalMission": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n7.zhejiang_governor.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N7",
+          "statement": "原供、翻供、账册与军情同时存在；朝廷要求重审并警告问官，材料越向上牵涉，采用阻力越大。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n7.zhejiang_governor.claim.n7-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-02",
+          "statement": "赵贞吉明确规定两日审结、第三日发出、五日八百里急递到京。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n7.zhejiang_governor.object.final_dispatch_routes",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.final_dispatch_routes",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：封印、急递路线与收件渠道。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        },
+        {
+          "factRefId": "known.n7.zhejiang_governor.handoff.N2.governor_office",
+          "sourceKind": "HANDOFF",
+          "handoffId": "handoff.N2.governor_office",
+          "handoffEventId": "event.handoff.N2.governor_office",
+          "statement": "当前人物只继承 handoff.N2.governor_office 中正式交接并可验证的记录。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "accessVia": "HANDOFF"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n7.zhejiang_governor.claim.n7-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-01",
+          "statement": "廷寄要求把原供退回重审，七日内再报，并警告问官与犯官同罪。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n7.zhejiang_governor.claim.n7-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-03",
+          "statement": "送达御前的供状可能在未拆或未采用的情况下长期停留，送达不等于采用。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n7.zhejiang_governor.system.n7-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-UNK-01",
+          "statement": "朝廷内心动机不由 AI 黑箱决定；只输出采用矩阵允许的结果。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易高估一纸总督令在地方执行链中的即时效力。"
+      ],
+      "resources": [
+        "总督军令",
+        "军驿",
+        "跨省协调",
+        "奏报担保"
+      ],
+      "permissions": [
+        "调兵与分洪",
+        "总督担保",
+        "领衔奏疏",
+        "军饷划拨"
+      ],
+      "privatePressure": "提供最快军驿可能帮助真相，也可能把前线卷入政治风暴。",
+      "keyLeverage": "提供军驿主路、备用路线和军情压力证明",
+      "defaultPrepare": "准备军驿和军情说明",
+      "defaultCommit": "把有效材料按时送达，不为政治意见改写内容",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n7.zhejiang_governor.01",
+          "text": "“军驿可以给最快的路，但我不替任何供状增删一句。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.zhejiang_governor.02",
+          "text": "“前线吃紧要写进收件说明，不能拿军情去压掉证词本身。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.zhejiang_governor.03",
+          "text": "“两路材料若要并行，先确认各自封印前已经合法存在。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        }
+      ],
+      "privateOpening": "胡宗宪仍能提供军驿和军情说明，不能替任何供状增删内容。案上材料由上一阶段实际存续与送达结果决定。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.governor_office",
+          "afterNode": "N2",
+          "seatId": "seat.zhejiang_governor",
+          "fromActorId": "actor.hu_zongxian",
+          "toActorId": "actor.hu_zongxian",
+          "permissionChange": [
+            "失去浙江巡抚兼任的直接地方民政权限",
+            "保留浙直总督军务、跨省协调、军饷与奏报渠道"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n7.pressure_lock",
+        "adapt.n7.two_beats",
+        "adapt.n7.object_contest",
+        "adapt.n7.reaction"
+      ],
+      "knownFactIds": [
+        "known.n7.zhejiang_governor.pressure",
+        "known.n7.zhejiang_governor.claim.n7-sf-02",
+        "known.n7.zhejiang_governor.object.final_dispatch_routes",
+        "known.n7.zhejiang_governor.handoff.N2.governor_office"
+      ],
+      "unknownFactIds": [
+        "unknown.n7.zhejiang_governor.claim.n7-sf-01",
+        "unknown.n7.zhejiang_governor.claim.n7-sf-03",
+        "unknown.n7.zhejiang_governor.system.n7-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.final_dispatch_routes"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n7.zhejiang_administration",
+      "nodeId": "N7",
+      "seatId": "seat.zhejiang_administration",
+      "roleKey": "zhejiang_administration",
+      "currentActorId": "actor.zheng_michang",
+      "institutionalMission": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n7.zhejiang_administration.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N7",
+          "statement": "原供、翻供、账册与军情同时存在；朝廷要求重审并警告问官，材料越向上牵涉，采用阻力越大。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n7.zhejiang_administration.claim.n7-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-01",
+          "statement": "廷寄要求把原供退回重审，七日内再报，并警告问官与犯官同罪。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n7.zhejiang_administration.claim.n7-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-02",
+          "statement": "赵贞吉明确规定两日审结、第三日发出、五日八百里急递到京。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n7.zhejiang_administration.object.final_testimonies",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.final_testimonies",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：原供、翻供、证言与问官签押。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        },
+        {
+          "factRefId": "known.n7.zhejiang_administration.handoff.N6.administration",
+          "sourceKind": "HANDOFF",
+          "handoffId": "handoff.N6.administration",
+          "handoffEventId": "event.handoff.N6.administration",
+          "statement": "当前人物只继承 handoff.N6.administration 中正式交接并可验证的记录。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "accessVia": "HANDOFF"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n7.zhejiang_administration.claim.n7-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-03",
+          "statement": "送达御前的供状可能在未拆或未采用的情况下长期停留，送达不等于采用。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n7.zhejiang_administration.claim.n7-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-04",
+          "statement": "最高权力可以直接焚毁已送达材料，证明采用必须独立于到达状态。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n7.zhejiang_administration.system.n7-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-UNK-01",
+          "statement": "朝廷内心动机不由 AI 黑箱决定；只输出采用矩阵允许的结果。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把先形成的公文误认为最终会被朝廷接受的事实。"
+      ],
+      "resources": [
+        "省府印信",
+        "府县官吏",
+        "差役与押解",
+        "田契登记"
+      ],
+      "permissions": [
+        "签发地方命令",
+        "控制人犯与案卷",
+        "登记契约",
+        "查封商产"
+      ],
+      "privatePressure": "翻供可减轻上层牵涉，却把地方责任坐实；维持原供则风险极高。",
+      "keyLeverage": "以在押犯官身份维持原供、翻供或拒签",
+      "defaultPrepare": "比较原供、翻供和自保后果",
+      "defaultCommit": "选择维持、翻供或拒签并承担本人责任",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n7.zhejiang_administration.01",
+          "text": "“我如今能签的是供状，不是省府命令；别再把旧印信摆到我面前。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.zhejiang_administration.02",
+          "text": "“维持原供会牵到上层，翻供会把地方罪责坐实，二者都要我自己落名。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.zhejiang_administration.03",
+          "text": "“要我改口，先让我看见哪一份旧供仍在、由谁保管。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        }
+      ],
+      "privateOpening": "郑泌昌已经在押，能做的是维持原供、翻供、拒签或交代旧令，不能继续调用省府差役与印信。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.administration",
+          "afterNode": "N6",
+          "seatId": "seat.zhejiang_administration",
+          "fromActorId": "actor.zheng_michang",
+          "toActorId": "actor.zheng_michang",
+          "permissionChange": [
+            "进入在押状态后只能签供、翻供、拒签、交代旧令和使用获准通信",
+            "不得继续调动省府差役、粮市与查封权限"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n7.pressure_lock",
+        "adapt.n7.two_beats",
+        "adapt.n7.object_contest",
+        "adapt.n7.reaction"
+      ],
+      "knownFactIds": [
+        "known.n7.zhejiang_administration.pressure",
+        "known.n7.zhejiang_administration.claim.n7-sf-01",
+        "known.n7.zhejiang_administration.claim.n7-sf-02",
+        "known.n7.zhejiang_administration.object.final_testimonies",
+        "known.n7.zhejiang_administration.handoff.N6.administration"
+      ],
+      "unknownFactIds": [
+        "unknown.n7.zhejiang_administration.claim.n7-sf-03",
+        "unknown.n7.zhejiang_administration.claim.n7-sf-04",
+        "unknown.n7.zhejiang_administration.system.n7-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.final_testimonies"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n7.qingliu_law",
+      "nodeId": "N7",
+      "seatId": "seat.qingliu_law",
+      "roleKey": "qingliu_law",
+      "currentActorId": "actor.hai_rui",
+      "institutionalMission": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n7.qingliu_law.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N7",
+          "statement": "原供、翻供、账册与军情同时存在；朝廷要求重审并警告问官，材料越向上牵涉，采用阻力越大。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui"
+        },
+        {
+          "factRefId": "known.n7.qingliu_law.claim.n7-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-01",
+          "statement": "廷寄要求把原供退回重审，七日内再报，并警告问官与犯官同罪。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui"
+        },
+        {
+          "factRefId": "known.n7.qingliu_law.claim.n7-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-02",
+          "statement": "赵贞吉明确规定两日审结、第三日发出、五日八百里急递到京。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui"
+        },
+        {
+          "factRefId": "known.n7.qingliu_law.object.sealed_evidence_index",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.sealed_evidence_index",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：封存证据索引。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        },
+        {
+          "factRefId": "known.n7.qingliu_law.handoff.N2.qingliu",
+          "sourceKind": "HANDOFF",
+          "handoffId": "handoff.N2.qingliu",
+          "handoffEventId": "event.handoff.N2.qingliu",
+          "statement": "当前人物只继承 handoff.N2.qingliu 中正式交接并可验证的记录。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "accessVia": "HANDOFF"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n7.qingliu_law.claim.n7-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-03",
+          "statement": "送达御前的供状可能在未拆或未采用的情况下长期停留，送达不等于采用。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n7.qingliu_law.claim.n7-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-04",
+          "statement": "最高权力可以直接焚毁已送达材料，证明采用必须独立于到达状态。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n7.qingliu_law.system.n7-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-UNK-01",
+          "statement": "朝廷内心动机不由 AI 黑箱决定；只输出采用矩阵允许的结果。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信只要事实真实就会自然生效。"
+      ],
+      "resources": [
+        "调查权限",
+        "拒签权",
+        "证人保护",
+        "证据索引"
+      ],
+      "permissions": [
+        "审查案卷",
+        "拒绝签押",
+        "保护证人",
+        "制作封印与索引"
+      ],
+      "privatePressure": "每增加一层责任，采用上限都可能因军饷和皇权压力下降。",
+      "keyLeverage": "主持终审笔录、证人核验、封印与问官签押",
+      "defaultPrepare": "交叉核验并制作终审笔录",
+      "defaultCommit": "保留程序有效、来源可追溯的最强材料",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n7.qingliu_law.01",
+          "text": "“案上有什么便审什么，烧掉的账不会因谁急着结案重新出现。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.sealed_evidence_index"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.qingliu_law.02",
+          "text": "“原供与翻供可以并列，来历、签押和证人必须逐项相对。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.sealed_evidence_index"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.qingliu_law.03",
+          "text": "“第三日一到便封印；迟来的真话也只能作为迟到材料登记。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.sealed_evidence_index"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        }
+      ],
+      "privateOpening": "海瑞主持重审，只继承正式移交、公开事实和已送达证据。被焚毁、未形成或未抵达的材料不会出现在他的案桌上。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.qingliu",
+          "afterNode": "N2",
+          "seatId": "seat.qingliu_law",
+          "fromActorId": "actor.tan_lun",
+          "toActorId": "actor.hai_rui",
+          "inheritIf": [
+            "PUBLIC",
+            "SEAT_RECORD",
+            "TRANSFERRED_AND_RECEIVED"
+          ],
+          "neverAutoInherit": [
+            "私下猜测",
+            "未送达信件",
+            "玩家屏幕上见过但海瑞未获知的秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n7.pressure_lock",
+        "adapt.n7.two_beats",
+        "adapt.n7.object_contest",
+        "adapt.n7.reaction"
+      ],
+      "knownFactIds": [
+        "known.n7.qingliu_law.pressure",
+        "known.n7.qingliu_law.claim.n7-sf-01",
+        "known.n7.qingliu_law.claim.n7-sf-02",
+        "known.n7.qingliu_law.object.sealed_evidence_index",
+        "known.n7.qingliu_law.handoff.N2.qingliu"
+      ],
+      "unknownFactIds": [
+        "unknown.n7.qingliu_law.claim.n7-sf-03",
+        "unknown.n7.qingliu_law.claim.n7-sf-04",
+        "unknown.n7.qingliu_law.system.n7-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.sealed_evidence_index"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n7.jiangnan_merchant",
+      "nodeId": "N7",
+      "seatId": "seat.jiangnan_merchant",
+      "roleKey": "jiangnan_merchant",
+      "currentActorId": "actor.merchant_legacy_executor",
+      "institutionalMission": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n7.jiangnan_merchant.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N7",
+          "statement": "原供、翻供、账册与军情同时存在；朝廷要求重审并警告问官，材料越向上牵涉，采用阻力越大。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.merchant_legacy_executor"
+        },
+        {
+          "factRefId": "known.n7.jiangnan_merchant.claim.n7-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-02",
+          "statement": "赵贞吉明确规定两日审结、第三日发出、五日八百里急递到京。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.merchant_legacy_executor"
+        },
+        {
+          "factRefId": "known.n7.jiangnan_merchant.object.merchant_legacy_orders",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.merchant_legacy_orders",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：商会遗命与预设递送。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.merchant_legacy_executor",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        },
+        {
+          "factRefId": "known.n7.jiangnan_merchant.handoff.N6.merchant",
+          "sourceKind": "HANDOFF",
+          "handoffId": "handoff.N6.merchant",
+          "handoffEventId": "event.handoff.N6.merchant",
+          "statement": "当前人物只继承 handoff.N6.merchant 中正式交接并可验证的记录。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.merchant_legacy_executor",
+          "accessVia": "HANDOFF"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n7.jiangnan_merchant.claim.n7-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-01",
+          "statement": "廷寄要求把原供退回重审，七日内再报，并警告问官与犯官同罪。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.merchant_legacy_executor",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n7.jiangnan_merchant.claim.n7-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-03",
+          "statement": "送达御前的供状可能在未拆或未采用的情况下长期停留，送达不等于采用。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.merchant_legacy_executor",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n7.jiangnan_merchant.system.n7-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-UNK-01",
+          "statement": "朝廷内心动机不由 AI 黑箱决定；只输出采用矩阵允许的结果。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.merchant_legacy_executor",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信实际贡献能自动换来政治保护。"
+      ],
+      "resources": [
+        "粮仓",
+        "银票与信用",
+        "商船",
+        "契约与账目"
+      ],
+      "permissions": [
+        "分配商粮",
+        "签借据与买田合同",
+        "转运",
+        "留下遗命"
+      ],
+      "privatePressure": "商会只有已留下的摘要与见证，不能让死者临时开口。",
+      "keyLeverage": "提交已存在的遗言、账册摘要和商会见证",
+      "defaultPrepare": "整理既有遗言、摘要和见证",
+      "defaultCommit": "只提交 N6 冻结前已存在的商会材料",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n7.jiangnan_merchant.01",
+          "text": "“商会只能交出生前留下的摘要和见证，不能替沈一石再造遗言。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.merchant_legacy_orders"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.jiangnan_merchant.02",
+          "text": "“若账册没有送达，便用债权、船单和收讫证明能证明的那一段。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.merchant_legacy_orders"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.jiangnan_merchant.03",
+          "text": "“我要求收件人写下收到什么，也写下没有收到什么。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.merchant_legacy_orders"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        }
+      ],
+      "privateOpening": "商会遗命执行人只能使用沈一石在失能前留下的遗言、债权、摘要与递送安排，不能替死者产生新的解释。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.merchant",
+          "afterNode": "N6",
+          "seatId": "seat.jiangnan_merchant",
+          "fromActorId": "actor.shen_yishi",
+          "toActorId": "actor.merchant_legacy_executor",
+          "inheritIf": [
+            "N6 冻结前形成的遗命",
+            "已登记债权",
+            "已启动递送",
+            "商会正式档案"
+          ],
+          "neverAutoInherit": [
+            "死后新计划",
+            "未留下的口头秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n7.pressure_lock",
+        "adapt.n7.two_beats",
+        "adapt.n7.object_contest",
+        "adapt.n7.reaction"
+      ],
+      "knownFactIds": [
+        "known.n7.jiangnan_merchant.pressure",
+        "known.n7.jiangnan_merchant.claim.n7-sf-02",
+        "known.n7.jiangnan_merchant.object.merchant_legacy_orders",
+        "known.n7.jiangnan_merchant.handoff.N6.merchant"
+      ],
+      "unknownFactIds": [
+        "unknown.n7.jiangnan_merchant.claim.n7-sf-01",
+        "unknown.n7.jiangnan_merchant.claim.n7-sf-03",
+        "unknown.n7.jiangnan_merchant.system.n7-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.merchant_legacy_orders"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n7.sili_weaving",
+      "nodeId": "N7",
+      "seatId": "seat.sili_weaving",
+      "roleKey": "sili_weaving",
+      "currentActorId": "actor.weaving_retainer",
+      "institutionalMission": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n7.sili_weaving.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N7",
+          "statement": "原供、翻供、账册与军情同时存在；朝廷要求重审并警告问官，材料越向上牵涉，采用阻力越大。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.weaving_retainer"
+        },
+        {
+          "factRefId": "known.n7.sili_weaving.claim.n7-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-02",
+          "statement": "赵贞吉明确规定两日审结、第三日发出、五日八百里急递到京。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.weaving_retainer"
+        },
+        {
+          "factRefId": "known.n7.sili_weaving.object.inner_court_dispatch_channel",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.inner_court_dispatch_channel",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：司礼监与锦衣卫递送渠道。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.weaving_retainer",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        },
+        {
+          "factRefId": "known.n7.sili_weaving.handoff.N6.weaving",
+          "sourceKind": "HANDOFF",
+          "handoffId": "handoff.N6.weaving",
+          "handoffEventId": "event.handoff.N6.weaving",
+          "statement": "当前人物只继承 handoff.N6.weaving 中正式交接并可验证的记录。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.weaving_retainer",
+          "accessVia": "HANDOFF"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n7.sili_weaving.claim.n7-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-01",
+          "statement": "廷寄要求把原供退回重审，七日内再报，并警告问官与犯官同罪。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.weaving_retainer",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n7.sili_weaving.system.n7-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-UNK-01",
+          "statement": "朝廷内心动机不由 AI 黑箱决定；只输出采用矩阵允许的结果。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.weaving_retainer",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易以为内廷渠道足以压过所有地方见证。"
+      ],
+      "resources": [
+        "织造局名义",
+        "密奏",
+        "锦衣卫递送",
+        "供货记录"
+      ],
+      "permissions": [
+        "使用或撤回织造名义",
+        "密奏",
+        "内廷递送",
+        "核验织造记录"
+      ],
+      "privatePressure": "内廷路线能抵达更高层，却可能只形成密封内部采用。",
+      "keyLeverage": "经司礼监提交独立对照材料与内廷收件",
+      "defaultPrepare": "整理内廷对照材料与收件路线",
+      "defaultCommit": "走正式内廷渠道并保留签收",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n7.sili_weaving.01",
+          "text": "“内廷路线能送达高处，却未必让材料公开采用。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.inner_court_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.sili_weaving.02",
+          "text": "“对照材料若没有正式签收，只能算我手里的见闻，不能算御前案卷。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.inner_court_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.sili_weaving.03",
+          "text": "“我可以保住封印，不替皇帝解释为什么采用或不采用。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.inner_court_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        }
+      ],
+      "privateOpening": "织造局留守太监只知道正式档案、已签发命令和已经启动的内廷交接。杨金水未留下的私人判断不会随席位自动传来。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.weaving",
+          "afterNode": "N6",
+          "seatId": "seat.sili_weaving",
+          "fromActorId": "actor.yang_jinshui",
+          "toActorId": "actor.weaving_retainer",
+          "inheritIf": [
+            "织造局正式档案",
+            "已签发命令",
+            "已启动的锦衣卫交接"
+          ],
+          "unknownInvariant": "杨金水真实精神状态保持 UNKNOWN。"
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n7.pressure_lock",
+        "adapt.n7.two_beats",
+        "adapt.n7.object_contest",
+        "adapt.n7.reaction"
+      ],
+      "knownFactIds": [
+        "known.n7.sili_weaving.pressure",
+        "known.n7.sili_weaving.claim.n7-sf-02",
+        "known.n7.sili_weaving.object.inner_court_dispatch_channel",
+        "known.n7.sili_weaving.handoff.N6.weaving"
+      ],
+      "unknownFactIds": [
+        "unknown.n7.sili_weaving.claim.n7-sf-01",
+        "unknown.n7.sili_weaving.system.n7-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.inner_court_dispatch_channel"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n7.cabinet_finance",
+      "nodeId": "N7",
+      "seatId": "seat.cabinet_finance",
+      "roleKey": "cabinet_finance",
+      "currentActorId": "actor.yan_shifan",
+      "institutionalMission": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n7.cabinet_finance.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N7",
+          "statement": "原供、翻供、账册与军情同时存在；朝廷要求重审并警告问官，材料越向上牵涉，采用阻力越大。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n7.cabinet_finance.claim.n7-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-01",
+          "statement": "廷寄要求把原供退回重审，七日内再报，并警告问官与犯官同罪。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n7.cabinet_finance.claim.n7-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-SF-02",
+          "statement": "赵贞吉明确规定两日审结、第三日发出、五日八百里急递到京。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n7.cabinet_finance.object.capital_receipt_channel",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.capital_receipt_channel",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：中央收件与立案路径。",
+          "availableFrom": "N7",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n7.cabinet_finance.system.n7-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N7-UNK-01",
+          "statement": "朝廷内心动机不由 AI 黑箱决定；只输出采用矩阵允许的结果。",
+          "availableFrom": "N7",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把地方资源当作可随时征用的财政余额。"
+      ],
+      "resources": [
+        "急递与廷寄",
+        "财政目标",
+        "中央收件",
+        "抄没归属"
+      ],
+      "permissions": [
+        "设定期限",
+        "调整财政认定",
+        "指定收件路径",
+        "决定抄没归属"
+      ],
+      "privatePressure": "收件与立案路径决定最终采用，不允许 AI 以“圣意难测”替代规则。",
+      "keyLeverage": "签发中央收件与立案路径并承担裁剪责任",
+      "defaultPrepare": "指定中央收件与立案路径",
+      "defaultCommit": "按军饷和皇权压力限制正式采用范围",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n7.cabinet_finance.01",
+          "text": "“先看材料能证明到哪一层，再看朝廷愿意公开办到哪一层。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.capital_receipt_channel"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.cabinet_finance.02",
+          "text": "“军饷越危急，案子越不能一口气拆掉全部筹款网络。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.capital_receipt_channel"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n7.cabinet_finance.03",
+          "text": "“收件、立案、采用是三回事，任何一项都要有自己的记录。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.final_testimonies",
+            "obj.final_dispatch_routes",
+            "obj.capital_receipt_channel"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        }
+      ],
+      "privateOpening": "内阁财政席能指定收件与立案路径，却必须把采用限制在证据、程序、军饷压力和皇权暴露共同允许的范围内。",
+      "handoffRules": [],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n7.pressure_lock",
+        "adapt.n7.two_beats",
+        "adapt.n7.object_contest",
+        "adapt.n7.reaction"
+      ],
+      "knownFactIds": [
+        "known.n7.cabinet_finance.pressure",
+        "known.n7.cabinet_finance.claim.n7-sf-01",
+        "known.n7.cabinet_finance.claim.n7-sf-02",
+        "known.n7.cabinet_finance.object.capital_receipt_channel"
+      ],
+      "unknownFactIds": [
+        "unknown.n7.cabinet_finance.system.n7-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.capital_receipt_channel"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    }
+  ]
+}

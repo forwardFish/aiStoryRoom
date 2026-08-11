@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "sangtian_pressure_node_v1",
+  "nodeId": "N5",
+  "sequence": 5,
+  "title": "粮船到埠",
+  "subtitle": "买田还是赈灾，同一批粮只能被使用一次",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "entryCondition": "N4 已 FROZEN 且过场已生成。",
+  "deadline": "配置初值：粮船靠岸后一个时段内确定卸粮用途；灾民粮时钟归零即强制结算。",
+  "pressure": "灾县即将断粮，商会粮船抵达；合同、灯笼和公开名义将决定粮食到底救人、买田还是服务财政。",
+  "contestedObjectIds": [
+    "obj.grain_fleet",
+    "obj.fleet_contract_and_banners"
+  ],
+  "secondaryObjectIds": [],
+  "startState": {
+    "pressureLevel": 2,
+    "timeUsed": 0,
+    "sceneBudget": 3,
+    "frozen": false
+  },
+  "lockedFacts": [
+    "粮船真实到达。",
+    "粮食用途必须唯一结算。",
+    "织造局名义能改变公开解释，却不能凭空改变实际合同与保管。"
+  ],
+  "freeTextBoundary": [
+    "输入只形成意图或尝试。",
+    "休息、等待、饮酒、回避可以成功，但必须消耗时间或行动机会。",
+    "编造已成功事实、越权命令和不存在资源必须失败并推进世界。",
+    "固定压力不能被“换故事”或假设句取消。"
+  ],
+  "actionBudget": {
+    "preparePerSeat": 1,
+    "commitPerSeat": 1,
+    "reactionPerSeat": 0
+  },
+  "earlySettlementCondition": "全部粮量用途唯一、合同有效且公开名义已锁定。",
+  "forcedSettlementCondition": "灾民粮时钟归零或第一批粮已经不可逆卸载。",
+  "nextNodeId": "N6",
+  "provenanceClaimIds": [
+    "N5-SF-01",
+    "N5-SF-02",
+    "N5-SF-03",
+    "N5-SF-04",
+    "N5-INF-01",
+    "N5-UNK-01"
+  ],
+  "adaptationDecisionIds": [
+    "adapt.n5.pressure_lock",
+    "adapt.n5.two_beats",
+    "adapt.n5.object_contest"
+  ]
+}

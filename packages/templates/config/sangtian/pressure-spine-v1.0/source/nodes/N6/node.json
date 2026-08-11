@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "sangtian_pressure_node_v1",
+  "nodeId": "N6",
+  "sequence": 6,
+  "title": "以商乱政",
+  "subtitle": "沈一石、商产与两组四箱账册",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "entryCondition": "N5 已 FROZEN 且过场已生成。",
+  "deadline": "配置初值：查封令到达后两个时段；第二时段末强制冻结人物、资产和账册路线。",
+  "pressure": "改桑失速、军饷催迫、朝廷需要现银与替罪者；沈一石知道太多，也掌握可救急的财富。",
+  "contestedObjectIds": [
+    "obj.shen_yishi_person_and_assets",
+    "obj.local_four_boxes"
+  ],
+  "secondaryObjectIds": [
+    "obj.inner_court_four_boxes"
+  ],
+  "startState": {
+    "pressureLevel": 2,
+    "timeUsed": 0,
+    "sceneBudget": 3,
+    "frozen": false
+  },
+  "lockedFacts": [
+    "两组各四口木箱真实存在。",
+    "原作不能确认两组的原件、副本或逐箱对应关系。",
+    "本节点只争夺保管、焚毁、送达、核验和公开解释。"
+  ],
+  "freeTextBoundary": [
+    "输入只形成意图或尝试。",
+    "休息、等待、饮酒、回避可以成功，但必须消耗时间或行动机会。",
+    "编造已成功事实、越权命令和不存在资源必须失败并推进世界。",
+    "固定压力不能被“换故事”或假设句取消。"
+  ],
+  "actionBudget": {
+    "preparePerSeat": 1,
+    "commitPerSeat": 1,
+    "reactionPerSeat": 0
+  },
+  "earlySettlementCondition": "沈一石状态、商产归属、两组四箱状态和军饷划拨全部唯一。",
+  "forcedSettlementCondition": "查封第二时段结束，人物死亡/被捕，或任一账册组进入在途或销毁。",
+  "nextNodeId": "N7",
+  "provenanceClaimIds": [
+    "N6-SF-01",
+    "N6-SF-02",
+    "N6-SF-03",
+    "N6-SF-04",
+    "N6-SF-05",
+    "N6-INF-01",
+    "N6-UNK-01",
+    "N6-UNK-02"
+  ],
+  "adaptationDecisionIds": [
+    "adapt.n6.pressure_lock",
+    "adapt.n6.two_beats",
+    "adapt.n6.object_contest"
+  ]
+}

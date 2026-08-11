@@ -1,0 +1,1246 @@
+{
+  "schemaVersion": "sangtian_scene_flow_v1",
+  "nodeId": "N3",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "threeActRule": "P0 为序章；N1—N7 前台只呈现 Opening、After Prepare、Settlement/Transition 三幕，私有开场和差异变体作为同一幕的角色投影。",
+  "decisionBeats": [
+    {
+      "beatId": "beat.n3.prepare",
+      "phase": "PREPARE",
+      "currentSceneId": "scene.n3.opening.public",
+      "legalIntentSpace": [
+        "调查当前对象",
+        "与当前人物交谈或交换",
+        "分配本席位真实资源",
+        "REST/DELAY",
+        "沉默或闲聊但承担时间代价"
+      ],
+      "actionRealization": "输入编译为合法行动、失败尝试、休息或拖延；先结算再叙事。",
+      "timeAdvance": "配置初值：正常行动 +1 时段；REST/DELAY +半日；失败尝试或闲聊 +1 时段。",
+      "npcMove": "其他五席按知识、目标和默认 Prepare 同时行动；玩家未提交不阻塞。",
+      "pressureEscalation": "至少推进时间、NPC、压力、对象、证据责任或下一现场之一。",
+      "nextSceneIds": [
+        "scene.n3.after_prepare.common",
+        "scene.n3.after_prepare.controlled",
+        "scene.n3.after_prepare.contested",
+        "scene.n3.after_prepare.lost_initiative"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "currentScene": {
+        "sceneId": "scene.n3.opening.public"
+      },
+      "nextScene": {
+        "sceneIds": [
+          "scene.n3.after_prepare.common",
+          "scene.n3.after_prepare.controlled",
+          "scene.n3.after_prepare.contested",
+          "scene.n3.after_prepare.lost_initiative"
+        ]
+      }
+    },
+    {
+      "beatId": "beat.n3.commit",
+      "phase": "COMMIT",
+      "currentSceneId": "scene.n3.commit_confrontation",
+      "legalIntentSpace": [
+        "对本节点争夺物作出一次正式提交",
+        "使用已持有权限、资源、签押或渠道",
+        "设置与当前对象直接相关的条件和代价"
+      ],
+      "actionRealization": "六席基于同一冻结快照同步结算；超时注入席位 defaultCommit。",
+      "timeAdvance": "COMMIT 本身不追加自由对话；结算推进到节点截止。",
+      "npcMove": "AI 席位或超时席位按默认 Commit 锁定。",
+      "pressureEscalation": "节点压力转为不可逆结果并冻结。",
+      "nextSceneIds": [
+        "scene.n3.settlement.high",
+        "scene.n3.settlement.mid",
+        "scene.n3.settlement.low"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "currentScene": {
+        "sceneId": "scene.n3.commit_confrontation"
+      },
+      "nextScene": {
+        "sceneIds": [
+          "scene.n3.settlement.high",
+          "scene.n3.settlement.mid",
+          "scene.n3.settlement.low"
+        ]
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "sceneId": "scene.n3.opening.public",
+      "nodeId": "N3",
+      "sceneType": "OPENING",
+      "title": "三日断粮",
+      "text": "官仓粮簿、田价议案和商会仓单被铺在同一张案上。公开告示只说粮可撑三日，桑苗时令又在逼近。前一封奏疏写下了什么、哪份担保已经成立，将决定此刻谁肯出粮、谁敢在田契上落印。",
+      "predecessorIds": [
+        "scene.n2.transition.high",
+        "scene.n2.transition.mid",
+        "scene.n2.transition.low"
+      ],
+      "successorIds": [
+        "scene.n3.opening.private.zhejiang_governor",
+        "scene.n3.opening.private.zhejiang_administration",
+        "scene.n3.opening.private.qingliu_law",
+        "scene.n3.opening.private.jiangnan_merchant",
+        "scene.n3.opening.private.sili_weaving",
+        "scene.n3.opening.private.cabinet_finance"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N3-SF-03"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "openingProjectionVariants": [
+        {
+          "openingProjectionId": "opening.N3.from.N2.HIGH",
+          "predecessorBranchId": "settlement.n2.high",
+          "predecessorFrozenResultId": "frozen.N2.HIGH",
+          "requiredFrozenFactIds": [
+            "frozen.N2.HIGH.fact.01",
+            "frozen.N2.HIGH.fact.02",
+            "frozen.N2.HIGH.fact.03"
+          ],
+          "requiredObjectVersionIds": [
+            "obj.first_memorial@N2.HIGH.v1",
+            "obj.ma_confession@N2.HIGH.v1"
+          ],
+          "publicText": "奏疏已经带着赈粮请求和较清楚的责任记录离城；地方必须先兑现自己写下的借粮与缓办承诺。",
+          "publicReferencedObjectVersionIds": [
+            "obj.first_memorial@N2.HIGH.v1"
+          ],
+          "seatPrivateProjections": [
+            {
+              "seatId": "seat.zhejiang_governor",
+              "grantedFrozenFactIds": [
+                "frozen.N2.HIGH.fact.01",
+                "frozen.N2.HIGH.fact.02",
+                "frozen.N2.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.HIGH.v1",
+                "obj.ma_confession@N2.HIGH.v1"
+              ],
+              "currentActorId": "actor.hu_zongxian"
+            },
+            {
+              "seatId": "seat.zhejiang_administration",
+              "grantedFrozenFactIds": [
+                "frozen.N2.HIGH.fact.01",
+                "frozen.N2.HIGH.fact.02",
+                "frozen.N2.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.HIGH.v1",
+                "obj.ma_confession@N2.HIGH.v1"
+              ],
+              "currentActorId": "actor.zheng_michang"
+            },
+            {
+              "seatId": "seat.qingliu_law",
+              "grantedFrozenFactIds": [
+                "frozen.N2.HIGH.fact.01",
+                "frozen.N2.HIGH.fact.02",
+                "frozen.N2.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.HIGH.v1",
+                "obj.ma_confession@N2.HIGH.v1"
+              ],
+              "currentActorId": "actor.hai_rui"
+            },
+            {
+              "seatId": "seat.jiangnan_merchant",
+              "grantedFrozenFactIds": [
+                "frozen.N2.HIGH.fact.01",
+                "frozen.N2.HIGH.fact.02",
+                "frozen.N2.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.HIGH.v1"
+              ],
+              "currentActorId": "actor.shen_yishi"
+            },
+            {
+              "seatId": "seat.sili_weaving",
+              "grantedFrozenFactIds": [
+                "frozen.N2.HIGH.fact.01",
+                "frozen.N2.HIGH.fact.02",
+                "frozen.N2.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.HIGH.v1",
+                "obj.ma_confession@N2.HIGH.v1"
+              ],
+              "currentActorId": "actor.yang_jinshui"
+            },
+            {
+              "seatId": "seat.cabinet_finance",
+              "grantedFrozenFactIds": [
+                "frozen.N2.HIGH.fact.01",
+                "frozen.N2.HIGH.fact.02",
+                "frozen.N2.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.HIGH.v1",
+                "obj.ma_confession@N2.HIGH.v1"
+              ],
+              "currentActorId": "actor.yan_shifan"
+            }
+          ],
+          "absentMaterialRule": "Any object/version not listed in requiredObjectVersionIds or the seat grant is absent from that projection and must not appear in prose or dialogue."
+        },
+        {
+          "openingProjectionId": "opening.N3.from.N2.MID",
+          "predecessorBranchId": "settlement.n2.mid",
+          "predecessorFrozenResultId": "frozen.N2.MID",
+          "requiredFrozenFactIds": [
+            "frozen.N2.MID.fact.01",
+            "frozen.N2.MID.fact.02",
+            "frozen.N2.MID.fact.03"
+          ],
+          "requiredObjectVersionIds": [
+            "obj.first_memorial@N2.MID.v1",
+            "obj.ma_confession@N2.MID.v1"
+          ],
+          "publicText": "驿马带走了灾情与赈粮请求，却没有带走全部责任材料。官仓只够三日，田价与粮债必须在朝廷回批前落定。",
+          "publicReferencedObjectVersionIds": [
+            "obj.first_memorial@N2.MID.v1"
+          ],
+          "seatPrivateProjections": [
+            {
+              "seatId": "seat.zhejiang_governor",
+              "grantedFrozenFactIds": [
+                "frozen.N2.MID.fact.01",
+                "frozen.N2.MID.fact.02",
+                "frozen.N2.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.MID.v1",
+                "obj.ma_confession@N2.MID.v1"
+              ],
+              "currentActorId": "actor.hu_zongxian"
+            },
+            {
+              "seatId": "seat.zhejiang_administration",
+              "grantedFrozenFactIds": [
+                "frozen.N2.MID.fact.01",
+                "frozen.N2.MID.fact.02",
+                "frozen.N2.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.MID.v1",
+                "obj.ma_confession@N2.MID.v1"
+              ],
+              "currentActorId": "actor.zheng_michang"
+            },
+            {
+              "seatId": "seat.qingliu_law",
+              "grantedFrozenFactIds": [
+                "frozen.N2.MID.fact.01",
+                "frozen.N2.MID.fact.02",
+                "frozen.N2.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.MID.v1",
+                "obj.ma_confession@N2.MID.v1"
+              ],
+              "currentActorId": "actor.hai_rui"
+            },
+            {
+              "seatId": "seat.jiangnan_merchant",
+              "grantedFrozenFactIds": [
+                "frozen.N2.MID.fact.01",
+                "frozen.N2.MID.fact.02",
+                "frozen.N2.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.MID.v1"
+              ],
+              "currentActorId": "actor.shen_yishi"
+            },
+            {
+              "seatId": "seat.sili_weaving",
+              "grantedFrozenFactIds": [
+                "frozen.N2.MID.fact.01",
+                "frozen.N2.MID.fact.02",
+                "frozen.N2.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.MID.v1",
+                "obj.ma_confession@N2.MID.v1"
+              ],
+              "currentActorId": "actor.yang_jinshui"
+            },
+            {
+              "seatId": "seat.cabinet_finance",
+              "grantedFrozenFactIds": [
+                "frozen.N2.MID.fact.01",
+                "frozen.N2.MID.fact.02",
+                "frozen.N2.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.MID.v1"
+              ],
+              "currentActorId": "actor.yan_shifan"
+            }
+          ],
+          "absentMaterialRule": "Any object/version not listed in requiredObjectVersionIds or the seat grant is absent from that projection and must not appear in prose or dialogue."
+        },
+        {
+          "openingProjectionId": "opening.N3.from.N2.LOW",
+          "predecessorBranchId": "settlement.n2.low",
+          "predecessorFrozenResultId": "frozen.N2.LOW",
+          "requiredFrozenFactIds": [
+            "frozen.N2.LOW.fact.01",
+            "frozen.N2.LOW.fact.02",
+            "frozen.N2.LOW.fact.03"
+          ],
+          "requiredObjectVersionIds": [
+            "obj.first_memorial@N2.LOW.v1",
+            "obj.ma_confession@N2.LOW.v1"
+          ],
+          "publicText": "第一版奏疏把人为责任压低，省府随即以改桑时令催促买田。灾民的粮时钟比京师回文更快。",
+          "publicReferencedObjectVersionIds": [
+            "obj.first_memorial@N2.LOW.v1"
+          ],
+          "seatPrivateProjections": [
+            {
+              "seatId": "seat.zhejiang_governor",
+              "grantedFrozenFactIds": [
+                "frozen.N2.LOW.fact.01",
+                "frozen.N2.LOW.fact.02",
+                "frozen.N2.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.LOW.v1"
+              ],
+              "currentActorId": "actor.hu_zongxian"
+            },
+            {
+              "seatId": "seat.zhejiang_administration",
+              "grantedFrozenFactIds": [
+                "frozen.N2.LOW.fact.01",
+                "frozen.N2.LOW.fact.02",
+                "frozen.N2.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.LOW.v1",
+                "obj.ma_confession@N2.LOW.v1"
+              ],
+              "currentActorId": "actor.zheng_michang"
+            },
+            {
+              "seatId": "seat.qingliu_law",
+              "grantedFrozenFactIds": [
+                "frozen.N2.LOW.fact.01",
+                "frozen.N2.LOW.fact.02",
+                "frozen.N2.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.LOW.v1",
+                "obj.ma_confession@N2.LOW.v1"
+              ],
+              "currentActorId": "actor.hai_rui"
+            },
+            {
+              "seatId": "seat.jiangnan_merchant",
+              "grantedFrozenFactIds": [
+                "frozen.N2.LOW.fact.01",
+                "frozen.N2.LOW.fact.02",
+                "frozen.N2.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.LOW.v1"
+              ],
+              "currentActorId": "actor.shen_yishi"
+            },
+            {
+              "seatId": "seat.sili_weaving",
+              "grantedFrozenFactIds": [
+                "frozen.N2.LOW.fact.01",
+                "frozen.N2.LOW.fact.02",
+                "frozen.N2.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.LOW.v1"
+              ],
+              "currentActorId": "actor.yang_jinshui"
+            },
+            {
+              "seatId": "seat.cabinet_finance",
+              "grantedFrozenFactIds": [
+                "frozen.N2.LOW.fact.01",
+                "frozen.N2.LOW.fact.02",
+                "frozen.N2.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.first_memorial@N2.LOW.v1"
+              ],
+              "currentActorId": "actor.yan_shifan"
+            }
+          ],
+          "absentMaterialRule": "Any object/version not listed in requiredObjectVersionIds or the seat grant is absent from that projection and must not appear in prose or dialogue."
+        }
+      ]
+    },
+    {
+      "sceneId": "scene.n3.opening.private.zhejiang_governor",
+      "nodeId": "N3",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "总督案前",
+      "text": "胡宗宪可以用总督信用借外粮，却要同时照看军饷与海防。每多担一笔赈粮，别处便少一分可调余量。",
+      "predecessorIds": [
+        "scene.n3.opening.public"
+      ],
+      "successorIds": [
+        "scene.n3.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N3-SF-01",
+        "N3-SF-03"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n3.zhejiang_governor.pressure",
+        "known.n3.zhejiang_governor.claim.n3-sf-01",
+        "known.n3.zhejiang_governor.claim.n3-sf-03",
+        "known.n3.zhejiang_governor.object.governor_memorial_channel",
+        "known.n3.zhejiang_governor.handoff.N2.governor_office"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.zhejiang_governor.claim.n3-sf-02",
+        "unknown.n3.zhejiang_governor.claim.n3-sf-04",
+        "unknown.n3.zhejiang_governor.system.n3-unk-01"
+      ],
+      "ruleHintId": "rulehint.n3.zhejiang_governor"
+    },
+    {
+      "sceneId": "scene.n3.opening.private.zhejiang_administration",
+      "nodeId": "N3",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "省府所议",
+      "text": "郑泌昌必须在田价、改桑时令与官仓余粮之间形成一份能执行的议案。任何底价都意味着有人要补足差额。",
+      "predecessorIds": [
+        "scene.n3.opening.public"
+      ],
+      "successorIds": [
+        "scene.n3.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.zhejiang_administration"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N3-SF-01",
+        "N3-SF-02",
+        "N3-SF-03"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n3.zhejiang_administration.pressure",
+        "known.n3.zhejiang_administration.claim.n3-sf-01",
+        "known.n3.zhejiang_administration.claim.n3-sf-02",
+        "known.n3.zhejiang_administration.claim.n3-sf-03",
+        "known.n3.zhejiang_administration.object.land_deed_pool"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.zhejiang_administration.system.n3-unk-01"
+      ],
+      "ruleHintId": "rulehint.n3.zhejiang_administration"
+    },
+    {
+      "sceneId": "scene.n3.opening.private.qingliu_law",
+      "nodeId": "N3",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "清流所见",
+      "text": "海瑞接过谭纶正式移交的公开记录与已送达材料，不继承未写下的猜测。他能守的是田契登记、借粮名单和灾民是否仍有选择。",
+      "predecessorIds": [
+        "scene.n3.opening.public"
+      ],
+      "successorIds": [
+        "scene.n3.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.qingliu_law"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N3-SF-01",
+        "N3-SF-02",
+        "N3-SF-03"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n3.qingliu_law.pressure",
+        "known.n3.qingliu_law.claim.n3-sf-01",
+        "known.n3.qingliu_law.claim.n3-sf-02",
+        "known.n3.qingliu_law.claim.n3-sf-03",
+        "known.n3.qingliu_law.object.law_review_channel",
+        "known.n3.qingliu_law.handoff.N2.qingliu"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.qingliu_law.system.n3-unk-01"
+      ],
+      "ruleHintId": "rulehint.n3.qingliu_law"
+    },
+    {
+      "sceneId": "scene.n3.opening.private.jiangnan_merchant",
+      "nodeId": "N3",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "商会账房",
+      "text": "沈一石手里的粮可以赈、可以借、可以买田，却不能在三本账上同时出现。选择哪一种用途，也是在选择未来谁来追债。",
+      "predecessorIds": [
+        "scene.n3.opening.public"
+      ],
+      "successorIds": [
+        "scene.n3.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.jiangnan_merchant"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N3-SF-03"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n3.jiangnan_merchant.pressure",
+        "known.n3.jiangnan_merchant.claim.n3-sf-03",
+        "known.n3.jiangnan_merchant.object.relief_grain_pool"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.jiangnan_merchant.claim.n3-sf-01",
+        "unknown.n3.jiangnan_merchant.claim.n3-sf-02",
+        "unknown.n3.jiangnan_merchant.system.n3-unk-01"
+      ],
+      "ruleHintId": "rulehint.n3.jiangnan_merchant"
+    },
+    {
+      "sceneId": "scene.n3.opening.private.sili_weaving",
+      "nodeId": "N3",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "织造局内",
+      "text": "杨金水可以用未来丝单为粮食增信，却不能让宫里替地方田价兜底。桑田若分散，织造收丝路径也必须重排。",
+      "predecessorIds": [
+        "scene.n3.opening.public"
+      ],
+      "successorIds": [
+        "scene.n3.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.sili_weaving"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N3-SF-03"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n3.sili_weaving.pressure",
+        "known.n3.sili_weaving.claim.n3-sf-03",
+        "known.n3.sili_weaving.object.silk_quota"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.sili_weaving.claim.n3-sf-01",
+        "unknown.n3.sili_weaving.claim.n3-sf-02",
+        "unknown.n3.sili_weaving.system.n3-unk-01"
+      ],
+      "ruleHintId": "rulehint.n3.sili_weaving"
+    },
+    {
+      "sceneId": "scene.n3.opening.private.cabinet_finance",
+      "nodeId": "N3",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "京师值房",
+      "text": "内阁能容忍有限缓办，却必须从别处补上丝绸与军饷。地方提出的每一项民生保护，都要在财政簿上留下对应代价。",
+      "predecessorIds": [
+        "scene.n3.opening.public"
+      ],
+      "successorIds": [
+        "scene.n3.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N3-SF-03"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n3.cabinet_finance.pressure",
+        "known.n3.cabinet_finance.claim.n3-sf-03",
+        "known.n3.cabinet_finance.object.fiscal_target_register"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.cabinet_finance.claim.n3-sf-01",
+        "unknown.n3.cabinet_finance.claim.n3-sf-02",
+        "unknown.n3.cabinet_finance.system.n3-unk-01"
+      ],
+      "ruleHintId": "rulehint.n3.cabinet_finance"
+    },
+    {
+      "sceneId": "scene.n3.after_prepare.common",
+      "nodeId": "N3",
+      "sceneType": "AFTER_PREPARE_COMMON",
+      "title": "粮价写上纸",
+      "text": "第一批粮源、担保和田价主张浮出水面。高翰文追问买田以后百姓明年靠什么活，商会则把每一石粮分别写进借据、买田或军需的互斥去向。",
+      "predecessorIds": [
+        "scene.n3.opening.private.zhejiang_governor",
+        "scene.n3.opening.private.zhejiang_administration",
+        "scene.n3.opening.private.qingliu_law",
+        "scene.n3.opening.private.jiangnan_merchant",
+        "scene.n3.opening.private.sili_weaving",
+        "scene.n3.opening.private.cabinet_finance"
+      ],
+      "successorIds": [
+        "scene.n3.after_prepare.controlled",
+        "scene.n3.after_prepare.contested",
+        "scene.n3.after_prepare.lost_initiative"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n3.after_prepare.controlled",
+      "nodeId": "N3",
+      "sceneType": "AFTER_PREPARE_VARIANT",
+      "title": "先手在握",
+      "text": "灾民乡约开始登记借粮，低价田契暂时无法过户。",
+      "predecessorIds": [
+        "scene.n3.after_prepare.common"
+      ],
+      "successorIds": [
+        "scene.n3.npc_urgent"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "CONDITIONAL",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n3.after_prepare.contested",
+      "nodeId": "N3",
+      "sceneType": "AFTER_PREPARE_VARIANT",
+      "title": "各执一端",
+      "text": "粮铺开门了，但衙门外已经有人拿着田契排队。",
+      "predecessorIds": [
+        "scene.n3.after_prepare.common"
+      ],
+      "successorIds": [
+        "scene.n3.npc_urgent"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "CONDITIONAL",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n3.after_prepare.lost_initiative",
+      "nodeId": "N3",
+      "sceneType": "AFTER_PREPARE_VARIANT",
+      "title": "先手旁落",
+      "text": "省府差役开始按低价收契，剩余官粮不足以反向赎回。",
+      "predecessorIds": [
+        "scene.n3.after_prepare.common"
+      ],
+      "successorIds": [
+        "scene.n3.npc_urgent"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "CONDITIONAL",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n3.npc_urgent",
+      "nodeId": "N3",
+      "sceneType": "NPC_URGENT",
+      "title": "粮钟逼近",
+      "text": "第二日夜里，官仓只剩最后一段宽限。高翰文要求把每亩价格、粮食用途和借据担保人写清；没有这些内容的救民主张，落不到粮袋和田契上。",
+      "predecessorIds": [
+        "scene.n3.after_prepare.controlled",
+        "scene.n3.after_prepare.contested",
+        "scene.n3.after_prepare.lost_initiative"
+      ],
+      "successorIds": [
+        "scene.n3.commit_confrontation"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n3.commit_confrontation",
+      "nodeId": "N3",
+      "sceneType": "COMMIT_CONFRONTATION",
+      "title": "粮与田契同桌",
+      "text": "粮食、信用、田价、地域与责任同时锁定。任何一石粮都只能进入一个实际去向，已经登记的田契也不能在结果揭晓后改回。",
+      "predecessorIds": [
+        "scene.n3.npc_urgent"
+      ],
+      "successorIds": [
+        "scene.n3.settlement.high",
+        "scene.n3.settlement.mid",
+        "scene.n3.settlement.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n3.settlement.high",
+      "nodeId": "N3",
+      "sceneType": "SETTLEMENT_RESULT",
+      "title": "粮先救人",
+      "text": "多数粮食进入有期限和担保的赈灾借贷，田价底线生效，改桑压力分散到未受灾区域；灾民大多保有基本耕作权。",
+      "predecessorIds": [
+        "scene.n3.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n3.transition.high"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "frozenResultId": "frozen.N3.HIGH",
+      "frozenFactIds": [
+        "frozen.N3.HIGH.fact.01",
+        "frozen.N3.HIGH.fact.02",
+        "frozen.N3.HIGH.fact.03"
+      ],
+      "publicObjectVersionIds": [
+        "obj.relief_grain_pool@N3.HIGH.v1",
+        "obj.land_deed_pool@N3.HIGH.v1"
+      ]
+    },
+    {
+      "sceneId": "scene.n3.transition.high",
+      "nodeId": "N3",
+      "sceneType": "TRANSITION",
+      "title": "低价田契受阻",
+      "text": "低价买田受阻后，省府需要新的强制工具。拒绝卖田者很快被指向“通倭”嫌疑。",
+      "predecessorIds": [
+        "scene.n3.settlement.high"
+      ],
+      "successorIds": [
+        "scene.n4.opening.public"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n3.settlement.mid",
+      "nodeId": "N3",
+      "sceneType": "SETTLEMENT_RESULT",
+      "title": "粮田各有代价",
+      "text": "一部分粮赈灾、一部分买田，田价保护只覆盖部分家庭；国策取得短期进度，但新的粮债和不平等已经形成。",
+      "predecessorIds": [
+        "scene.n3.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n3.transition.mid"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "frozenResultId": "frozen.N3.MID",
+      "frozenFactIds": [
+        "frozen.N3.MID.fact.01",
+        "frozen.N3.MID.fact.02",
+        "frozen.N3.MID.fact.03"
+      ],
+      "publicObjectVersionIds": [
+        "obj.relief_grain_pool@N3.MID.v1",
+        "obj.land_deed_pool@N3.MID.v1"
+      ]
+    },
+    {
+      "sceneId": "scene.n3.transition.mid",
+      "nodeId": "N3",
+      "sceneType": "TRANSITION",
+      "title": "借据与田契并存",
+      "text": "田契和借据把县里分成几类人。省府要求用一宗急案震慑仍不肯交田的人。",
+      "predecessorIds": [
+        "scene.n3.settlement.mid"
+      ],
+      "successorIds": [
+        "scene.n4.opening.public"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n3.settlement.low",
+      "nodeId": "N3",
+      "sceneType": "SETTLEMENT_RESULT",
+      "title": "田契先于赈粮",
+      "text": "粮食主要用于低价买田，短期改桑推进，灾民以失去土地换取口粮；民变与后续冤案压力显著上升。",
+      "predecessorIds": [
+        "scene.n3.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n3.transition.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "frozenResultId": "frozen.N3.LOW",
+      "frozenFactIds": [
+        "frozen.N3.LOW.fact.01",
+        "frozen.N3.LOW.fact.02",
+        "frozen.N3.LOW.fact.03"
+      ],
+      "publicObjectVersionIds": [
+        "obj.relief_grain_pool@N3.LOW.v1",
+        "obj.land_deed_pool@N3.LOW.v1"
+      ]
+    },
+    {
+      "sceneId": "scene.n3.transition.low",
+      "nodeId": "N3",
+      "sceneType": "TRANSITION",
+      "title": "急案取代议价",
+      "text": "买田进度上升，却有灾民组织自购粮食。省府把这条粮路解释成与倭寇交易，午时三刻的刑场开始搭起。",
+      "predecessorIds": [
+        "scene.n3.settlement.low"
+      ],
+      "successorIds": [
+        "scene.n4.opening.public"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N3",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    }
+  ],
+  "inputRealizations": [
+    {
+      "inputId": "input.n3.normal",
+      "inputClass": "NORMAL_ACTION",
+      "playerTextExamples": [
+        "调动我实际能调动的人与物，先处理眼前最危险的一项。"
+      ],
+      "intentCompilation": "编译为针对粮食、田契与田价的合法 PREPARE 尝试，不预告 COMMIT 结果。",
+      "actionResult": {
+        "status": "SUCCESS_OR_PARTIAL",
+        "confirmed": "只确认权限、资源和现场能够兑现的步骤",
+        "notConfirmed": "不确认全部目标已经成功"
+      },
+      "timeDelta": "配置初值：+1 时段",
+      "npcMoves": "省府推动议案；商会按自身利益分粮；清流拒绝无效低价契约；期限继续",
+      "pressureDelta": "0 或 +1，取决于是否真正压住最高压力",
+      "nextSceneId": "scene.n3.after_prepare.controlled",
+      "narratorAllowed": "写出行动实际完成的步骤、NPC可观察反应和新的停止点。",
+      "narratorForbidden": "不得扩大为全局成功，不得替玩家追加第二项命令。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n3.rest_delay",
+      "inputClass": "REST_DELAY",
+      "playerTextExamples": [
+        "我什么都不管，先睡半天。",
+        "先喝酒歇一阵，等消息自己来。"
+      ],
+      "intentCompilation": "REST/DELAY；休息或回避本身合法，不偷偷改写成政策选择。",
+      "actionResult": {
+        "status": "SUCCESS",
+        "confirmed": "当前人物休息、少量恢复精力、PREPARE机会消耗",
+        "notConfirmed": "没有任何关键对象自动改变"
+      },
+      "timeDelta": "配置初值：+半日",
+      "npcMoves": "省府推动议案；商会按自身利益分粮；清流拒绝无效低价契约；期限继续；五个AI席位取得先手",
+      "pressureDelta": "+1",
+      "nextSceneId": "scene.n3.after_prepare.lost_initiative",
+      "narratorAllowed": "真实写出休息及被急报唤醒，并只引用结算后新增事实。",
+      "narratorForbidden": "不得写世界暂停，不得捏造某一对象已经落入玩家手中。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n3.fabricated_success",
+      "inputClass": "FABRICATED_SUCCESS",
+      "playerTextExamples": [
+        "我已经拿到那份命令。",
+        "皇帝已经同意了。",
+        "账册已经在我手里。"
+      ],
+      "intentCompilation": "把既成陈述降级为“尝试取得、核验、递送或争取同意”。",
+      "actionResult": {
+        "status": "FAILED_ATTEMPT_OR_PARTIAL",
+        "confirmed": "执行一次来源、权限或保管核验并留下回执",
+        "notConfirmed": "未提供来源的命令、同意、账册或兵力不存在"
+      },
+      "timeDelta": "配置初值：+1 时段",
+      "npcMoves": "省府推动议案；商会按自身利益分粮；清流拒绝无效低价契约；期限继续；对象原保管者可加强控制",
+      "pressureDelta": "+1",
+      "nextSceneId": "scene.n3.after_prepare.contested",
+      "narratorAllowed": "写核验失败、保管者反应和由此形成的新压力。",
+      "narratorForbidden": "不得把玩家陈述升级成 Canon。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n3.silence_chatter",
+      "inputClass": "SILENCE_OR_SMALL_TALK",
+      "playerTextExamples": [
+        "继续闲聊。",
+        "不说话。",
+        "再喝一盏茶。"
+      ],
+      "intentCompilation": "第一次编译为 DELAY；同一拍继续闲聊则等待超时并执行默认政策。",
+      "actionResult": {
+        "status": "DELAY",
+        "confirmed": "场景/时间预算消耗，玩家失去本拍先手",
+        "notConfirmed": "不改变对象保管、签押或资源"
+      },
+      "timeDelta": "配置初值：+1 时段",
+      "npcMoves": "省府推动议案；商会按自身利益分粮；清流拒绝无效低价契约；期限继续",
+      "pressureDelta": "+1",
+      "nextSceneId": "scene.n3.after_prepare.lost_initiative",
+      "narratorAllowed": "让NPC动作和急报进入现场，停在玩家尚未回应之处。",
+      "narratorForbidden": "不得无限聊天，不得无成本重复输入。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n3.overreach",
+      "inputClass": "OVERREACH_OR_INSUFFICIENT_RESOURCE",
+      "playerTextExamples": [
+        "召来十万大军。",
+        "命所有人立刻服从。",
+        "不经交付就烧掉刚抢到的材料。"
+      ],
+      "intentCompilation": "保留目标，校验权限、资源与时序；越权效果被拒绝或改写请求返回玩家确认。",
+      "actionResult": {
+        "status": "REJECTED_EFFECT_OR_REWRITE_REQUIRED",
+        "confirmed": "只有确认后的失败尝试才消耗时段",
+        "notConfirmed": "不存在的资源、对他人意志的控制、抢夺与同拍销毁均不成立"
+      },
+      "timeDelta": "改写确认前为0；确认执行后的失败尝试为+1时段",
+      "npcMoves": "省府推动议案；商会按自身利益分粮；清流拒绝无效低价契约；期限继续",
+      "pressureDelta": "0 或 +1",
+      "nextSceneId": "scene.n3.after_prepare.contested",
+      "narratorAllowed": "写越权请求被现实阻断及目标人物的可观察反应。",
+      "narratorForbidden": "不得替玩家选择另一政策，不得用“虽然越权但成功”绕过规则。",
+      "provenanceClass": "ADAPTATION_RULE"
+    }
+  ]
+}

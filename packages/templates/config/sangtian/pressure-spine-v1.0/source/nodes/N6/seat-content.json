@@ -1,0 +1,1122 @@
+{
+  "schemaVersion": "sangtian_node_seat_content_v1",
+  "nodeId": "N6",
+  "seatCount": 6,
+  "seats": [
+    {
+      "seatContentId": "seatcontent.n6.zhejiang_governor",
+      "nodeId": "N6",
+      "seatId": "seat.zhejiang_governor",
+      "roleKey": "zhejiang_governor",
+      "currentActorId": "actor.hu_zongxian",
+      "institutionalMission": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n6.zhejiang_governor.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N6",
+          "statement": "改桑失速、军饷催迫、朝廷需要现银与替罪者；沈一石知道太多，也掌握可救急的财富。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n6.zhejiang_governor.object.military_dispatch_channel",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.military_dispatch_channel",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：总督军驿与前线渠道。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        },
+        {
+          "factRefId": "known.n6.zhejiang_governor.handoff.N2.governor_office",
+          "sourceKind": "HANDOFF",
+          "handoffId": "handoff.N2.governor_office",
+          "handoffEventId": "event.handoff.N2.governor_office",
+          "statement": "当前人物只继承 handoff.N2.governor_office 中正式交接并可验证的记录。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "accessVia": "HANDOFF"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n6.zhejiang_governor.claim.n6-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-01",
+          "statement": "司礼监要求把沈一石按“以商乱政”查办，同时强调丝绸与军饷必须继续。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n6.zhejiang_governor.claim.n6-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-02",
+          "statement": "本地现场出现四口封存账箱，名义上呈织造局和巡抚衙门。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n6.zhejiang_governor.system.n6-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-UNK-01",
+          "statement": "两组四箱的原件、副本和逐箱对应关系 UNKNOWN，Narrator 禁止作肯定判断。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易高估一纸总督令在地方执行链中的即时效力。"
+      ],
+      "resources": [
+        "总督军令",
+        "军驿",
+        "跨省协调",
+        "奏报担保"
+      ],
+      "permissions": [
+        "调兵与分洪",
+        "总督担保",
+        "领衔奏疏",
+        "军饷划拨"
+      ],
+      "privatePressure": "先取军饷可能牺牲证据，先保人证又可能误前线。",
+      "keyLeverage": "把合法取得的现银划往军前并登记责任",
+      "defaultPrepare": "准备军饷划拨和商产清册",
+      "defaultCommit": "只划拨合法取得且有清册的现银",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n6.zhejiang_governor.01",
+          "text": "“先把可划军前的现银列清，别把未查明的商产一概当军饷。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.military_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.zhejiang_governor.02",
+          "text": "“人证、账册与军饷不能同时保全，至少要留下谁取舍了什么。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.military_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.zhejiang_governor.03",
+          "text": "“查封清册若没有见证，我不会在军饷收讫上替省府担名。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.military_dispatch_channel"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        }
+      ],
+      "privateOpening": "胡宗宪公开只知道查封、军饷和商产同时逼近，不能据此宣称账册有几路。先取现银还是先保人证，会改变后续能证明到哪一步。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.governor_office",
+          "afterNode": "N2",
+          "seatId": "seat.zhejiang_governor",
+          "fromActorId": "actor.hu_zongxian",
+          "toActorId": "actor.hu_zongxian",
+          "permissionChange": [
+            "失去浙江巡抚兼任的直接地方民政权限",
+            "保留浙直总督军务、跨省协调、军饷与奏报渠道"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n6.zhejiang_governor.pressure",
+        "known.n6.zhejiang_governor.object.military_dispatch_channel",
+        "known.n6.zhejiang_governor.handoff.N2.governor_office"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.zhejiang_governor.claim.n6-sf-01",
+        "unknown.n6.zhejiang_governor.claim.n6-sf-02",
+        "unknown.n6.zhejiang_governor.system.n6-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.military_dispatch_channel"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n6.zhejiang_administration",
+      "nodeId": "N6",
+      "seatId": "seat.zhejiang_administration",
+      "roleKey": "zhejiang_administration",
+      "currentActorId": "actor.zheng_michang",
+      "institutionalMission": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n6.zhejiang_administration.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N6",
+          "statement": "改桑失速、军饷催迫、朝廷需要现银与替罪者；沈一石知道太多，也掌握可救急的财富。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n6.zhejiang_administration.object.local_four_boxes",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.local_four_boxes",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：本地四口木箱账册。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n6.zhejiang_administration.claim.n6-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-01",
+          "statement": "司礼监要求把沈一石按“以商乱政”查办，同时强调丝绸与军饷必须继续。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n6.zhejiang_administration.claim.n6-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-04",
+          "statement": "杨金水另有同样四口木箱，明确要求不能看、不能销毁，要送进宫中。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n6.zhejiang_administration.system.n6-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-UNK-01",
+          "statement": "两组四箱的原件、副本和逐箱对应关系 UNKNOWN，Narrator 禁止作肯定判断。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把先形成的公文误认为最终会被朝廷接受的事实。"
+      ],
+      "resources": [
+        "省府印信",
+        "府县官吏",
+        "差役与押解",
+        "田契登记"
+      ],
+      "permissions": [
+        "签发地方命令",
+        "控制人犯与案卷",
+        "登记契约",
+        "查封商产"
+      ],
+      "privatePressure": "本地四箱在你控制下；烧或留都将成为不可撤回责任。",
+      "keyLeverage": "查封商产、本地四箱和经手人员",
+      "defaultPrepare": "执行查封并控制本地四箱",
+      "defaultCommit": "在开始保管权范围内决定封存或焚毁本地四箱",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n6.zhejiang_administration.01",
+          "text": "“本地查封在我手里，谁要看账，先说凭什么、在何处、由谁见证。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.zhejiang_administration.02",
+          "text": "“商产可以先封，账册的处置必须另留一份经手记录。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.zhejiang_administration.03",
+          "text": "“若沈一石先开口攀扯，省府便没有时间等京里回话。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        }
+      ],
+      "privateOpening": "郑泌昌实际知道地方查封现场将接触一组封存账册。烧、留、移交或让人抄录，都必须在开始保管权与经手见证下发生。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.administration",
+          "afterNode": "N6",
+          "seatId": "seat.zhejiang_administration",
+          "fromActorId": "actor.zheng_michang",
+          "toActorId": "actor.zheng_michang",
+          "permissionChange": [
+            "进入在押状态后只能签供、翻供、拒签、交代旧令和使用获准通信",
+            "不得继续调动省府差役、粮市与查封权限"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n6.zhejiang_administration.pressure",
+        "known.n6.zhejiang_administration.object.local_four_boxes"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.zhejiang_administration.claim.n6-sf-01",
+        "unknown.n6.zhejiang_administration.claim.n6-sf-04",
+        "unknown.n6.zhejiang_administration.system.n6-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.local_four_boxes"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n6.qingliu_law",
+      "nodeId": "N6",
+      "seatId": "seat.qingliu_law",
+      "roleKey": "qingliu_law",
+      "currentActorId": "actor.hai_rui",
+      "institutionalMission": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n6.qingliu_law.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N6",
+          "statement": "改桑失速、军饷催迫、朝廷需要现银与替罪者；沈一石知道太多，也掌握可救急的财富。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui"
+        },
+        {
+          "factRefId": "known.n6.qingliu_law.object.sealed_evidence_index",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.sealed_evidence_index",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：封存证据索引。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        },
+        {
+          "factRefId": "known.n6.qingliu_law.handoff.N2.qingliu",
+          "sourceKind": "HANDOFF",
+          "handoffId": "handoff.N2.qingliu",
+          "handoffEventId": "event.handoff.N2.qingliu",
+          "statement": "当前人物只继承 handoff.N2.qingliu 中正式交接并可验证的记录。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "accessVia": "HANDOFF"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n6.qingliu_law.claim.n6-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-01",
+          "statement": "司礼监要求把沈一石按“以商乱政”查办，同时强调丝绸与军饷必须继续。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n6.qingliu_law.claim.n6-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-02",
+          "statement": "本地现场出现四口封存账箱，名义上呈织造局和巡抚衙门。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n6.qingliu_law.system.n6-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-UNK-01",
+          "statement": "两组四箱的原件、副本和逐箱对应关系 UNKNOWN，Narrator 禁止作肯定判断。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信只要事实真实就会自然生效。"
+      ],
+      "resources": [
+        "调查权限",
+        "拒签权",
+        "证人保护",
+        "证据索引"
+      ],
+      "permissions": [
+        "审查案卷",
+        "拒绝签押",
+        "保护证人",
+        "制作封印与索引"
+      ],
+      "privatePressure": "清册必须赶在查封与焚毁之间完成，缺一项见证就降低效力。",
+      "keyLeverage": "制作查封清册、见证记录和保管链",
+      "defaultPrepare": "制作见证、封条和证据索引",
+      "defaultCommit": "优先保住一条可验证账册或摘要链",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n6.qingliu_law.01",
+          "text": "“先清点封条和箱数，不问箱里是不是诸位想要的答案。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.sealed_evidence_index"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.qingliu_law.02",
+          "text": "“谁见过账、谁抄过摘要、谁在火前在场，都要分开记录。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.sealed_evidence_index"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.qingliu_law.03",
+          "text": "“刚从别人手里夺来的箱子，今日不能再由同一只手烧掉。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.sealed_evidence_index"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        }
+      ],
+      "privateOpening": "海瑞能确认的是查封与账册争夺已经出现，还不知道未送达材料的保管与路线。他必须先做清册、封条和见证，才能谈效力。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.qingliu",
+          "afterNode": "N2",
+          "seatId": "seat.qingliu_law",
+          "fromActorId": "actor.tan_lun",
+          "toActorId": "actor.hai_rui",
+          "inheritIf": [
+            "PUBLIC",
+            "SEAT_RECORD",
+            "TRANSFERRED_AND_RECEIVED"
+          ],
+          "neverAutoInherit": [
+            "私下猜测",
+            "未送达信件",
+            "玩家屏幕上见过但海瑞未获知的秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n6.qingliu_law.pressure",
+        "known.n6.qingliu_law.object.sealed_evidence_index",
+        "known.n6.qingliu_law.handoff.N2.qingliu"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.qingliu_law.claim.n6-sf-01",
+        "unknown.n6.qingliu_law.claim.n6-sf-02",
+        "unknown.n6.qingliu_law.system.n6-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.sealed_evidence_index"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n6.jiangnan_merchant",
+      "nodeId": "N6",
+      "seatId": "seat.jiangnan_merchant",
+      "roleKey": "jiangnan_merchant",
+      "currentActorId": "actor.shen_yishi",
+      "institutionalMission": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n6.jiangnan_merchant.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N6",
+          "statement": "改桑失速、军饷催迫、朝廷需要现银与替罪者；沈一石知道太多，也掌握可救急的财富。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi"
+        },
+        {
+          "factRefId": "known.n6.jiangnan_merchant.object.shen_yishi_person_and_assets",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.shen_yishi_person_and_assets",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：沈一石、商产与可划拨现银。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n6.jiangnan_merchant.claim.n6-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-01",
+          "statement": "司礼监要求把沈一石按“以商乱政”查办，同时强调丝绸与军饷必须继续。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n6.jiangnan_merchant.claim.n6-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-03",
+          "statement": "本地账册被一本本投入火中。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n6.jiangnan_merchant.system.n6-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-UNK-01",
+          "statement": "两组四箱的原件、副本和逐箱对应关系 UNKNOWN，Narrator 禁止作肯定判断。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信实际贡献能自动换来政治保护。"
+      ],
+      "resources": [
+        "粮仓",
+        "银票与信用",
+        "商船",
+        "契约与账目"
+      ],
+      "permissions": [
+        "分配商粮",
+        "签借据与买田合同",
+        "转运",
+        "留下遗命"
+      ],
+      "privatePressure": "人物可能退场，只有冻结前的遗命和债权能继续行动。",
+      "keyLeverage": "保护沈一石或启动生前遗命、债权和递送",
+      "defaultPrepare": "安排人物自保与遗命",
+      "defaultCommit": "若人物失能，启动既有债权和递送安排",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n6.jiangnan_merchant.01",
+          "text": "“你们要我的银可以，要我的罪名便拿自己的签字来换。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.jiangnan_merchant.02",
+          "text": "“我若不能出门，已写好的债权和递送仍会按约走。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.jiangnan_merchant.03",
+          "text": "“账在谁手里不是我一句话能改，商会能做的是留下可验证的交接。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        }
+      ],
+      "privateOpening": "沈一石知道地方查封将触及自己的账目与商产，却不因知道商会全账而自动知道内廷另有何种保管安排。遗命必须在失能前形成。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.merchant",
+          "afterNode": "N6",
+          "seatId": "seat.jiangnan_merchant",
+          "fromActorId": "actor.shen_yishi",
+          "toActorId": "actor.merchant_legacy_executor",
+          "inheritIf": [
+            "N6 冻结前形成的遗命",
+            "已登记债权",
+            "已启动递送",
+            "商会正式档案"
+          ],
+          "neverAutoInherit": [
+            "死后新计划",
+            "未留下的口头秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n6.jiangnan_merchant.pressure",
+        "known.n6.jiangnan_merchant.object.shen_yishi_person_and_assets"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.jiangnan_merchant.claim.n6-sf-01",
+        "unknown.n6.jiangnan_merchant.claim.n6-sf-03",
+        "unknown.n6.jiangnan_merchant.system.n6-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.shen_yishi_person_and_assets"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n6.sili_weaving",
+      "nodeId": "N6",
+      "seatId": "seat.sili_weaving",
+      "roleKey": "sili_weaving",
+      "currentActorId": "actor.yang_jinshui",
+      "institutionalMission": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n6.sili_weaving.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N6",
+          "statement": "改桑失速、军饷催迫、朝廷需要现银与替罪者；沈一石知道太多，也掌握可救急的财富。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.n6.sili_weaving.claim.n6-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-01",
+          "statement": "司礼监要求把沈一石按“以商乱政”查办，同时强调丝绸与军饷必须继续。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.n6.sili_weaving.claim.n6-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-04",
+          "statement": "杨金水另有同样四口木箱，明确要求不能看、不能销毁，要送进宫中。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.n6.sili_weaving.object.inner_court_four_boxes",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.inner_court_four_boxes",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：内廷四口木箱账册。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n6.sili_weaving.system.n6-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-UNK-01",
+          "statement": "两组四箱的原件、副本和逐箱对应关系 UNKNOWN，Narrator 禁止作肯定判断。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易以为内廷渠道足以压过所有地方见证。"
+      ],
+      "resources": [
+        "织造局名义",
+        "密奏",
+        "锦衣卫递送",
+        "供货记录"
+      ],
+      "permissions": [
+        "使用或撤回织造名义",
+        "密奏",
+        "内廷递送",
+        "核验织造记录"
+      ],
+      "privatePressure": "内廷四箱能自保也能牵连宫廷，路线一旦启动不能随意撤回。",
+      "keyLeverage": "通过锦衣卫发送内廷四箱或保存织造记录",
+      "defaultPrepare": "准备锦衣卫递送内廷四箱",
+      "defaultCommit": "把内廷四箱完整送京并保留收讫",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n6.sili_weaving.01",
+          "text": "“有些账能在地方见光，有些账只该沿已经安排的路进京。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.inner_court_four_boxes"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.sili_weaving.02",
+          "text": "“我不说明箱中逐页内容，只说明谁保管、封条是否完整、何时启程。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.inner_court_four_boxes"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.sili_weaving.03",
+          "text": "“要烧地方的账是地方人的决定，内廷的递送不得因此停下。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.inner_court_four_boxes"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        }
+      ],
+      "privateOpening": "杨金水私下知道另有四口木箱由内廷渠道控制，并已考虑不得查看、不得销毁的递送安排。这一信息不会自动进入公共场合。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.weaving",
+          "afterNode": "N6",
+          "seatId": "seat.sili_weaving",
+          "fromActorId": "actor.yang_jinshui",
+          "toActorId": "actor.weaving_retainer",
+          "inheritIf": [
+            "织造局正式档案",
+            "已签发命令",
+            "已启动的锦衣卫交接"
+          ],
+          "unknownInvariant": "杨金水真实精神状态保持 UNKNOWN。"
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n6.sili_weaving.pressure",
+        "known.n6.sili_weaving.claim.n6-sf-01",
+        "known.n6.sili_weaving.claim.n6-sf-04",
+        "known.n6.sili_weaving.object.inner_court_four_boxes"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.sili_weaving.system.n6-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.inner_court_four_boxes"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n6.cabinet_finance",
+      "nodeId": "N6",
+      "seatId": "seat.cabinet_finance",
+      "roleKey": "cabinet_finance",
+      "currentActorId": "actor.yan_shifan",
+      "institutionalMission": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n6.cabinet_finance.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N6",
+          "statement": "改桑失速、军饷催迫、朝廷需要现银与替罪者；沈一石知道太多，也掌握可救急的财富。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n6.cabinet_finance.claim.n6-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-01",
+          "statement": "司礼监要求把沈一石按“以商乱政”查办，同时强调丝绸与军饷必须继续。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n6.cabinet_finance.object.cabinet_urgent_dispatch",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.cabinet_urgent_dispatch",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：内阁急递与廷寄渠道。",
+          "availableFrom": "N6",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n6.cabinet_finance.claim.n6-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-02",
+          "statement": "本地现场出现四口封存账箱，名义上呈织造局和巡抚衙门。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n6.cabinet_finance.claim.n6-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-SF-03",
+          "statement": "本地账册被一本本投入火中。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n6.cabinet_finance.system.n6-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N6-UNK-01",
+          "statement": "两组四箱的原件、副本和逐箱对应关系 UNKNOWN，Narrator 禁止作肯定判断。",
+          "availableFrom": "N6",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把地方资源当作可随时征用的财政余额。"
+      ],
+      "resources": [
+        "急递与廷寄",
+        "财政目标",
+        "中央收件",
+        "抄没归属"
+      ],
+      "permissions": [
+        "设定期限",
+        "调整财政认定",
+        "指定收件路径",
+        "决定抄没归属"
+      ],
+      "privatePressure": "中央需要现银，却不能让所有证据都消失后再宣称查清。",
+      "keyLeverage": "发布抄没与财政归属命令，决定筹款优先级",
+      "defaultPrepare": "发布抄没与军饷归属指令",
+      "defaultCommit": "优先筹军饷，同时要求留下最低审计记录",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n6.cabinet_finance.01",
+          "text": "“抄没要先分军饷、织造和私产，不能把一处商产算三次。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.cabinet_urgent_dispatch"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.cabinet_finance.02",
+          "text": "“沈一石可以成为责任人，不能成为所有账目的唯一解释。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.cabinet_urgent_dispatch"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n6.cabinet_finance.03",
+          "text": "“现银今日要走，审计记录也得同行，否则军前只收到一笔无主银。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.shen_yishi_person_and_assets",
+            "obj.local_four_boxes",
+            "obj.cabinet_urgent_dispatch"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        }
+      ],
+      "privateOpening": "内阁财政席已经知道“以商乱政”与筹军饷的要求，却只有在内廷递送真正到达并签收后，才会知道相应账册状态。",
+      "handoffRules": [],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n6.cabinet_finance.pressure",
+        "known.n6.cabinet_finance.claim.n6-sf-01",
+        "known.n6.cabinet_finance.object.cabinet_urgent_dispatch"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.cabinet_finance.claim.n6-sf-02",
+        "unknown.n6.cabinet_finance.claim.n6-sf-03",
+        "unknown.n6.cabinet_finance.system.n6-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.cabinet_urgent_dispatch"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    }
+  ]
+}

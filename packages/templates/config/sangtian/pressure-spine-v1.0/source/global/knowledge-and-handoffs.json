@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "sangtian_knowledge_handoffs_v1",
+  "globalRule": "玩家记忆不自动等于当前行动人物已知；只有公开事实、正式席位档案、实际送达且签收的材料、前任明确留下的可验证记录可以继承。",
+  "handoffs": [
+    {
+      "handoffId": "handoff.N2.qingliu",
+      "afterNode": "N2",
+      "seatId": "seat.qingliu_law",
+      "fromActorId": "actor.tan_lun",
+      "toActorId": "actor.hai_rui",
+      "inheritIf": [
+        "PUBLIC",
+        "SEAT_RECORD",
+        "TRANSFERRED_AND_RECEIVED"
+      ],
+      "neverAutoInherit": [
+        "私下猜测",
+        "未送达信件",
+        "玩家屏幕上见过但海瑞未获知的秘密"
+      ],
+      "handoffEventId": "event.handoff.N2.qingliu",
+      "knowledgeInheritanceRule": "Only PUBLIC, SEAT_RECORD, or materially received records listed by the handoff may become current-actor knowledge."
+    },
+    {
+      "handoffId": "handoff.N2.governor_office",
+      "afterNode": "N2",
+      "seatId": "seat.zhejiang_governor",
+      "fromActorId": "actor.hu_zongxian",
+      "toActorId": "actor.hu_zongxian",
+      "permissionChange": [
+        "失去浙江巡抚兼任的直接地方民政权限",
+        "保留浙直总督军务、跨省协调、军饷与奏报渠道"
+      ],
+      "handoffEventId": "event.handoff.N2.governor_office",
+      "knowledgeInheritanceRule": "Only PUBLIC, SEAT_RECORD, or materially received records listed by the handoff may become current-actor knowledge."
+    },
+    {
+      "handoffId": "handoff.N6.merchant",
+      "afterNode": "N6",
+      "seatId": "seat.jiangnan_merchant",
+      "fromActorId": "actor.shen_yishi",
+      "toActorId": "actor.merchant_legacy_executor",
+      "inheritIf": [
+        "N6 冻结前形成的遗命",
+        "已登记债权",
+        "已启动递送",
+        "商会正式档案"
+      ],
+      "neverAutoInherit": [
+        "死后新计划",
+        "未留下的口头秘密"
+      ],
+      "handoffEventId": "event.handoff.N6.merchant",
+      "knowledgeInheritanceRule": "Only PUBLIC, SEAT_RECORD, or materially received records listed by the handoff may become current-actor knowledge."
+    },
+    {
+      "handoffId": "handoff.N6.weaving",
+      "afterNode": "N6",
+      "seatId": "seat.sili_weaving",
+      "fromActorId": "actor.yang_jinshui",
+      "toActorId": "actor.weaving_retainer",
+      "inheritIf": [
+        "织造局正式档案",
+        "已签发命令",
+        "已启动的锦衣卫交接"
+      ],
+      "unknownInvariant": "杨金水真实精神状态保持 UNKNOWN。",
+      "handoffEventId": "event.handoff.N6.weaving",
+      "knowledgeInheritanceRule": "Only PUBLIC, SEAT_RECORD, or materially received records listed by the handoff may become current-actor knowledge."
+    },
+    {
+      "handoffId": "handoff.N6.administration",
+      "afterNode": "N6",
+      "seatId": "seat.zhejiang_administration",
+      "fromActorId": "actor.zheng_michang",
+      "toActorId": "actor.zheng_michang",
+      "permissionChange": [
+        "进入在押状态后只能签供、翻供、拒签、交代旧令和使用获准通信",
+        "不得继续调动省府差役、粮市与查封权限"
+      ],
+      "handoffEventId": "event.handoff.N6.administration",
+      "knowledgeInheritanceRule": "Only PUBLIC, SEAT_RECORD, or materially received records listed by the handoff may become current-actor knowledge."
+    }
+  ]
+}

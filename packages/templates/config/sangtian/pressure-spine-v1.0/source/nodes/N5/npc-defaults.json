@@ -1,0 +1,215 @@
+{
+  "schemaVersion": "sangtian_npc_defaults_v1",
+  "nodeId": "N5",
+  "seatDefaults": [
+    {
+      "defaultPolicyId": "default.n5.zhejiang_governor",
+      "nodeId": "N5",
+      "seatId": "seat.zhejiang_governor",
+      "currentActorId": "actor.hu_zongxian",
+      "normalNoSubmission": {
+        "prepare": "核验船单并准备担保卸粮",
+        "commit": "允许粮食以赈灾借贷形式卸载"
+      },
+      "objective": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n5.zhejiang_administration",
+      "nodeId": "N5",
+      "seatId": "seat.zhejiang_administration",
+      "currentActorId": "actor.zheng_michang",
+      "normalNoSubmission": {
+        "prepare": "准备买田、借粮和赈灾三类登记",
+        "commit": "优先登记能推进国策且责任清楚的合同"
+      },
+      "objective": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n5.qingliu_law",
+      "nodeId": "N5",
+      "seatId": "seat.qingliu_law",
+      "currentActorId": "actor.hai_rui",
+      "normalNoSubmission": {
+        "prepare": "核验实际卸粮与公开名义",
+        "commit": "公开任何合同与实物流向不一致"
+      },
+      "objective": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n5.jiangnan_merchant",
+      "nodeId": "N5",
+      "seatId": "seat.jiangnan_merchant",
+      "currentActorId": "actor.shen_yishi",
+      "normalNoSubmission": {
+        "prepare": "决定粮食用途并准备借据",
+        "commit": "把主要粮用于赈灾借贷，保留商业债权"
+      },
+      "objective": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n5.sili_weaving",
+      "nodeId": "N5",
+      "seatId": "seat.sili_weaving",
+      "currentActorId": "actor.yang_jinshui",
+      "normalNoSubmission": {
+        "prepare": "决定灯笼与公开帖子",
+        "commit": "保留保护性名义但避免虚构圣旨"
+      },
+      "objective": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n5.cabinet_finance",
+      "nodeId": "N5",
+      "seatId": "seat.cabinet_finance",
+      "currentActorId": "actor.yan_shifan",
+      "normalNoSubmission": {
+        "prepare": "准备财政认定规则",
+        "commit": "只把有签收、有用途的粮计入政策履约"
+      },
+      "objective": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    }
+  ],
+  "inputFallbackPolicies": [
+    {
+      "fallbackId": "inputfallback.n5.silence",
+      "nodeId": "N5",
+      "inputClass": "SILENCE",
+      "playerFacingMeaning": "沉默",
+      "actionRealization": "消耗当前机会；按席位默认政策执行。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "其他席位取得先手",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "粮船到埠 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n5.small_talk",
+      "nodeId": "N5",
+      "inputClass": "SMALL_TALK",
+      "playerFacingMeaning": "反复闲聊",
+      "actionRealization": "第一次编译为 DELAY；后续直接等待超时。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "默认政策继续",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "粮船到埠 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n5.rest_delay",
+      "nodeId": "N5",
+      "inputClass": "REST_DELAY",
+      "playerFacingMeaning": "休息或等待",
+      "actionRealization": "休息成功，恢复少量精力，消耗 PREPARE。",
+      "timeAdvance": "+半日",
+      "npcMove": "五个 AI/NPC 先手",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "粮船到埠 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n5.fabricated_success",
+      "nodeId": "N5",
+      "inputClass": "FABRICATED_SUCCESS",
+      "playerFacingMeaning": "声称已经取得命令、账册或同意",
+      "actionRealization": "编译为尝试取得；无来源则 FAILED_ATTEMPT。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "目标保管人加强防护或继续原计划",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "粮船到埠 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n5.overreach",
+      "nodeId": "N5",
+      "inputClass": "OVERREACH",
+      "playerFacingMeaning": "越权调兵、替皇帝裁决或控制他人",
+      "actionRealization": "动作失败；保留真实目标但不改写成别的政策选择。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "被越权对象留下可观察反应",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "粮船到埠 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n5.insufficient_resource",
+      "nodeId": "N5",
+      "inputClass": "INSUFFICIENT_RESOURCE",
+      "playerFacingMeaning": "资源不足",
+      "actionRealization": "允许部分执行或失败，已投入资源仍可能消耗。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "竞争方利用资源缺口",
+      "pressureDelta": "0 或 +1",
+      "nextSceneSeed": "粮船到埠 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n5.timeout",
+      "nodeId": "N5",
+      "inputClass": "TIMEOUT",
+      "playerFacingMeaning": "超时",
+      "actionRealization": "注入该席位 defaultPrepare 或 defaultCommit。",
+      "timeAdvance": "推进到阶段截止",
+      "npcMove": "AI/NPC 完成默认行动",
+      "pressureDelta": "至少 +1",
+      "nextSceneSeed": "粮船到埠 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n5.normal_no_submission",
+      "nodeId": "N5",
+      "inputClass": "NORMAL_NO_SUBMISSION",
+      "playerFacingMeaning": "无人提交有效替代行动",
+      "actionRealization": "六席默认政策合成推进。",
+      "timeAdvance": "推进到本拍截止",
+      "npcMove": "按席位目标同时执行",
+      "pressureDelta": "按节点默认轨迹",
+      "nextSceneSeed": "粮船到埠 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    }
+  ],
+  "composedDefaultProgression": "总督担保卸粮，省府登记官府借粮，清流公开核验船单，商会将粮转为赈灾借贷，织造局保留灯笼并解释为赈灾，内阁暂不确认财政收益；粮船主要赈灾，低价买田停止，皇权暴露为间接。"
+}

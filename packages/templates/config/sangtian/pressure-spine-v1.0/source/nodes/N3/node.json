@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "sangtian_pressure_node_v1",
+  "nodeId": "N3",
+  "sequence": 3,
+  "title": "三日断粮",
+  "subtitle": "以改兼赈：粮食、田价和土地归属同桌结算",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "entryCondition": "N2 已 FROZEN 且过场已生成。",
+  "deadline": "配置初值：三日粮时钟；两个内部时段，粮时钟归零即强制结算。",
+  "pressure": "官仓只够三日，桑苗时节逼近；救灾价格将决定灾民明年是否仍有田。",
+  "contestedObjectIds": [
+    "obj.relief_grain_pool",
+    "obj.land_deed_pool"
+  ],
+  "secondaryObjectIds": [],
+  "startState": {
+    "pressureLevel": 2,
+    "timeUsed": 0,
+    "sceneBudget": 3,
+    "frozen": false
+  },
+  "lockedFacts": [
+    "同一批粮只能有一个实际用途。",
+    "已经签署并登记的田契不能被一句话撤销。",
+    "集中低价买田是迫近风险，不是开局既成结果。"
+  ],
+  "freeTextBoundary": [
+    "输入只形成意图或尝试。",
+    "休息、等待、饮酒、回避可以成功，但必须消耗时间或行动机会。",
+    "编造已成功事实、越权命令和不存在资源必须失败并推进世界。",
+    "固定压力不能被“换故事”或假设句取消。"
+  ],
+  "actionBudget": {
+    "preparePerSeat": 1,
+    "commitPerSeat": 1,
+    "reactionPerSeat": 0
+  },
+  "earlySettlementCondition": "粮池全部分配、田价规则生效且无未决契约。",
+  "forcedSettlementCondition": "粮时钟归零或全部粮食已被预占。",
+  "nextNodeId": "N4",
+  "provenanceClaimIds": [
+    "N3-SF-01",
+    "N3-SF-02",
+    "N3-SF-03",
+    "N3-SF-04",
+    "N3-INF-01",
+    "N3-UNK-01"
+  ],
+  "adaptationDecisionIds": [
+    "adapt.n3.pressure_lock",
+    "adapt.n3.two_beats",
+    "adapt.n3.object_contest"
+  ]
+}

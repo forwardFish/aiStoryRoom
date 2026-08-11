@@ -11,6 +11,11 @@
       "artifactDirectory": "continuous-strategy-v1.2",
       "manifestSha256": "d21757acd32d29be647e9a3796e85886138a3c7aeacad1541cede947198242b2",
       "status": "published"
+    },
+    "sangtian_pressure_v1_0": {
+      "artifactDirectory": "pressure-spine-v1.0",
+      "manifestSha256": "585320a526a2017787393dceb88b824e317675f17bfa3184eeb8cdbafafe530f",
+      "status": "published"
     }
   }
 }

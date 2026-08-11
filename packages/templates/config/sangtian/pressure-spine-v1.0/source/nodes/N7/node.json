@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "sangtian_pressure_node_v1",
+  "nodeId": "N7",
+  "sequence": 7,
+  "title": "七日重审",
+  "subtitle": "哪一种真相能够在期限内取得法律与政治效力",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "entryCondition": "N6 已 FROZEN 且过场已生成。",
+  "deadline": "SOURCE_FACT：两日审结、第三日发出、五日急递；总计七日。",
+  "pressure": "原供、翻供、账册与军情同时存在；朝廷要求重审并警告问官，材料越向上牵涉，采用阻力越大。",
+  "contestedObjectIds": [
+    "obj.final_testimonies",
+    "obj.final_dispatch_routes"
+  ],
+  "secondaryObjectIds": [],
+  "startState": {
+    "pressureLevel": 2,
+    "timeUsed": 0,
+    "sceneBudget": 3,
+    "frozen": false
+  },
+  "lockedFacts": [
+    "两日审结、第三日发出、五日急递构成硬期限。",
+    "只使用前六节点实际形成的材料。",
+    "N7 后直接终局，不允许最后演说翻盘。"
+  ],
+  "freeTextBoundary": [
+    "输入只形成意图或尝试。",
+    "休息、等待、饮酒、回避可以成功，但必须消耗时间或行动机会。",
+    "编造已成功事实、越权命令和不存在资源必须失败并推进世界。",
+    "固定压力不能被“换故事”或假设句取消。"
+  ],
+  "actionBudget": {
+    "preparePerSeat": 1,
+    "commitPerSeat": 1,
+    "reactionPerSeat": 1
+  },
+  "earlySettlementCondition": "最终包封印、路线分配、应变结束，且至少一份材料进入在途。",
+  "forcedSettlementCondition": "第二日审结结束、第三日发出截止，或所有可用路线均已占用。",
+  "nextNodeId": "FINALE",
+  "provenanceClaimIds": [
+    "N7-SF-01",
+    "N7-SF-02",
+    "N7-SF-03",
+    "N7-SF-04",
+    "N7-INF-01",
+    "N7-UNK-01"
+  ],
+  "adaptationDecisionIds": [
+    "adapt.n7.pressure_lock",
+    "adapt.n7.two_beats",
+    "adapt.n7.object_contest",
+    "adapt.n7.reaction"
+  ]
+}

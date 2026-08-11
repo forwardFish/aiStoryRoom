@@ -1,0 +1,639 @@
+{
+  "schemaVersion": "sangtian_node_settlement_v1_1",
+  "nodeId": "N5",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "snapshotRule": "所有 COMMIT 基于同一节点快照；先后提交不产生天然优势。",
+  "conflictComparator": {
+    "hardRulesFirst": true,
+    "priorityOrder": [
+      "船货开始所有权",
+      "有效合同",
+      "实际物理控制",
+      "公开名义授权",
+      "确定性哈希破同分"
+    ],
+    "tieBreak": {
+      "method": "STABLE_HASH",
+      "input": "runSeed|nodeId|objectId|seatId",
+      "aiInvolved": false
+    },
+    "objectRules": [
+      {
+        "objectId": "obj.grain_fleet",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      },
+      {
+        "objectId": "obj.fleet_contract_and_banners",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      }
+    ]
+  },
+  "hardRules": [
+    "权限、知识、保管、资源与截止时间先于 comparator。",
+    "同一可分资源不得双花；不可分对象同一时刻只有一个实际保管者。",
+    "SIGN 只能由本人或有明确代理权者完成。",
+    "本节点刚取得的对象不得在同一动作或同节点条件应变中立即销毁。",
+    "已冻结事实不能被后续自由文本撤销。"
+  ],
+  "defaultTrajectory": {
+    "policySynthesis": "总督担保卸粮，省府登记官府借粮，清流公开核验船单，商会将粮转为赈灾借贷，织造局保留灯笼并解释为赈灾，内阁暂不确认财政收益；粮船主要赈灾，低价买田停止，皇权暴露为间接。",
+    "defaultInputState": {
+      "reliefUsePct": 75,
+      "landPurchaseUsePct": 10,
+      "contractConsistency": "CONSISTENT",
+      "publicNameAuthorization": "LIMITED_VALID",
+      "landSaleStopped": true
+    },
+    "defaultBranchId": "settlement.n5.high",
+    "deterministic": true
+  },
+  "conditionalReaction": null,
+  "branches": [
+    {
+      "branchId": "settlement.n5.high",
+      "level": "HIGH",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n5.settlement.high",
+      "frozenWorldState": "主要粮食以赈灾借贷形式进入灾县，低价买田被迫停止；土地保有上升，但商会形成大额债权，织造局与皇权暴露增加。",
+      "objectMutations": [
+        {
+          "objectId": "obj.grain_fleet",
+          "resultVersionId": "obj.grain_fleet@N5.HIGH.v1",
+          "status": "RELIEF_LOAN_DISTRIBUTED",
+          "custodyMode": "RECIPIENT_COUNTIES_AND_HOUSEHOLDS"
+        },
+        {
+          "objectId": "obj.fleet_contract_and_banners",
+          "resultVersionId": "obj.fleet_contract_and_banners@N5.HIGH.v1",
+          "status": "RELIEF_CONTRACT_WITH_LIMITED_PUBLIC_NAME",
+          "custodyMode": "COMPONENT_CUSTODY"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "粮食用途",
+        "借据与债权",
+        "田契转移",
+        "织造局名义",
+        "皇权暴露",
+        "商会替罪风险"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 15,
+        "track.mulberry_silk": 5,
+        "track.fiscal_military": 5,
+        "track.evidence_responsibility": 15,
+        "track.court_imperial_face": 5
+      },
+      "carryForward": [
+        "粮食用途",
+        "借据与债权",
+        "田契转移",
+        "织造局名义",
+        "皇权暴露",
+        "商会替罪风险",
+        "财政缺口转向商产",
+        "商会债权与皇权暴露进入N6"
+      ],
+      "transitionSceneId": "scene.n5.transition.high",
+      "predecessorIds": [
+        "scene.n5.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n5.transition.high"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.grain_fleet",
+        "obj.fleet_contract_and_banners"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTROLLED",
+        "frozenFacts": [
+          "船粮进入灾县借粮或可审计赈灾",
+          "集中贱买土地路径被阻断",
+          "真实用途、合同与公开名义均有见证"
+        ],
+        "objectState": "粮船用途唯一化；借据、卸粮清册和灯笼名义冻结。",
+        "carry": [
+          "财政缺口转向商产",
+          "商会债权与皇权暴露进入N6"
+        ]
+      },
+      "frozenFacts": [
+        "船粮进入灾县借粮或可审计赈灾",
+        "集中贱买土地路径被阻断",
+        "真实用途、合同与公开名义均有见证"
+      ],
+      "frozenResultId": "frozen.N5.HIGH",
+      "branchSelector": {
+        "all": [
+          {
+            "key": "reliefUsePct",
+            "op": ">=",
+            "value": 60
+          },
+          {
+            "key": "landPurchaseUsePct",
+            "op": "<=",
+            "value": 20
+          },
+          {
+            "key": "contractConsistency",
+            "op": "==",
+            "value": "CONSISTENT"
+          },
+          {
+            "key": "landSaleStopped",
+            "op": "==",
+            "value": true
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N5.HIGH.fact.01",
+        "frozen.N5.HIGH.fact.02",
+        "frozen.N5.HIGH.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N5.HIGH.fact.01",
+          "statement": "船粮进入灾县借粮或可审计赈灾",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N5.HIGH.fact.02",
+          "statement": "集中贱买土地路径被阻断",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N5.HIGH.fact.03",
+          "statement": "真实用途、合同与公开名义均有见证",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.grain_fleet",
+          "versionId": "obj.grain_fleet@N5.HIGH.v1",
+          "status": "RELIEF_LOAN_DISTRIBUTED",
+          "custodyMode": "RECIPIENT_COUNTIES_AND_HOUSEHOLDS",
+          "custodyRule": "按卸粮签收簿把粮食转给实际接收者；商会保留有效债权。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N5.HIGH"
+        },
+        {
+          "objectId": "obj.fleet_contract_and_banners",
+          "versionId": "obj.fleet_contract_and_banners@N5.HIGH.v1",
+          "status": "RELIEF_CONTRACT_WITH_LIMITED_PUBLIC_NAME",
+          "custodyMode": "COMPONENT_CUSTODY",
+          "custodyRule": "合同由省府登记，灯笼与公开名义仍归织造局；两部分版本分别冻结。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N5.HIGH"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n5.mid",
+      "level": "MID",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n5.settlement.mid",
+      "frozenWorldState": "粮食分流，一部分救灾、一部分买田；灾民暂时活下来，土地仍有明显转移，责任口径相互矛盾。",
+      "objectMutations": [
+        {
+          "objectId": "obj.grain_fleet",
+          "resultVersionId": "obj.grain_fleet@N5.MID.v1",
+          "status": "MIXED_USE_DISTRIBUTED",
+          "custodyMode": "DISTRIBUTED_BY_UNLOADING_LEDGER"
+        },
+        {
+          "objectId": "obj.fleet_contract_and_banners",
+          "resultVersionId": "obj.fleet_contract_and_banners@N5.MID.v1",
+          "status": "CONFLICTING_CONTRACT_AND_PUBLIC_FRAME",
+          "custodyMode": "COMPONENT_CUSTODY"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "粮食用途",
+        "借据与债权",
+        "田契转移",
+        "织造局名义",
+        "皇权暴露",
+        "商会替罪风险"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 0,
+        "track.mulberry_silk": 0,
+        "track.fiscal_military": 0,
+        "track.evidence_responsibility": 0,
+        "track.court_imperial_face": 0
+      },
+      "carryForward": [
+        "粮食用途",
+        "借据与债权",
+        "田契转移",
+        "织造局名义",
+        "皇权暴露",
+        "商会替罪风险",
+        "N6各方都有账目风险",
+        "民生与丝绸均未稳定"
+      ],
+      "transitionSceneId": "scene.n5.transition.mid",
+      "predecessorIds": [
+        "scene.n5.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n5.transition.mid"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.grain_fleet",
+        "obj.fleet_contract_and_banners"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTESTED",
+        "frozenFacts": [
+          "粮船分割为赈灾与买田等用途",
+          "部分田契转移",
+          "公开名义与合同不完全一致"
+        ],
+        "objectState": "每一批粮有唯一去向，但多套合同并存。",
+        "carry": [
+          "N6各方都有账目风险",
+          "民生与丝绸均未稳定"
+        ]
+      },
+      "frozenFacts": [
+        "粮船分割为赈灾与买田等用途",
+        "部分田契转移",
+        "公开名义与合同不完全一致"
+      ],
+      "frozenResultId": "frozen.N5.MID",
+      "branchSelector": {
+        "otherwise": true
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N5.MID.fact.01",
+        "frozen.N5.MID.fact.02",
+        "frozen.N5.MID.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N5.MID.fact.01",
+          "statement": "粮船分割为赈灾与买田等用途",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N5.MID.fact.02",
+          "statement": "部分田契转移",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N5.MID.fact.03",
+          "statement": "公开名义与合同不完全一致",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.grain_fleet",
+          "versionId": "obj.grain_fleet@N5.MID.v1",
+          "status": "MIXED_USE_DISTRIBUTED",
+          "custodyMode": "DISTRIBUTED_BY_UNLOADING_LEDGER",
+          "custodyRule": "赈灾、借贷与买田分别形成唯一用途，不允许同袋粮重复登记。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N5.MID"
+        },
+        {
+          "objectId": "obj.fleet_contract_and_banners",
+          "versionId": "obj.fleet_contract_and_banners@N5.MID.v1",
+          "status": "CONFLICTING_CONTRACT_AND_PUBLIC_FRAME",
+          "custodyMode": "COMPONENT_CUSTODY",
+          "custodyRule": "合同、灯笼和告示各由实际签署或持有者保管，冲突被保留。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N5.MID"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n5.low",
+      "level": "LOW",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n5.settlement.low",
+      "frozenWorldState": "主要粮食用于低价买田，改桑短期推进；灾民失去土地，商会和宫廷名义被锁进后续替罪链。",
+      "objectMutations": [
+        {
+          "objectId": "obj.grain_fleet",
+          "resultVersionId": "obj.grain_fleet@N5.LOW.v1",
+          "status": "MAJORITY_PURCHASE_USE",
+          "custodyMode": "PURCHASERS_FROM_VALID_CONTRACTS"
+        },
+        {
+          "objectId": "obj.fleet_contract_and_banners",
+          "resultVersionId": "obj.fleet_contract_and_banners@N5.LOW.v1",
+          "status": "PURCHASE_CONTRACT_DOMINANT",
+          "custodyMode": "COMPONENT_CUSTODY"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "粮食用途",
+        "借据与债权",
+        "田契转移",
+        "织造局名义",
+        "皇权暴露",
+        "商会替罪风险"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": -15,
+        "track.mulberry_silk": 5,
+        "track.fiscal_military": -5,
+        "track.evidence_responsibility": -15,
+        "track.court_imperial_face": -10
+      },
+      "carryForward": [
+        "粮食用途",
+        "借据与债权",
+        "田契转移",
+        "织造局名义",
+        "皇权暴露",
+        "商会替罪风险",
+        "失田和失序进入终局轨迹",
+        "商会提前成为替罪候选"
+      ],
+      "transitionSceneId": "scene.n5.transition.low",
+      "predecessorIds": [
+        "scene.n5.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n5.transition.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.grain_fleet",
+        "obj.fleet_contract_and_banners"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CAPTURED_BY_PRESSURE",
+        "frozenFacts": [
+          "赈粮未覆盖最低需求",
+          "买田、扣粮或强制接管先行",
+          "宫廷名义遮蔽或无法解释实际用途"
+        ],
+        "objectState": "粮食主要用于买田/扣押；低价兼并在本局成为既成结果。",
+        "carry": [
+          "失田和失序进入终局轨迹",
+          "商会提前成为替罪候选"
+        ]
+      },
+      "frozenFacts": [
+        "赈粮未覆盖最低需求",
+        "买田、扣粮或强制接管先行",
+        "宫廷名义遮蔽或无法解释实际用途"
+      ],
+      "frozenResultId": "frozen.N5.LOW",
+      "branchSelector": {
+        "any": [
+          {
+            "key": "landPurchaseUsePct",
+            "op": ">=",
+            "value": 60
+          },
+          {
+            "key": "reliefUsePct",
+            "op": "<",
+            "value": 30
+          },
+          {
+            "key": "contractConsistency",
+            "op": "==",
+            "value": "FALSE_PUBLIC_FRAME"
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N5.LOW.fact.01",
+        "frozen.N5.LOW.fact.02",
+        "frozen.N5.LOW.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N5.LOW.fact.01",
+          "statement": "赈粮未覆盖最低需求",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N5.LOW.fact.02",
+          "statement": "买田、扣粮或强制接管先行",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N5.LOW.fact.03",
+          "statement": "宫廷名义遮蔽或无法解释实际用途",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.grain_fleet",
+          "versionId": "obj.grain_fleet@N5.LOW.v1",
+          "status": "MAJORITY_PURCHASE_USE",
+          "custodyMode": "PURCHASERS_FROM_VALID_CONTRACTS",
+          "custodyRule": "主要粮量随买田合同转移；剩余粮按实际卸载处理。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N5.LOW"
+        },
+        {
+          "objectId": "obj.fleet_contract_and_banners",
+          "versionId": "obj.fleet_contract_and_banners@N5.LOW.v1",
+          "status": "PURCHASE_CONTRACT_DOMINANT",
+          "custodyMode": "COMPONENT_CUSTODY",
+          "custodyRule": "买田合同生效；未经授权的公开名义标记为 FALSE_PUBLIC_FRAME。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N5.LOW"
+        }
+      ]
+    }
+  ],
+  "frozenResultFields": [
+    "粮食用途",
+    "借据与债权",
+    "田契转移",
+    "织造局名义",
+    "皇权暴露",
+    "商会替罪风险"
+  ],
+  "nextNodeId": "N6",
+  "provenanceClass": "ADAPTATION_RULE",
+  "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+  "selectorInputs": [
+    {
+      "inputKey": "reliefUsePct",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "landPurchaseUsePct",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "contractConsistency",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "publicNameAuthorization",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "landSaleStopped",
+      "source": "Frozen action/object/event state",
+      "required": true
+    }
+  ],
+  "branchSelector": {
+    "evaluationOrder": [
+      "HIGH",
+      "LOW",
+      "MID"
+    ],
+    "selectors": {
+      "HIGH": {
+        "all": [
+          {
+            "key": "reliefUsePct",
+            "op": ">=",
+            "value": 60
+          },
+          {
+            "key": "landPurchaseUsePct",
+            "op": "<=",
+            "value": 20
+          },
+          {
+            "key": "contractConsistency",
+            "op": "==",
+            "value": "CONSISTENT"
+          },
+          {
+            "key": "landSaleStopped",
+            "op": "==",
+            "value": true
+          }
+        ]
+      },
+      "LOW": {
+        "any": [
+          {
+            "key": "landPurchaseUsePct",
+            "op": ">=",
+            "value": 60
+          },
+          {
+            "key": "reliefUsePct",
+            "op": "<",
+            "value": 30
+          },
+          {
+            "key": "contractConsistency",
+            "op": "==",
+            "value": "FALSE_PUBLIC_FRAME"
+          }
+        ]
+      },
+      "MID": {
+        "otherwise": true
+      }
+    },
+    "notes": "Thresholds are configuration seeds, not validated balance. HIGH is tested first, LOW second, MID is the only otherwise branch."
+  }
+}

@@ -1,0 +1,636 @@
+{
+  "schemaVersion": "sangtian_node_settlement_v1_1",
+  "nodeId": "N1",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "snapshotRule": "所有 COMMIT 基于同一节点快照；先后提交不产生天然优势。",
+  "conflictComparator": {
+    "hardRulesFirst": true,
+    "priorityOrder": [
+      "开始时实际保管权",
+      "合法紧急指挥层级",
+      "实际投入的兵力与物资",
+      "PREPARE 已建立的控制",
+      "确定性哈希破同分"
+    ],
+    "tieBreak": {
+      "method": "STABLE_HASH",
+      "input": "runSeed|nodeId|objectId|seatId",
+      "aiInvolved": false
+    },
+    "objectRules": [
+      {
+        "objectId": "obj.nine_weirs",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      },
+      {
+        "objectId": "obj.breach_order_chain",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      }
+    ]
+  },
+  "hardRules": [
+    "权限、知识、保管、资源与截止时间先于 comparator。",
+    "同一可分资源不得双花；不可分对象同一时刻只有一个实际保管者。",
+    "SIGN 只能由本人或有明确代理权者完成。",
+    "本节点刚取得的对象不得在同一动作或同节点条件应变中立即销毁。",
+    "已冻结事实不能被后续自由文本撤销。"
+  ],
+  "defaultTrajectory": {
+    "policySynthesis": "总督调兵抢险并局部分洪，省府维持执行，清流预警，商会提供最低物资，织造局封存部分记录，内阁不撤期限；形成中等灾情与争议证据链。",
+    "defaultInputState": {
+      "evacuationCoveragePct": 50,
+      "criticalWeirsSecuredCount": 1,
+      "verifiedBreachRecordCount": 1,
+      "disasterSeverity": 3
+    },
+    "defaultBranchId": "settlement.n1.mid",
+    "deterministic": true
+  },
+  "conditionalReaction": null,
+  "branches": [
+    {
+      "branchId": "settlement.n1.high",
+      "level": "HIGH",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n1.settlement.high",
+      "frozenWorldState": "局部分洪把水势引向预定低地，多数村落在夜前撤出；军饷和海防准备受到损耗，但毁堤命令、调兵痕迹与见证人至少保住两条独立记录。",
+      "objectMutations": [
+        {
+          "objectId": "obj.nine_weirs",
+          "resultVersionId": "obj.nine_weirs@N1.HIGH.v1",
+          "status": "PARTIALLY_SECURED",
+          "custodyMode": "DISTRIBUTED_CONTROL"
+        },
+        {
+          "objectId": "obj.breach_order_chain",
+          "resultVersionId": "obj.breach_order_chain@N1.HIGH.v1",
+          "status": "VERIFIABLE_CHAIN",
+          "custodyMode": "FROM_CONFLICT_WINNER"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "受灾范围",
+        "疏散比例",
+        "军务损耗",
+        "毁堤命令版本",
+        "经手与见证名单"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 15,
+        "track.mulberry_silk": 5,
+        "track.fiscal_military": 5,
+        "track.evidence_responsibility": 15,
+        "track.court_imperial_face": 5
+      },
+      "carryForward": [
+        "受灾范围",
+        "疏散比例",
+        "军务损耗",
+        "毁堤命令版本",
+        "经手与见证名单",
+        "抢险军务消耗进入N2/N3",
+        "证据持有人暴露于奏疏署名争夺"
+      ],
+      "transitionSceneId": "scene.n1.transition.high",
+      "predecessorIds": [
+        "scene.n1.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n1.transition.high"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTROLLED",
+        "frozenFacts": [
+          "主要受灾被限制在少数堰区",
+          "多数高风险村落在汛峰前撤离",
+          "至少一条毁堤命令或经手记录可验证"
+        ],
+        "objectState": "堰口状态与兵力去向唯一化；责任链至少保留两种相互印证来源。",
+        "carry": [
+          "抢险军务消耗进入N2/N3",
+          "证据持有人暴露于奏疏署名争夺"
+        ]
+      },
+      "frozenFacts": [
+        "主要受灾被限制在少数堰区",
+        "多数高风险村落在汛峰前撤离",
+        "至少一条毁堤命令或经手记录可验证"
+      ],
+      "frozenResultId": "frozen.N1.HIGH",
+      "branchSelector": {
+        "all": [
+          {
+            "key": "evacuationCoveragePct",
+            "op": ">=",
+            "value": 70
+          },
+          {
+            "key": "criticalWeirsSecuredCount",
+            "op": ">=",
+            "value": 2
+          },
+          {
+            "key": "verifiedBreachRecordCount",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "key": "disasterSeverity",
+            "op": "<=",
+            "value": 2
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N1.HIGH.fact.01",
+        "frozen.N1.HIGH.fact.02",
+        "frozen.N1.HIGH.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N1.HIGH.fact.01",
+          "statement": "主要受灾被限制在少数堰区",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N1.HIGH.fact.02",
+          "statement": "多数高风险村落在汛峰前撤离",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N1.HIGH.fact.03",
+          "statement": "至少一条毁堤命令或经手记录可验证",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.nine_weirs",
+          "versionId": "obj.nine_weirs@N1.HIGH.v1",
+          "status": "PARTIALLY_SECURED",
+          "custodyMode": "DISTRIBUTED_CONTROL",
+          "custodyRule": "按每处堰口合法 ALLOCATE 的投入、紧急指挥层级与到达时间分别确定；无人有效控制的堰口交给历史压力。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N1.HIGH"
+        },
+        {
+          "objectId": "obj.breach_order_chain",
+          "versionId": "obj.breach_order_chain@N1.HIGH.v1",
+          "status": "VERIFIABLE_CHAIN",
+          "custodyMode": "FROM_CONFLICT_WINNER",
+          "custodyRule": "由开始保管者中的最高有效保全/递送动作取得主保管；认证副本分别授予实际收件席位。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.sili_weaving"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N1.HIGH"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n1.mid",
+      "level": "MID",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n1.settlement.mid",
+      "frozenWorldState": "一县与邻近低地遭灾，疏散只完成一半；抢险与省府命令互相抵消，责任链存在却彼此冲突。",
+      "objectMutations": [
+        {
+          "objectId": "obj.nine_weirs",
+          "resultVersionId": "obj.nine_weirs@N1.MID.v1",
+          "status": "MIXED_BREACH",
+          "custodyMode": "DISTRIBUTED_CONTROL"
+        },
+        {
+          "objectId": "obj.breach_order_chain",
+          "resultVersionId": "obj.breach_order_chain@N1.MID.v1",
+          "status": "FRAGMENTED_CHAIN",
+          "custodyMode": "DISTRIBUTED_CUSTODY"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "受灾范围",
+        "疏散比例",
+        "军务损耗",
+        "毁堤命令版本",
+        "经手与见证名单"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 0,
+        "track.mulberry_silk": 0,
+        "track.fiscal_military": 0,
+        "track.evidence_responsibility": 0,
+        "track.court_imperial_face": 0
+      },
+      "carryForward": [
+        "受灾范围",
+        "疏散比例",
+        "军务损耗",
+        "毁堤命令版本",
+        "经手与见证名单",
+        "灾民规模扩大",
+        "第一道奏疏必须处理互相冲突的事实"
+      ],
+      "transitionSceneId": "scene.n1.transition.mid",
+      "predecessorIds": [
+        "scene.n1.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n1.transition.mid"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTESTED",
+        "frozenFacts": [
+          "多处堰口失守",
+          "疏散完成一部分",
+          "毁堤责任存在互相冲突版本"
+        ],
+        "objectState": "堰口结果唯一化；命令链分散在不同席位。",
+        "carry": [
+          "灾民规模扩大",
+          "第一道奏疏必须处理互相冲突的事实"
+        ]
+      },
+      "frozenFacts": [
+        "多处堰口失守",
+        "疏散完成一部分",
+        "毁堤责任存在互相冲突版本"
+      ],
+      "frozenResultId": "frozen.N1.MID",
+      "branchSelector": {
+        "otherwise": true
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N1.MID.fact.01",
+        "frozen.N1.MID.fact.02",
+        "frozen.N1.MID.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N1.MID.fact.01",
+          "statement": "多处堰口失守",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N1.MID.fact.02",
+          "statement": "疏散完成一部分",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N1.MID.fact.03",
+          "statement": "毁堤责任存在互相冲突版本",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.nine_weirs",
+          "versionId": "obj.nine_weirs@N1.MID.v1",
+          "status": "MIXED_BREACH",
+          "custodyMode": "DISTRIBUTED_CONTROL",
+          "custodyRule": "按每处堰口最高有效控制动作确定；冲突堰口按稳定哈希破同分。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N1.MID"
+        },
+        {
+          "objectId": "obj.breach_order_chain",
+          "versionId": "obj.breach_order_chain@N1.MID.v1",
+          "status": "FRAGMENTED_CHAIN",
+          "custodyMode": "DISTRIBUTED_CUSTODY",
+          "custodyRule": "原令、口述和经手痕迹分别留在实际持有人；不存在自动合并的完整链。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.sili_weaving"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N1.MID"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n1.low",
+      "level": "LOW",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n1.settlement.low",
+      "frozenWorldState": "多处堰口接连失守，撤离迟缓，毁堤命令被层层口头化；地方立刻进入断粮与低价卖田风险。",
+      "objectMutations": [
+        {
+          "objectId": "obj.nine_weirs",
+          "resultVersionId": "obj.nine_weirs@N1.LOW.v1",
+          "status": "MULTIPLE_IRREVERSIBLE_BREACHES",
+          "custodyMode": "SYSTEM_PRESSURE"
+        },
+        {
+          "objectId": "obj.breach_order_chain",
+          "resultVersionId": "obj.breach_order_chain@N1.LOW.v1",
+          "status": "ORALIZED_OR_SUPPRESSED",
+          "custodyMode": "LAST_VERIFIED_HOLDER"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "受灾范围",
+        "疏散比例",
+        "军务损耗",
+        "毁堤命令版本",
+        "经手与见证名单"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": -15,
+        "track.mulberry_silk": -5,
+        "track.fiscal_military": -5,
+        "track.evidence_responsibility": -15,
+        "track.court_imperial_face": -10
+      },
+      "carryForward": [
+        "受灾范围",
+        "疏散比例",
+        "军务损耗",
+        "毁堤命令版本",
+        "经手与见证名单",
+        "N2赈粮和奏疏压力上升",
+        "N3低价卖田风险显著扩大"
+      ],
+      "transitionSceneId": "scene.n1.transition.low",
+      "predecessorIds": [
+        "scene.n1.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n1.transition.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CAPTURED_BY_PRESSURE",
+        "frozenFacts": [
+          "大范围民生冲击形成",
+          "撤离严重迟缓",
+          "先手方控制公开解释或关键记录被压下"
+        ],
+        "objectState": "堰口不可逆失守；责任链只剩片段。",
+        "carry": [
+          "N2赈粮和奏疏压力上升",
+          "N3低价卖田风险显著扩大"
+        ]
+      },
+      "frozenFacts": [
+        "大范围民生冲击形成",
+        "撤离严重迟缓",
+        "先手方控制公开解释或关键记录被压下"
+      ],
+      "frozenResultId": "frozen.N1.LOW",
+      "branchSelector": {
+        "any": [
+          {
+            "key": "evacuationCoveragePct",
+            "op": "<",
+            "value": 35
+          },
+          {
+            "key": "disasterSeverity",
+            "op": ">=",
+            "value": 4
+          },
+          {
+            "all": [
+              {
+                "key": "criticalWeirsSecuredCount",
+                "op": "==",
+                "value": 0
+              },
+              {
+                "key": "verifiedBreachRecordCount",
+                "op": "==",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N1.LOW.fact.01",
+        "frozen.N1.LOW.fact.02",
+        "frozen.N1.LOW.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N1.LOW.fact.01",
+          "statement": "大范围民生冲击形成",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N1.LOW.fact.02",
+          "statement": "撤离严重迟缓",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N1.LOW.fact.03",
+          "statement": "先手方控制公开解释或关键记录被压下",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.nine_weirs",
+          "versionId": "obj.nine_weirs@N1.LOW.v1",
+          "status": "MULTIPLE_IRREVERSIBLE_BREACHES",
+          "custodyMode": "SYSTEM_PRESSURE",
+          "custodyRule": "失守堰口进入不可逆状态；剩余控制按有效守备动作分配。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N1.LOW"
+        },
+        {
+          "objectId": "obj.breach_order_chain",
+          "versionId": "obj.breach_order_chain@N1.LOW.v1",
+          "status": "ORALIZED_OR_SUPPRESSED",
+          "custodyMode": "LAST_VERIFIED_HOLDER",
+          "custodyRule": "只保留实际形成的片段；未见证的口头命令不生成对象版本。",
+          "knownBy": [
+            "seat.zhejiang_administration",
+            "seat.qingliu_law"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N1.LOW"
+        }
+      ]
+    }
+  ],
+  "frozenResultFields": [
+    "受灾范围",
+    "疏散比例",
+    "军务损耗",
+    "毁堤命令版本",
+    "经手与见证名单"
+  ],
+  "nextNodeId": "N2",
+  "provenanceClass": "ADAPTATION_RULE",
+  "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+  "selectorInputs": [
+    {
+      "inputKey": "evacuationCoveragePct",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "criticalWeirsSecuredCount",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "verifiedBreachRecordCount",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "disasterSeverity",
+      "source": "Frozen action/object/event state",
+      "required": true
+    }
+  ],
+  "branchSelector": {
+    "evaluationOrder": [
+      "HIGH",
+      "LOW",
+      "MID"
+    ],
+    "selectors": {
+      "HIGH": {
+        "all": [
+          {
+            "key": "evacuationCoveragePct",
+            "op": ">=",
+            "value": 70
+          },
+          {
+            "key": "criticalWeirsSecuredCount",
+            "op": ">=",
+            "value": 2
+          },
+          {
+            "key": "verifiedBreachRecordCount",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "key": "disasterSeverity",
+            "op": "<=",
+            "value": 2
+          }
+        ]
+      },
+      "LOW": {
+        "any": [
+          {
+            "key": "evacuationCoveragePct",
+            "op": "<",
+            "value": 35
+          },
+          {
+            "key": "disasterSeverity",
+            "op": ">=",
+            "value": 4
+          },
+          {
+            "all": [
+              {
+                "key": "criticalWeirsSecuredCount",
+                "op": "==",
+                "value": 0
+              },
+              {
+                "key": "verifiedBreachRecordCount",
+                "op": "==",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "MID": {
+        "otherwise": true
+      }
+    },
+    "notes": "Thresholds are configuration seeds, not validated balance. HIGH is tested first, LOW second, MID is the only otherwise branch."
+  }
+}

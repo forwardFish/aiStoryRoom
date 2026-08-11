@@ -1,0 +1,329 @@
+{
+  "schemaVersion": "sangtian_objects_v1",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "hardRules": [
+    "对象保管、版本、签押和送达由结算维护。",
+    "本节点刚取得的对象不能在同一动作或同节点应变中立即销毁。",
+    "两组四箱账册的原件、副本与逐箱对应关系保持 UNKNOWN。"
+  ],
+  "objects": [
+    {
+      "objectId": "obj.sangtian_edict",
+      "name": "桑田诏与改桑国策",
+      "kind": "POLICY",
+      "initialCustody": "seat.cabinet_finance",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.fiscal_gap",
+      "name": "国库与军饷缺口",
+      "kind": "PRESSURE",
+      "initialCustody": "SYSTEM",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.silk_quota",
+      "name": "丝绸任务与织造产能",
+      "kind": "OBLIGATION",
+      "initialCustody": "seat.sili_weaving",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.nine_weirs",
+      "name": "九处堰口及其处置权",
+      "kind": "INFRASTRUCTURE",
+      "initialCustody": "MIXED_LOCAL",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": [
+        "每局具体受损顺序属于改编结算，不冒充原作逐时记录。"
+      ]
+    },
+    {
+      "objectId": "obj.weir_troop_deployment",
+      "name": "守堰、分洪与疏散兵力",
+      "kind": "RESOURCE",
+      "initialCustody": "seat.zhejiang_governor",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.breach_order_chain",
+      "name": "毁堤命令与经手责任链",
+      "kind": "EVIDENCE_CHAIN",
+      "initialCustody": "seat.zhejiang_administration",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": [
+        "开局并非六席都知道完整指使层级。"
+      ]
+    },
+    {
+      "objectId": "obj.first_memorial",
+      "name": "水灾后的第一道奏疏",
+      "kind": "DOCUMENT",
+      "initialCustody": "seat.zhejiang_governor",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.ma_confession",
+      "name": "马宁远供状",
+      "kind": "EVIDENCE",
+      "initialCustody": "actor.ma_ningyuan",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": [
+        "供状后续采用范围取决于保管、附送和收件。"
+      ]
+    },
+    {
+      "objectId": "obj.relief_grain_pool",
+      "name": "官仓与商粮可用粮池",
+      "kind": "DIVISIBLE_RESOURCE",
+      "initialCustody": "MIXED",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": [
+        "本局精确数量是配置初值，不是原作数字。"
+      ]
+    },
+    {
+      "objectId": "obj.land_deed_pool",
+      "name": "灾民田契、田价与改桑地域",
+      "kind": "CONTRACT_POOL",
+      "initialCustody": "HOUSEHOLDS_AND_OFFICES",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.tongwo_prisoners",
+      "name": "齐大柱、井上十四郎及相关人犯",
+      "kind": "PERSON_CUSTODY",
+      "initialCustody": "seat.zhejiang_administration",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.tongwo_case_file",
+      "name": "通倭案卷、口供与执行签押",
+      "kind": "CASE_FILE",
+      "initialCustody": "seat.zhejiang_administration",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": [
+        "三项执行门槛是本世界的玩法抽象，不是普遍法制史结论。"
+      ]
+    },
+    {
+      "objectId": "obj.grain_fleet",
+      "name": "到埠粮船及其唯一用途",
+      "kind": "DIVISIBLE_RESOURCE",
+      "initialCustody": "seat.jiangnan_merchant",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.fleet_contract_and_banners",
+      "name": "粮船契约、织造局灯笼与公开名义",
+      "kind": "PUBLIC_FRAME",
+      "initialCustody": "MIXED",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.shen_yishi_person_and_assets",
+      "name": "沈一石、商产与可划拨现银",
+      "kind": "PERSON_AND_ASSETS",
+      "initialCustody": "seat.jiangnan_merchant",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.local_four_boxes",
+      "name": "本地四口木箱账册",
+      "kind": "LEDGER_SET",
+      "initialCustody": "seat.zhejiang_administration",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": [
+        "与内廷四箱的原件、副本和逐箱对应关系 UNKNOWN。"
+      ]
+    },
+    {
+      "objectId": "obj.inner_court_four_boxes",
+      "name": "内廷四口木箱账册",
+      "kind": "LEDGER_SET",
+      "initialCustody": "seat.sili_weaving",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": [
+        "与本地四箱的原件、副本和逐箱对应关系 UNKNOWN。"
+      ]
+    },
+    {
+      "objectId": "obj.final_testimonies",
+      "name": "原供、翻供、证言与问官签押",
+      "kind": "EVIDENCE_PACKET",
+      "initialCustody": "seat.qingliu_law",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.final_dispatch_routes",
+      "name": "封印、急递路线与收件渠道",
+      "kind": "DISPATCH_NETWORK",
+      "initialCustody": "MIXED",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.governor_command_seal",
+      "name": "总督军政令印",
+      "kind": "AUTHORITY",
+      "initialCustody": "seat.zhejiang_governor",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.military_dispatch_channel",
+      "name": "总督军驿与前线渠道",
+      "kind": "CHANNEL",
+      "initialCustody": "seat.zhejiang_governor",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.governor_memorial_channel",
+      "name": "总督奏报渠道",
+      "kind": "CHANNEL",
+      "initialCustody": "seat.zhejiang_governor",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.provincial_seal",
+      "name": "浙江省府印信",
+      "kind": "AUTHORITY",
+      "initialCustody": "seat.zhejiang_administration",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.local_official_network",
+      "name": "府县执行官吏网络",
+      "kind": "NETWORK",
+      "initialCustody": "seat.zhejiang_administration",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.enforcement_roster",
+      "name": "差役与押解名册",
+      "kind": "RESOURCE",
+      "initialCustody": "seat.zhejiang_administration",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.law_review_channel",
+      "name": "法度审查与拒签渠道",
+      "kind": "AUTHORITY",
+      "initialCustody": "seat.qingliu_law",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.witness_protection_roster",
+      "name": "证人保护名册",
+      "kind": "RESOURCE",
+      "initialCustody": "seat.qingliu_law",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.sealed_evidence_index",
+      "name": "封存证据索引",
+      "kind": "EVIDENCE_INDEX",
+      "initialCustody": "seat.qingliu_law",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.merchant_grain_pool",
+      "name": "商会粮仓",
+      "kind": "DIVISIBLE_RESOURCE",
+      "initialCustody": "seat.jiangnan_merchant",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.merchant_credit_network",
+      "name": "商会信用与借据网络",
+      "kind": "NETWORK",
+      "initialCustody": "seat.jiangnan_merchant",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.merchant_fleet",
+      "name": "商船与运输队",
+      "kind": "RESOURCE",
+      "initialCustody": "seat.jiangnan_merchant",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.merchant_legacy_orders",
+      "name": "商会遗命与预设递送",
+      "kind": "PENDING_ORDER",
+      "initialCustody": "seat.jiangnan_merchant",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.weaving_bureau_banner",
+      "name": "织造局公开名义",
+      "kind": "PUBLIC_FRAME",
+      "initialCustody": "seat.sili_weaving",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.inner_court_dispatch_channel",
+      "name": "司礼监与锦衣卫递送渠道",
+      "kind": "CHANNEL",
+      "initialCustody": "seat.sili_weaving",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.weaving_records",
+      "name": "织造局供货与银路记录",
+      "kind": "RECORDS",
+      "initialCustody": "seat.sili_weaving",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.cabinet_urgent_dispatch",
+      "name": "内阁急递与廷寄渠道",
+      "kind": "CHANNEL",
+      "initialCustody": "seat.cabinet_finance",
+      "sourceStatus": "SOURCE_FACT",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.fiscal_target_register",
+      "name": "财政与丝绸目标簿",
+      "kind": "OBLIGATION",
+      "initialCustody": "seat.cabinet_finance",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    },
+    {
+      "objectId": "obj.capital_receipt_channel",
+      "name": "中央收件与立案路径",
+      "kind": "CHANNEL",
+      "initialCustody": "seat.cabinet_finance",
+      "sourceStatus": "ADAPTATION_RULE",
+      "unknowns": []
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "sangtian_pressure_node_v1",
+  "nodeId": "N2",
+  "sequence": 2,
+  "title": "第一道奏疏",
+  "subtitle": "现实第一次被改写成朝廷承认的事实",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "entryCondition": "N1 已 FROZEN 且过场已生成。",
+  "deadline": "配置初值：驿递启程前两个时段；封印后只开放一次条件应变。",
+  "pressure": "灾民、赈粮与责任同时逼近，京师等待第一版正式解释。",
+  "contestedObjectIds": [
+    "obj.first_memorial",
+    "obj.ma_confession"
+  ],
+  "secondaryObjectIds": [],
+  "startState": {
+    "pressureLevel": 2,
+    "timeUsed": 0,
+    "sceneBudget": 3,
+    "frozen": false
+  },
+  "lockedFacts": [
+    "水灾与 N1 冻结结果不可撤销。",
+    "奏疏必须在本节点结束前形成并发出。",
+    "供状只有实际附送或另路递送才会进入后续收件范围。"
+  ],
+  "freeTextBoundary": [
+    "输入只形成意图或尝试。",
+    "休息、等待、饮酒、回避可以成功，但必须消耗时间或行动机会。",
+    "编造已成功事实、越权命令和不存在资源必须失败并推进世界。",
+    "固定压力不能被“换故事”或假设句取消。"
+  ],
+  "actionBudget": {
+    "preparePerSeat": 1,
+    "commitPerSeat": 1,
+    "reactionPerSeat": 1
+  },
+  "earlySettlementCondition": "必要签押完成，路线已分配，且没有未决的条件应变。",
+  "forcedSettlementCondition": "驿递出发时刻到达，或奏稿完成度达到 100% 且已有最低法定签押。",
+  "nextNodeId": "N3",
+  "provenanceClaimIds": [
+    "N2-SF-01",
+    "N2-SF-02",
+    "N2-SF-03",
+    "N2-SF-04",
+    "N2-INF-01",
+    "N2-UNK-01"
+  ],
+  "adaptationDecisionIds": [
+    "adapt.n2.pressure_lock",
+    "adapt.n2.two_beats",
+    "adapt.n2.object_contest",
+    "adapt.n2.reaction"
+  ]
+}

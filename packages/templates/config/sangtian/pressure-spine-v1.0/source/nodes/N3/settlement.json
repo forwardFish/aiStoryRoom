@@ -1,0 +1,633 @@
+{
+  "schemaVersion": "sangtian_node_settlement_v1_1",
+  "nodeId": "N3",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "snapshotRule": "所有 COMMIT 基于同一节点快照；先后提交不产生天然优势。",
+  "conflictComparator": {
+    "hardRulesFirst": true,
+    "priorityOrder": [
+      "粮食或田契的开始所有权",
+      "有效行政命令",
+      "有担保的实际对价",
+      "PREPARE 已完成的登记与公示",
+      "确定性哈希破同分"
+    ],
+    "tieBreak": {
+      "method": "STABLE_HASH",
+      "input": "runSeed|nodeId|objectId|seatId",
+      "aiInvolved": false
+    },
+    "objectRules": [
+      {
+        "objectId": "obj.relief_grain_pool",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      },
+      {
+        "objectId": "obj.land_deed_pool",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      }
+    ]
+  },
+  "hardRules": [
+    "权限、知识、保管、资源与截止时间先于 comparator。",
+    "同一可分资源不得双花；不可分对象同一时刻只有一个实际保管者。",
+    "SIGN 只能由本人或有明确代理权者完成。",
+    "本节点刚取得的对象不得在同一动作或同节点条件应变中立即销毁。",
+    "已冻结事实不能被后续自由文本撤销。"
+  ],
+  "defaultTrajectory": {
+    "policySynthesis": "总督取得有限外粮担保，省府保留粮市控制，清流拒登极低价田契，商会默认将多数可用粮转为有借据赈粮，织造局提供名义保护，内阁维持指标；形成中高赈济、低中改桑与商会债权。",
+    "defaultInputState": {
+      "reliefGrainSharePct": 65,
+      "landRetentionPct": 70,
+      "lowPriceDeedTransferPct": 15,
+      "priceFloorEffective": true
+    },
+    "defaultBranchId": "settlement.n3.high",
+    "deterministic": true
+  },
+  "conditionalReaction": null,
+  "branches": [
+    {
+      "branchId": "settlement.n3.high",
+      "level": "HIGH",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n3.settlement.high",
+      "frozenWorldState": "多数粮食进入有期限和担保的赈灾借贷，田价底线生效，改桑压力分散到未受灾区域；灾民大多保有基本耕作权。",
+      "objectMutations": [
+        {
+          "objectId": "obj.relief_grain_pool",
+          "resultVersionId": "obj.relief_grain_pool@N3.HIGH.v1",
+          "status": "MAJORITY_RELIEF_LOAN",
+          "custodyMode": "DISTRIBUTED_BY_ALLOCATION_LEDGER"
+        },
+        {
+          "objectId": "obj.land_deed_pool",
+          "resultVersionId": "obj.land_deed_pool@N3.HIGH.v1",
+          "status": "MOST_HOUSEHOLDS_RETAIN_CULTIVATION",
+          "custodyMode": "HOUSEHOLDS_PLUS_OFFICIAL_REGISTRY"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "粮食实际用途",
+        "田契转移比例",
+        "田价底线",
+        "商会债权",
+        "改桑地域与完成度",
+        "民变风险"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 15,
+        "track.mulberry_silk": 5,
+        "track.fiscal_military": 5,
+        "track.evidence_responsibility": 15,
+        "track.court_imperial_face": 5
+      },
+      "carryForward": [
+        "粮食实际用途",
+        "田契转移比例",
+        "田价底线",
+        "商会债权",
+        "改桑地域与完成度",
+        "民变风险",
+        "商会债权与总督担保进入N5/N6",
+        "丝绸进度承担代价"
+      ],
+      "transitionSceneId": "scene.n3.transition.high",
+      "predecessorIds": [
+        "scene.n3.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n3.transition.high"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTROLLED",
+        "frozenFacts": [
+          "多数灾民获得最低粮食保障",
+          "低价田契不被登记",
+          "改桑压力分散、延期或由百姓保有土地自行承担"
+        ],
+        "objectState": "粮食用途、借据、田契登记和田价底线全部冻结。",
+        "carry": [
+          "商会债权与总督担保进入N5/N6",
+          "丝绸进度承担代价"
+        ]
+      },
+      "frozenFacts": [
+        "多数灾民获得最低粮食保障",
+        "低价田契不被登记",
+        "改桑压力分散、延期或由百姓保有土地自行承担"
+      ],
+      "frozenResultId": "frozen.N3.HIGH",
+      "branchSelector": {
+        "all": [
+          {
+            "key": "reliefGrainSharePct",
+            "op": ">=",
+            "value": 60
+          },
+          {
+            "key": "landRetentionPct",
+            "op": ">=",
+            "value": 65
+          },
+          {
+            "key": "lowPriceDeedTransferPct",
+            "op": "<=",
+            "value": 20
+          },
+          {
+            "key": "priceFloorEffective",
+            "op": "==",
+            "value": true
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N3.HIGH.fact.01",
+        "frozen.N3.HIGH.fact.02",
+        "frozen.N3.HIGH.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N3.HIGH.fact.01",
+          "statement": "多数灾民获得最低粮食保障",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N3.HIGH.fact.02",
+          "statement": "低价田契不被登记",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N3.HIGH.fact.03",
+          "statement": "改桑压力分散、延期或由百姓保有土地自行承担",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.relief_grain_pool",
+          "versionId": "obj.relief_grain_pool@N3.HIGH.v1",
+          "status": "MAJORITY_RELIEF_LOAN",
+          "custodyMode": "DISTRIBUTED_BY_ALLOCATION_LEDGER",
+          "custodyRule": "每一份粮按实际签收分配给县仓、乡约或军需；总量守恒且不得双花。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N3.HIGH"
+        },
+        {
+          "objectId": "obj.land_deed_pool",
+          "versionId": "obj.land_deed_pool@N3.HIGH.v1",
+          "status": "MOST_HOUSEHOLDS_RETAIN_CULTIVATION",
+          "custodyMode": "HOUSEHOLDS_PLUS_OFFICIAL_REGISTRY",
+          "custodyRule": "低价契约拒登；已登记借粮与保田安排形成新版本。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N3.HIGH"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n3.mid",
+      "level": "MID",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n3.settlement.mid",
+      "frozenWorldState": "一部分粮赈灾、一部分买田，田价保护只覆盖部分家庭；国策取得短期进度，但新的粮债和不平等已经形成。",
+      "objectMutations": [
+        {
+          "objectId": "obj.relief_grain_pool",
+          "resultVersionId": "obj.relief_grain_pool@N3.MID.v1",
+          "status": "MIXED_RELIEF_AND_PURCHASE",
+          "custodyMode": "DISTRIBUTED_BY_ALLOCATION_LEDGER"
+        },
+        {
+          "objectId": "obj.land_deed_pool",
+          "resultVersionId": "obj.land_deed_pool@N3.MID.v1",
+          "status": "MIXED_TRANSFER",
+          "custodyMode": "SIGNED_CONTRACT_HOLDERS"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "粮食实际用途",
+        "田契转移比例",
+        "田价底线",
+        "商会债权",
+        "改桑地域与完成度",
+        "民变风险"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 0,
+        "track.mulberry_silk": 0,
+        "track.fiscal_military": 0,
+        "track.evidence_responsibility": 0,
+        "track.court_imperial_face": 0
+      },
+      "carryForward": [
+        "粮食实际用途",
+        "田契转移比例",
+        "田价底线",
+        "商会债权",
+        "改桑地域与完成度",
+        "民变风险",
+        "债务与失田并存",
+        "拒售者面临N4刑事压力"
+      ],
+      "transitionSceneId": "scene.n3.transition.mid",
+      "predecessorIds": [
+        "scene.n3.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n3.transition.mid"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTESTED",
+        "frozenFacts": [
+          "部分粮赈灾、部分换取田契",
+          "不同地区存在不同田价",
+          "部分家庭保田、部分家庭失田"
+        ],
+        "objectState": "粮和田契发生分流，不再可重复分配。",
+        "carry": [
+          "债务与失田并存",
+          "拒售者面临N4刑事压力"
+        ]
+      },
+      "frozenFacts": [
+        "部分粮赈灾、部分换取田契",
+        "不同地区存在不同田价",
+        "部分家庭保田、部分家庭失田"
+      ],
+      "frozenResultId": "frozen.N3.MID",
+      "branchSelector": {
+        "otherwise": true
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N3.MID.fact.01",
+        "frozen.N3.MID.fact.02",
+        "frozen.N3.MID.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N3.MID.fact.01",
+          "statement": "部分粮赈灾、部分换取田契",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N3.MID.fact.02",
+          "statement": "不同地区存在不同田价",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N3.MID.fact.03",
+          "statement": "部分家庭保田、部分家庭失田",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.relief_grain_pool",
+          "versionId": "obj.relief_grain_pool@N3.MID.v1",
+          "status": "MIXED_RELIEF_AND_PURCHASE",
+          "custodyMode": "DISTRIBUTED_BY_ALLOCATION_LEDGER",
+          "custodyRule": "赈粮、借粮与买田按唯一分配账拆分；未分配余额回到原持有人。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N3.MID"
+        },
+        {
+          "objectId": "obj.land_deed_pool",
+          "versionId": "obj.land_deed_pool@N3.MID.v1",
+          "status": "MIXED_TRANSFER",
+          "custodyMode": "SIGNED_CONTRACT_HOLDERS",
+          "custodyRule": "每张田契按有效签字、底价与登记状态确定归属。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N3.MID"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n3.low",
+      "level": "LOW",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n3.settlement.low",
+      "frozenWorldState": "粮食主要用于低价买田，短期改桑推进，灾民以失去土地换取口粮；民变与后续冤案压力显著上升。",
+      "objectMutations": [
+        {
+          "objectId": "obj.relief_grain_pool",
+          "resultVersionId": "obj.relief_grain_pool@N3.LOW.v1",
+          "status": "MAJORITY_LAND_PURCHASE",
+          "custodyMode": "DISTRIBUTED_BY_SIGNED_PURCHASE_CONTRACTS"
+        },
+        {
+          "objectId": "obj.land_deed_pool",
+          "resultVersionId": "obj.land_deed_pool@N3.LOW.v1",
+          "status": "LARGE_LOW_PRICE_TRANSFER",
+          "custodyMode": "PURCHASERS_FROM_VALID_DEEDS"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "粮食实际用途",
+        "田契转移比例",
+        "田价底线",
+        "商会债权",
+        "改桑地域与完成度",
+        "民变风险"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": -15,
+        "track.mulberry_silk": 5,
+        "track.fiscal_military": -5,
+        "track.evidence_responsibility": -15,
+        "track.court_imperial_face": -10
+      },
+      "carryForward": [
+        "粮食实际用途",
+        "田契转移比例",
+        "田价底线",
+        "商会债权",
+        "改桑地域与完成度",
+        "民变风险",
+        "民变风险与冤案动机上升",
+        "省府和商会责任加重"
+      ],
+      "transitionSceneId": "scene.n3.transition.low",
+      "predecessorIds": [
+        "scene.n3.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n3.transition.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.relief_grain_pool",
+        "obj.land_deed_pool"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CAPTURED_BY_PRESSURE",
+        "frozenFacts": [
+          "低价契约先于赈粮生效",
+          "救灾覆盖低",
+          "集中改桑获得短期进度"
+        ],
+        "objectState": "粮食优先买田，耕作权大规模转移成为本局改编结果。",
+        "carry": [
+          "民变风险与冤案动机上升",
+          "省府和商会责任加重"
+        ]
+      },
+      "frozenFacts": [
+        "低价契约先于赈粮生效",
+        "救灾覆盖低",
+        "集中改桑获得短期进度"
+      ],
+      "frozenResultId": "frozen.N3.LOW",
+      "branchSelector": {
+        "any": [
+          {
+            "key": "reliefGrainSharePct",
+            "op": "<",
+            "value": 30
+          },
+          {
+            "key": "landRetentionPct",
+            "op": "<",
+            "value": 40
+          },
+          {
+            "key": "lowPriceDeedTransferPct",
+            "op": ">=",
+            "value": 60
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N3.LOW.fact.01",
+        "frozen.N3.LOW.fact.02",
+        "frozen.N3.LOW.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N3.LOW.fact.01",
+          "statement": "低价契约先于赈粮生效",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N3.LOW.fact.02",
+          "statement": "救灾覆盖低",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N3.LOW.fact.03",
+          "statement": "集中改桑获得短期进度",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.relief_grain_pool",
+          "versionId": "obj.relief_grain_pool@N3.LOW.v1",
+          "status": "MAJORITY_LAND_PURCHASE",
+          "custodyMode": "DISTRIBUTED_BY_SIGNED_PURCHASE_CONTRACTS",
+          "custodyRule": "粮食随已签买田契约转移；没有签收的口头承诺不占用粮池。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N3.LOW"
+        },
+        {
+          "objectId": "obj.land_deed_pool",
+          "versionId": "obj.land_deed_pool@N3.LOW.v1",
+          "status": "LARGE_LOW_PRICE_TRANSFER",
+          "custodyMode": "PURCHASERS_FROM_VALID_DEEDS",
+          "custodyRule": "只转移实际签署并登记的田契；未签家庭不因统计结果自动失田。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N3.LOW"
+        }
+      ]
+    }
+  ],
+  "frozenResultFields": [
+    "粮食实际用途",
+    "田契转移比例",
+    "田价底线",
+    "商会债权",
+    "改桑地域与完成度",
+    "民变风险"
+  ],
+  "nextNodeId": "N4",
+  "provenanceClass": "ADAPTATION_RULE",
+  "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+  "selectorInputs": [
+    {
+      "inputKey": "reliefGrainSharePct",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "landRetentionPct",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "lowPriceDeedTransferPct",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "priceFloorEffective",
+      "source": "Frozen action/object/event state",
+      "required": true
+    }
+  ],
+  "branchSelector": {
+    "evaluationOrder": [
+      "HIGH",
+      "LOW",
+      "MID"
+    ],
+    "selectors": {
+      "HIGH": {
+        "all": [
+          {
+            "key": "reliefGrainSharePct",
+            "op": ">=",
+            "value": 60
+          },
+          {
+            "key": "landRetentionPct",
+            "op": ">=",
+            "value": 65
+          },
+          {
+            "key": "lowPriceDeedTransferPct",
+            "op": "<=",
+            "value": 20
+          },
+          {
+            "key": "priceFloorEffective",
+            "op": "==",
+            "value": true
+          }
+        ]
+      },
+      "LOW": {
+        "any": [
+          {
+            "key": "reliefGrainSharePct",
+            "op": "<",
+            "value": 30
+          },
+          {
+            "key": "landRetentionPct",
+            "op": "<",
+            "value": 40
+          },
+          {
+            "key": "lowPriceDeedTransferPct",
+            "op": ">=",
+            "value": 60
+          }
+        ]
+      },
+      "MID": {
+        "otherwise": true
+      }
+    },
+    "notes": "Thresholds are configuration seeds, not validated balance. HIGH is tested first, LOW second, MID is the only otherwise branch."
+  }
+}

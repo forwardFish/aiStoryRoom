@@ -1,0 +1,1145 @@
+{
+  "schemaVersion": "sangtian_node_seat_content_v1",
+  "nodeId": "N2",
+  "seatCount": 6,
+  "seats": [
+    {
+      "seatContentId": "seatcontent.n2.zhejiang_governor",
+      "nodeId": "N2",
+      "seatId": "seat.zhejiang_governor",
+      "roleKey": "zhejiang_governor",
+      "currentActorId": "actor.hu_zongxian",
+      "institutionalMission": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n2.zhejiang_governor.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N2",
+          "statement": "灾民、赈粮与责任同时逼近，京师等待第一版正式解释。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n2.zhejiang_governor.claim.n2-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-01",
+          "statement": "胡宗宪要求立即赈灾，并把当年改桑碍难施行、请求延缓写进奏疏。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n2.zhejiang_governor.claim.n2-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-02",
+          "statement": "胡宗宪要求以调粮借贷、百姓复耕和分年归还为理由调整奏疏内容。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n2.zhejiang_governor.claim.n2-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-03",
+          "statement": "马宁远提交了由相关人签名的毁堤供状，供状进入奏疏谈判现场。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n2.zhejiang_governor.object.first_memorial",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.first_memorial",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：水灾后的第一道奏疏。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n2.zhejiang_governor.system.n2-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-UNK-01",
+          "statement": "任何未实际封印并发送的副本都不能由 Narrator 写成已抵京。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易高估一纸总督令在地方执行链中的即时效力。"
+      ],
+      "resources": [
+        "总督军令",
+        "军驿",
+        "跨省协调",
+        "奏报担保"
+      ],
+      "permissions": [
+        "调兵与分洪",
+        "总督担保",
+        "领衔奏疏",
+        "军饷划拨"
+      ],
+      "privatePressure": "领衔意味着把将来追责写到自己名下。",
+      "keyLeverage": "领衔奏疏、决定是否承担第一版事实",
+      "defaultPrepare": "提出灾情、赈粮、缓办与责任待查四段正文",
+      "defaultCommit": "领衔一份可执行且可复核的奏疏",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n2.zhejiang_governor.01",
+          "text": "“灾情、赈粮和责任要分开写，不能用一句河工失修全盖住。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.zhejiang_governor.02",
+          "text": "“我可以领衔，但供状若不入附件，日后谁也别说我早已掌握全案。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.zhejiang_governor.03",
+          "text": "“先问每个署名的人愿意担哪一段，不愿担的就让他写明拒签。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        }
+      ],
+      "privateOpening": "胡宗宪面前是一份尚未定稿的奏疏。领衔能把赈粮与缓办写进第一版事实，也会把以后每一次追责写到自己名下。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.governor_office",
+          "afterNode": "N2",
+          "seatId": "seat.zhejiang_governor",
+          "fromActorId": "actor.hu_zongxian",
+          "toActorId": "actor.hu_zongxian",
+          "permissionChange": [
+            "失去浙江巡抚兼任的直接地方民政权限",
+            "保留浙直总督军务、跨省协调、军饷与奏报渠道"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n2.pressure_lock",
+        "adapt.n2.two_beats",
+        "adapt.n2.object_contest",
+        "adapt.n2.reaction"
+      ],
+      "knownFactIds": [
+        "known.n2.zhejiang_governor.pressure",
+        "known.n2.zhejiang_governor.claim.n2-sf-01",
+        "known.n2.zhejiang_governor.claim.n2-sf-02",
+        "known.n2.zhejiang_governor.claim.n2-sf-03",
+        "known.n2.zhejiang_governor.object.first_memorial"
+      ],
+      "unknownFactIds": [
+        "unknown.n2.zhejiang_governor.system.n2-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.first_memorial"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n2.zhejiang_administration",
+      "nodeId": "N2",
+      "seatId": "seat.zhejiang_administration",
+      "roleKey": "zhejiang_administration",
+      "currentActorId": "actor.zheng_michang",
+      "institutionalMission": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n2.zhejiang_administration.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N2",
+          "statement": "灾民、赈粮与责任同时逼近，京师等待第一版正式解释。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n2.zhejiang_administration.claim.n2-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-01",
+          "statement": "胡宗宪要求立即赈灾，并把当年改桑碍难施行、请求延缓写进奏疏。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n2.zhejiang_administration.claim.n2-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-02",
+          "statement": "胡宗宪要求以调粮借贷、百姓复耕和分年归还为理由调整奏疏内容。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n2.zhejiang_administration.claim.n2-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-03",
+          "statement": "马宁远提交了由相关人签名的毁堤供状，供状进入奏疏谈判现场。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n2.zhejiang_administration.object.provincial_seal",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.provincial_seal",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：浙江省府印信。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n2.zhejiang_administration.claim.n2-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-04",
+          "statement": "后续人物明确追问胡宗宪是否掌握毁堤供状，说明供状保管本身成为政治筹码。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n2.zhejiang_administration.system.n2-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-UNK-01",
+          "statement": "任何未实际封印并发送的副本都不能由 Narrator 写成已抵京。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把先形成的公文误认为最终会被朝廷接受的事实。"
+      ],
+      "resources": [
+        "省府印信",
+        "府县官吏",
+        "差役与押解",
+        "田契登记"
+      ],
+      "permissions": [
+        "签发地方命令",
+        "控制人犯与案卷",
+        "登记契约",
+        "查封商产"
+      ],
+      "privatePressure": "安全奏稿能保护上级，却可能让省府独担地方失修。",
+      "keyLeverage": "以省府印信支持、删改或拒绝某一版本",
+      "defaultPrepare": "准备河工失修与地方负责的安全版本",
+      "defaultCommit": "以省府印信支持不牵上层的版本",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n2.zhejiang_administration.01",
+          "text": "“奏疏若直写人为毁堤，省府上下谁都别想置身事外。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.provincial_seal"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.zhejiang_administration.02",
+          "text": "“赈粮可以请求，暂缓国策必须有能向京师交代的期限。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.provincial_seal"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.zhejiang_administration.03",
+          "text": "“供状留在浙江尚可复核，随疏送走便再无转圜。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.provincial_seal"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        }
+      ],
+      "privateOpening": "郑泌昌握着省府印信。把人为毁堤写进正文会伤及整个执行链，删去又可能让省府独担河工失修。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.administration",
+          "afterNode": "N6",
+          "seatId": "seat.zhejiang_administration",
+          "fromActorId": "actor.zheng_michang",
+          "toActorId": "actor.zheng_michang",
+          "permissionChange": [
+            "进入在押状态后只能签供、翻供、拒签、交代旧令和使用获准通信",
+            "不得继续调动省府差役、粮市与查封权限"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n2.pressure_lock",
+        "adapt.n2.two_beats",
+        "adapt.n2.object_contest",
+        "adapt.n2.reaction"
+      ],
+      "knownFactIds": [
+        "known.n2.zhejiang_administration.pressure",
+        "known.n2.zhejiang_administration.claim.n2-sf-01",
+        "known.n2.zhejiang_administration.claim.n2-sf-02",
+        "known.n2.zhejiang_administration.claim.n2-sf-03",
+        "known.n2.zhejiang_administration.object.provincial_seal"
+      ],
+      "unknownFactIds": [
+        "unknown.n2.zhejiang_administration.claim.n2-sf-04",
+        "unknown.n2.zhejiang_administration.system.n2-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.provincial_seal"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n2.qingliu_law",
+      "nodeId": "N2",
+      "seatId": "seat.qingliu_law",
+      "roleKey": "qingliu_law",
+      "currentActorId": "actor.tan_lun",
+      "institutionalMission": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n2.qingliu_law.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N2",
+          "statement": "灾民、赈粮与责任同时逼近，京师等待第一版正式解释。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun"
+        },
+        {
+          "factRefId": "known.n2.qingliu_law.object.ma_confession",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.ma_confession",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：马宁远供状。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n2.qingliu_law.claim.n2-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-01",
+          "statement": "胡宗宪要求立即赈灾，并把当年改桑碍难施行、请求延缓写进奏疏。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n2.qingliu_law.claim.n2-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-02",
+          "statement": "胡宗宪要求以调粮借贷、百姓复耕和分年归还为理由调整奏疏内容。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n2.qingliu_law.system.n2-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-UNK-01",
+          "statement": "任何未实际封印并发送的副本都不能由 Narrator 写成已抵京。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信只要事实真实就会自然生效。"
+      ],
+      "resources": [
+        "调查权限",
+        "拒签权",
+        "证人保护",
+        "证据索引"
+      ],
+      "permissions": [
+        "审查案卷",
+        "拒绝签押",
+        "保护证人",
+        "制作封印与索引"
+      ],
+      "privatePressure": "供状太早附送会惊动对手，太晚又可能永远失去效力。",
+      "keyLeverage": "控制供状附件、认证副本和见证说明",
+      "defaultPrepare": "保管供状并制作认证摘要",
+      "defaultCommit": "只在保管链和签押完整时附送供状",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n2.qingliu_law.01",
+          "text": "“供状有签名不等于经手清楚，先核谁在何时见过原纸。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.qingliu_law.02",
+          "text": "“要附送便用封条、见证与收件三项把路写死。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.qingliu_law.03",
+          "text": "“若有人只肯签灾情不肯签责任，便把两份意见并列，不替他遮掩。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        }
+      ],
+      "privateOpening": "谭纶能控制的不是奏疏口气，而是供状是否以原件、认证摘要或独立路线进入后续。太早暴露和永远留在本地同样危险。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.qingliu",
+          "afterNode": "N2",
+          "seatId": "seat.qingliu_law",
+          "fromActorId": "actor.tan_lun",
+          "toActorId": "actor.hai_rui",
+          "inheritIf": [
+            "PUBLIC",
+            "SEAT_RECORD",
+            "TRANSFERRED_AND_RECEIVED"
+          ],
+          "neverAutoInherit": [
+            "私下猜测",
+            "未送达信件",
+            "玩家屏幕上见过但海瑞未获知的秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n2.pressure_lock",
+        "adapt.n2.two_beats",
+        "adapt.n2.object_contest",
+        "adapt.n2.reaction"
+      ],
+      "knownFactIds": [
+        "known.n2.qingliu_law.pressure",
+        "known.n2.qingliu_law.object.ma_confession"
+      ],
+      "unknownFactIds": [
+        "unknown.n2.qingliu_law.claim.n2-sf-01",
+        "unknown.n2.qingliu_law.claim.n2-sf-02",
+        "unknown.n2.qingliu_law.system.n2-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.ma_confession"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n2.jiangnan_merchant",
+      "nodeId": "N2",
+      "seatId": "seat.jiangnan_merchant",
+      "roleKey": "jiangnan_merchant",
+      "currentActorId": "actor.shen_yishi",
+      "institutionalMission": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n2.jiangnan_merchant.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N2",
+          "statement": "灾民、赈粮与责任同时逼近，京师等待第一版正式解释。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi"
+        },
+        {
+          "factRefId": "known.n2.jiangnan_merchant.object.merchant_credit_network",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.merchant_credit_network",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：商会信用与借据网络。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n2.jiangnan_merchant.claim.n2-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-01",
+          "statement": "胡宗宪要求立即赈灾，并把当年改桑碍难施行、请求延缓写进奏疏。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n2.jiangnan_merchant.claim.n2-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-02",
+          "statement": "胡宗宪要求以调粮借贷、百姓复耕和分年归还为理由调整奏疏内容。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n2.jiangnan_merchant.system.n2-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-UNK-01",
+          "statement": "任何未实际封印并发送的副本都不能由 Narrator 写成已抵京。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信实际贡献能自动换来政治保护。"
+      ],
+      "resources": [
+        "粮仓",
+        "银票与信用",
+        "商船",
+        "契约与账目"
+      ],
+      "permissions": [
+        "分配商粮",
+        "签借据与买田合同",
+        "转运",
+        "留下遗命"
+      ],
+      "privatePressure": "担保赈粮会锁住商会信用，且未必换来政治保护。",
+      "keyLeverage": "为赈粮请求提供有条件信用担保",
+      "defaultPrepare": "提出有担保的赈粮信用方案",
+      "defaultCommit": "不给无期限、无签收人的空白担保",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n2.jiangnan_merchant.01",
+          "text": "“奏疏若要写借粮，先写借给谁、几时还、以何物作保。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.merchant_credit_network"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.jiangnan_merchant.02",
+          "text": "“商会可以担一程粮，不替没有签收人的空话担一省信用。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.merchant_credit_network"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.jiangnan_merchant.03",
+          "text": "“若把粮写成捐赈，日后再来追债，商路便先断给诸位看。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.merchant_credit_network"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        }
+      ],
+      "privateOpening": "沈一石若为奏疏中的借粮请求担保，商会信用会先被锁住，却未必得到任何政治保护。契约条件必须在落印前写清。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.merchant",
+          "afterNode": "N6",
+          "seatId": "seat.jiangnan_merchant",
+          "fromActorId": "actor.shen_yishi",
+          "toActorId": "actor.merchant_legacy_executor",
+          "inheritIf": [
+            "N6 冻结前形成的遗命",
+            "已登记债权",
+            "已启动递送",
+            "商会正式档案"
+          ],
+          "neverAutoInherit": [
+            "死后新计划",
+            "未留下的口头秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n2.pressure_lock",
+        "adapt.n2.two_beats",
+        "adapt.n2.object_contest",
+        "adapt.n2.reaction"
+      ],
+      "knownFactIds": [
+        "known.n2.jiangnan_merchant.pressure",
+        "known.n2.jiangnan_merchant.object.merchant_credit_network"
+      ],
+      "unknownFactIds": [
+        "unknown.n2.jiangnan_merchant.claim.n2-sf-01",
+        "unknown.n2.jiangnan_merchant.claim.n2-sf-02",
+        "unknown.n2.jiangnan_merchant.system.n2-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.merchant_credit_network"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n2.sili_weaving",
+      "nodeId": "N2",
+      "seatId": "seat.sili_weaving",
+      "roleKey": "sili_weaving",
+      "currentActorId": "actor.yang_jinshui",
+      "institutionalMission": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n2.sili_weaving.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N2",
+          "statement": "灾民、赈粮与责任同时逼近，京师等待第一版正式解释。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.n2.sili_weaving.claim.n2-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-01",
+          "statement": "胡宗宪要求立即赈灾，并把当年改桑碍难施行、请求延缓写进奏疏。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.n2.sili_weaving.claim.n2-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-03",
+          "statement": "马宁远提交了由相关人签名的毁堤供状，供状进入奏疏谈判现场。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.n2.sili_weaving.object.weaving_bureau_banner",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.weaving_bureau_banner",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：织造局公开名义。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n2.sili_weaving.claim.n2-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-02",
+          "statement": "胡宗宪要求以调粮借贷、百姓复耕和分年归还为理由调整奏疏内容。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n2.sili_weaving.claim.n2-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-04",
+          "statement": "后续人物明确追问胡宗宪是否掌握毁堤供状，说明供状保管本身成为政治筹码。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n2.sili_weaving.system.n2-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-UNK-01",
+          "statement": "任何未实际封印并发送的副本都不能由 Narrator 写成已抵京。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易以为内廷渠道足以压过所有地方见证。"
+      ],
+      "resources": [
+        "织造局名义",
+        "密奏",
+        "锦衣卫递送",
+        "供货记录"
+      ],
+      "permissions": [
+        "使用或撤回织造名义",
+        "密奏",
+        "内廷递送",
+        "核验织造记录"
+      ],
+      "privatePressure": "署名可以把赈灾写成内廷功劳，也会留下宫廷参与责任。",
+      "keyLeverage": "决定织造局署名与宫廷名义是否进入正文",
+      "defaultPrepare": "核对正文是否把宫廷名义写成直接责任",
+      "defaultCommit": "删除未经证明的宫廷指控后再考虑署名",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n2.sili_weaving.01",
+          "text": "“织造局署名能让京里先看见，也会让宫里先问责。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.weaving_bureau_banner"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.sili_weaving.02",
+          "text": "“别把宫廷名义写进人为毁堤一段，除非案上真有内廷经手。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.weaving_bureau_banner"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.sili_weaving.03",
+          "text": "“我可以拒签，也可以另递一封密奏；两条路的代价不同。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.weaving_bureau_banner"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        }
+      ],
+      "privateOpening": "杨金水知道织造局署名可以让京里更快重视，也会把宫廷名义写进灾情责任。拒签与密奏各自留下不同痕迹。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.weaving",
+          "afterNode": "N6",
+          "seatId": "seat.sili_weaving",
+          "fromActorId": "actor.yang_jinshui",
+          "toActorId": "actor.weaving_retainer",
+          "inheritIf": [
+            "织造局正式档案",
+            "已签发命令",
+            "已启动的锦衣卫交接"
+          ],
+          "unknownInvariant": "杨金水真实精神状态保持 UNKNOWN。"
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n2.pressure_lock",
+        "adapt.n2.two_beats",
+        "adapt.n2.object_contest",
+        "adapt.n2.reaction"
+      ],
+      "knownFactIds": [
+        "known.n2.sili_weaving.pressure",
+        "known.n2.sili_weaving.claim.n2-sf-01",
+        "known.n2.sili_weaving.claim.n2-sf-03",
+        "known.n2.sili_weaving.object.weaving_bureau_banner"
+      ],
+      "unknownFactIds": [
+        "unknown.n2.sili_weaving.claim.n2-sf-02",
+        "unknown.n2.sili_weaving.claim.n2-sf-04",
+        "unknown.n2.sili_weaving.system.n2-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.weaving_bureau_banner"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n2.cabinet_finance",
+      "nodeId": "N2",
+      "seatId": "seat.cabinet_finance",
+      "roleKey": "cabinet_finance",
+      "currentActorId": "actor.yan_shifan",
+      "institutionalMission": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n2.cabinet_finance.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N2",
+          "statement": "灾民、赈粮与责任同时逼近，京师等待第一版正式解释。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n2.cabinet_finance.object.capital_receipt_channel",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.capital_receipt_channel",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：中央收件与立案路径。",
+          "availableFrom": "N2",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n2.cabinet_finance.claim.n2-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-01",
+          "statement": "胡宗宪要求立即赈灾，并把当年改桑碍难施行、请求延缓写进奏疏。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n2.cabinet_finance.claim.n2-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-SF-02",
+          "statement": "胡宗宪要求以调粮借贷、百姓复耕和分年归还为理由调整奏疏内容。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n2.cabinet_finance.system.n2-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N2-UNK-01",
+          "statement": "任何未实际封印并发送的副本都不能由 Narrator 写成已抵京。",
+          "availableFrom": "N2",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把地方资源当作可随时征用的财政余额。"
+      ],
+      "resources": [
+        "急递与廷寄",
+        "财政目标",
+        "中央收件",
+        "抄没归属"
+      ],
+      "permissions": [
+        "设定期限",
+        "调整财政认定",
+        "指定收件路径",
+        "决定抄没归属"
+      ],
+      "privatePressure": "收件路径决定谁先解释奏疏，不是单纯送达速度。",
+      "keyLeverage": "指定普通、内阁直达或内廷收件路径",
+      "defaultPrepare": "指定普通内阁收件路径并记录抵达时限",
+      "defaultCommit": "先收正式奏疏，暂不接受来源不明附件",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n2.cabinet_finance.01",
+          "text": "“走内阁值房还是走通政常路，决定谁先拆封，不决定真假。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.capital_receipt_channel"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.cabinet_finance.02",
+          "text": "“奏疏若只报灾不报银粮办法，送得再快也只会被退问。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.capital_receipt_channel"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n2.cabinet_finance.03",
+          "text": "“附件若牵到内廷，须先算前线军饷能否承受这场震动。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.first_memorial",
+            "obj.ma_confession",
+            "obj.capital_receipt_channel"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        }
+      ],
+      "privateOpening": "内阁财政席决定材料先到谁手里，却不能让未附送的纸张一同到京。收件路线会改变解释顺序，不会自动改变事实。",
+      "handoffRules": [],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n2.pressure_lock",
+        "adapt.n2.two_beats",
+        "adapt.n2.object_contest",
+        "adapt.n2.reaction"
+      ],
+      "knownFactIds": [
+        "known.n2.cabinet_finance.pressure",
+        "known.n2.cabinet_finance.object.capital_receipt_channel"
+      ],
+      "unknownFactIds": [
+        "unknown.n2.cabinet_finance.claim.n2-sf-01",
+        "unknown.n2.cabinet_finance.claim.n2-sf-02",
+        "unknown.n2.cabinet_finance.system.n2-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.capital_receipt_channel"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    }
+  ]
+}

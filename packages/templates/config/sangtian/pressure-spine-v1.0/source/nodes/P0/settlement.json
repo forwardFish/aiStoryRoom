@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "sangtian_node_settlement_v1_1",
+  "nodeId": "P0",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "snapshotRule": "所有 COMMIT 基于同一节点快照；先后提交不产生天然优势。",
+  "conflictComparator": [],
+  "hardRules": [
+    "权限、知识、保管、资源与截止时间先于 comparator。",
+    "同一可分资源不得双花；不可分对象同一时刻只有一个实际保管者。",
+    "SIGN 只能由本人或有明确代理权者完成。",
+    "本节点刚取得的对象不得在同一动作或同节点条件应变中立即销毁。",
+    "已冻结事实不能被后续自由文本撤销。"
+  ],
+  "defaultTrajectory": "P0 只建立前提。",
+  "conditionalReaction": null,
+  "branches": [
+    {
+      "branchId": "settlement.p0.locked",
+      "level": "LOCKED",
+      "condition": "序章内容与六席投影完成",
+      "sceneId": "scene.p0.freeze",
+      "predecessorIds": [
+        "scene.p0.opening.private.zhejiang_governor",
+        "scene.p0.opening.private.zhejiang_administration",
+        "scene.p0.opening.private.qingliu_law",
+        "scene.p0.opening.private.jiangnan_merchant",
+        "scene.p0.opening.private.sili_weaving",
+        "scene.p0.opening.private.cabinet_finance"
+      ],
+      "successorIds": [
+        "scene.p0.transition.n1"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "P0_FREEZE",
+      "visibility": "PUBLIC",
+      "custody": "RULE_ENGINE",
+      "applicableObjectIds": [
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "frozenWorldState": "桑田诏、财政缺口、军饷需求、端午汛前压力、六席使命和开局知识边界全部冻结。",
+      "objectMutations": [
+        {
+          "objectId": "obj.sangtian_edict",
+          "custodyRule": "中央国策作为固定世界压力，不发生玩家保管转移。",
+          "versionDelta": 1
+        },
+        {
+          "objectId": "obj.fiscal_gap",
+          "custodyRule": "财政缺口作为公共压力进入N1，不得被自由文本清零。",
+          "versionDelta": 1
+        }
+      ],
+      "knowledgeDeltas": "六席只获得各自公开/私有入场材料；人物之间不自动共享。",
+      "responsibilityAndEvidenceFreeze": [
+        "国策已下",
+        "财政缺口存在",
+        "汛前时间开始",
+        "席位知识边界生效"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 0,
+        "track.mulberry_silk": 0,
+        "track.fiscal_military": -5,
+        "track.evidence_responsibility": 0,
+        "track.court_imperial_face": 0
+      },
+      "carryForward": [
+        "桑田诏",
+        "财政缺口",
+        "六席制度使命",
+        "人物交接规则"
+      ],
+      "transitionSceneId": "scene.p0.transition.n1",
+      "provenanceClass": "ADAPTATION_RULE",
+      "frozenResultId": "frozen.P0.LOCKED",
+      "frozenFactIds": [],
+      "frozenFactsById": [],
+      "objectOutcomes": []
+    }
+  ],
+  "frozenResultFields": [
+    "国策状态",
+    "财政缺口",
+    "汛前压力",
+    "六席开局知识与资源"
+  ],
+  "nextNodeId": "N1",
+  "provenanceClass": "ADAPTATION_RULE"
+}

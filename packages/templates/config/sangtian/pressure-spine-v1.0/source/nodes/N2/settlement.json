@@ -1,0 +1,684 @@
+{
+  "schemaVersion": "sangtian_node_settlement_v1_1",
+  "nodeId": "N2",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "snapshotRule": "所有 COMMIT 基于同一节点快照；先后提交不产生天然优势。",
+  "conflictComparator": {
+    "hardRulesFirst": true,
+    "priorityOrder": [
+      "文书版本控制权",
+      "必要印信层级",
+      "附件实际保管权",
+      "PREPARE 中已公开的签署条件",
+      "确定性哈希破同分"
+    ],
+    "tieBreak": {
+      "method": "STABLE_HASH",
+      "input": "runSeed|nodeId|objectId|seatId",
+      "aiInvolved": false
+    },
+    "objectRules": [
+      {
+        "objectId": "obj.first_memorial",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      },
+      {
+        "objectId": "obj.ma_confession",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      }
+    ]
+  },
+  "hardRules": [
+    "权限、知识、保管、资源与截止时间先于 comparator。",
+    "同一可分资源不得双花；不可分对象同一时刻只有一个实际保管者。",
+    "SIGN 只能由本人或有明确代理权者完成。",
+    "本节点刚取得的对象不得在同一动作或同节点条件应变中立即销毁。",
+    "已冻结事实不能被后续自由文本撤销。"
+  ],
+  "defaultTrajectory": {
+    "policySynthesis": "总督要求写入河堤责任与缓办，省府压到地方官，清流保留供状但不附送，商会不给无条件担保，织造局删去内廷责任后署名，内阁按普通路径收件；形成省级可争议版本。",
+    "defaultInputState": {
+      "memorialContainsReliefRequest": true,
+      "causeSpecificityLevel": 1,
+      "necessarySignatureCount": 2,
+      "confessionEffectState": "RETAINED_VALID",
+      "dispatchOnTime": true
+    },
+    "defaultBranchId": "settlement.n2.mid",
+    "deterministic": true
+  },
+  "conditionalReaction": {
+    "trigger": "草案已有至少两个必要签押，新增供状或附件使责任层级上升并引发拒签。",
+    "eligible": [
+      "seat.zhejiang_governor",
+      "seat.zhejiang_administration",
+      "seat.qingliu_law",
+      "seat.sili_weaving"
+    ],
+    "actions": [
+      "SIGN",
+      "DISCLOSE",
+      "TRANSFER"
+    ],
+    "window": "配置初值：45 秒；每席一次。"
+  },
+  "branches": [
+    {
+      "branchId": "settlement.n2.high",
+      "level": "HIGH",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n2.settlement.high",
+      "frozenWorldState": "奏疏清楚区分灾情、赈粮请求与责任待查，供状或认证副本沿独立路线发出；署名和拒签都留下可追溯记录。",
+      "objectMutations": [
+        {
+          "objectId": "obj.first_memorial",
+          "resultVersionId": "obj.first_memorial@N2.HIGH.v1",
+          "status": "DISPATCHED_DETAILED_VERSION",
+          "custodyMode": "SELECTED_OFFICIAL_ROUTE"
+        },
+        {
+          "objectId": "obj.ma_confession",
+          "resultVersionId": "obj.ma_confession@N2.HIGH.v1",
+          "status": "ATTACHED_OR_SEPARATELY_DISPATCHED_VALID",
+          "custodyMode": "ATTACHMENT_ROUTE_OR_EVIDENCE_CUSTODIAN"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "奏疏正文版本",
+        "署名与拒签",
+        "供状保管与副本",
+        "收件渠道",
+        "第一版责任口径"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 15,
+        "track.mulberry_silk": 5,
+        "track.fiscal_military": 5,
+        "track.evidence_responsibility": 15,
+        "track.court_imperial_face": 5
+      },
+      "carryForward": [
+        "奏疏正文版本",
+        "署名与拒签",
+        "供状保管与副本",
+        "收件渠道",
+        "第一版责任口径",
+        "高层责任暴露上升",
+        "借粮与缓办承诺进入N3"
+      ],
+      "transitionSceneId": "scene.n2.transition.high",
+      "predecessorIds": [
+        "scene.n2.commit_confrontation",
+        "scene.n2.reaction"
+      ],
+      "successorIds": [
+        "scene.n2.transition.high"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.first_memorial",
+        "obj.ma_confession"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTROLLED",
+        "frozenFacts": [
+          "赈灾请求、灾害原因和责任范围均进入正文",
+          "必要署名与附件保管可追踪",
+          "供状随正式路线或认证副本送出"
+        ],
+        "objectState": "奏疏形成正式版本；供状的随疏/独立保管状态唯一化。",
+        "carry": [
+          "高层责任暴露上升",
+          "借粮与缓办承诺进入N3"
+        ]
+      },
+      "frozenFacts": [
+        "赈灾请求、灾害原因和责任范围均进入正文",
+        "必要署名与附件保管可追踪",
+        "供状随正式路线或认证副本送出"
+      ],
+      "frozenResultId": "frozen.N2.HIGH",
+      "branchSelector": {
+        "all": [
+          {
+            "key": "dispatchOnTime",
+            "op": "==",
+            "value": true
+          },
+          {
+            "key": "memorialContainsReliefRequest",
+            "op": "==",
+            "value": true
+          },
+          {
+            "key": "causeSpecificityLevel",
+            "op": ">=",
+            "value": 2
+          },
+          {
+            "key": "necessarySignatureCount",
+            "op": ">=",
+            "value": 2
+          },
+          {
+            "key": "confessionEffectState",
+            "op": "IN",
+            "value": [
+              "ATTACHED_VALID",
+              "SEPARATE_VALID"
+            ]
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N2.HIGH.fact.01",
+        "frozen.N2.HIGH.fact.02",
+        "frozen.N2.HIGH.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N2.HIGH.fact.01",
+          "statement": "赈灾请求、灾害原因和责任范围均进入正文",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N2.HIGH.fact.02",
+          "statement": "必要署名与附件保管可追踪",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N2.HIGH.fact.03",
+          "statement": "供状随正式路线或认证副本送出",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.first_memorial",
+          "versionId": "obj.first_memorial@N2.HIGH.v1",
+          "status": "DISPATCHED_DETAILED_VERSION",
+          "custodyMode": "SELECTED_OFFICIAL_ROUTE",
+          "custodyRule": "正文槽位、署名、封印与收件路线全部冻结；主保管随正式驿递转移。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N2.HIGH"
+        },
+        {
+          "objectId": "obj.ma_confession",
+          "versionId": "obj.ma_confession@N2.HIGH.v1",
+          "status": "ATTACHED_OR_SEPARATELY_DISPATCHED_VALID",
+          "custodyMode": "ATTACHMENT_ROUTE_OR_EVIDENCE_CUSTODIAN",
+          "custodyRule": "若有效附送则随奏疏；若独立递送则由对应路线保管；两者由实际动作唯一确定。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N2.HIGH"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n2.mid",
+      "level": "MID",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n2.settlement.mid",
+      "frozenWorldState": "奏疏承认河堤责任并请求赈粮，却弱化人为毁堤；供状被保留但没有成为主附件。",
+      "objectMutations": [
+        {
+          "objectId": "obj.first_memorial",
+          "resultVersionId": "obj.first_memorial@N2.MID.v1",
+          "status": "DISPATCHED_NARROW_VERSION",
+          "custodyMode": "SELECTED_OFFICIAL_ROUTE"
+        },
+        {
+          "objectId": "obj.ma_confession",
+          "resultVersionId": "obj.ma_confession@N2.MID.v1",
+          "status": "RETAINED_VALID",
+          "custodyMode": "HIGHEST_VALID_EVIDENCE_CUSTODIAN"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "奏疏正文版本",
+        "署名与拒签",
+        "供状保管与副本",
+        "收件渠道",
+        "第一版责任口径"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 0,
+        "track.mulberry_silk": 0,
+        "track.fiscal_military": 0,
+        "track.evidence_responsibility": 0,
+        "track.court_imperial_face": 0
+      },
+      "carryForward": [
+        "奏疏正文版本",
+        "署名与拒签",
+        "供状保管与副本",
+        "收件渠道",
+        "第一版责任口径",
+        "官方事实与私下事实分裂",
+        "N3签约各方提高自保要求"
+      ],
+      "transitionSceneId": "scene.n2.transition.mid",
+      "predecessorIds": [
+        "scene.n2.commit_confrontation",
+        "scene.n2.reaction"
+      ],
+      "successorIds": [
+        "scene.n2.transition.mid"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.first_memorial",
+        "obj.ma_confession"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTESTED",
+        "frozenFacts": [
+          "灾情和赈灾写入奏疏",
+          "人为责任被弱化或供状未随疏",
+          "署名带有条件或版本分裂"
+        ],
+        "objectState": "第一版奏疏生效，私下证据仍独立存在。",
+        "carry": [
+          "官方事实与私下事实分裂",
+          "N3签约各方提高自保要求"
+        ]
+      },
+      "frozenFacts": [
+        "灾情和赈灾写入奏疏",
+        "人为责任被弱化或供状未随疏",
+        "署名带有条件或版本分裂"
+      ],
+      "frozenResultId": "frozen.N2.MID",
+      "branchSelector": {
+        "otherwise": true
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N2.MID.fact.01",
+        "frozen.N2.MID.fact.02",
+        "frozen.N2.MID.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N2.MID.fact.01",
+          "statement": "灾情和赈灾写入奏疏",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N2.MID.fact.02",
+          "statement": "人为责任被弱化或供状未随疏",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N2.MID.fact.03",
+          "statement": "署名带有条件或版本分裂",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.first_memorial",
+          "versionId": "obj.first_memorial@N2.MID.v1",
+          "status": "DISPATCHED_NARROW_VERSION",
+          "custodyMode": "SELECTED_OFFICIAL_ROUTE",
+          "custodyRule": "第一版奏疏生效；条件署名和删节作为版本元数据保留。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N2.MID"
+        },
+        {
+          "objectId": "obj.ma_confession",
+          "versionId": "obj.ma_confession@N2.MID.v1",
+          "status": "RETAINED_VALID",
+          "custodyMode": "HIGHEST_VALID_EVIDENCE_CUSTODIAN",
+          "custodyRule": "保留在合法持有人处，只有实际收到认证摘要的席位增加知识。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.sili_weaving"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N2.MID"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n2.low",
+      "level": "LOW",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n2.settlement.low",
+      "frozenWorldState": "省府安全版本先行，灾害被写成河工失修，国策继续；供状被扣留或只存在口头传闻。",
+      "objectMutations": [
+        {
+          "objectId": "obj.first_memorial",
+          "resultVersionId": "obj.first_memorial@N2.LOW.v1",
+          "status": "DISPATCHED_SAFE_VERSION_OR_LATE",
+          "custodyMode": "SELECTED_OFFICIAL_ROUTE"
+        },
+        {
+          "objectId": "obj.ma_confession",
+          "resultVersionId": "obj.ma_confession@N2.LOW.v1",
+          "status": "INACCESSIBLE_OR_SEIZED",
+          "custodyMode": "LAST_VERIFIED_HOLDER"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "奏疏正文版本",
+        "署名与拒签",
+        "供状保管与副本",
+        "收件渠道",
+        "第一版责任口径"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": -15,
+        "track.mulberry_silk": -5,
+        "track.fiscal_military": -5,
+        "track.evidence_responsibility": -15,
+        "track.court_imperial_face": -10
+      },
+      "carryForward": [
+        "奏疏正文版本",
+        "署名与拒签",
+        "供状保管与副本",
+        "收件渠道",
+        "第一版责任口径",
+        "国策继续强推",
+        "供状保管者成为后续高风险目标"
+      ],
+      "transitionSceneId": "scene.n2.transition.low",
+      "predecessorIds": [
+        "scene.n2.commit_confrontation",
+        "scene.n2.reaction"
+      ],
+      "successorIds": [
+        "scene.n2.transition.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.first_memorial",
+        "obj.ma_confession"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CAPTURED_BY_PRESSURE",
+        "frozenFacts": [
+          "第一版责任止于地方或河工失修",
+          "缓办请求被删除或弱化",
+          "供状被扣留、排除或失去认证链"
+        ],
+        "objectState": "安全版本奏疏先行；供状效力下降。",
+        "carry": [
+          "国策继续强推",
+          "供状保管者成为后续高风险目标"
+        ]
+      },
+      "frozenFacts": [
+        "第一版责任止于地方或河工失修",
+        "缓办请求被删除或弱化",
+        "供状被扣留、排除或失去认证链"
+      ],
+      "frozenResultId": "frozen.N2.LOW",
+      "branchSelector": {
+        "any": [
+          {
+            "key": "dispatchOnTime",
+            "op": "==",
+            "value": false
+          },
+          {
+            "all": [
+              {
+                "key": "memorialContainsReliefRequest",
+                "op": "==",
+                "value": false
+              },
+              {
+                "key": "causeSpecificityLevel",
+                "op": "<=",
+                "value": 1
+              },
+              {
+                "key": "confessionEffectState",
+                "op": "IN",
+                "value": [
+                  "INACCESSIBLE",
+                  "SEIZED",
+                  "DESTROYED"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N2.LOW.fact.01",
+        "frozen.N2.LOW.fact.02",
+        "frozen.N2.LOW.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N2.LOW.fact.01",
+          "statement": "第一版责任止于地方或河工失修",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N2.LOW.fact.02",
+          "statement": "缓办请求被删除或弱化",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N2.LOW.fact.03",
+          "statement": "供状被扣留、排除或失去认证链",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.first_memorial",
+          "versionId": "obj.first_memorial@N2.LOW.v1",
+          "status": "DISPATCHED_SAFE_VERSION_OR_LATE",
+          "custodyMode": "SELECTED_OFFICIAL_ROUTE",
+          "custodyRule": "若按时发出则安全口径成为正式版本；若迟到则标记 LATE，不自动抵京。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N2.LOW"
+        },
+        {
+          "objectId": "obj.ma_confession",
+          "versionId": "obj.ma_confession@N2.LOW.v1",
+          "status": "INACCESSIBLE_OR_SEIZED",
+          "custodyMode": "LAST_VERIFIED_HOLDER",
+          "custodyRule": "未附送、被扣或保管链中断；不得自动生成副本。",
+          "knownBy": [
+            "seat.zhejiang_administration",
+            "seat.qingliu_law"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N2.LOW"
+        }
+      ]
+    }
+  ],
+  "frozenResultFields": [
+    "奏疏正文版本",
+    "署名与拒签",
+    "供状保管与副本",
+    "收件渠道",
+    "第一版责任口径"
+  ],
+  "nextNodeId": "N3",
+  "provenanceClass": "ADAPTATION_RULE",
+  "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+  "selectorInputs": [
+    {
+      "inputKey": "memorialContainsReliefRequest",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "causeSpecificityLevel",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "necessarySignatureCount",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "confessionEffectState",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "dispatchOnTime",
+      "source": "Frozen action/object/event state",
+      "required": true
+    }
+  ],
+  "branchSelector": {
+    "evaluationOrder": [
+      "HIGH",
+      "LOW",
+      "MID"
+    ],
+    "selectors": {
+      "HIGH": {
+        "all": [
+          {
+            "key": "dispatchOnTime",
+            "op": "==",
+            "value": true
+          },
+          {
+            "key": "memorialContainsReliefRequest",
+            "op": "==",
+            "value": true
+          },
+          {
+            "key": "causeSpecificityLevel",
+            "op": ">=",
+            "value": 2
+          },
+          {
+            "key": "necessarySignatureCount",
+            "op": ">=",
+            "value": 2
+          },
+          {
+            "key": "confessionEffectState",
+            "op": "IN",
+            "value": [
+              "ATTACHED_VALID",
+              "SEPARATE_VALID"
+            ]
+          }
+        ]
+      },
+      "LOW": {
+        "any": [
+          {
+            "key": "dispatchOnTime",
+            "op": "==",
+            "value": false
+          },
+          {
+            "all": [
+              {
+                "key": "memorialContainsReliefRequest",
+                "op": "==",
+                "value": false
+              },
+              {
+                "key": "causeSpecificityLevel",
+                "op": "<=",
+                "value": 1
+              },
+              {
+                "key": "confessionEffectState",
+                "op": "IN",
+                "value": [
+                  "INACCESSIBLE",
+                  "SEIZED",
+                  "DESTROYED"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "MID": {
+        "otherwise": true
+      }
+    },
+    "notes": "Thresholds are configuration seeds, not validated balance. HIGH is tested first, LOW second, MID is the only otherwise branch."
+  }
+}
