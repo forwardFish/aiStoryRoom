@@ -21,6 +21,7 @@ env:
   PATCH_BYTES: "100883"
   PATCH_SHA256: a69ee20236446bfa1b94b0aa4028518984c3c38cf4a64f48fda64b5f848c2854
   PATCH_GZIP_SHA256: 8d38561833381faf688eb038462dd03c8a73d01d969b27eed3b0091d1c8597d3
+  PATCH_CHUNK_REVISION: "2"
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aistory_cycle1?schema=public
 
 jobs:
