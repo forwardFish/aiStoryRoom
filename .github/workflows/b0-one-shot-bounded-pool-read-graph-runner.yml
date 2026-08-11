@@ -1,4 +1,4 @@
-name: B0 One-Shot Bounded Pool Product Runner
+name: B0 One-Shot Bounded Pool Staging Cleanup
 
 on:
   push:
@@ -12,22 +12,17 @@ permissions:
   statuses: write
 
 concurrency:
-  group: b0-one-shot-bounded-pool-product-runner
+  group: b0-one-shot-bounded-pool-staging-cleanup
   cancel-in-progress: false
 
 env:
   B0_BRANCH: codex/chatgpt-pro-maneuver-evidence-v1
-  B0_BASELINE: 63aec28b0b775eff924585f68827abe87b148a9e
-  B0_SOURCE_WORKFLOW: .github/workflows/b0-one-shot-bounded-pool-read-graph-complete.yml
-  B0_PATCH_BYTES: "32122"
-  B0_PATCH_SHA256: b223d4e124f560a5e8d601b0e5f661dc0db5b15c57cc38c928954d0b041db4c3
-  B0_GZIP_BYTES: "7380"
-  B0_GZIP_SHA256: fd483b4ffdae74d8f16cef05c7a93a0403fdd6d0aa5f1296020d1ac343db09e7
+  B0_PRODUCT_SHA: 2b83e7f1e476dfad905e2a3451f05468caa68bf6
 
 jobs:
-  repair:
+  cleanup:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 15
     steps:
       - name: Publish run locator
         uses: actions/github-script@v7
@@ -38,8 +33,8 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: "pending",
-              context: "b0/bounded-pool-product-runner",
-              description: `bounded-pool product runner ${context.runId}`,
+              context: "b0/bounded-pool-staging-cleanup",
+              description: `bounded-pool staging cleanup ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
@@ -48,225 +43,40 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 50
 
-      - name: Extract and verify the complete immutable patch
+      - name: Remove only one-shot workflows and temporary chunks
+        id: cleanup
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin "$B0_BRANCH"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse origin/$B0_BRANCH)" = "$GITHUB_SHA"
-          git merge-base --is-ancestor "$B0_BASELINE" HEAD
-          test -z "$(git status --short)"
-          python3 - <<'PY'
-          import base64
-          import hashlib
-          import os
-          from pathlib import Path
-
-          source = Path(os.environ["B0_SOURCE_WORKFLOW"]).read_text(encoding="utf-8").splitlines()
-          start = next(index for index, line in enumerate(source) if "cat > /tmp/b0.patch.gz.b64" in line) + 1
-          end = next(index for index in range(start, len(source)) if source[index].strip() == "B0_PATCH_GZIP_BASE64")
-          encoded = "".join(line.strip() for line in source[start:end])
-          compressed = base64.b64decode(encoded, validate=True)
-          if len(compressed) != int(os.environ["B0_GZIP_BYTES"]):
-              raise SystemExit(f"gzip byte mismatch: {len(compressed)}")
-          if hashlib.sha256(compressed).hexdigest() != os.environ["B0_GZIP_SHA256"]:
-              raise SystemExit("gzip SHA-256 mismatch")
-          Path("/tmp/b0.patch.gz").write_bytes(compressed)
-          PY
-          gzip -dc /tmp/b0.patch.gz > /tmp/b0.patch
-          test "$(wc -c < /tmp/b0.patch | tr -d ' ')" = "$B0_PATCH_BYTES"
-          test "$(sha256sum /tmp/b0.patch | awk '{print $1}')" = "$B0_PATCH_SHA256"
-          git apply --check /tmp/b0.patch
-          git apply /tmp/b0.patch
-          python3 - <<'PY2'
-          from pathlib import Path
-
-          replacements = {
-              "apps/api/src/b0-settlement/b0-window-player.controller.ts": [
-                  (
-                      '    return this.pipeline.withBoundedPlayerRead(`b0-window:${runId}:${user.id}`, async () => {\n      await this.pipeline.ensureRunWindow(runId);\n      return this.windows.projection(user, runId);\n    });',
-                      '    await this.pipeline.ensureRunWindow(runId);\n    return this.pipeline.withBoundedPlayerRead(`b0-window:${runId}:${user.id}`, () =>\n      this.windows.projection(user, runId));',
-                  ),
-                  (
-                      '    return this.pipeline.withBoundedPlayerOperation(async () => {\n      await this.pipeline.ensureRunWindow(runId);\n      return this.windows.preview(user, runId, body);\n    });',
-                      '    await this.pipeline.ensureRunWindow(runId);\n    return this.pipeline.withBoundedPlayerOperation(() => this.windows.preview(user, runId, body));',
-                  ),
-                  (
-                      '    return this.pipeline.withBoundedPlayerOperation(async () => {\n      await this.pipeline.ensureRunWindow(runId);\n      return this.windows.confirm(user, runId, body);\n    });',
-                      '    await this.pipeline.ensureRunWindow(runId);\n    return this.pipeline.withBoundedPlayerOperation(() => this.windows.confirm(user, runId, body));',
-                  ),
-                  (
-                      '    return this.pipeline.withBoundedPlayerOperation(async () => {\n      await this.pipeline.ensureRunWindow(runId);\n      return this.windows.ready(user, runId, body);\n    });',
-                      '    await this.pipeline.ensureRunWindow(runId);\n    return this.pipeline.withBoundedPlayerOperation(() => this.windows.ready(user, runId, body));',
-                  ),
-                  (
-                      '    return this.pipeline.withBoundedPlayerOperation(async () => {\n      await this.pipeline.ensureRunWindow(runId);\n      return this.windows.unready(user, runId, body);\n    });',
-                      '    await this.pipeline.ensureRunWindow(runId);\n    return this.pipeline.withBoundedPlayerOperation(() => this.windows.unready(user, runId, body));',
-                  ),
-              ],
-              "apps/api/src/maneuver-v1/maneuver-v1.controller.ts": [
-                  (
-                      '    return this.b0Pipeline.withBoundedPlayerRead(`maneuver-projection:${runId}:${user.id}`, async () => {\n      await this.b0Pipeline.ensureRunWindow(runId);\n      return this.maneuvers.projection(user, runId);\n    });',
-                      '    await this.b0Pipeline.ensureRunWindow(runId);\n    return this.b0Pipeline.withBoundedPlayerRead(`maneuver-projection:${runId}:${user.id}`, () =>\n      this.maneuvers.projection(user, runId));',
-                  ),
-                  (
-                      '    return this.b0Pipeline.withBoundedPlayerOperation(async () => {\n      await this.b0Pipeline.ensureRunWindow(runId);\n      return this.maneuvers.preview(user, runId, body);\n    });',
-                      '    await this.b0Pipeline.ensureRunWindow(runId);\n    return this.b0Pipeline.withBoundedPlayerOperation(() => this.maneuvers.preview(user, runId, body));',
-                  ),
-                  (
-                      '    return this.b0Pipeline.withBoundedPlayerOperation(async () => {\n      await this.b0Pipeline.ensureRunWindow(runId);\n      return this.maneuvers.commit(user, runId, body);\n    });',
-                      '    await this.b0Pipeline.ensureRunWindow(runId);\n    return this.b0Pipeline.withBoundedPlayerOperation(() => this.maneuvers.commit(user, runId, body));',
-                  ),
-              ],
-          }
-          for name, pairs in replacements.items():
-              path = Path(name)
-              source = path.read_text(encoding="utf-8")
-              for old, new in pairs:
-                  if source.count(old) != 1:
-                      raise SystemExit(f"expected one controller match in {name}: {old[:80]!r}")
-                  source = source.replace(old, new, 1)
-              path.write_text(source, encoding="utf-8")
-
-          coordinator_path = Path("apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts")
-          coordinator = coordinator_path.read_text(encoding="utf-8")
-          serializable = "  private async serializable<T>(operation: (tx: Tx) => Promise<T>): Promise<T> {"
-          helper = "\n".join([
-              "  private async projectionInTx(",
-              "    tx: Tx,",
-              "    record: B0WindowStoreRecordV1,",
-              "    actorId: string,",
-              "    freeze: B0FreezeEnvelopeV1 | null,",
-              "  ): Promise<B0WindowProjectionV1> {",
-              "    const window = await tx.actionWindow.findUnique({",
-              "      where: { id: record.window.id },",
-              "      select: { nodeId: true },",
-              "    });",
-              "    if (!window) throw domain(\"WINDOW_NOT_FOUND\", \"B0 window not found.\");",
-              "    const row = await tx.playerAction.findUnique({",
-              "      where: { nodeId_roleId_actionSlot: {",
-              "        nodeId: window.nodeId,",
-              "        roleId: actorId,",
-              "        actionSlot: \"B0_PRIMARY\",",
-              "      } },",
-              "    });",
-              "    return projectB0WindowV1({",
-              "      record,",
-              "      actorId,",
-              "      intent: row?.normalizedJson ? assertB0StoredIntentEnvelopeV1(row.normalizedJson) : null,",
-              "      freeze,",
-              "    });",
-              "  }",
-              "",
-              "",
-          ])
-          if coordinator.count(serializable) != 1 or "private async projectionInTx(" in coordinator:
-              raise SystemExit("unexpected projectionInTx restoration state")
-          coordinator_path.write_text(coordinator.replace(serializable, helper + serializable, 1), encoding="utf-8")
-          PY2
-          git diff --check
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Run focused product gates
-        shell: bash
-        run: |
-          set -euo pipefail
-          pnpm install --frozen-lockfile
-          pnpm db:generate
-          pnpm --filter @apps/api test:b0-window
-          pnpm --filter @apps/api test:b0-player-window
-          pnpm --filter @apps/api test:b0-ops
-          pnpm --filter @apps/api test:maneuver-v1
-          pnpm --filter @apps/api typecheck
-          pnpm typecheck:b0:real-acceptance
-          pnpm --filter @apps/api build
-          pnpm --filter @apps/web test:b0-window
-          pnpm --filter @apps/web typecheck
-          pnpm --filter @apps/web build
-
-      - name: Scan changed product files
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import pathlib
-          import re
-
-          paths = [pathlib.Path(path) for path in """
-          apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
-          apps/api/src/b0-settlement/b0-window-coordinator.prisma.spec.ts
-          apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts
-          apps/api/src/b0-settlement/b0-window-initialization-concurrency.spec.ts
-          apps/api/src/b0-settlement/b0-window-player.controller.ts
-          apps/api/src/maneuver-v1/maneuver-v1.controller.ts
-          apps/api/src/maneuver-v1/maneuver-v1.prisma-read.ts
-          """.split()]
-          patterns = [
-              re.compile(r"postgres(?:ql)?://[^\s\"']+", re.I),
-              re.compile(r"sk-[A-Za-z0-9_-]{16,}"),
-              re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]{16,}", re.I),
-              re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
-          ]
-          findings = []
-          for path in paths:
-              text = path.read_text(encoding="utf-8")
-              for pattern in patterns:
-                  if pattern.search(text):
-                      findings.append((str(path), pattern.pattern))
-          if findings:
-              raise SystemExit(f"changed-file secret scan failed: {findings}")
-          print("changed-file secret scan: PASS")
-          PY
-
-      - name: Commit and push product files only
-        id: push
-        shell: bash
-        run: |
-          set -euo pipefail
-          files=(
-            apps/api/src/b0-settlement/b0-settlement-pipeline.service.ts
-            apps/api/src/b0-settlement/b0-window-coordinator.prisma.spec.ts
-            apps/api/src/b0-settlement/b0-window-coordinator.prisma.ts
-            apps/api/src/b0-settlement/b0-window-initialization-concurrency.spec.ts
-            apps/api/src/b0-settlement/b0-window-player.controller.ts
-            apps/api/src/maneuver-v1/maneuver-v1.controller.ts
-            apps/api/src/maneuver-v1/maneuver-v1.prisma-read.ts
-          )
-          git fetch origin "$B0_BRANCH"
-          remote_before="$(git rev-parse origin/$B0_BRANCH)"
-          test "$remote_before" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$B0_PRODUCT_SHA" HEAD
+          mapfile -t files < <(git ls-files | grep -E '^\.github/workflows/b0-one-shot-bounded-pool-read-graph.*\.yml$|^docs/auto-execute/evidence/b0/_tmp/bounded-pool-read-graph/' || true)
+          test "${#files[@]}" -gt 0
+          printf '%s\n' "${files[@]}" > /tmp/cleanup-files.txt
+          git rm -f -- "${files[@]}"
+          git diff --cached --check
+          if git diff --cached --name-only | grep -Ev '^\.github/workflows/b0-one-shot-bounded-pool-read-graph.*\.yml$|^docs/auto-execute/evidence/b0/_tmp/bounded-pool-read-graph/' ; then
+            echo "cleanup attempted to modify a non-staging path" >&2
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "${files[@]}"
-          git diff --cached --check
-          printf '%s\n' "${files[@]}" | LC_ALL=C sort > /tmp/expected-files
-          git diff --cached --name-only | LC_ALL=C sort > /tmp/actual-files
-          diff -u /tmp/expected-files /tmp/actual-files
-          git commit -m "fix(b0): bound repeated projection reads to the pool"
+          git commit -m "chore(b0): remove bounded-pool repair staging"
           local_head="$(git rev-parse HEAD)"
           git push origin "HEAD:$B0_BRANCH"
           remote_after="$(git ls-remote origin refs/heads/$B0_BRANCH | awk '{print $1}')"
           test "$remote_after" = "$local_head"
           echo "local_head=$local_head" >> "$GITHUB_OUTPUT"
-          echo "remote_before=$remote_before" >> "$GITHUB_OUTPUT"
           echo "remote_after=$remote_after" >> "$GITHUB_OUTPUT"
-          echo "REMOTE_PRODUCT_FIX_PUSHED=$local_head"
 
       - name: Publish outcome
         if: always()
         uses: actions/github-script@v7
         env:
           JOB_STATUS: ${{ job.status }}
-          LOCAL_HEAD: ${{ steps.push.outputs.local_head }}
+          CLEANUP_SHA: ${{ steps.cleanup.outputs.local_head }}
         with:
           script: |
             const success = process.env.JOB_STATUS === "success";
@@ -275,10 +85,10 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha,
               state: success ? "success" : "failure",
-              context: "b0/bounded-pool-product-runner",
+              context: "b0/bounded-pool-staging-cleanup",
               description: success
-                ? `product fix pushed ${process.env.LOCAL_HEAD?.slice(0, 12)}`
-                : `product runner failed in ${context.runId}`,
+                ? `staging removed ${process.env.CLEANUP_SHA?.slice(0, 12)}`
+                : `staging cleanup failed in ${context.runId}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
-            if (!success) core.setFailed("bounded-pool product runner failed");
+            if (!success) core.setFailed("bounded-pool staging cleanup failed");
