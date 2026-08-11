@@ -49,20 +49,29 @@ type B0WindowCandidateV1 = {
   node?: { chapterIndex?: number | null; nodeIndex?: number | null } | null;
 };
 
+export type B0WindowSelectionHintV1 = Readonly<{
+  windowId?: string | null;
+  nodeId?: string | null;
+}>;
+
 export function selectCurrentB0WindowV1<T extends B0WindowCandidateV1>(
   windows: readonly T[],
-  currentNodeId?: string | null,
+  hint: B0WindowSelectionHintV1 = {},
 ): T | null {
   const candidates = windows
     .filter((entry) => optionalRecord(entry.configJson)?.schemaVersion === "b0-window-config-v1")
     .slice()
     .sort(compareB0WindowPositionV1);
-  const current = currentNodeId
-    ? candidates.find((entry) => entry.nodeId === currentNodeId) ?? null
+  const exactWindow = hint.windowId
+    ? candidates.find((entry) => entry.id === hint.windowId) ?? null
     : null;
-  if (current && CURRENT_B0_WINDOW_STATUSES.has(current.status)) return current;
+  if (exactWindow) return exactWindow;
+  const currentNode = hint.nodeId
+    ? candidates.find((entry) => entry.nodeId === hint.nodeId) ?? null
+    : null;
+  if (currentNode && CURRENT_B0_WINDOW_STATUSES.has(currentNode.status)) return currentNode;
   return candidates.find((entry) => CURRENT_B0_WINDOW_STATUSES.has(entry.status))
-    ?? current
+    ?? currentNode
     ?? candidates[0]
     ?? null;
 }
@@ -230,7 +239,7 @@ const windows = await (db as any).actionWindow.findMany({
   orderBy: { createdAt: "desc" },
   take: 12,
 });
-const window = selectCurrentB0WindowV1<any>(windows, run.currentNodeId);
+const window = selectCurrentB0WindowV1<any>(windows, { nodeId: run.currentNodeId });
 if (!window) return null;
 
   const player = await (db as any).storyPlayer.findFirst({

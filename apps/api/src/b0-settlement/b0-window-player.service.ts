@@ -213,7 +213,7 @@ export class B0WindowPlayerService {
       orderBy: { createdAt: "desc" },
       take: 12,
     });
-    const window = selectCurrentB0WindowV1(windows, windowId ?? null);
+    const window = selectCurrentB0WindowV1(windows, { windowId: windowId ?? null });
     if (!window) {
       throw new NotFoundException({
         code: "B0_WINDOW_NOT_AVAILABLE",

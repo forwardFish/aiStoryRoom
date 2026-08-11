@@ -4,6 +4,7 @@ import {
   deriveFallbackManeuverContextV1,
   readB0ManeuverContextV1,
   readManeuverProjectionV1,
+  selectCurrentB0WindowV1,
 } from "./maneuver-v1.prisma-read";
 
 const publicFact = {
@@ -166,4 +167,39 @@ test("B0 projection selects the successor OPEN window over a completed predecess
   assert.equal(projection.stateRevision, 5);
   assert.equal(projection.turnRevision, 1);
   assert.equal(projection.contacts[0]?.id, "role.contact");
+});
+
+
+test("B0 selector distinguishes explicit window and node hints", () => {
+  const windows = [
+    {
+      id: "window.completed",
+      nodeId: "node.completed",
+      status: "COMPLETED",
+      configJson: { schemaVersion: "b0-window-config-v1" },
+      node: { chapterIndex: 1, nodeIndex: 1 },
+    },
+    {
+      id: "window.open",
+      nodeId: "node.open",
+      status: "OPEN",
+      configJson: { schemaVersion: "b0-window-config-v1" },
+      node: { chapterIndex: 1, nodeIndex: 2 },
+    },
+  ];
+
+  assert.equal(
+    selectCurrentB0WindowV1(windows, { windowId: "window.completed" })?.id,
+    "window.completed",
+    "an explicit window contract must compare against the window id rather than the node id",
+  );
+  assert.equal(
+    selectCurrentB0WindowV1(windows, { nodeId: "node.open" })?.id,
+    "window.open",
+  );
+  assert.equal(
+    selectCurrentB0WindowV1(windows, { nodeId: "node.completed" })?.id,
+    "window.open",
+    "a stale completed current node must not hide an open successor",
+  );
 });
