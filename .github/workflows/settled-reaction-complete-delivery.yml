@@ -1,180 +1,27 @@
-name: Apply and Test Exact Settled Reaction Product Sources
-
-# Exact git patches only; no source-text marker replacement.
+name: Install Final Settled Reaction Workflow
 on:
   push:
     branches: [codex/chatgpt-pro-dynamic-kernel-lite]
     paths: [.github/workflows/settled-reaction-complete-delivery.yml]
   workflow_dispatch:
-
-permissions:
-  contents: write
-
-concurrency:
-  group: settled-reaction-exact-product
-  cancel-in-progress: false
-
-env:
-  TARGET_BRANCH: codex/chatgpt-pro-dynamic-kernel-lite
-  PRODUCT_BASE: 8fba8ef1e0305a6651b2b2cd7eb737815da07ab8
-  BASE_PATCH_SHA256: 9b2b53d95f9acf7462e479e8b5b85a7b30aa0e9e57bc8b4550627315b8751106
-  CORRECTION_PATCH_SHA256: ef8c68b888dd103b5f41ccb2d8d4b5f3c46f0a8a3804ff3e1e9664ced522748a
-
+permissions: {contents: write}
 jobs:
-  apply-test-commit-clean:
+  install:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: codex/chatgpt-pro-dynamic-kernel-lite
-          fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.1
-          run_install: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Apply exact product patches
+        with: {ref: codex/chatgpt-pro-dynamic-kernel-lite, fetch-depth: 0}
+      - name: Install verified final workflow
+        env: {GH_TOKEN: "${{ github.token }}"}
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git branch --show-current)" = "${TARGET_BRANCH}"
-          git merge-base --is-ancestor "${PRODUCT_BASE}" HEAD
-          git diff --quiet "${PRODUCT_BASE}"..HEAD -- packages apps scripts
-          test -z "$(git status --porcelain)"
-
-          cat \
-            .github/transport/settled-reaction-contract-product.py \
-            .github/transport/settled-reaction-wiring.py \
-            .github/transport/settled-reaction-tests.py \
-            | tr -d '[:space:]' \
-            | base64 --decode > "${RUNNER_TEMP}/base.patch.xz"
-          echo "${BASE_PATCH_SHA256}  ${RUNNER_TEMP}/base.patch.xz" | sha256sum --check
-          xz -dc "${RUNNER_TEMP}/base.patch.xz" > "${RUNNER_TEMP}/base.patch"
-          git apply --check "${RUNNER_TEMP}/base.patch"
-          git apply "${RUNNER_TEMP}/base.patch"
-
-          cat > "${RUNNER_TEMP}/correction.patch.xz.b64" <<'EOF'
-          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
-          EOF
-          tr -d '[:space:]' < "${RUNNER_TEMP}/correction.patch.xz.b64" \
-            | base64 --decode > "${RUNNER_TEMP}/correction.patch.xz"
-          echo "${CORRECTION_PATCH_SHA256}  ${RUNNER_TEMP}/correction.patch.xz" | sha256sum --check
-          xz -dc "${RUNNER_TEMP}/correction.patch.xz" > "${RUNNER_TEMP}/correction.patch"
-          git apply --check "${RUNNER_TEMP}/correction.patch"
-          git apply "${RUNNER_TEMP}/correction.patch"
-
-          python - <<'PY'
-          from pathlib import Path
-          path = Path('packages/templates/tests/unbound-action-narrative-source.test.ts')
-          path.write_text(path.read_text(encoding='utf-8').rstrip() + '\n', encoding='utf-8')
-          PY
-          cat > "${RUNNER_TEMP}/expected-12.txt" <<'EOF'
-          apps/api/src/solo-story-engine/context-compiler.ts
-          packages/templates/package.json
-          packages/templates/src/runtime-facade.ts
-          packages/templates/src/story-package/index.ts
-          packages/templates/src/story-package/part-one-runtime-engine.ts
-          packages/templates/src/story-package/part-one-runtime-types.ts
-          packages/templates/src/story-package/settled-reaction-contract.ts
-          packages/templates/tests/fixtures/neutral-unbound-world.ts
-          packages/templates/tests/part-one-dynamic-kernel-lite.test.ts
-          packages/templates/tests/settled-reaction-contract.test.ts
-          packages/templates/tests/unbound-action-narrative-source.test.ts
-          scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
-          EOF
-          {
-            git diff --name-only -- packages apps scripts
-            git ls-files --others --exclude-standard -- packages apps scripts
-          } | sort -u > "${RUNNER_TEMP}/actual-12.txt"
-          diff -u "${RUNNER_TEMP}/expected-12.txt" "${RUNNER_TEMP}/actual-12.txt"
+          gh api repos/$GITHUB_REPOSITORY/git/blobs/135e08bec725137c828836d1b31759bcc2868b9c --jq .content | tr -d '[:space:]' | base64 -d >/tmp/workflow.xz
+          echo 'ac4b93fe1751ee35c915be5162007328996265459c81ea06b9d33d88cbb45737  /tmp/workflow.xz' | sha256sum -c -
+          xz -dc /tmp/workflow.xz >.github/workflows/settled-reaction-complete-delivery.yml
           git diff --check
-          if grep -E -i 'sangtian|zhejiang|qingliu|巡抚|县册|回文' \
-            packages/templates/src/story-package/settled-reaction-contract.ts; then
-            exit 1
-          fi
-
-      - name: Install workspace
-        run: pnpm install --frozen-lockfile
-
-      - name: Compile authoritative runtime package
-        shell: bash
-        run: |
-          set -euo pipefail
-          SANGTIAN_SKIP_SOURCE_WRITES=1 \
-          SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring-output" \
-          SANGTIAN_RUNTIME_PACKAGE_PATH="${GITHUB_WORKSPACE}/packages/templates/config/sangtian/story-package/part-one-runtime.json" \
-            node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
-          cat > "${RUNNER_TEMP}/expected-13.txt" <<'EOF'
-          apps/api/src/solo-story-engine/context-compiler.ts
-          packages/templates/config/sangtian/story-package/part-one-runtime.json
-          packages/templates/package.json
-          packages/templates/src/runtime-facade.ts
-          packages/templates/src/story-package/index.ts
-          packages/templates/src/story-package/part-one-runtime-engine.ts
-          packages/templates/src/story-package/part-one-runtime-types.ts
-          packages/templates/src/story-package/settled-reaction-contract.ts
-          packages/templates/tests/fixtures/neutral-unbound-world.ts
-          packages/templates/tests/part-one-dynamic-kernel-lite.test.ts
-          packages/templates/tests/settled-reaction-contract.test.ts
-          packages/templates/tests/unbound-action-narrative-source.test.ts
-          scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
-          EOF
-          {
-            git diff --name-only -- packages apps scripts
-            git ls-files --others --exclude-standard -- packages apps scripts
-          } | sort -u > "${RUNNER_TEMP}/actual-13.txt"
-          diff -u "${RUNNER_TEMP}/expected-13.txt" "${RUNNER_TEMP}/actual-13.txt"
-          git diff --check
-
-      - name: Focused deterministic test matrix
-        shell: bash
-        run: |
-          set -euo pipefail
-          pnpm --filter @ai-story/templates typecheck
-          pnpm --filter @ai-story/templates test:settled-reaction-contract
-          pnpm --filter @ai-story/templates test:story-package
-          pnpm --filter @ai-story/templates build
-          pnpm --filter @apps/openovel-runtime typecheck
-          pnpm --filter @apps/openovel-runtime exec node --import tsx --test tests/intent-capability-routing.spec.ts
-          pnpm --filter @apps/openovel-runtime test
-          pnpm --filter @apps/api test:solo-story-engine
-          pnpm test:story:v4
-
-      - name: Commit and push tested 13-file product
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mapfile -t PRODUCT_FILES < "${RUNNER_TEMP}/expected-13.txt"
-          git add -- "${PRODUCT_FILES[@]}"
-          git diff --cached --check
-          git diff --cached --name-only | sort > "${RUNNER_TEMP}/staged-13.txt"
-          diff -u "${RUNNER_TEMP}/expected-13.txt" "${RUNNER_TEMP}/staged-13.txt"
-          git commit -m "feat(kernel-lite): complete settled reaction and unbound narrative contracts"
-          git rev-parse HEAD > "${RUNNER_TEMP}/product-sha.txt"
-          git push origin HEAD:"${TARGET_BRANCH}"
-
-      - name: Clean transport only after product push
-        shell: bash
-        run: |
-          set -euo pipefail
-          git rm -f \
-            .github/transport/settled-reaction-contract-product.py \
-            .github/transport/settled-reaction-wiring.py \
-            .github/transport/settled-reaction-tests.py \
-            .github/workflows/settled-reaction-complete-delivery.yml
-          git diff --cached --check
-          git commit -m "chore(kernel-lite): remove settled reaction delivery transport"
-          git push origin HEAD:"${TARGET_BRANCH}"
-          git fetch origin "${TARGET_BRANCH}"
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/${TARGET_BRANCH})"
-          echo "PRODUCT_COMMIT_SHA=$(cat "${RUNNER_TEMP}/product-sha.txt")"
-          echo "FINAL_REMOTE_SHA=$(git rev-parse HEAD)"
-          echo "FINAL_REMOTE_TREE=$(git rev-parse HEAD^{tree})"
-          git diff --name-status "${PRODUCT_BASE}"..HEAD -- packages apps scripts
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/settled-reaction-complete-delivery.yml
+          git commit -m 'ci(kernel-lite): install verified product delivery workflow'
+          git push origin HEAD:codex/chatgpt-pro-dynamic-kernel-lite
