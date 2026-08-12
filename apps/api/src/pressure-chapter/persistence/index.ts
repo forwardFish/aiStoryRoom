@@ -7,6 +7,7 @@ export * from "./genesis.prisma-adapter";
 export * from "./migration-verifier";
 export * from "./narrative.prisma-adapter";
 export * from "./orchestrator-state.prisma-adapter";
+export * from "./prepared-automation-action.prisma-adapter";
 export * from "./replay.prisma-adapter";
 export * from "./result.prisma-adapter";
 export * from "./repository";

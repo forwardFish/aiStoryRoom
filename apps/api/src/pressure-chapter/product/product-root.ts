@@ -16,7 +16,6 @@ import {
 import { ChapterSettlementOrchestrator } from "../chapter-settlement";
 import {
   createPressureDecisionAutomationProductionV1,
-  DecisionAutomationStoredRouteReaderV1,
 } from "../decision-automation";
 import { createPressureDeadlineDefaultProductionV1 } from "../deadline-default-production";
 import {
@@ -519,10 +518,6 @@ export async function createPressureChapterProductRootV1(input: {
   });
   const decisionAutomation = createPressureDecisionAutomationProductionV1({
     prisma: input.prisma,
-    routes: new DecisionAutomationStoredRouteReaderV1(routes),
-    orchestrators: orchestratorStates,
-    working: projections,
-    seats: seatPersistence.authority,
     content,
     runtime,
     clock: httpProduction.clock,
@@ -603,6 +598,7 @@ export async function createPressureChapterProductRootV1(input: {
     httpPorts.result,
     httpPorts.replay,
     httpPorts.clock,
+    decisionAutomation.service,
   );
   const roomsGateway = new PressureChapterRoomsGatewayV1(production.bridge);
   return Object.freeze({
