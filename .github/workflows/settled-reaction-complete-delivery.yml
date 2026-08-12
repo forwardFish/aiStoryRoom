@@ -1,6 +1,6 @@
 name: Apply and Test Exact Settled Reaction Product Sources
 
-# Exact source patch v3; no source-text marker replacement.
+# Exact source patch v4; no source-text marker replacement.
 on:
   push:
     branches: [codex/chatgpt-pro-dynamic-kernel-lite]
@@ -17,7 +17,7 @@ concurrency:
 env:
   TARGET_BRANCH: codex/chatgpt-pro-dynamic-kernel-lite
   PRODUCT_BASE: 8fba8ef1e0305a6651b2b2cd7eb737815da07ab8
-  PATCH_SHA256: 9b2b53d95f9acf7462e479e8b5b85a7b30aa0e9e57bc8b4550627315b8751106
+  PATCH_SHA256: 869a0dc55485bed4b77e93c271cfdd33ae0d6bda55e9d00477ae82e080886d09
 
 jobs:
   apply-test-commit-clean:
@@ -45,11 +45,8 @@ jobs:
           git merge-base --is-ancestor "${PRODUCT_BASE}" HEAD
           git diff --quiet "${PRODUCT_BASE}"..HEAD -- packages apps scripts
           test -z "$(git status --porcelain)"
-          cat \
-            .github/transport/settled-reaction-contract-product.py \
-            .github/transport/settled-reaction-wiring.py \
-            .github/transport/settled-reaction-tests.py \
-            | tr -d '[:space:]' \
+          tr -d '[:space:]' \
+            < .github/transport/settled-reaction-contract-product.py \
             | base64 --decode > "${RUNNER_TEMP}/product.patch.xz"
           echo "${PATCH_SHA256}  ${RUNNER_TEMP}/product.patch.xz" | sha256sum --check
           xz -dc "${RUNNER_TEMP}/product.patch.xz" > "${RUNNER_TEMP}/product.patch"
