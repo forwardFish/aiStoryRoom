@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 import * as packageNamespace from "./index.js";
 import { compileDramaticBeatPlan } from "./story-package/dramatic-beat-plan.js";
 import {
+  buildPartOneUnboundActionNarrativeSource,
+  freezePartOneSettledReactionContract,
+  projectPartOneSettledReaction,
+} from "./story-package/settled-reaction-contract.js";
+import {
   buildPartOneRuntimeWorkingSet,
   settlePartOneAction as settleBasePartOneAction,
   type PartOneIncomingAction,
@@ -105,6 +110,7 @@ function buildObserveOnlyCapabilitySettlement(input: {
     input.workingSet.decisionPoint.decisionPointId,
     input.actionText,
   ].join("|" )).slice(0, 16)}`;
+  const actionBeatId = `CAPABILITY-ACTION-${digest(eventId).slice(0, 12)}`;
 
   proposedState.turnNumber = input.turnNumber;
   proposedState.sectionTurnNumber = Number(beforeState.sectionTurnNumber || 0) + 1;
@@ -146,6 +152,91 @@ function buildObserveOnlyCapabilitySettlement(input: {
   const worldPressure = worldMove.action;
   const decisionStop = input.workingSet.decisionPoint.prompt;
   const scene = clone(beforeState.scene);
+  const policyResolvedReactions = worldMove.actorRefs.length
+    ? [{
+      reactionEventId: worldMove.beatId,
+      actorRefs: [...worldMove.actorRefs],
+      action: worldPressure,
+      policyAssetId: worldMove.sourceId,
+    }]
+    : [];
+  const settledReactionContract = freezePartOneSettledReactionContract({
+    template: null,
+    sourceEventId: eventId,
+    sourceEventKind: "CAPABILITY_SETTLEMENT",
+    sourceActionId: actionBeatId,
+    resolvedResponderActorIds: [...worldMove.actorRefs],
+    state: proposedState,
+    sceneBefore: scene,
+    sceneAfter: scene,
+    sectionTransitioned: false,
+    fallbackVisibleAction: worldPressure,
+    requiredVisibleEffects: [capabilityFact],
+  });
+  const authoritativeNpcReactions = projectPartOneSettledReaction(
+    settledReactionContract,
+    policyResolvedReactions,
+  );
+  const unboundActionNarrativeSource = buildPartOneUnboundActionNarrativeSource({
+    sourceEventId: eventId,
+    sourceActionId: actionBeatId,
+    actionText: input.actionText,
+    parsingResult: {
+      schemaVersion: "unbound-action-parsing-result-v1",
+      parserId: "OMW_CAPABILITY_V1",
+      intentKind: "CAPABILITY_ACTION",
+      actorId: `actor.${input.pkg.perspectiveRoleKey}`,
+      targetEntityIds: [
+        input.incoming.targetRef
+        || input.workingSet.decisionPoint.actorRefs[0]
+        || "public_frame",
+      ],
+      requestedStatePaths: [],
+      requestedDurableEffectTypes: [],
+      parameters: {
+        decisionPointId: input.workingSet.decisionPoint.decisionPointId,
+      },
+    },
+    capabilityValidation: {
+      schemaVersion: "unbound-capability-validation-v1",
+      status: "AUTHORIZED",
+      capabilityIds: input.workingSet.institutionCapabilities.map(
+        (asset) => asset.assetId,
+      ),
+      validatedConstraintIds: [
+        input.workingSet.decisionPoint.decisionPointId,
+      ],
+      allowedStatePaths: [],
+      allowedDurableEffectTypes: [],
+      rejectionCodes: [],
+    },
+    settlementResult: {
+      schemaVersion: "unbound-settlement-result-v1",
+      settlementEventId: eventId,
+      status: "SETTLED",
+      changedStatePaths: [],
+      durableEffectTypes: [],
+      requiredVisibleEffects: [capabilityFact],
+    },
+    currentScene: scene,
+    actorPolicies: input.workingSet.actorPolicies,
+    materialEffectPolicy: {
+      allowedStatePaths: [],
+      allowedDurableEffectTypes: [],
+      forbiddenStatePaths: [],
+      forbiddenDurableEffectTypes: [],
+    },
+    settledReactionContract,
+    policyResolvedReactions,
+    resultCeiling: "Narrate only the authorized observation, inquiry, preparation, or verification. Do not create commands, evidence, commitments, secrets, or material state changes.",
+    forbiddenEscalations: [
+      "NEW_MAJOR_COMMAND",
+      "NEW_EVIDENCE",
+      "DEATH_OR_IDENTITY_CHANGE",
+      "UNAUTHORIZED_SCENE_TRANSITION",
+      "ANSWER_NEXT_DECISION",
+    ],
+  });
   const scaffoldPlan = input.scaffold.event.narrativePlan;
   const actorLabelsByRef = labelsForScene(scaffoldPlan, scene.presentActorRefs);
   const actorPolicies = input.pkg.assets
@@ -184,7 +275,6 @@ function buildObserveOnlyCapabilitySettlement(input: {
     },
     ...mechanismEvidence,
   ];
-  const actionBeatId = `CAPABILITY-ACTION-${digest(eventId).slice(0, 12)}`;
   const narrativePlan = {
     sceneStart: clone(scene),
     sceneEnd: clone(scene),
@@ -199,6 +289,8 @@ function buildObserveOnlyCapabilitySettlement(input: {
     playerSpeechMode: "INDIRECT_ONLY" as const,
     authorizedPlayerSpeech: [],
     settledActionNarrative: playerOutcome,
+    settledReactionContract,
+    unboundActionNarrativeSource,
     nextStoryBeat: {
       beatId: `BEAT-CAPABILITY-${digest([
         input.workingSet.openDecisionKernel.assetId,
@@ -295,7 +387,9 @@ function buildObserveOnlyCapabilitySettlement(input: {
       createdPendingConsequenceIds: [],
       duePendingConsequenceIds: dueConsequence ? [dueConsequence.consequenceId] : [],
       authoritativeObservableFacts: [capabilityFact],
-      authoritativeNpcReactions: [],
+      settledReactionContract,
+      unboundActionNarrativeSource,
+      authoritativeNpcReactions,
       sceneBefore: clone(scene),
       sceneAfter: clone(scene),
       authoritativeWorldMoves: [worldMove],

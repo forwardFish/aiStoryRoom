@@ -1590,46 +1590,60 @@ for (const kernelId of uniqueKernelIds) {
       minimumVisibleOptions: 2,
       maximumVisibleOptions: 2,
       allowFreeAction: true,
-      options: options.map(([title, actionText, targetRef, method, tradeoff, stateEffects], index) => ({
-        affordanceTemplateId: `${kernelId}-OPT-${String(index + 1).padStart(2, "0")}`,
-        title,
-        actionText,
-        targetRef,
-        method,
-        immediateIntent: actionText,
-        visibleTradeoff: tradeoff,
-        stateEffects,
-        statePatch: statePatches[index],
-        ...(kernelDurableEffects[kernelId]?.[index]
-          ? { durableEffects: kernelDurableEffects[kernelId][index] }
-          : {}),
-        protectedEffectRefs: [
-          ...stateEffects.map((path) => ({ kind: "STATE_PATH", path })),
-          ...(kernelDurableEffects[kernelId]?.[index] || [])
-            .map((_, effectIndex) => ({ kind: "DURABLE_EFFECT", effectIndex })),
-        ],
-        ...(kernelProtectedNarratives[kernelId]?.[index]
-          ? { protectedNarrative: kernelProtectedNarratives[kernelId][index] }
-          : {}),
-        ...(kernelFallbackContinuations[kernelId]?.[index]
-          ? { fallbackContinuation: kernelFallbackContinuations[kernelId][index] }
-          : {}),
-        ...(kernelPlayerVisibleFallbacks[kernelId]?.[index]
-          ? {
-            playerVisibleFallback: kernelPlayerVisibleFallbacks[kernelId][index],
-            settledReaction: {
-              schemaVersion: "settled-reaction-v1",
-              sourceAffordanceTemplateId: `${kernelId}-OPT-0${index + 1}`,
-              action: String(
-                kernelPlayerVisibleFallbacks[kernelId][index].IMMEDIATE_REACTION
-                || kernelPlayerVisibleFallbacks[kernelId][index].WORLD_PRESSURE
-                || ""
-              ).trim(),
+      options: options.map(([title, actionText, targetRef, method, tradeoff, stateEffects], index) => {
+        const affordanceTemplateId = `${kernelId}-OPT-${String(index + 1).padStart(2, "0")}`;
+        const playerVisibleFallback = kernelPlayerVisibleFallbacks[kernelId]?.[index];
+        return {
+          affordanceTemplateId,
+          title,
+          actionText,
+          targetRef,
+          method,
+          immediateIntent: actionText,
+          visibleTradeoff: tradeoff,
+          stateEffects,
+          statePatch: statePatches[index],
+          ...(kernelDurableEffects[kernelId]?.[index]
+            ? { durableEffects: kernelDurableEffects[kernelId][index] }
+            : {}),
+          protectedEffectRefs: [
+            ...stateEffects.map((path) => ({ kind: "STATE_PATH", path })),
+            ...(kernelDurableEffects[kernelId]?.[index] || [])
+              .map((_, effectIndex) => ({ kind: "DURABLE_EFFECT", effectIndex })),
+          ],
+          ...(kernelProtectedNarratives[kernelId]?.[index]
+            ? { protectedNarrative: kernelProtectedNarratives[kernelId][index] }
+            : {}),
+          ...(kernelFallbackContinuations[kernelId]?.[index]
+            ? { fallbackContinuation: kernelFallbackContinuations[kernelId][index] }
+            : {}),
+          ...(playerVisibleFallback ? { playerVisibleFallback } : {}),
+          settledReaction: {
+            schemaVersion: "settled-reaction-template-v1",
+            sourceEventKind: "AFFORDANCE_SETTLEMENT",
+            sourceActionId: affordanceTemplateId,
+            sourceAffordanceTemplateId: affordanceTemplateId,
+            responderActorIds: [],
+            scenePolicy: "CURRENT_SCENE",
+            reactionAction: {
+              actionKind: "NPC_RESPONSE",
+              targetEntityIds: [targetRef],
+              parameterBindings: {},
+              visibleActionSource: "REACTION_WORKING_SET",
             },
-          }
-          : {}),
-        createsPendingConsequence: true,
-      })),
+            resultCeiling: "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+            requiredVisibleEffects: [],
+            forbiddenEscalations: [
+              "NEW_MAJOR_COMMAND",
+              "NEW_EVIDENCE",
+              "DEATH_OR_IDENTITY_CHANGE",
+              "UNAUTHORIZED_SCENE_TRANSITION",
+              "ANSWER_NEXT_DECISION",
+            ],
+          },
+          createsPendingConsequence: true,
+        };
+      }),
       contrastRules: ["每项必须在目标、方法、即时成本或反制中至少两项不同", "不得把必然后果写成剧透", "玩家应能不用内部 ID 复述行动"],
     },
   }));
@@ -1646,9 +1660,14 @@ for (const asset of assets.filter((asset) => (
   for (const option of options) {
     if (
       !option.settledReaction
-      || option.settledReaction.schemaVersion !== "settled-reaction-v1"
+      || option.settledReaction.schemaVersion !== "settled-reaction-template-v1"
+      || option.settledReaction.sourceEventKind !== "AFFORDANCE_SETTLEMENT"
+      || option.settledReaction.sourceActionId !== option.affordanceTemplateId
       || option.settledReaction.sourceAffordanceTemplateId !== option.affordanceTemplateId
-      || !String(option.settledReaction.action || "").trim()
+      || option.settledReaction.reactionAction?.visibleActionSource !== "REACTION_WORKING_SET"
+      || !String(option.settledReaction.resultCeiling || "").trim()
+      || !Array.isArray(option.settledReaction.requiredVisibleEffects)
+      || !Array.isArray(option.settledReaction.forbiddenEscalations)
     ) {
       throw new Error(`DECISION_KERNEL_SETTLED_REACTION_INVALID:${option.affordanceTemplateId}`);
     }

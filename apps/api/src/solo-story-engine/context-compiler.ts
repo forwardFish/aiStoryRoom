@@ -46,7 +46,14 @@ export function compileSoloStoryContext(input: ContextCompileInput): ContextComp
     pendingConsequences: { items: pendingConsequences, tokenEstimate: estimateJsonTokens(pendingConsequences) },
     directedBeat: { items: input.scene.directedBeat ? [input.scene.directedBeat] : [], tokenEstimate: estimateJsonTokens(input.scene.directedBeat ? [input.scene.directedBeat] : []) },
     partOneRuntime: { items: input.partOneRuntime ? [input.partOneRuntime] : [], tokenEstimate: estimateJsonTokens(input.partOneRuntime ? [input.partOneRuntime] : []) },
-    partOneSettlement: { items: input.partOneSettlement ? [input.partOneSettlement.event] : [], tokenEstimate: estimateJsonTokens(input.partOneSettlement ? [input.partOneSettlement.event] : []) }
+    partOneSettlement: {
+      items: input.partOneSettlement ? [input.partOneSettlement.event] : [],
+      tokenEstimate: estimateJsonTokens(
+        input.partOneSettlement
+          ? [partOneSettlementPromptProjection(input.partOneSettlement.event)]
+          : [],
+      ),
+    }
   };
 
   const items: ContextSourceItem[] = [
@@ -73,7 +80,13 @@ export function compileSoloStoryContext(input: ContextCompileInput): ContextComp
       // audit-only source/adaptation arrays retained on the in-memory object.
       tokenEstimate: estimateJsonTokens(partOnePromptProjection(item))
     })),
-    ...allSections.partOneSettlement.items.map((item) => createItem(`part-one-event:${item.eventId}`, "P0", "PART_ONE_SETTLEMENT", item, true)),
+    ...allSections.partOneSettlement.items.map((item) => createItem(
+      `part-one-event:${item.eventId}`,
+      "P0",
+      "PART_ONE_SETTLEMENT",
+      partOneSettlementPromptProjection(item),
+      true,
+    )),
     createItem(
       input.playerIntent ? `player:${input.playerIntent.immutableIntentHash.slice(0, 16)}` : `opening:${input.openingTrigger!.triggerId}`,
       "P0",
@@ -270,6 +283,51 @@ function partOnePromptProjection(item: import("@ai-story/templates").PartOneRunt
   };
 }
 
+
+function partOneSettlementPromptProjection(
+  item: import("@ai-story/templates").PartOneCommittedEvent,
+) {
+  return {
+    schemaVersion: item.schemaVersion,
+    eventId: item.eventId,
+    turnNumber: item.turnNumber,
+    sectionIdBefore: item.sectionIdBefore,
+    sectionIdAfter: item.sectionIdAfter,
+    actionSource: item.actionSource,
+    decisionKernelId: item.decisionKernelId,
+    affordanceTemplateId: item.affordanceTemplateId,
+    actionText: item.actionText,
+    targetRef: item.targetRef,
+    statePatch: item.statePatch,
+    durableEffects: item.durableEffects,
+    changedStatePaths: item.changedStatePaths,
+    createdPendingConsequenceIds: item.createdPendingConsequenceIds,
+    duePendingConsequenceIds: item.duePendingConsequenceIds,
+    authoritativeObservableFacts: item.authoritativeObservableFacts,
+    settledReactionContract: item.settledReactionContract || null,
+    unboundActionNarrativeSource: item.unboundActionNarrativeSource || null,
+    authoritativeNpcReactions: item.authoritativeNpcReactions.map((reaction) => ({
+      reactionEventId: reaction.reactionEventId,
+      actorRefs: reaction.actorRefs,
+      action: reaction.action,
+      policyAssetId: reaction.policyAssetId,
+    })),
+    authoritativeWorldMoves: item.authoritativeWorldMoves.map((move) => ({
+      beatId: move.beatId,
+      sourceType: move.sourceType,
+      sourceId: move.sourceId,
+      actorRefs: move.actorRefs,
+      action: move.action,
+      resultCeiling: move.resultCeiling,
+      consequenceId: move.consequenceId || null,
+    })),
+    nextDecisionPoint: item.nextDecisionPoint,
+    sceneBefore: item.sceneBefore,
+    sceneAfter: item.sceneAfter,
+    sectionTransitioned: item.sectionTransitioned,
+  };
+}
+
 function renderWorkingSet(input: {
   role: StoryRole;
   scene: StoryScene;
@@ -295,7 +353,11 @@ function renderWorkingSet(input: {
     `【当前压力】\n${input.activePressures.map((item) => `- ${item.summary}`).join("\n")}`,
     `【待兑现后果】\n${input.pendingConsequences.map((item) => `- ${item.summary}`).join("\n")}`,
     input.directedBeat.length ? `【本轮外部推进】\n${input.directedBeat.map((item) => `- ${item.summary}`).join("\n")}` : "【本轮外部推进】无",
-    input.partOneSettlement ? `【本轮确定性事件】${JSON.stringify(input.partOneSettlement)}` : "【本轮确定性事件】无",
+    input.partOneSettlement
+      ? `【本轮确定性事件】${JSON.stringify(
+        partOneSettlementPromptProjection(input.partOneSettlement),
+      )}`
+      : "【本轮确定性事件】无",
     input.partOneRuntime ? `【第一部分运行工作集】${JSON.stringify({ section: input.partOneRuntime.section, stateProjection: input.partOneRuntime.stateProjection, nextDecisionPressure: input.partOneRuntime.nextDecisionPressure, decisionKernel: input.partOneRuntime.openDecisionKernel.assetId, retrievalTrace: input.partOneRuntime.retrievalTrace })}` : "【第一部分运行工作集】无",
     `【本地裁决】${JSON.stringify(input.actionResolution)}`,
     input.playerAction

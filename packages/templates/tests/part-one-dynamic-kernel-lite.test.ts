@@ -167,6 +167,23 @@ test("reaction WorkingSet cannot be overwritten by the final next-decision Worki
     settlement.event.authoritativeNpcReactions[0]?.action,
     reactionWorkingSet.decisionPoint.prompt,
   );
+  const frozenReaction = settlement.event.settledReactionContract;
+  assert.ok(frozenReaction);
+  assert.equal(frozenReaction.schemaVersion, "settled-reaction-contract-v1");
+  assert.equal(frozenReaction.sourceEventId, settlement.event.eventId);
+  assert.equal(frozenReaction.sourceEventKind, "WORLD_SETTLEMENT");
+  assert.equal(
+    frozenReaction.reactionAction.visibleAction,
+    reactionWorkingSet.decisionPoint.prompt,
+  );
+  assert.notEqual(
+    frozenReaction.reactionAction.visibleAction,
+    nextWorkingSet.decisionPoint.prompt,
+  );
+  assert.deepEqual(
+    settlement.event.narrativePlan.settledReactionContract,
+    frozenReaction,
+  );
   assert.equal(
     settlement.event.nextDecisionPoint.decisionPointId,
     nextWorkingSet.decisionPoint.decisionPointId,
@@ -387,6 +404,46 @@ test("validated Requirement dependencies choose review authority before witness 
   );
 });
 
+test("authored reaction template freezes into the committed event and narrator plan", () => {
+  const pkg = packageUnderTest();
+  const state = stateWithOnlyAuthorityUnresolved(pkg);
+  const workingSet = buildDynamicPartOneRuntimeWorkingSet(pkg, state, 4);
+  const chosen = workingSet.decisionAffordances[0]!;
+  const settlement = settleDynamicPartOneAction(pkg, structuredClone(state), {
+    source: "RECOMMENDED",
+    decisionId: chosen.affordanceTemplateId,
+    decisionKernelId: chosen.decisionKernelId,
+    affordanceTemplateId: chosen.affordanceTemplateId,
+    label: chosen.title,
+    actionText: chosen.actionText,
+    targetRef: chosen.target.id,
+  }, 5);
+
+  const template = chosen.settledReaction;
+  const frozen = settlement.event.settledReactionContract;
+  assert.ok(template);
+  assert.ok(frozen);
+  assert.equal(frozen.schemaVersion, "settled-reaction-contract-v1");
+  assert.equal(frozen.sourceEventId, settlement.event.eventId);
+  assert.equal(frozen.sourceEventKind, "AFFORDANCE_SETTLEMENT");
+  assert.equal(frozen.sourceActionId, chosen.affordanceTemplateId);
+  assert.equal(frozen.sourceAffordanceTemplateId, chosen.affordanceTemplateId);
+  assert.equal(
+    template.reactionAction.visibleActionSource,
+    "REACTION_WORKING_SET",
+  );
+  assert.equal(
+    frozen.reactionAction.visibleAction,
+    settlement.event.authoritativeNpcReactions[0]?.action,
+  );
+  assert.deepEqual(
+    settlement.event.narrativePlan.settledReactionContract,
+    frozen,
+  );
+  assert.equal(settlement.event.unboundActionNarrativeSource, null);
+  assert.equal(settlement.event.narrativePlan.unboundActionNarrativeSource, null);
+});
+
 test("every playable Affordance carries a current-turn settled reaction contract", () => {
   const pkg = packageUnderTest();
   const options = pkg.assets
@@ -396,16 +453,17 @@ test("every playable Affordance carries a current-turn settled reaction contract
   for (const option of options) {
     assert.equal(
       option.settledReaction?.schemaVersion,
-      "settled-reaction-v1",
+      "settled-reaction-template-v1",
       option.affordanceTemplateId,
     );
     assert.equal(
-      option.settledReaction?.sourceAffordanceTemplateId,
+      option.settledReaction?.sourceActionId,
       option.affordanceTemplateId,
       option.affordanceTemplateId,
     );
-    assert.ok(
-      String(option.settledReaction?.action || "").trim().length > 0,
+    assert.equal(
+      option.settledReaction?.reactionAction.visibleActionSource,
+      "REACTION_WORKING_SET",
       option.affordanceTemplateId,
     );
   }

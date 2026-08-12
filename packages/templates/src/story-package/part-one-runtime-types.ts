@@ -241,6 +241,8 @@ export type PartOneNarrativePlan = {
    * formal document). The Narrator continues after this paragraph.
    */
   settledActionNarrative?: string;
+  settledReactionContract?: PartOneSettledReactionContract | null;
+  unboundActionNarrativeSource?: PartOneUnboundActionNarrativeSource | null;
   nextStoryBeat: PartOneNextStoryBeat;
   confirmedEffects: string[];
   unresolvedFacts: string[];
@@ -298,11 +300,164 @@ export type PartOneState = {
   [key: string]: unknown;
 };
 
+export type PartOneSettledReactionSourceEventKind =
+  | "AFFORDANCE_SETTLEMENT"
+  | "CAPABILITY_SETTLEMENT"
+  | "UNBOUND_ACTION_SETTLEMENT"
+  | "WORLD_SETTLEMENT";
+
+export type PartOneSettledReactionScenePolicy =
+  | "CURRENT_SCENE"
+  | "AFTER_AUTHORIZED_TRANSITION";
+
+export type PartOneSettledReactionActivationCondition = {
+  allOf: PartOneStateRule[];
+};
+
+export type PartOneSettledReactionVisibleActionSource =
+  | "AUTHORED"
+  | "REACTION_WORKING_SET";
+
+export type PartOneSettledReactionAction = {
+  actionKind: "NPC_RESPONSE" | "WORLD_RESPONSE";
+  targetEntityIds: string[];
+  parameterBindings: Record<string, string | number | boolean | null>;
+  visibleAction: string;
+};
+
+/**
+ * Authoring may provide exact reaction prose, or require Settlement to freeze
+ * the policy-resolved reactionWorkingSet text. The committed contract always
+ * stores the final visibleAction and never depends on a future WorkingSet.
+ */
+export type PartOneSettledReactionTemplateAction = Omit<
+  PartOneSettledReactionAction,
+  "visibleAction"
+> & {
+  visibleActionSource?: PartOneSettledReactionVisibleActionSource;
+  visibleAction?: string;
+};
+
+/** Author-owned reaction template. Runtime fills event identity and responders. */
+export type PartOneSettledReactionTemplate = {
+  schemaVersion: "settled-reaction-template-v1";
+  sourceEventKind: PartOneSettledReactionSourceEventKind;
+  sourceActionId: string;
+  sourceAffordanceTemplateId?: string;
+  responderActorIds: string[];
+  activationCondition?: PartOneSettledReactionActivationCondition;
+  scenePolicy: PartOneSettledReactionScenePolicy;
+  reactionAction: PartOneSettledReactionTemplateAction;
+  resultCeiling: string;
+  requiredVisibleEffects: string[];
+  forbiddenEscalations: string[];
+};
+
+/**
+ * Immutable current-turn reaction frozen after Settlement. It is persisted on
+ * the committed event and replayed independently from the next Decision Point.
+ */
 export type PartOneSettledReactionContract = {
-  schemaVersion: "settled-reaction-v1";
-  sourceAffordanceTemplateId: string;
-  /** Author-reviewed current-turn reaction; never a next-decision prompt. */
-  action: string;
+  schemaVersion: "settled-reaction-contract-v1";
+  sourceEventId: string;
+  sourceEventKind: PartOneSettledReactionSourceEventKind;
+  sourceActionId: string;
+  sourceAffordanceTemplateId?: string;
+  responderActorIds: string[];
+  activationCondition?: PartOneSettledReactionActivationCondition;
+  scenePolicy: PartOneSettledReactionScenePolicy;
+  reactionAction: PartOneSettledReactionAction;
+  resultCeiling: string;
+  requiredVisibleEffects: string[];
+  forbiddenEscalations: string[];
+};
+
+export type PartOneUnboundActionParsingResult = {
+  schemaVersion: "unbound-action-parsing-result-v1";
+  parserId: string;
+  intentKind: string;
+  actorId: string;
+  targetEntityIds: string[];
+  requestedStatePaths: string[];
+  requestedDurableEffectTypes: DurablePredicate["type"][];
+  parameters: Record<string, string | number | boolean | null>;
+};
+
+export type PartOneUnboundCapabilityValidation = {
+  schemaVersion: "unbound-capability-validation-v1";
+  status: "AUTHORIZED" | "REJECTED";
+  capabilityIds: string[];
+  validatedConstraintIds: string[];
+  allowedStatePaths: string[];
+  allowedDurableEffectTypes: DurablePredicate["type"][];
+  rejectionCodes: string[];
+};
+
+export type PartOneUnboundSettlementResult = {
+  schemaVersion: "unbound-settlement-result-v1";
+  settlementEventId: string;
+  status: "SETTLED";
+  changedStatePaths: string[];
+  durableEffectTypes: DurablePredicate["type"][];
+  requiredVisibleEffects: string[];
+};
+
+export type PartOneUnboundActorGoalSource = {
+  actorId: string;
+  sourceAssetIds: string[];
+  goals: string[];
+};
+
+export type PartOneUnboundMaterialEffectPolicy = {
+  allowedStatePaths: string[];
+  allowedDurableEffectTypes: DurablePredicate["type"][];
+  forbiddenStatePaths: string[];
+  forbiddenDurableEffectTypes: DurablePredicate["type"][];
+};
+
+export type PartOneUnboundVisibleReactionSource =
+  | {
+    sourceKind: "SETTLED_REACTION_CONTRACT";
+    sourceId: string;
+    responderActorIds: string[];
+    visibleAction: string;
+  }
+  | {
+    sourceKind: "POLICY_REACTION";
+    sourceId: string;
+    responderActorIds: string[];
+    visibleAction: string;
+  }
+  | {
+    sourceKind: "NONE";
+    sourceId: null;
+    responderActorIds: [];
+    visibleAction: null;
+  };
+
+/** Structured provenance for a legal action with no bound Affordance/Kernel. */
+export type PartOneUnboundActionNarrativeSource = {
+  schemaVersion: "unbound-action-narrative-source-v1";
+  sourceEventId: string;
+  sourceActionId: string;
+  actionText: string;
+  parsingResult: PartOneUnboundActionParsingResult;
+  capabilityValidation: PartOneUnboundCapabilityValidation;
+  settlementResult: PartOneUnboundSettlementResult;
+  currentScene: PartOneSceneState;
+  actorGoals: PartOneUnboundActorGoalSource[];
+  materialEffectPolicy: PartOneUnboundMaterialEffectPolicy;
+  visibleReactionSource: PartOneUnboundVisibleReactionSource;
+  resultCeiling: string;
+  forbiddenEscalations: string[];
+};
+
+export type PartOneUnboundNarrativeContext = {
+  parsingResult: PartOneUnboundActionParsingResult;
+  capabilityValidation: PartOneUnboundCapabilityValidation;
+  materialEffectPolicy: PartOneUnboundMaterialEffectPolicy;
+  resultCeiling: string;
+  forbiddenEscalations: string[];
 };
 
 export type PartOneAffordanceTemplate = {
@@ -335,7 +490,7 @@ export type PartOneAffordanceTemplate = {
   fallbackContinuation?: string;
   /** Complete author-reviewed player prose. Never compiled from semantic constraints. */
   playerVisibleFallback?: PartOnePlayerVisibleFallback;
-  settledReaction?: PartOneSettledReactionContract;
+  settledReaction?: PartOneSettledReactionTemplate;
   createsPendingConsequence: boolean;
 };
 
@@ -545,6 +700,8 @@ export type PartOneCommittedEvent = {
   createdPendingConsequenceIds: string[];
   duePendingConsequenceIds: string[];
   authoritativeObservableFacts: string[];
+  settledReactionContract?: PartOneSettledReactionContract | null;
+  unboundActionNarrativeSource?: PartOneUnboundActionNarrativeSource | null;
   authoritativeNpcReactions: Array<{
     reactionEventId: string;
     actorRefs: string[];

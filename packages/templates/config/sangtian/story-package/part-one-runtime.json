@@ -3,11 +3,11 @@
   "worldId": "sangtian",
   "partId": "PART-01",
   "perspectiveRoleKey": "zhejiang_governor",
-  "authoringReleaseVersion": "sangtian-part-one-authoring-v1.3.0",
-  "authoringManifestHash": "8C53DDA4E34A38531B46E1122F6EDFABC02B650BCC1B9AD6CAA603546DA0213A",
+  "authoringReleaseVersion": "sangtian-part-one-authoring-v1.3.1",
+  "authoringManifestHash": "F9C9CCBD4283F8D44486E6B6389750ADB2AFF2DCF4CB0141FB7ACD5F24604C46",
   "authoringManifest": {
     "schemaVersion": "sangtian-part-one-authoring-release-v1",
-    "releaseVersion": "sangtian-part-one-authoring-v1.3.0",
+    "releaseVersion": "sangtian-part-one-authoring-v1.3.1",
     "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
     "reviewSetHash": "39E8E830FFDB58D41E470BE89F89EA4D93B086629C31B5C5D0A6E8F85F5A2E80",
     "adaptationReviewSetHash": "39E8E830FFDB58D41E470BE89F89EA4D93B086629C31B5C5D0A6E8F85F5A2E80",
@@ -20,6 +20,7 @@
     "causalArcCount": 4,
     "floorObligationCount": 4,
     "requirementCount": 12,
+    "requirementDependencyCount": 2,
     "assetIds": [
       "AP-P1-QINGLIU-MAGISTRATE",
       "AP-P1-REFORM-CLERK",
@@ -95,21 +96,21 @@
       "ARC-P1-DEADLINE-RESPONSIBILITY": "3DCA3C6294BF055B4B5E680150C3D03CA1CDFD4AD9036701A588453CDE67E6B4",
       "ARC-P1-FIRST-REPORT-FRAMING": "605EB351734EEA5D24B396910B91041CBB6052680BD99BF245319B7F624C1623",
       "ARC-P1-GRAIN-LAND-ENTRY": "3DE3E9F5AF6F283F121EFD73271A3AA32F83BC12F8A6C9A6800AAE6932CF192D",
-      "DK-P1-CAPITAL-CHANNEL": "486292E376A5742E19BC145B9A66E6E2AFDB98A1D4E9065D1B9A1ED8B8C07949",
-      "DK-P1-DISCLOSURE-SCOPE": "E3F1D77B4D0EAAB6565004A45CEE250777BF84AF3981815F72B0AB9A3C4BB99E",
-      "DK-P1-EVIDENCE-ATTACHMENT": "615EC357D80DF7E363B9FD8782CC4FD72D4BF8E324CBB8C0D6C5474752DAA1B3",
-      "DK-P1-EVIDENCE-CUSTODY": "C248060D555E127F7CF79B0C35FF01BB945F220AC02C75AE2A3753167293B0FF",
-      "DK-P1-EXECUTION-SCOPE": "061F5EA5BAAD283E105D20080B4B8F3EBD64D5530CC90407C8ADCECAB2F39D81",
-      "DK-P1-GRAIN-SOURCE": "5EB7D0952A6914F47A41528A1F2B2AFF24F350E2D6FF06CB1009C23BAF672F6B",
-      "DK-P1-LAND-SAFEGUARD": "F280D35A1696BB871DC6E05F9F01E3EC95261CAAF892326513F87FFA5EC2B51D",
-      "DK-P1-MERCHANT-CONDITIONS": "1E37A29EBE50755ADD28CB549BD7F69ABE05F6FD9EAF0E357208370FEE91A055",
-      "DK-P1-RELIEF-PRIORITY": "5065FFCDF20FAC86242039282BF21FA3E28998A15CF31CBDFEEF5E8ABFB83811",
-      "DK-P1-REPORT-AUTHORSHIP": "3AE0B7798204DB39D09F71A485CEE4C4261943C43AFAB73B9C03213174CCC79E",
-      "DK-P1-RESPONSIBILITY-RECORD": "AECAE5D53FCD7E091F188A21C48A0F7F2B558BB02C8C56D98D5A0ECB97BE7B58",
-      "DK-P1-RESPONSIBILITY-SCOPE": "CCC83A33A71DBD745406D0DDE10BA8AD48EC761444244ADEE9B15DDA68F4B348",
-      "DK-P1-REVIEW-AUTHORITY": "758EBD0906331767C00BD101EC257A9207AA58665ECDB1905ECE0C5E45A926C6",
-      "DK-P1-REVIEW-INITIATION": "D28F30B4875709F3E4A98BFC98271337B28D47A39E3610DCF70AC0A00FE1CDD0",
-      "DK-P1-WITNESS-ACCESS": "080B8D8E62BDB8B08FA8F27A674DD73AFE81C2AB7D92C188DD3C0685E0A2C3CA",
+      "DK-P1-CAPITAL-CHANNEL": "4908EB4437886CE2241B47AD512EEBDB1150E67A31EB6F7AA1B6D4EB2A68BDB6",
+      "DK-P1-DISCLOSURE-SCOPE": "A40BC18837BE64810D864F543A6A943C5D958B4E3D8C435ACB20060C53C1554F",
+      "DK-P1-EVIDENCE-ATTACHMENT": "8947E8B73D24813EF2FE3BC8710951D5DB562E9A1455886BEE65F8236359E036",
+      "DK-P1-EVIDENCE-CUSTODY": "CECCF3E25ED8094C24E3486ABA2E3500EA34E7C6E52022B77409E239FC096228",
+      "DK-P1-EXECUTION-SCOPE": "2A981D97E6424CDC5A66CDE63219F91883D83BEEBB4F92F982CE3B2BCCA2B104",
+      "DK-P1-GRAIN-SOURCE": "FF3AA60E2F3046C8C30F9517AC8B9A431BDDF2CF8A451B7CED24ED495225D838",
+      "DK-P1-LAND-SAFEGUARD": "2D6D0B0B93CBA41FD7C41233606CE33ABFBD102E3A400AF932D76B9021926EC8",
+      "DK-P1-MERCHANT-CONDITIONS": "12DDD2FB18AE705F86305FE073E7F4CCFE0E7F469AE725EAE08003801DB4D47E",
+      "DK-P1-RELIEF-PRIORITY": "9229230F74789FD006A5614B94AF9910D934A8434FB9889C0E198675C74CB350",
+      "DK-P1-REPORT-AUTHORSHIP": "0C00B693D23E28B6236229C183428FA286FE4AF8F382779E25FB98C34A13B08D",
+      "DK-P1-RESPONSIBILITY-RECORD": "BE5698AFBAF21FD912498AE717698F1851D5045EF3DF056C38BC1698113D35BA",
+      "DK-P1-RESPONSIBILITY-SCOPE": "F6A9CDCDA12E51A096BD20A5DD7CE2D1A2749E8D3950CAD1A4D254C5858764DC",
+      "DK-P1-REVIEW-AUTHORITY": "A051D4AEE8A64F00E1C82BFF1A542DC705C28516A6318D51C9C7D7543CE0D901",
+      "DK-P1-REVIEW-INITIATION": "953E053110CCE7B07A84DBB2FE6A9A5425F8DEFB03733874A45738864945E8DC",
+      "DK-P1-WITNESS-ACCESS": "85A76B0A85143104CE29BA7E410545E687F70A8F2E214D06AAC5901FA0EF4747",
       "EVIDENCE-P1-QINGLIU-REGISTER-ANOMALY": "D664C2D34744DF34D022ADC1792DCF39AB828ECDE5EC9DC77FE8441F286EF8B1",
       "FLOOR-P1-S1-XUNFU-RESPONSE": "2642D8983E393BDC45CD767A8D0B0238B1F062BEE3751E1633ADAD8A73FCC736",
       "FLOOR-P1-S2-CUSTODY-DISRUPTION": "E1BFA2A68EBE232E7030936D85C2170992525BB38E243CDC108CB71AEEB73170",
@@ -155,13 +156,14 @@
       "STYLE-SANGTIAN-HISTORICAL-NOVEL": "AEE1FA9AD6362B8486380A0C4397E0C77572595D6102A1E5D3CA1B786A9EFE76"
     },
     "runtimeIndexHash": "C82F754D3B7F66D353D558E2AC24543551B11B8C25AD05C4ED49A4365A8EB0EC",
-    "requirementSetHash": "05E88C24A405AF4A0B4E15040259862059D2973AEA55E917F5A98E61E16F105E",
-    "immutableHash": "8C53DDA4E34A38531B46E1122F6EDFABC02B650BCC1B9AD6CAA603546DA0213A"
+    "requirementSetHash": "40607D938A1AFC2086D7151ECC5B96D68A529904C8AF94DA1E6E8CE81003FC5A",
+    "immutableHash": "F9C9CCBD4283F8D44486E6B6389750ADB2AFF2DCF4CB0141FB7ACD5F24604C46"
   },
   "evidenceReleaseId": "sangtian-part-one-evidence-v1.0.0",
   "contentCounts": {
     "assets": 65,
     "requirements": 12,
+    "requirementDependencies": 2,
     "sections": 4,
     "decisionKernels": 15,
     "causalArcs": 4,
@@ -2031,6 +2033,35 @@
       "coverageStatus": "SATISFIED_BY_SOURCE"
     }
   ],
+  "selectionRules": {
+    "schemaVersion": "requirement-selection-rules-v1",
+    "requirementDependencies": [
+      {
+        "schemaVersion": "requirement-dependency-v1",
+        "dependencyId": "REQDEP-P1-S2-REVIEW-BEFORE-CUSTODY",
+        "predecessorRequirementId": "REQ-P1-REVIEW-AUTHORITY",
+        "successorRequirementId": "REQ-P1-REGISTER-CUSTODY",
+        "predecessorDecisionKernelIds": [
+          "DK-P1-REVIEW-AUTHORITY"
+        ],
+        "bypassWhen": [
+          "DIRECT_DUE_PRESSURE"
+        ]
+      },
+      {
+        "schemaVersion": "requirement-dependency-v1",
+        "dependencyId": "REQDEP-P1-S2-REVIEW-BEFORE-WITNESS",
+        "predecessorRequirementId": "REQ-P1-REVIEW-AUTHORITY",
+        "successorRequirementId": "REQ-P1-KNOWLEDGE-CHAIN",
+        "predecessorDecisionKernelIds": [
+          "DK-P1-REVIEW-AUTHORITY"
+        ],
+        "bypassWhen": [
+          "DIRECT_DUE_PRESSURE"
+        ]
+      }
+    ]
+  },
   "approvedAdaptations": [
     {
       "schemaVersion": "adaptation-decision-v2",
@@ -7026,6 +7057,31 @@
               "WORLD_PRESSURE": "文书离开总督府时，交接簿上的第一行已经写下。正式渠道最慢，却让每一站都有人承担接手与转出的责任；巡抚若另有奏报，也只能在同一套朝廷程序里争先。厅中众人望着文书出门，知道浙江危局第一次有了一份不可随意收回的官方叙述。",
               "DECISION_STOP": "送文的人刚出府门，巡抚幕僚便取出正式手本：\"首报既已上路，抚院请核对送入京师的是哪一版事实。制台是交一份封号摘要，请巡抚收讫具名；还是不交底稿，只把拒交范围与理由正式留案？\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-CAPITAL-CHANNEL-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-CAPITAL-CHANNEL-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "resource.official_document_channel"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -7073,6 +7129,31 @@
               "WORLD_PRESSURE": "急递出府以后，速度与责任同时落在总督名下。副本留在案上，既能证明送出的内容，也会在京师回音到来以前成为巡抚追问的对象。县令和书吏暂时退下，巡抚幕僚却没有告辞；他已经看出，总督是在用更快的送达抢先固定浙江的第一版事实。",
               "DECISION_STOP": "急递的脚步尚未远去，巡抚幕僚已经持手本索取底稿。他问总督，是交一份不含人证位置的封号摘要，请巡抚收讫具名；还是拒交底稿，把范围、理由与期限正式留案。"
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-CAPITAL-CHANNEL-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-CAPITAL-CHANNEL-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "resource.official_document_channel"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -7112,6 +7193,31 @@
               "PLAYER_RESULT": "总督命正本走正式渠道、摘要另走密奏，两份互列封号，以便相互核验。",
               "WORLD_PRESSURE": "两路文书从不同的门离开总督府，一路留下公开交接，一路只让少数人知道去向。互列封号可以防止内容被悄然替换，也把泄露面扩大了一倍。巡抚幕僚看着两名差役先后离府，明白总督没有把浙江的第一版事实押在一条路上。",
               "DECISION_STOP": "两路文书离府以后，巡抚幕僚当即要求核对总督送出的那一版事实。他把选择摆明：交一份列明结论、附件与封号的摘要并请巡抚具名收讫，或正式拒交底稿并留下可复核期限。"
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-CAPITAL-CHANNEL-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-CAPITAL-CHANNEL-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "resource.official_document_channel"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -7255,6 +7361,31 @@
               "WORLD_PRESSURE": "巡抚幕僚得到的只有一条尚待复核的异常，既不能据此定罪，也无法接触人证。他将不满压在袖中，转而把粮价和三日限期一并摆到总督面前。清流县令说官仓难以久支；商会会首却立即接话，说粮船和脚力都能筹措，只等官府开口。",
               "DECISION_STOP": "县令与会首隔着半间厅彼此看了一眼。一个问官府先拿什么救急，一个等着说出自己的条件。第一批粮从官仓、商会还是两路并行，必须由总督当场定下。"
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-DISCLOSURE-SCOPE-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-DISCLOSURE-SCOPE-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -7295,6 +7426,31 @@
               "WORLD_PRESSURE": "巡抚一方终于取得一条可以自行核对的材料入口，督抚间的戒心略松了一线，原件的保管责任却没有改变。话还未说完，清流县令便把城中缺粮的压力接了上来；商会会首随即表示，只要官府肯作保，商粮与运力都能入局。县册之争尚未停，粮食已经逼着众人换一张桌子谈价。",
               "DECISION_STOP": "总督面前摆出了两条路：先动官仓和邻省借粮，还是让商会立即开仓运粮。县令与会首都在等他先定第一批救粮的来源。"
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-DISCLOSURE-SCOPE-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-DISCLOSURE-SCOPE-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -7333,6 +7489,31 @@
               "SCENE_TRANSITION": "申时将近，议事移到杭州总督府仪门内厅。巡抚幕僚仍空着手，清流县令与江南商会会首已经在堂下候着。",
               "WORLD_PRESSURE": "巡抚幕僚没有再追问人证，只说限时回报也要有人担责。清流县令趁这句话未落，便报官仓已难承受继续拖延；商会会首则把能调来的粮路说得十分从容。复核材料仍被封在总督手里，救粮却不能同样封着等候。谁先拿出粮，谁便会先取得说话的分量。",
               "DECISION_STOP": "会首躬身道：\"官粮若来得及，商会不敢争先；若来不及，请制台给一句准话。\"县令也看向总督，第一批粮的来源已经不能再拖。"
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-DISCLOSURE-SCOPE-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-DISCLOSURE-SCOPE-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -7460,6 +7641,31 @@
               "WORLD_PRESSURE": "县令逐项核对附件名目，确认原件仍按既定保管链留在浙江。附件越完整，首报越容易被京师采信，也越容易让保管人和经手人失去回旋余地。材料边界已经定下，正文里谁对执行、复核与赈济负责，便不能再留作一句含混的“地方自处”。",
               "DECISION_STOP": "巡抚幕僚问道：\"附件已经列清，责任也请列清。执行、复核、赈济和各级经手，分别由谁承担；是制台自承，还是逐项写明？\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-EVIDENCE-ATTACHMENT-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-EVIDENCE-ATTACHMENT-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "evidence.qingliu_register_anomaly"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -7496,6 +7702,31 @@
               "WORLD_PRESSURE": "县令接受了这道边界，书吏也暂时不必以人证身份出现在京师文书里。可附件越克制，正文里的责任越要明确；否则巡抚另报时，只需指责总督既不交材料、也不认责任，便能先占住名分。",
               "DECISION_STOP": "巡抚幕僚道：\"附件既不附人名，正文便请直说谁担执行、谁担复核与赈济。是制台自承，还是把各级经手事项逐项列出？\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-EVIDENCE-ATTACHMENT-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-EVIDENCE-ATTACHMENT-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "evidence.qingliu_register_anomaly"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -7529,6 +7760,31 @@
               "PLAYER_RESULT": "总督决定暂不附书吏供述，只附保管链，并说明人证需要保护。",
               "WORLD_PRESSURE": "书吏的说法被留在浙江，奏报只证明材料如何被看守、谁能接触。这个选择保住了人证，也给巡抚留下质疑：没有供述，保管链究竟保护的是证据，还是保护总督自己的说法。要回答这份质疑，奏报必须先写明谁对每一段处置负责。",
               "DECISION_STOP": "县令问：\"人证既留在浙江，正文中的责任便不能再留白。执行、复核、赈济和经手事项，制台准备怎样分担？\""
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-EVIDENCE-ATTACHMENT-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-EVIDENCE-ATTACHMENT-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.reform_clerk"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -7725,6 +7981,31 @@
               "WORLD_PRESSURE": "县令领命，却把“尚未换封”四个字说得格外清楚。原册仍在清流县档房，三方见证赶到以前，保管责任仍在县衙；命令只是定下下一步，并没有把换封提前变成已经完成的事实。站在一旁的改桑书吏听见众人谈到册页经手，脸色渐渐发白。他知道哪些页曾从自己手中过，也因此成了这条证据链上最容易先被人找到的一环。",
               "DECISION_STOP": "县令看了书吏一眼，低声问道：\"原册既先留县中，这个人该如何处置？是由总督府秘密保护后问话，交督抚双方共同询问，还是先只收一份封缄书面供述？\"书吏垂着头，签押房里没有人替他回答。"
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-EVIDENCE-CUSTODY-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-EVIDENCE-CUSTODY-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "document.qingliu_register_original"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -7799,6 +8080,31 @@
               "PLAYER_RESULT": "总督命清流县等两名见证人到场后再抄出样册，并逐页记明抄录人和时辰。",
               "WORLD_PRESSURE": "县令把“见证到场后再抄”复述了一遍，确认眼下还没有任何副本。第二条证据链要从见证人到场、第一笔抄录开始，不能凭一句命令倒推出已经存在的样册。改桑书吏站在案边，听见往后每页都要记下抄录人与时辰，便明白自己过去经手册页的次序很快会被督抚双方同时追问。",
               "DECISION_STOP": "县令问道：\"抄录一开始，这名书吏便再藏不住。是先由总督府秘密保护问话，还是请督抚双方共同询问；若都不妥，便先收一份封缄书面供述？\"巡抚幕僚看着书吏，总督必须先决定谁能接触他。"
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-EVIDENCE-CUSTODY-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-EVIDENCE-CUSTODY-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "document.qingliu_register_original"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           },
@@ -7877,6 +8183,31 @@
               "PLAYER_RESULT": "总督命清流县在见证下将可疑册页整封移交总督府，县衙留下交接清单。",
               "WORLD_PRESSURE": "清流县令领命后先把界限说清：原册眼下仍在县档房，只有见证人在场、交接清单写成、整封真正起运以后，途中和入府后的保管责任才转到总督府。巡抚幕僚听见“交接清单”，没有再争原册去向，只把目光落在改桑书吏身上。册可以等见证移交，人却可能在册到以前先改口或失去踪影。",
               "DECISION_STOP": "县令顺着他的目光看去：\"制台，原册移交已有章程，这名经手书吏却不能无人过问。是先秘密保护问话，交督抚双方共同询问，还是只收一份封缄书面供述？\""
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-EVIDENCE-CUSTODY-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-EVIDENCE-CUSTODY-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "document.qingliu_register_original"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -8085,6 +8416,31 @@
               "WORLD_PRESSURE": "纸上的墨迹还没有干透，巡抚书吏便上前接过回文，当着总督的面收入匣中。匣盖合上，他却没有告退，只把匣子横托在胸前。清流一县可以先办，压价买田也有了禁令；可三日复核若赶不上，今日这道边界是谁催成、又由谁担责，回文里仍没有写明。",
               "DECISION_STOP": "书吏隔着屏风躬身道：\"清流试办，卑职可以照此回禀。只是三日之限一到，复核若误，朝廷问的便不只是田亩。敢问大人，这份责任是由总督独自写明，还是请巡抚在同一份回文上共同具名？\"说完，他仍捧着回文匣候在原处。"
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-EXECUTION-SCOPE-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-EXECUTION-SCOPE-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -8196,6 +8552,31 @@
               "WORLD_PRESSURE": "巡抚书吏听见“先行放开”，神色终于松了一线；待听到三日复核和逐日具报，他按在回文匣上的手又停住了。急令可以先走，补正却从这一刻起有了期限。若三日后材料仍不齐，先行放开的好处归谁，留下的缺口又算在谁头上，督抚之间还没有一句明话。",
               "DECISION_STOP": "书吏把话问得很慢：\"大人，催办出自巡抚衙门，放行却要从总督府出去。三日后若仍补不齐，这份责任是由总督独自具名，还是请巡抚在同一份回文上共同具名？\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-EXECUTION-SCOPE-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-EXECUTION-SCOPE-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -8239,6 +8620,31 @@
               "PLAYER_RESULT": "总督的手没有伸向印盒。他看着屏风外的巡抚书吏，说道：\"今日仍不签。清流县封存的回报未到，此事不再往前走。\"\n\n书吏刚要开口，总督又道：\"朝廷三日之限若因此有误，责在本督，不累旁人。\"",
               "WORLD_PRESSURE": "巡抚书吏听完，没有去碰那只空回文匣。总督肯担延误之责，便等于把巡抚催办的压力暂时挡在了自己名下；可口头一句“责在本督”，出了这间内厅便可能各有说法。书吏仍躬身候着，显然是在等一份可以带回巡抚衙门的文字。",
               "DECISION_STOP": "片刻后，他才道：\"大人既肯担这三日之责，卑职不敢再催落印。只是这番话准备怎样写进正式回文——由总督独自具名，还是请巡抚共同具名？\""
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-EXECUTION-SCOPE-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-EXECUTION-SCOPE-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.qingliu_magistrate"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -8380,6 +8786,31 @@
               "WORLD_PRESSURE": "清流县令先松了一口气，随即又把头低下去：官仓能救眼前，邻省的粮何时到、借据将来由什么偿还，都要落在总督府名下。商会会首没有因自己被挡在第一步之外而退席，只说官府若缺船、缺脚力，商会仍可出手。那句话说得像帮忙，也像重新开的价。",
               "DECISION_STOP": "会首道：\"粮可以不由商会垫，路总要有人走。若借我等的船和人，官府肯给什么，又明确不肯给什么？\"总督必须决定是否让商会进入救粮链。"
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-GRAIN-SOURCE-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-GRAIN-SOURCE-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "resource.official_grain"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -8420,6 +8851,31 @@
               "WORLD_PRESSURE": "会首应下开仓，却在听见不得以粮换田时停了片刻。他没有当厅争辩，只问官府的担保是否包括船运、损耗与途中查验。清流县令看着他，明白商会既把粮送进灾县，日后便会拿这份功劳换取别的入口。禁止买田守住了一道门，粮路和丝路仍在门外等价。",
               "DECISION_STOP": "会首把话说得客气：\"田契既不许碰，商会便只问运输和日后的交易资格。制台是只买粮与运力，还是还肯给别的优先？\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-GRAIN-SOURCE-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-GRAIN-SOURCE-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.jiangnan_merchant_head"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -8459,6 +8915,31 @@
               "PLAYER_RESULT": "总督定下官仓先稳城内、商会负责外县运输，两路账目分开核销。",
               "WORLD_PRESSURE": "县令与会首各自领下半条粮路，厅上看似少了一场争执，实际却多了两本必须互相核对的账。城内若先稳，外县会问为何迟到；商粮若走得更快，又会有人说官府把灾县交给了商人。会首只关心一件事：他出了船和人以后，能从官府得到什么明确回报。",
               "DECISION_STOP": "他向前一步：\"两路账可以分开，商会的条件也请分开写明。只给运费，还是允许以后优先收丝；哪些权利，制台今日便该划清。\""
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-GRAIN-SOURCE-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-GRAIN-SOURCE-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.jiangnan_merchant_head"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -8586,6 +9067,31 @@
               "WORLD_PRESSURE": "清流县令领命时没有说这道办法能救下所有人的田，只说从此每一份低价成交都要有人在册上留下名字。商会会首也没有反对，公开底价并未封死交易，只让暗中代持和层层转手多了一道可追查的痕迹。粮仍有限，田契暂时有了门槛，最先领粮的人却还没有定。",
               "DECISION_STOP": "县令把赈册推到案前：\"现粮不够同时顾全城里米市、外围灾村和来年的种粮。第一批先给谁，请制台定次序。\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-LAND-SAFEGUARD-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-LAND-SAFEGUARD-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.qingliu_magistrate"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -8625,6 +9131,31 @@
               "PLAYER_RESULT": "总督命赈期内暂禁商会和大户购入灾民田，先以借粮维持。",
               "WORLD_PRESSURE": "会首听见禁购，脸上终于露出一丝冷意，却仍拱手称是。县令知道这道禁令保住了田契，也会让愿意垫粮的人少掉许多；官府必须拿自己的粮和信用填上空缺。厅外催赈的呈报一封接一封送来，谁先得到有限的现粮，已经不能再用一条笼统的“先救百姓”带过。",
               "DECISION_STOP": "县令请示：\"是先救已经断粮的人，先保种粮，还是先稳住城中米市？三处都急，只能先定一处。\""
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-LAND-SAFEGUARD-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-LAND-SAFEGUARD-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.jiangnan_merchant_head"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           },
@@ -8667,6 +9198,31 @@
               "PLAYER_RESULT": "总督把改桑指标分到更多非灾县，清流县只承担有限份额。",
               "WORLD_PRESSURE": "清流县令当厅谢命，巡抚幕僚的神色却沉了下来。灾县的压力被减轻，未受灾各县却会问为什么替清流分担，巡抚也会追究总督是否借赈灾改动了既定进度。指标可以挪，眼前的粮不能跟着纸面一起挪走。清流仍要决定有限粮食先保哪一头。",
               "DECISION_STOP": "县令道：\"清流少担桑田，百姓总算能缓一口气。可现粮仍只够先救一处：断粮户、种粮，还是城中米市？\""
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-LAND-SAFEGUARD-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-LAND-SAFEGUARD-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -8794,6 +9350,31 @@
               "WORLD_PRESSURE": "会首当厅应命，答得没有半分迟疑。清流县令却盯着“代持”二字又问了一遍，显然担心田契即使不落在商会名下，也会绕到别人的名下。商粮可以启程，土地的边界却还只是一道原则；灾民一旦拿田契换粮，县衙凭什么认定价钱公平、买受人真实，仍没有章程。",
               "DECISION_STOP": "县令道：\"禁令要落到每一张田契上，才不至于只禁了商会的名字。请制台再定，是设公开底价逐契登记，还是灾期索性暂禁购田？\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-MERCHANT-CONDITIONS-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-MERCHANT-CONDITIONS-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.jiangnan_merchant_head"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -8838,6 +9419,31 @@
               "WORLD_PRESSURE": "会首听明白自己只是承运人，笑意淡了些，却仍然接下差事。他既拿不到收丝与购田入口，便会把每一程运费、每一次耽搁都算得更清。县令担心的则是另一层：商会不能买田，不等于别的大户不会趁灾压价，灾民手里的田契仍可能在粮到以前被拿走。",
               "DECISION_STOP": "县令请总督把禁令从商会扩到所有买受人：是设灾期底价并逐契登记，还是暂禁大户购入民田？"
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-MERCHANT-CONDITIONS-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-MERCHANT-CONDITIONS-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.jiangnan_merchant_head"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -8877,6 +9483,31 @@
               "PLAYER_RESULT": "总督拒绝商会提出的担保和优先权，改走官府借调粮路。",
               "WORLD_PRESSURE": "会首没有失礼，只收回了方才摆在案前的条件。商会退出，官府也失去了眼前最便利的一段粮路；借调的粮要走多久尚无定数，灾县里的田契却不会等官文。清流县令直言，越是缺粮，越有人愿意用一纸低价契换一家人的口粮。",
               "DECISION_STOP": "县令问道：\"商会可以挡在门外，暗中的买主却挡不住。灾期田契究竟设底价、暂禁交易，还是把改桑压力移出清流？请制台先定一条。\""
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-MERCHANT-CONDITIONS-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-MERCHANT-CONDITIONS-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.jiangnan_merchant_head"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -9011,6 +9642,31 @@
               "WORLD_PRESSURE": "县令应下以后，先把最穷的一批人圈进赈册。这个次序保住的是今晚就可能断炊的人，却不能立刻压住城中米价，也顾不上所有春种。巡抚幕僚看着那本赈册，只问日后入京时，谁来解释为何先救人而没有先稳住改桑和市面。粮食的次序，已经变成第一份奏报里的责任次序。",
               "DECISION_STOP": "首批救粮已经抵县；平码、验收和发放若同时办理，今日只能开一半仓门，若先发后验，经手账目就会留下不能即时互证的空档。"
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-RELIEF-PRIORITY-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-RELIEF-PRIORITY-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "resource.official_grain"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -9044,6 +9700,31 @@
               "PLAYER_RESULT": "总督命人先留下种粮和插秧所需，再按户发放余粮。",
               "WORLD_PRESSURE": "县令把一部分粮从赈册中划出，堂下立刻有人低声吸了口气。保住春种，是替数月后的生计留路；可今日断粮的人不会因为数月后的收成少饿一顿。巡抚幕僚没有评价这个轻重，只提醒总督：朝廷最先看到的不会是全部后果，而是谁在第一份文书里怎样解释这项取舍。",
               "DECISION_STOP": "首批救粮已经抵县；平码、验收和发放若同时办理，今日只能开一半仓门，若先发后验，经手账目就会留下不能即时互证的空档。"
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-RELIEF-PRIORITY-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-RELIEF-PRIORITY-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.qingliu_magistrate"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           },
@@ -9080,6 +9761,31 @@
               "PLAYER_RESULT": "总督决定先稳杭州和清流县米市，再向外围灾村分批送粮。",
               "WORLD_PRESSURE": "会首听见先稳米市，立即开始盘算船路；县令却提醒，外围灾村会更晚见到粮。城里价格若能压下，官府可以争得时间；若外围先有人撑不住，这份时间便会变成追责的证据。巡抚幕僚把两边的利害都听完，随后把话题落到即将入京的第一份叙述上。",
               "DECISION_STOP": "首批救粮已经抵县；平码、验收和发放若同时办理，今日只能开一半仓门，若先发后验，经手账目就会留下不能即时互证的空档。"
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-RELIEF-PRIORITY-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-RELIEF-PRIORITY-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "resource.official_grain"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -9228,6 +9934,31 @@
               "WORLD_PRESSURE": "巡抚幕僚没有立即答应，只说共同具名也要共同看见支撑奏报的材料。清流县令站在一旁，明白附件越能追到原件与经手人，首报越有分量，县衙和书吏也越难退回幕后。共同具奏先统一了谁来写，接下来必须划定什么可以随奏入京。",
               "DECISION_STOP": "幕僚把奏稿递到案边：\"正文既要同奏，附件也请一并说清。是附见证样册和保管记录，还是只列异常范围；书吏供述，要不要随报入京？\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-REPORT-AUTHORSHIP-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-REPORT-AUTHORSHIP-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -9270,6 +10001,31 @@
               "WORLD_PRESSURE": "巡抚幕僚听完便退开半步，不再替巡抚参与起草。总督抢得了第一份完整叙述的控制权，也把材料取舍先压在自己名下；巡抚若另报，督抚之争便会从附件多少开始。县令最关心的，是原件保管人与书吏供述会不会随独奏一起进入京师。",
               "DECISION_STOP": "县令躬身问道：\"制台独奏，下官不敢置喙。只请先定附件：附见证样册与保管记录，还是只列异常；书吏的说法，要不要随报？\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-REPORT-AUTHORSHIP-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-REPORT-AUTHORSHIP-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "institution.zhejiang_governor_yamen"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -9311,6 +10067,31 @@
               "PLAYER_RESULT": "总督准巡抚另报，自己同时送出复核结果和异议，两份奏报各自具名。",
               "WORLD_PRESSURE": "巡抚幕僚当即应下，督抚两边从这一刻起不再共享一支笔。谁的文书先到、谁的附件更完整，便可能先替浙江定性。清流县令和改桑书吏夹在两份奏报之间，更急着知道总督这一份会把哪些材料和人名送入京师。",
               "DECISION_STOP": "县令低声道：\"既然两边各报，总督这一份附什么更要先定。是附样册与保管记录，还是只列异常；书吏供述是否随报？\""
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-REPORT-AUTHORSHIP-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-REPORT-AUTHORSHIP-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -9541,6 +10322,31 @@
               "WORLD_PRESSURE": "总督入内时，巡抚幕僚没有说一句寒暄，只把昨日的答复说得明白：巡抚不肯在那份回文上共同具名。清流县令原本站在案前，听见这句话便把身子又低了些；改桑书吏刚提起笔，也停在纸面上方。督抚没能共担昨日的责任，今日这场复核由谁掌手，便再也不是一句程序上的安排。",
               "DECISION_STOP": "巡抚幕僚拱手道：\"联署既未成，下官便替中丞先问清下一件事。县册复核，是由总督府主持，还是督抚共同主持？清流县衙在其中，是经办、是见证，还是只交出材料便退在一旁？\"县令与书吏都没有接话，只等总督定下这第一道规矩。"
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -9625,6 +10431,31 @@
               "SCENE_TRANSITION": "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
               "WORLD_PRESSURE": "巡抚幕僚对总督昨日单独具名的回文不置可否，既不说巡抚认可，也不替巡抚反驳。他只把目光转向清流县令。县令被这一眼看得不敢先开口：总督已经独自担下行文之责，若复核仍由县衙自办，日后册页出了差错，责任便会顺着这道目光落到他身上。",
               "DECISION_STOP": "幕僚终于道：\"昨日的回文既由制台独署，今日便只问复核。究竟由总督府主持，还是督抚共同主持？清流县衙是经办、见证，还是只交材料？\"签押房里无人出声，三方都在等总督把权责划开。"
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-RESPONSIBILITY-RECORD-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           },
@@ -9722,6 +10553,31 @@
               "SCENE_TRANSITION": "次日巳时，杭州总督府签押房内，清流县令、改桑书吏与巡抚幕僚已经候在案前。",
               "WORLD_PRESSURE": "巡抚幕僚当面说明，巡抚仍坚持原先的催办立场，对总督写明的分歧也没有收回。清流县令听完没有接话，改桑书吏也停了笔。昨日尚能留在两封文书里的争执，如今已经摆到了同一间签押房里；谁主持复核，便是谁先有资格解释县册。",
               "DECISION_STOP": "幕僚把手一拱：\"分歧既已写明，下官便请大人再写明一件——复核由谁主持？清流县衙在其中，是经办、见证，还是只交材料？\"县令抬眼看向总督，等着自己的位置被当厅定下。"
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-RESPONSIBILITY-RECORD-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-RESPONSIBILITY-RECORD-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -9845,6 +10701,31 @@
               "WORLD_PRESSURE": "清流县令听完，肩背终于松了一分；巡抚幕僚却提醒，总督既把裁定之责都揽在自己名下，递送途中每一处失误也会沿着这份署名追回来。正文、附件与责任都已经定下，只剩谁经手送出、沿途如何留下不能抵赖的记录。",
               "DECISION_STOP": "幕僚问道：\"首报是走正式通政渠道逐站交接，还是加封急递；若两边都不放心，是否让正本与摘要分路互证？\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-RESPONSIBILITY-SCOPE-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-RESPONSIBILITY-SCOPE-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "institution.zhejiang_governor_yamen"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -9891,6 +10772,31 @@
               "WORLD_PRESSURE": "巡抚幕僚没有替巡抚当场认下，只把这项分责原样记住。若巡抚拒绝具名，分责本身便会成为督抚争执的新证据；若巡抚接受，两边都要对首报的送达负责。正文、附件和责任边界已经备齐，现在谁先把它送入京师，将决定这份分责能否先占住名分。",
               "DECISION_STOP": "幕僚道：\"请制台再定最后一道：走正式通政、加封急递，还是正本与摘要分路互证？\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-RESPONSIBILITY-SCOPE-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-RESPONSIBILITY-SCOPE-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -9930,6 +10836,31 @@
               "PLAYER_RESULT": "总督命奏报如实列清县令、书吏和各级经手事项，只陈事实，不先定罪。",
               "WORLD_PRESSURE": "县令没有因“不先定罪”而安心。他与书吏的名字一旦进入首报，即使只是经手，也会先成为京师追问的入口。巡抚幕僚则提醒，既然经手链已经写入正文，递送链也必须同样清楚；否则文书途中一旦迟延或被换，所有人的名字都会失去凭据。",
               "DECISION_STOP": "总督面前只剩递送渠道：正式通政逐站交接、加封急递，还是正本与摘要分路互证？"
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-RESPONSIBILITY-SCOPE-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-RESPONSIBILITY-SCOPE-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.qingliu_magistrate"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -10057,6 +10988,31 @@
               "WORLD_PRESSURE": "巡抚幕僚听完，慢慢收回了拱着的手，没有再争主持之名。他只提醒在场诸人：总督府既掌清单，往后谁先接触原册、谁留下封样、谁能证明册页未被调换，都要一笔一笔说得清。清流县令听到这里，神色反而更紧——主持权已经定了，原册仍在县里，第一段保管责任还压在他身上。",
               "DECISION_STOP": "县令上前半步：\"下官领命。只是原册眼下仍在清流县档房，敢问制台：是仍留档房，等三方到场换封；还是当场抄出见证副本；抑或整封移交总督府？\"三条路的风险都摆在案前，巡抚幕僚也转过头来等候。"
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-REVIEW-AUTHORITY-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-REVIEW-AUTHORITY-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "institution.zhejiang_governor_yamen"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -10090,6 +11046,31 @@
               "PLAYER_RESULT": "总督准设督抚共同复核案，往后每次开册和抄录都须双方经手人同时具名。",
               "WORLD_PRESSURE": "巡抚幕僚当即应下“双方同时具名”，清流县令却没有立刻称是。共同复核锁住了任何一方私自动册的机会，也意味着往后每一次启封、抄录和核对，都要等另一方的人到场。眼下原册尚在清流县，第一步若定得不清，互相制约便会先变成互相等候。",
               "DECISION_STOP": "县令躬身问道：\"既要双方经手人同时具名，原册该放在哪里才算两边都信得过？是仍留档房换封，当场抄出见证副本，还是整封移交总督府？\"幕僚没有替巡抚回答，只看向总督。"
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-REVIEW-AUTHORITY-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-REVIEW-AUTHORITY-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           },
@@ -10130,6 +11111,31 @@
               "PLAYER_RESULT": "总督命县令先按总督府列出的项目初核，督抚随后只审结果和原件。",
               "WORLD_PRESSURE": "清流县令接下初核之责，脸上却没有半分轻松。他当厅说明：县衙先查，固然省去督抚两边逐页相持；可原册若仍由县衙独守，初核期间任何缺页、换页或数字争议，最后都可能算在他头上。巡抚幕僚没有反驳，只等县令把这份风险说完。",
               "DECISION_STOP": "县令道：\"请制台再定原册的处置。是仍留档房，由三方见证换封；是当场抄出见证副本；还是整封移交总督府？原册放在哪里，初核之责才有凭据。\""
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-REVIEW-AUTHORITY-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-REVIEW-AUTHORITY-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.qingliu_magistrate"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -10265,6 +11271,31 @@
               }
             ],
             "protectedNarrative": "总督把封缄令牌交给县令亲随，命清流县先封档房、记清在场人；原册暂由县令看守，不许擅自启封。",
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-REVIEW-INITIATION-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-REVIEW-INITIATION-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.qingliu_magistrate"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -10302,6 +11333,31 @@
               }
             ],
             "protectedNarrative": "总督定下督抚共同查验：双方各派一名经手人到清流县，当场核对原册和改桑名册。",
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-REVIEW-INITIATION-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-REVIEW-INITIATION-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.zhejiang_xunfu"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -10337,6 +11393,31 @@
               }
             ],
             "protectedNarrative": "总督准县令先在县内自查两日，只将异常页封样送来，原册暂不离县衙。",
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-REVIEW-INITIATION-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-REVIEW-INITIATION-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.qingliu_magistrate"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           }
         ],
@@ -10479,6 +11560,31 @@
               "WORLD_PRESSURE": "书吏被带出签押房时，巡抚幕僚没有出声阻拦，只把案上的复核清单慢慢合上。人既由总督府暗中保护，巡抚一方便看不到他的原始说法；可若总督迟迟不给出可核对的材料，这番保护也会被说成私藏证人。清流县令站在门边，知道自己回县以后仍要独自守着原册。",
               "DECISION_STOP": "巡抚幕僚等脚步声远了才道：\"人可以暂不露面，事情却不能只在总督府里说。县册究竟哪里可疑，抚院今日能知道多少？\"他把问题留在案上，等总督划定披露的边界。"
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-WITNESS-ACCESS-OPT-01",
+              "sourceAffordanceTemplateId": "DK-P1-WITNESS-ACCESS-OPT-01",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.reform_clerk"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -10524,6 +11630,31 @@
               "WORLD_PRESSURE": "改桑书吏抬头看了看巡抚幕僚，又看向清流县令，脸上的惧色并没有因为多了见证人而减轻。督抚同时在场，任何一方都难以单独改写他的说法；同样，他说出的每一句话也会立刻成为两边争夺责任的凭据。县令先把手按在案沿，提醒众人原册仍未开封。",
               "DECISION_STOP": "巡抚幕僚道：\"既然双方都能听，人证的去处便不必再争。只请制台明示：抚院可以先看异常范围，还是连样册和见证记录也一并查验？\""
             },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-WITNESS-ACCESS-OPT-02",
+              "sourceAffordanceTemplateId": "DK-P1-WITNESS-ACCESS-OPT-02",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.reform_clerk"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
+            },
             "createsPendingConsequence": true
           },
           {
@@ -10557,6 +11688,31 @@
               "PLAYER_RESULT": "总督命县令先收一份封缄书面供述，待初始说法留存后再决定是否传人。",
               "WORLD_PRESSURE": "县令领命，将这件事记在自己的责任名下。封缄供述能留下书吏最初的说法，却也把第一段保管链重新压回县衙；在供述真正送到以前，总督府和巡抚衙门谁都看不到内容。巡抚幕僚听罢没有反对，只问这份等待要有多大的边界。",
               "DECISION_STOP": "他朝总督拱手：\"人证暂不传，抚院可以等。但县册异常是否存在、复核何时回报，总该有一句能带回去的话。大人准备公开到哪一步？\""
+            },
+            "settledReaction": {
+              "schemaVersion": "settled-reaction-template-v1",
+              "sourceEventKind": "AFFORDANCE_SETTLEMENT",
+              "sourceActionId": "DK-P1-WITNESS-ACCESS-OPT-03",
+              "sourceAffordanceTemplateId": "DK-P1-WITNESS-ACCESS-OPT-03",
+              "responderActorIds": [],
+              "scenePolicy": "CURRENT_SCENE",
+              "reactionAction": {
+                "actionKind": "NPC_RESPONSE",
+                "targetEntityIds": [
+                  "actor.qingliu_magistrate"
+                ],
+                "parameterBindings": {},
+                "visibleActionSource": "REACTION_WORKING_SET"
+              },
+              "resultCeiling": "Render only the direct settled response. Do not create evidence, commands, death, identity changes, unauthorized transitions, or answer the next decision.",
+              "requiredVisibleEffects": [],
+              "forbiddenEscalations": [
+                "NEW_MAJOR_COMMAND",
+                "NEW_EVIDENCE",
+                "DEATH_OR_IDENTITY_CHANGE",
+                "UNAUTHORIZED_SCENE_TRANSITION",
+                "ANSWER_NEXT_DECISION"
+              ]
             },
             "createsPendingConsequence": true
           }
@@ -15156,5 +16312,5 @@
       ]
     }
   },
-  "immutableHash": "2B535FF421C84AFE048ECE30DF573CB621F5B51A92FB5375C917E5C30123D90B"
+  "immutableHash": "CBB62BB1C2054A513D124CF1A73D642C2CBBB976B79E97AF0B84F45C87080FEC"
 }

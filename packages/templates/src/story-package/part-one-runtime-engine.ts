@@ -18,6 +18,9 @@ import type {
   PartOneSectionContract,
   PartOneState,
   PartOneStateRule,
+  PartOneSettledReactionContract,
+  PartOneUnboundActionNarrativeSource,
+  PartOneUnboundNarrativeContext,
   PartOneTurnProgressReport
 } from "./part-one-runtime-types";
 import { evaluateStructuredStateSelector } from "../runtime-contract/selection";
@@ -25,6 +28,11 @@ import type { DurablePredicate, DurableState } from "../runtime-contract/types";
 import { mergeDurablePredicates } from "../runtime-contract/validation";
 import { selectNarrativeScenePatterns } from "./narrative-scene-pattern";
 import { compileDramaticBeatPlan } from "./dramatic-beat-plan";
+import {
+  buildPartOneUnboundActionNarrativeSource,
+  freezePartOneSettledReactionContract,
+  projectPartOneSettledReaction,
+} from "./settled-reaction-contract";
 
 export type PartOneIncomingAction = {
   source: string;
@@ -34,6 +42,12 @@ export type PartOneIncomingAction = {
   label?: string | null;
   actionText: string;
   targetRef?: string | null;
+  /**
+   * Required for a legal material action that is not bound to an authored
+   * Affordance. It contains structured parser, capability and effect bounds;
+   * prose is never parsed to authorize state changes.
+   */
+  unboundNarrativeContext?: PartOneUnboundNarrativeContext | null;
 };
 
 /**
@@ -545,20 +559,57 @@ export function completePartOneActionSettlement(
     current.statePatch,
     proposedState,
   );
-  const authoritativeNpcReactions = bindSettledReactionContract(
+  const isOpeningAction = Boolean(
+    current.settledAction.decisionId?.startsWith("opening_"),
+  );
+  if (
+    !current.appliedAffordance
+    && !isOpeningAction
+    && !current.settledAction.unboundNarrativeContext
+  ) {
+    throw new Error(
+      "PART_ONE_NEXT_STORY_BEAT_KERNEL_MISSING:PART_ONE_UNBOUND_NARRATIVE_CONTEXT_REQUIRED",
+    );
+  }
 
-    pkg,
-
-    current,
-
-    buildAuthoritativeNpcReactions({
+  const policyResolvedReactions = buildAuthoritativeNpcReactions({
     eventId: current.eventId,
     sceneAfter,
     reactionWorkingSet,
-  }),
-
+  });
+  const sourceEventKind = current.appliedAffordance
+    ? "AFFORDANCE_SETTLEMENT" as const
+    : isOpeningAction
+      ? "WORLD_SETTLEMENT" as const
+      : "UNBOUND_ACTION_SETTLEMENT" as const;
+  const settledReactionContract = freezePartOneSettledReactionContract({
+    template: current.appliedAffordance?.settledReaction || null,
+    sourceEventId: current.eventId,
+    sourceEventKind,
+    sourceActionId: current.affordanceTemplateId
+      || current.settledAction.decisionId
+      || current.eventId,
+    sourceAffordanceTemplateId: current.affordanceTemplateId,
+    resolvedResponderActorIds: policyResolvedReactions.flatMap(
+      (reaction) => reaction.actorRefs,
+    ),
+    state: proposedState,
+    sceneBefore,
+    sceneAfter,
+    sectionTransitioned: current.sectionTransitioned,
+    fallbackVisibleAction:
+      current.appliedAffordance?.playerVisibleFallback?.IMMEDIATE_REACTION
+      || policyResolvedReactions[0]?.action
+      || current.appliedAffordance?.playerVisibleFallback?.WORLD_PRESSURE
+      || authoritativeObservableFacts[0]
+      || current.settledAction.actionText,
+    requiredVisibleEffects: authoritativeObservableFacts,
+  });
+  const authoritativeNpcReactions = projectPartOneSettledReaction(
+    settledReactionContract,
+    policyResolvedReactions,
   );
-  const authoritativeWorldMoves = buildAuthoritativeWorldMoves({
+  const plannedWorldMoves = buildAuthoritativeWorldMoves({
     dueConsequences: current.dueConsequences,
     reactionWorkingSet,
     sectionTransitioned: current.sectionTransitioned,
@@ -568,6 +619,62 @@ export function completePartOneActionSettlement(
     sceneAfter,
     statePatch: current.statePatch,
   });
+  const authoritativeWorldMoves = [
+    ...plannedWorldMoves,
+    ...(settledReactionContract?.reactionAction.actionKind === "WORLD_RESPONSE"
+      ? [{
+        beatId: `SETTLED-REACTION-${settledReactionContract.sourceEventId}`,
+        sourceType: "SETTLED_RESPONSE" as const,
+        sourceId: settledReactionContract.sourceActionId,
+        actorRefs: [...settledReactionContract.responderActorIds],
+        action: settledReactionContract.reactionAction.visibleAction,
+        requiredTermGroups: [],
+        resultCeiling: settledReactionContract.resultCeiling,
+      }]
+      : []),
+  ];
+  const ignoredUnboundBookkeepingPaths = new Set([
+    "turnNumber",
+    "sectionTurnNumber",
+    "lastCommittedEventId",
+    "durableState",
+    "pendingConsequences",
+    "scene",
+  ]);
+  const unboundActionNarrativeSource = current.appliedAffordance
+    || isOpeningAction
+    ? null
+    : buildPartOneUnboundActionNarrativeSource({
+      sourceEventId: current.eventId,
+      sourceActionId: current.settledAction.decisionId || current.eventId,
+      actionText: current.settledAction.actionText,
+      parsingResult:
+        current.settledAction.unboundNarrativeContext!.parsingResult,
+      capabilityValidation:
+        current.settledAction.unboundNarrativeContext!.capabilityValidation,
+      settlementResult: {
+        schemaVersion: "unbound-settlement-result-v1",
+        settlementEventId: current.eventId,
+        status: "SETTLED",
+        changedStatePaths: unique(current.changedStatePaths).filter(
+          (statePath) => !ignoredUnboundBookkeepingPaths.has(statePath),
+        ),
+        durableEffectTypes: unique(
+          current.durableEffects.map((effect) => effect.type),
+        ),
+        requiredVisibleEffects: [...authoritativeObservableFacts],
+      },
+      currentScene: sceneAfter,
+      actorPolicies: reactionWorkingSet.actorPolicies,
+      materialEffectPolicy:
+        current.settledAction.unboundNarrativeContext!.materialEffectPolicy,
+      settledReactionContract,
+      policyResolvedReactions,
+      resultCeiling:
+        current.settledAction.unboundNarrativeContext!.resultCeiling,
+      forbiddenEscalations:
+        current.settledAction.unboundNarrativeContext!.forbiddenEscalations,
+    });
   const payableDueIds = new Set(
     authoritativeWorldMoves
       .filter((move) => (
@@ -607,6 +714,8 @@ export function completePartOneActionSettlement(
     sceneAfter,
     sectionTransitioned: current.sectionTransitioned,
     authoritativeObservableFacts,
+    settledReactionContract,
+    unboundActionNarrativeSource,
     authoritativeNpcReactions,
     authoritativeWorldMoves,
     nextDecisionPoint: nextWorkingSet.decisionPoint,
@@ -633,6 +742,8 @@ export function completePartOneActionSettlement(
       (item) => item.consequenceId,
     ),
     authoritativeObservableFacts,
+    settledReactionContract,
+    unboundActionNarrativeSource,
     authoritativeNpcReactions,
     sceneBefore,
     sceneAfter,
@@ -1374,6 +1485,8 @@ function buildNarrativePlan(input: {
   sceneAfter: PartOneSceneState;
   sectionTransitioned: boolean;
   authoritativeObservableFacts: string[];
+  settledReactionContract: PartOneSettledReactionContract | null;
+  unboundActionNarrativeSource: PartOneUnboundActionNarrativeSource | null;
   authoritativeNpcReactions: PartOneCommittedEvent["authoritativeNpcReactions"];
   authoritativeWorldMoves: PartOneAuthoritativeWorldMove[];
   nextDecisionPoint: PartOneDecisionPoint;
@@ -1472,6 +1585,8 @@ function buildNarrativePlan(input: {
     sceneAfter: input.sceneAfter,
     sectionTransitioned: input.sectionTransitioned,
     authoritativeObservableFacts: input.authoritativeObservableFacts,
+    settledReactionContract: input.settledReactionContract,
+    unboundActionNarrativeSource: input.unboundActionNarrativeSource,
     authoritativeNpcReactions: input.authoritativeNpcReactions,
     authoritativeWorldMoves: input.authoritativeWorldMoves,
     nextDecisionPoint: input.nextDecisionPoint,
@@ -1505,6 +1620,8 @@ function buildNarrativePlan(input: {
     playerSpeechMode: resolvePlayerSpeechMode(input.action.actionText),
     authorizedPlayerSpeech: extractExplicitPlayerQuotes(input.action.actionText),
     settledActionNarrative,
+    settledReactionContract: input.settledReactionContract,
+    unboundActionNarrativeSource: input.unboundActionNarrativeSource,
     nextStoryBeat,
     confirmedEffects: [...input.authoritativeObservableFacts],
     unresolvedFacts: [
@@ -1546,6 +1663,12 @@ function buildNarrativePlan(input: {
             "转场后只建立新场人物与程序争点；未呈到的文书不能成为任何人物陈述笔迹、户头、具体内容、真伪或经手事实的依据。"
           ]
         : []),
+      ...(input.settledReactionContract
+        ? [input.settledReactionContract.resultCeiling]
+        : []),
+      ...(input.unboundActionNarrativeSource
+        ? [input.unboundActionNarrativeSource.resultCeiling]
+        : []),
       "未知保持未知，禁止提前确认幕后主使或暗账全貌。"
     ]
   };
@@ -1562,19 +1685,23 @@ function buildNextStoryBeat(input: {
   sceneAfter: PartOneSceneState;
   sectionTransitioned: boolean;
   authoritativeObservableFacts: string[];
+  settledReactionContract: PartOneSettledReactionContract | null;
+  unboundActionNarrativeSource: PartOneUnboundActionNarrativeSource | null;
   authoritativeNpcReactions: PartOneCommittedEvent["authoritativeNpcReactions"];
   authoritativeWorldMoves: PartOneAuthoritativeWorldMove[];
   nextDecisionPoint: PartOneDecisionPoint;
   unresolvedFacts: string[];
 }): PartOneNarrativePlan["nextStoryBeat"] {
-  if (!input.decisionKernelId) {
+  const narrativeKernelId = input.decisionKernelId
+    || input.nextDecisionPoint.decisionKernelId;
+  if (!narrativeKernelId) {
     throw new Error("PART_ONE_NEXT_STORY_BEAT_KERNEL_MISSING");
   }
-  const kernel = requireAsset(input.pkg, input.decisionKernelId);
+  const kernel = requireAsset(input.pkg, narrativeKernelId);
   const kernelClaimIds = new Set(kernel.sourceClaimIds);
   const selectedScenePatterns = selectNarrativeScenePatterns(input.pkg.assets, {
     sectionId: kernel.sectionIds[0] || "",
-    decisionKernelId: input.decisionKernelId,
+    decisionKernelId: narrativeKernelId,
     requirementIds: kernel.requirementIds
   }, 2).map((asset) => {
     const pattern = asset.payload as unknown as import("./narrative-scene-pattern").NarrativeScenePattern;
@@ -1636,13 +1763,15 @@ function buildNextStoryBeat(input: {
     }];
   });
   if (!sourceEvidenceItems.length && !adaptationEvidenceItems.length) {
-    throw new Error(`PART_ONE_NEXT_STORY_BEAT_EVIDENCE_MISSING:${input.decisionKernelId}`);
+    throw new Error(`PART_ONE_NEXT_STORY_BEAT_EVIDENCE_MISSING:${narrativeKernelId}`);
   }
 
   const presentPressure = input.authoritativeWorldMoves.find((move) =>
     move.sourceType !== "SECTION_TRANSITION"
   );
-  const fallbackPressure = input.authoritativeNpcReactions[0]?.action
+  const fallbackPressure = input.settledReactionContract
+    ?.reactionAction.visibleAction
+    || input.authoritativeNpcReactions[0]?.action
     || input.nextDecisionPoint.prompt;
   const selectedReaction = presentPressure
     ? null
@@ -1677,9 +1806,19 @@ function buildNextStoryBeat(input: {
     ...(input.sceneAfter.documentStates || []).map(renderSceneDocumentFact),
     ...(input.sceneAfter.objectStates || []).map(renderSceneObjectFact)
   ]);
+  const unboundEvidenceItems = input.unboundActionNarrativeSource
+    ? [{
+      evidenceId: `UNBOUND-${input.unboundActionNarrativeSource.sourceEventId}`,
+      evidenceClass: "CURRENT_CANON" as const,
+      statement: input.unboundActionNarrativeSource.actionText,
+      sourceClaimIds: [],
+      adaptationDecisionIds: [],
+      useAs: "OBJECTIVE_FACT" as const,
+    }]
+    : [];
   const evidenceItems = [
     ...currentFacts.map((statement, index) => ({
-      evidenceId: `CURRENT-${input.decisionKernelId}-${index + 1}`,
+      evidenceId: `CURRENT-${narrativeKernelId}-${index + 1}`,
       evidenceClass: (index === 0 ? "CURRENT_CANON" : "CURRENT_STATE") as "CURRENT_CANON" | "CURRENT_STATE",
       statement,
       sourceClaimIds: [],
@@ -1687,7 +1826,8 @@ function buildNextStoryBeat(input: {
       useAs: "OBJECTIVE_FACT" as const
     })),
     ...sourceEvidenceItems,
-    ...adaptationEvidenceItems
+    ...adaptationEvidenceItems,
+    ...unboundEvidenceItems,
   ];
   const playerOutcome = String(input.settledActionNarrative || input.actionText).trim();
   const decisionStop = input.nextDecisionPoint.prompt.trim();
@@ -1701,7 +1841,7 @@ function buildNextStoryBeat(input: {
     .map((value) => String(value || "").trim())
     .find((value) => value && value !== playerOutcome && value !== decisionStop);
   if (!worldPressure) {
-    throw new Error(`PART_ONE_VISIBLE_PRESSURE_MISSING:${input.decisionKernelId}`);
+    throw new Error(`PART_ONE_VISIBLE_PRESSURE_MISSING:${narrativeKernelId}`);
   }
   const visibleConsequence = unique([
     ...input.authoritativeObservableFacts,
@@ -1760,7 +1900,7 @@ function buildNextStoryBeat(input: {
   });
   return {
     beatId: `BEAT-${digest([
-      input.decisionKernelId,
+      narrativeKernelId,
       input.actionText,
       npcOrWorldPressure,
       input.nextDecisionPoint.decisionPointId
@@ -1775,7 +1915,11 @@ function buildNextStoryBeat(input: {
     evidencePacket: {
       packetId: `SEP-${digest(evidenceItems.map((item) => item.evidenceId).join("|" )).slice(0, 18)}`,
       evidenceItems,
-      unresolvedFacts: unique(input.unresolvedFacts),
+      unresolvedFacts: unique([
+        ...input.unresolvedFacts,
+        ...(input.settledReactionContract?.forbiddenEscalations || []),
+        ...(input.unboundActionNarrativeSource?.forbiddenEscalations || []),
+      ]),
       specificityBoundary: "原著材料只授权所列冲突机制；当前事实只能来自已提交 Canon 与服务器状态。不得自行增加人数、涨幅、地点、期限、文书、证据、命令、承诺或幕后关系。"
     },
     dramaticGuidance: {
@@ -2514,48 +2658,6 @@ function buildAuthoritativeObservableFacts(
     }
   }
   return unique(facts);
-}
-
-/**
- * Bind an author-reviewed reaction to the current committed Affordance. The
- * Actor Policy resolver still owns who reacts; this helper only prevents the
- * next Decision Point's prompt from replacing what the current Settlement
- * already caused.
- */
-function bindSettledReactionContract(
-  pkg: PartOneRuntimePackage,
-  current: PartOneCurrentActionSettlement,
-  reactions: PartOneCommittedEvent["authoritativeNpcReactions"],
-): PartOneCommittedEvent["authoritativeNpcReactions"] {
-  if (
-    !current.decisionKernelId
-    || !current.affordanceTemplateId
-    || reactions.length === 0
-  ) {
-    return reactions;
-  }
-  const kernel = pkg.assets.find((asset) => (
-    asset.assetType === "DECISION_KERNEL"
-    && asset.assetId === current.decisionKernelId
-  ));
-  const option = kernel?.payload.options?.find((candidate) => (
-    candidate.affordanceTemplateId === current.affordanceTemplateId
-  ));
-  const contract = option?.settledReaction;
-  if (!contract) return reactions;
-  if (
-    contract.schemaVersion !== "settled-reaction-v1"
-    || contract.sourceAffordanceTemplateId
-      !== current.affordanceTemplateId
-    || !contract.action.trim()
-  ) {
-    throw new Error("PART_ONE_SETTLED_REACTION_CONTRACT_INVALID");
-  }
-  return reactions.map((reaction, index) => (
-    index === 0
-      ? { ...reaction, action: contract.action }
-      : reaction
-  ));
 }
 
 function buildAuthoritativeNpcReactions(input: {
