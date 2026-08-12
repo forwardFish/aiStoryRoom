@@ -5,6 +5,15 @@ import { CurrentUser, type AuthenticatedUser } from "./auth/current-user.decorat
 import { RoomsService } from "./rooms.service";
 import { PresenceHeartbeatRateLimitGuard } from "./api-transport";
 import type { ControlCommandV1, HeartbeatCommandV1, LayoutCommandV1, SlotCommandV1, TurnDecisionCommandV2 } from "@ai-story/shared";
+import type {
+  PressureSeatHandoffCommandV1,
+  PressureSeatHeartbeatCommandV1,
+  PressureSeatReclaimCommandV1,
+} from "./pressure-chapter/seat-transport";
+import type {
+  CreatePressureSimplePromiseBodyV1,
+  PressurePromiseOperationCodeV1,
+} from "./pressure-chapter/a-emotion-promise";
 
 @UseGuards(AuthGuard)
 @Controller("v4/rooms")
@@ -16,12 +25,21 @@ export class RoomsController {
   @Get("mine") mine(@CurrentUser() user: AuthenticatedUser, @Query("worldId") worldId?: string) { return this.rooms.mine(user, worldId); }
   @Post() create(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; title?: string; visibility?: string; maxPlayers?: number; idempotencyKey?: string }) { return this.rooms.create(user, body); }
   @Post("solo") createSolo(@CurrentUser() user: AuthenticatedUser, @Body() body: { worldId?: string; roleKey?: string; idempotencyKey?: string; resumeExisting?: boolean }) { return this.rooms.createSolo(user, body); }
-  @Post("join-by-code") join(@CurrentUser() user: AuthenticatedUser, @Body() body: { inviteCode?: string; code?: string }) { return this.rooms.joinByCode(user, String(body.inviteCode || body.code || "")); }
+  @Post("join-by-code") join(@CurrentUser() user: AuthenticatedUser, @Body() body: { inviteCode?: string; code?: string; idempotencyKey?: string }) { return this.rooms.joinByCode(user, String(body.inviteCode || body.code || ""), body.idempotencyKey); }
   @Post(":roomId/waiting/extend") extendWaiting(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { idempotencyKey?: string; expectedLobbyDeadlineAt?: string }) { return this.rooms.extendWaiting(user, roomId, body); }
   @Post(":roomId/play-solo") playSolo(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { idempotencyKey?: string; expectedLobbyDeadlineAt?: string; confirmReadyPlayersChanged?: boolean }) { return this.rooms.playSoloFromWaitingRoom(user, roomId, body); }
-  @Get(":roomId/game") game(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.game(user, roomId); }
+  @Get(":roomId/game") game(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Query("feedCursor") feedCursor?: string, @Query("feedLimit") feedLimit?: string) { return this.rooms.game(user, roomId, feedCursor, feedLimit); }
+  @Get(":roomId/pressure-seat-transport") pressureSeatSnapshot(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Query("cursor") cursor?: string, @Query("feedLimit") feedLimit?: string) { return this.rooms.pressureSeatSnapshot(user, roomId, cursor, feedLimit); }
+  @Sse(":roomId/pressure-seat-transport/events") pressureSeatEvents(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Query("afterCursor") afterCursor?: string): Observable<MessageEvent> { return this.rooms.pressureSeatEventStream(user, roomId, afterCursor); }
+  @Post(":roomId/pressure-seat-transport/heartbeat") @UseGuards(PresenceHeartbeatRateLimitGuard) pressureSeatHeartbeat(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: Omit<PressureSeatHeartbeatCommandV1, "runId" | "subjectId">) { return this.rooms.pressureSeatHeartbeat(user, roomId, body); }
+  @Post(":roomId/pressure-seat-transport/handoff") pressureSeatHandoff(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: Omit<PressureSeatHandoffCommandV1, "runId" | "subjectId">) { return this.rooms.pressureSeatHandoff(user, roomId, body); }
+  @Post(":roomId/pressure-seat-transport/reclaim") pressureSeatReclaim(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: Omit<PressureSeatReclaimCommandV1, "runId" | "subjectId">) { return this.rooms.pressureSeatReclaim(user, roomId, body); }
+  @Post(":roomId/promises") createPressurePromise(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: CreatePressureSimplePromiseBodyV1) { return this.rooms.createPressurePromise(user, roomId, body); }
+  @Post(":roomId/promises/:promiseId/operations") applyPressurePromiseOperation(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("promiseId") promiseId: string, @Body() body: { operationCode: PressurePromiseOperationCodeV1; clientRequestId: string }) { return this.rooms.applyPressurePromiseOperation(user, roomId, promiseId, body); }
   @Get(":roomId/result") result(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.result(user, roomId); }
   @Post(":roomId/game/action") action(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { actionType?: string; targetText?: string; method?: string; intent?: string; riskLevel?: string }) { return this.rooms.submitGameAction(user, roomId, body); }
+  @Post(":roomId/game/chat") chat(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: unknown) { return this.rooms.submitPressureChat(user, roomId, body); }
+  @Post(":roomId/replay") replay(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: unknown) { return this.rooms.replayPressureRoom(user, roomId, body); }
   @Post(":roomId/game/actions/main") main(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: SlotCommandV1) { return this.rooms.submitMain(user, roomId, body); }
   @Post(":roomId/game/turns/:turnId/decision") turnDecision(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("turnId") turnId: string, @Body() body: TurnDecisionCommandV2) { return this.rooms.submitTurnDecision(user, roomId, turnId, body); }
   @Post(":roomId/game/turns/:turnId/decision/stream")
@@ -62,18 +80,19 @@ export class RoomsController {
   @Post(":roomId/game/layout/done") done(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: LayoutCommandV1) { return this.rooms.layoutDone(user, roomId, body); }
   @Post(":roomId/game/layout/leave-stage") leaveStage(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: LayoutCommandV1) { return this.rooms.leaveStage(user, roomId, body); }
   @Post(":roomId/presence/heartbeat") @UseGuards(PresenceHeartbeatRateLimitGuard) heartbeat(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: HeartbeatCommandV1) { return this.rooms.heartbeat(user, roomId, body); }
-  @Post(":roomId/game/control/handoff-to-ai") handoff(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: ControlCommandV1) { return this.rooms.handoffToAi(user, roomId, body); }
-  @Post(":roomId/game/control/reclaim") reclaim(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: ControlCommandV1) { return this.rooms.reclaim(user, roomId, body); }
+  @Post(":roomId/game/control/handoff-to-ai") handoff(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: ControlCommandV1 & { expectedSubmissionFenceToken?: string }) { return this.rooms.handoffToAi(user, roomId, body); }
+  @Post(":roomId/game/control/reclaim") reclaim(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: ControlCommandV1 & { expectedReclaimFenceToken?: string }) { return this.rooms.reclaim(user, roomId, body); }
   @Post(":roomId/game/resolve") resolve(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.resolveGameNode(user, roomId); }
   @Post(":roomId/game/resolve-async") @HttpCode(202) resolveAsync(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.resolveGameNodeAsync(user, roomId); }
   @Get(":roomId/game/tasks/:taskId") task(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Param("taskId") taskId: string) { return this.rooms.resolutionTask(user, roomId, taskId); }
   @Get(":roomId/events") events(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Query("afterDeliverySequence") afterDeliverySequence?: string, @Query("after") legacyAfter?: string) { return this.rooms.events(user, roomId, afterDeliverySequence ?? legacyAfter); }
   @Sse(":roomId/events/stream") eventsStream(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Query("afterDeliverySequence") afterDeliverySequence?: string, @Query("after") legacyAfter?: string): Observable<MessageEvent> { return this.rooms.eventStream(user, roomId, afterDeliverySequence ?? legacyAfter); }
   @Get(":roomId") get(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.get(user, roomId); }
-  @Post(":roomId/role") selectRole(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { roleId?: string }) { return this.rooms.selectRole(user, roomId, String(body.roleId || "")); }
+  @Post(":roomId/role") selectRole(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { roleId?: string; roleKey?: string; idempotencyKey?: string }) { return this.rooms.selectRole(user, roomId, String(body.roleId || body.roleKey || ""), body.idempotencyKey); }
   @Post(":roomId/role/lock") lockRole(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.lockHostRole(user, roomId); }
-  @Post(":roomId/ready") ready(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { ready?: boolean }) { return this.rooms.ready(user, roomId, body.ready !== false); }
-  @Post(":roomId/start") start(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.start(user, roomId); }
+  @Post(":roomId/ready") ready(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { ready?: boolean; idempotencyKey?: string }) { return this.rooms.ready(user, roomId, body.ready !== false, body.idempotencyKey); }
+  @Post(":roomId/leave") leave(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { idempotencyKey?: string }) { return this.rooms.leave(user, roomId, body); }
+  @Post(":roomId/start") start(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { idempotencyKey?: string }) { return this.rooms.start(user, roomId, body); }
   @Post(":roomId/close") close(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string) { return this.rooms.close(user, roomId); }
 }
 

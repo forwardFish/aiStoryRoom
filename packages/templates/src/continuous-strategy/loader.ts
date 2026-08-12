@@ -6,6 +6,8 @@ import {
   SANGTIAN_PLAYABLE_ROLE_KEYS,
   SANGTIAN_STRATEGY_VERSION,
   SANGTIAN_SYSTEM_ROLE_KEY,
+  SANGTIAN_V1_1_PLAYABLE_ROLE_KEYS,
+  SANGTIAN_V1_1_SYSTEM_ROLE_KEY,
   type ContinuousStrategyPackage,
   type StrategyManifest,
   type StrategyRegistry
@@ -163,13 +165,18 @@ export function loadGameContinuousStrategyPackage(
 
 /** Backward-compatible Sangtian wrapper. Runtime multi-game code should use loadGameContinuousStrategyPackage. */
 export function loadContinuousStrategyPackage(
-  strategyVersion = SANGTIAN_STRATEGY_VERSION,
+  strategyVersion: string = SANGTIAN_STRATEGY_VERSION,
   strategyRoot = defaultSangtianStrategyRoot
 ): ContinuousStrategyPackage {
+  const isV11 = strategyVersion === "sangtian_v1_1";
   return loadContinuousStrategyPackageFromRoot({
     worldId: "sangtian",
     strategyVersion,
-    playableRoleKeys: [...SANGTIAN_PLAYABLE_ROLE_KEYS],
-    worldActorKey: SANGTIAN_SYSTEM_ROLE_KEY
+    playableRoleKeys: isV11
+      ? [...SANGTIAN_V1_1_PLAYABLE_ROLE_KEYS]
+      : [...SANGTIAN_PLAYABLE_ROLE_KEYS],
+    worldActorKey: isV11
+      ? SANGTIAN_V1_1_SYSTEM_ROLE_KEY
+      : SANGTIAN_SYSTEM_ROLE_KEY
   }, strategyRoot);
 }

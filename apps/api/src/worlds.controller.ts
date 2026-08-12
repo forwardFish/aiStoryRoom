@@ -1,17 +1,24 @@
 import { Controller, Get, NotFoundException, Param } from "@nestjs/common";
 import { findGameDefinition, listGameDefinitions, type GameDefinition } from "@ai-story/templates";
+import { PRESSURE_CHAPTER_ROUTE_V1 } from "@ai-story/shared";
 import { readContinuousStrategyConfig, selectRunVersions } from "./config/continuous-strategy.config";
 import { policyForNewRun, readCreditConsumptionConfig } from "./config/credit-consumption.config";
+import { publicWorldRolePresentation } from "./public-world-role-presentation";
 
 function runtimeWorld(game: GameDefinition) {
   const lobby = game.catalog.lobby;
   const maxPlayers = Math.min(game.modes.maxHumanPlayers, game.roles.length);
-  const versions = selectRunVersions({
-    templateKey: game.worldId,
-    mode: "room",
-    maxPlayers,
-    enabledForNewRooms: readContinuousStrategyConfig().enabledForNewRooms
-  });
+  const versions = game.engine.engineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion
+    ? {
+        engineVersion: game.engine.engineVersion,
+        strategyVersion: game.engine.strategyVersion,
+      }
+    : selectRunVersions({
+        templateKey: game.worldId,
+        mode: "room",
+        maxPlayers,
+        enabledForNewRooms: readContinuousStrategyConfig().enabledForNewRooms
+      });
   const creditConfig = readCreditConsumptionConfig();
   const billingPolicyVersion = policyForNewRun(creditConfig.defaultPolicy, versions.engineVersion);
   return {
@@ -53,17 +60,24 @@ function worldDetail(game: GameDefinition) {
     durationLabel: game.catalog.durationLabel,
     presentation: game.presentation,
     worldActor: game.worldActor,
-    roles: game.roles.map((role) => ({
-      key: role.roleKey,
-      name: role.roleName,
-      identity: role.identity,
-      publicInfo: role.publicInfo,
-      personalGoal: role.personalGoal,
-      portrait: role.portrait,
-      playableSolo: game.modes.solo,
-      playableMultiplayer: game.modes.multiplayer,
-      canBeAiControlled: role.canBeAiControlled
-    }))
+    roles: game.roles.map((role) => {
+      const presentation = publicWorldRolePresentation(game.worldId, role.roleKey, {
+        name: role.roleName,
+        identity: role.identity,
+        publicInfo: role.publicInfo,
+        portrait: role.portrait,
+      });
+      return {
+        key: role.roleKey,
+        name: presentation.name,
+        identity: presentation.identity,
+        publicInfo: presentation.publicInfo,
+        portrait: presentation.portrait,
+        playableSolo: game.modes.solo,
+        playableMultiplayer: game.modes.multiplayer,
+        canBeAiControlled: role.canBeAiControlled,
+      };
+    })
   };
 }
 

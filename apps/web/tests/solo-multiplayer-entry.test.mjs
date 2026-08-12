@@ -4,7 +4,7 @@ import test from "node:test";
 
 const platformUrl = new URL("../public/platform.js", import.meta.url);
 
-test("normal Solo entry bypasses role selection and posts a resumable Solo request", async () => {
+test("normal Solo entry opens role selection before creating or resuming a run", async () => {
   const [platform, home] = await Promise.all([
     readFile(platformUrl, "utf8"),
     readFile(new URL("../public/home.js", import.meta.url), "utf8")
@@ -12,8 +12,7 @@ test("normal Solo entry bypasses role selection and posts a resumable Solo reque
   const actions = platform.slice(platform.indexOf("const actions ="), platform.indexOf("async function initializePlatform"));
 
   assert.match(platform, /function startSoloFromWorld/);
-  assert.match(platform, /\/api\/v4\/rooms\/solo/);
-  assert.match(platform, /resumeExisting:true/);
+  assert.match(platform, /location\.assign\(`\/role-select\?story=\$\{encodeURIComponent\(worldId\)\}`\)/);
   assert.match(actions, /solo:[\s\S]*startSoloFromWorld\("caesar"/);
   assert.match(actions, /"sangtian-solo":[\s\S]*startSoloFromWorld\("sangtian"/);
   assert.match(actions, /"world-solo":[\s\S]*startSoloFromWorld\(worldId/);
@@ -27,10 +26,17 @@ test("room entry exposes the two-player Start rule and the waiting fallback acti
   ]);
 
   assert.match(platform, /readyHumanCount/);
-  assert.match(platform, /\$\{room\.players\.length\} \/ \$\{room\.maxPlayers\} players · \$\{readyHumanCount\} ready/);
+  assert.match(platform, /humanPlayersForRoom/);
+  assert.match(platform, /\$\{humanPlayers\.length\} \/ \$\{room\.maxPlayers\} players · \$\{readyHumanCount\} ready/);
   assert.match(platform, /startLabel: readyHumanCount === 2 \? "Start with 2 Players"/);
   assert.match(platform, /\/waiting\/extend/);
   assert.match(platform, /\/play-solo/);
+  assert.match(platform, /\/api\/v4\/rooms\/join-by-code/);
+  assert.match(platform, /idempotencyKey/);
+  assert.match(platform, /\/api\/v4\/rooms\/\$\{roomId\}\/ready/);
+  assert.match(platform, /\/api\/v4\/rooms\/\$\{roomId\}\/role/);
+  assert.match(platform, /\/api\/v4\/rooms\/\$\{room\.id\}\/leave/);
+  assert.match(platform, /method:"POST", body:"\{\}"/);
   assert.match(platform, /START A SHARED STORY/);
   assert.match(platform, /WAITING TIME ENDED/);
   assert.match(platform, /Playing Solo will close this Multiplayer room/);

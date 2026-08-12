@@ -182,9 +182,30 @@ assert.equal(evaluateStageProgress(privateFirstAction, input.stage, 2, 7).reason
 
 const game = getGameDefinition("sangtian");
 const packageContent = new ContinuousStrategyContentService().forGame("sangtian", "sangtian_v1_2");
+// The current Sangtian catalog is Pressure-only. Historical continuous runs
+// keep their original role keys and persisted role metadata, so this legacy
+// quality matrix must not borrow the mutable current six-seat catalog.
+type LegacyContinuousRoleDefinition = {
+  roleName: string;
+  identity: string;
+  publicInfo: string;
+  hiddenSecret: string;
+  personalGoal: string;
+  currentState: string;
+  abilityText: string;
+  cannotDo: string[];
+};
+const legacyRoleDefinitions = new Map<string, LegacyContinuousRoleDefinition>([
+  ["zhejiang_governor", { roleName: "浙江总督", identity: "统筹浙江军政的封疆大吏", publicInfo: "你必须在皇权、财政、民心与海防之间稳住全局。", hiddenSecret: "县令密信原件已由你亲自看过并锁在内厅小匣中。", personalGoal: "稳住浙江并避免皇帝认定你欺瞒。", currentState: "粮价不稳，巡抚越级，京师催报。", abilityText: "可调度总督衙门、密奏与赈济资源。", cannotDo: ["越过朝廷直接改写国策"] }],
+  ["xunfu", { roleName: "浙江巡抚", identity: "督办改桑新政的地方大员", publicInfo: "你要尽快交出政绩，但也不能让暗账反噬。", hiddenSecret: "你的幕僚与商会有一笔未入册的往来。", personalGoal: "推进新政并抢在总督之前坐实功劳。", currentState: "改桑阻力上升，地方催缴失控。", abilityText: "可调动执行官吏与上报渠道。", cannotDo: ["替县令销毁证据"] }],
+  ["county_magistrate", { roleName: "清流县令", identity: "直接面对百姓的地方官", publicInfo: "你既不能抗旨，也不能坐视民田和粮田被吞没。", hiddenSecret: "你留有半页田契副本，足以牵动多人。", personalGoal: "保护民田并补全暗账证据。", currentState: "乡里恐慌，征收与粮价同时压来。", abilityText: "可收集民情、田契与县衙文书。", cannotDo: ["强迫百姓承担国策代价"] }],
+  ["clerk", { roleName: "改桑书吏", identity: "经手田亩名册与驿站文书的关键书吏", publicInfo: "你知道每一笔数字和命令的经手人。", hiddenSecret: "你私留了一份被撤换前的原始名册索引。", personalGoal: "保全原始文书并让篡改者承担责任。", currentState: "两衙都在索取底稿。", abilityText: "可核对印记、名册与文书流转时序。", cannotDo: ["凭空改写已封存的官方文书"] }],
+  ["merchant", { roleName: "江南商会会首", identity: "掌握粮仓、丝路与官商账目的商会领袖", publicInfo: "谁能保护商路与契约，商会就向谁提供粮银。", hiddenSecret: "商会账簿记录了多笔隐秘往来。", personalGoal: "稳住粮路和商路，避免成为唯一替罪羊。", currentState: "粮价上涨、银路收紧。", abilityText: "可调度粮仓、银票、商船和消息网络。", cannotDo: ["直接决定官员任免或御前裁决"] }],
+  ["sili_jian", { roleName: "司礼监织造使", identity: "代表内廷巡视银路与奏报真伪的皇帝耳目", publicInfo: "你奉旨查的是银路与欺瞒。", hiddenSecret: "密令要求同时核查内阁财政派是否截留内帑。", personalGoal: "把可验证的真相送到御前并保住内廷权威。", currentState: "总督与巡抚奏报互相矛盾。", abilityText: "可使用织造局、内廷密报与驿站盘查。", cannotDo: ["替皇帝预先宣布最终裁决"] }]
+]);
 for (let stageIndex = 1; stageIndex <= 7; stageIndex += 1) {
   for (const roleKey of packageContent.package().contract.playableRoleKeys) {
-    const definition = game.roles.find((role) => role.roleKey === roleKey)!;
+    const definition = legacyRoleDefinitions.get(roleKey)!;
     const exhaustiveInput: StorySituationInput = {
       role: {
         id: `role-${roleKey}`, roleKey, roleName: definition.roleName, identity: definition.identity,
@@ -200,8 +221,8 @@ for (let stageIndex = 1; stageIndex <= 7; stageIndex += 1) {
     assert.equal(reviewStory(exhaustiveDraft.situationNarrative, exhaustiveInput, "SITUATION").status, "PASS", `story quality failed for ${roleKey} stage ${stageIndex}`);
     assert.equal(reviewDecisionSet(exhaustiveDraft.decisions, exhaustiveInput, { allowFixedActionKeys: true }).status, "PASS", `internal rule-card quality failed for ${roleKey} stage ${stageIndex}`);
     const firstCard = exhaustiveInput.roleStage.mainCards[0];
-    const targetRole = game.roles.find((role) => role.roleKey === firstCard.targetRoleKey);
-    const crossAction = actionFromCandidate(exhaustiveDraft.decisions[0], firstCard, targetRole ? `role-${targetRole.roleKey}` : null, targetRole?.roleName || null);
+    const targetRole = legacyRoleDefinitions.get(firstCard.targetRoleKey);
+    const crossAction = actionFromCandidate(exhaustiveDraft.decisions[0], firstCard, targetRole ? `role-${firstCard.targetRoleKey}` : null, targetRole?.roleName || null);
     const crossContext = {
       sourceRoleName: definition.roleName,
       targetRoleName: targetRole?.roleName || "另一位角色",

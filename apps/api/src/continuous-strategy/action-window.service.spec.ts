@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { CONTINUOUS_ENGINE_VERSION } from "@ai-story/shared";
-import { getGameDefinition } from "@ai-story/templates";
+import { loadContinuousStrategyPackage } from "@ai-story/templates";
 import { ActionWindowService, assignRoleControllers } from "./action-window.service";
 import { ContinuousStrategyContentService } from "./content.service";
 
-const game = getGameDefinition("sangtian");
-const roleRows = game.roles.map((role, index) => ({ id: `role-${index + 1}`, roleKey: role.roleKey }));
+const legacyContent = loadContinuousStrategyPackage("sangtian_v1_2");
+const roleRows = legacyContent.contract.playableRoleKeys.map((roleKey, index) => ({ id: `role-${index + 1}`, roleKey }));
 const human = { id: "player-human", userId: "user-host", roleId: roleRows[0].id, playerType: "human", status: "active" };
 const createdAiPlayers: Array<Record<string, unknown>> = [];
 const controls: Array<Record<string, unknown>> = [];
@@ -19,8 +19,8 @@ const room = {
   mode: "room",
   ownerUserId: human.userId,
   engineVersion: CONTINUOUS_ENGINE_VERSION,
-  strategyVersion: game.engine.strategyVersion,
-  templateKey: game.worldId,
+  strategyVersion: "sangtian_v1_2",
+  templateKey: legacyContent.contract.worldId,
   status: "waiting_players",
   stateJson: { room: { readyUserIds: [human.userId], hostRoleLocked: true, minPlayers: 1 } },
   roles: roleRows,
@@ -99,18 +99,18 @@ async function main() {
 
   const started = await service.start({ id: human.userId, openid: "openid-host" } as never, room.id);
   assert.equal(started.status, "playing");
-  assert.equal(participants.length, game.roles.length);
-  assert.equal(createdAiPlayers.length, game.roles.length - 1);
+  assert.equal(participants.length, roleRows.length);
+  assert.equal(createdAiPlayers.length, roleRows.length - 1);
   assert.deepEqual(controls.map((control) => control.mode), [
     "HUMAN_ACTIVE",
-    ...Array.from({ length: game.roles.length - 1 }, () => "AI_ACTIVE")
+    ...Array.from({ length: roleRows.length - 1 }, () => "AI_ACTIVE")
   ]);
   assert.equal(controls.some((control) => control.mode === "SYSTEM"), false, "worldActor must not become a player RoleControl");
   assert.equal(systemActions.length, 1);
   assert.equal(systemActions[0].roleId, null, "worldActor action must not reference a StoryRole");
   assert.equal(enqueuedWindowId, "window-1");
   assert.equal((runUpdates[0] as any).activeHumanCount, 1);
-  assert.equal((runUpdates[0] as any).aiPlayerCount, game.roles.length - 1);
+  assert.equal((runUpdates[0] as any).aiPlayerCount, roleRows.length - 1);
 
   const sixRoles = Array.from({ length: 6 }, (_, index) => ({ id: `six-role-${index + 1}` }));
   const threeHumans = sixRoles.slice(0, 3).map((role, index) => ({ roleId: role.id, id: `human-${index + 1}` }));
