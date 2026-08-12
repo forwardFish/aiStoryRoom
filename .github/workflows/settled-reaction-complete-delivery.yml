@@ -1,27 +1,31 @@
-name: Install Final Settled Reaction Workflow
+name: Inspect Frozen Settled Reaction Delivery
+
 on:
   push:
     branches: [codex/chatgpt-pro-dynamic-kernel-lite]
     paths: [.github/workflows/settled-reaction-complete-delivery.yml]
   workflow_dispatch:
-permissions: {contents: write}
+
+permissions:
+  contents: read
+
 jobs:
-  install:
+  inspect:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: {ref: codex/chatgpt-pro-dynamic-kernel-lite, fetch-depth: 0}
-      - name: Install verified final workflow
-        env: {GH_TOKEN: "${{ github.token }}"}
+        with:
+          ref: codex/chatgpt-pro-dynamic-kernel-lite
+          fetch-depth: 0
+      - name: Read frozen delivery workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          gh api repos/$GITHUB_REPOSITORY/git/blobs/135e08bec725137c828836d1b31759bcc2868b9c --jq .content | tr -d '[:space:]' | base64 -d >/tmp/workflow.xz
-          echo 'ac4b93fe1751ee35c915be5162007328996265459c81ea06b9d33d88cbb45737  /tmp/workflow.xz' | sha256sum -c -
-          xz -dc /tmp/workflow.xz >.github/workflows/settled-reaction-complete-delivery.yml
-          git diff --check
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .github/workflows/settled-reaction-complete-delivery.yml
-          git commit -m 'ci(kernel-lite): install verified product delivery workflow'
-          git push origin HEAD:codex/chatgpt-pro-dynamic-kernel-lite
+          gh api repos/$GITHUB_REPOSITORY/git/blobs/135e08bec725137c828836d1b31759bcc2868b9c --jq .content \
+            | tr -d '[:space:]' | base64 -d > /tmp/frozen-workflow.xz
+          echo 'ac4b93fe1751ee35c915be5162007328996265459c81ea06b9d33d88cbb45737  /tmp/frozen-workflow.xz' \
+            | sha256sum -c -
+          xz -dc /tmp/frozen-workflow.xz > /tmp/frozen-workflow.yml
+          nl -ba /tmp/frozen-workflow.yml
