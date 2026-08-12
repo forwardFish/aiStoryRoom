@@ -1,11 +1,10 @@
 name: Apply and Test Exact Settled Reaction Product Sources
 
+# Retry only after Git-blob verification of all three exact patch chunks.
 on:
   push:
-    branches:
-      - codex/chatgpt-pro-dynamic-kernel-lite
-    paths:
-      - .github/workflows/settled-reaction-complete-delivery.yml
+    branches: [codex/chatgpt-pro-dynamic-kernel-lite]
+    paths: [.github/workflows/settled-reaction-complete-delivery.yml]
   workflow_dispatch:
 
 permissions:
@@ -15,31 +14,30 @@ concurrency:
   group: settled-reaction-exact-product
   cancel-in-progress: false
 
+env:
+  TARGET_BRANCH: codex/chatgpt-pro-dynamic-kernel-lite
+  PRODUCT_BASE: 8fba8ef1e0305a6651b2b2cd7eb737815da07ab8
+  PATCH_SHA256: 0da77945555f94be87d262f309bd54798833f9cc2c2b2b83bb7c02b5e3e906b4
+
 jobs:
   apply-test-commit-clean:
     runs-on: ubuntu-latest
     timeout-minutes: 180
-    env:
-      TARGET_BRANCH: codex/chatgpt-pro-dynamic-kernel-lite
-      PRODUCT_BASE: 8fba8ef1e0305a6651b2b2cd7eb737815da07ab8
-      PATCH_SHA256: 0da77945555f94be87d262f309bd54798833f9cc2c2b2b83bb7c02b5e3e906b4
     steps:
       - uses: actions/checkout@v4
         with:
           ref: codex/chatgpt-pro-dynamic-kernel-lite
           fetch-depth: 0
-
       - uses: pnpm/action-setup@v4
         with:
           version: 10.12.1
           run_install: false
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
 
-      - name: Apply exact source patch
+      - name: Apply exact product patch
         shell: bash
         run: |
           set -euo pipefail
@@ -47,23 +45,18 @@ jobs:
           git merge-base --is-ancestor "${PRODUCT_BASE}" HEAD
           git diff --quiet "${PRODUCT_BASE}"..HEAD -- packages apps scripts
           test -z "$(git status --porcelain)"
-
           cat \
             .github/transport/settled-reaction-contract-product.py \
             .github/transport/settled-reaction-wiring.py \
             .github/transport/settled-reaction-tests.py \
             | tr -d '[:space:]' \
             | base64 --decode \
-            > "${RUNNER_TEMP}/settled-reaction-source.patch.xz"
-          echo "${PATCH_SHA256}  ${RUNNER_TEMP}/settled-reaction-source.patch.xz" \
-            | sha256sum --check
-          xz --decompress --stdout \
-            "${RUNNER_TEMP}/settled-reaction-source.patch.xz" \
-            > "${RUNNER_TEMP}/settled-reaction-source.patch"
-          git apply --check "${RUNNER_TEMP}/settled-reaction-source.patch"
-          git apply "${RUNNER_TEMP}/settled-reaction-source.patch"
-
-          cat > "${RUNNER_TEMP}/expected-before-compile.txt" <<'EOF'
+            > "${RUNNER_TEMP}/product.patch.xz"
+          echo "${PATCH_SHA256}  ${RUNNER_TEMP}/product.patch.xz" | sha256sum --check
+          xz -dc "${RUNNER_TEMP}/product.patch.xz" > "${RUNNER_TEMP}/product.patch"
+          git apply --check "${RUNNER_TEMP}/product.patch"
+          git apply "${RUNNER_TEMP}/product.patch"
+          cat > "${RUNNER_TEMP}/expected-12.txt" <<'EOF'
           apps/api/src/solo-story-engine/context-compiler.ts
           packages/templates/package.json
           packages/templates/src/runtime-facade.ts
@@ -77,27 +70,18 @@ jobs:
           packages/templates/tests/unbound-action-narrative-source.test.ts
           scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
           EOF
-          git diff --name-only -- packages apps scripts \
-            | sort > "${RUNNER_TEMP}/actual-before-compile.txt"
-          diff -u \
-            "${RUNNER_TEMP}/expected-before-compile.txt" \
-            "${RUNNER_TEMP}/actual-before-compile.txt"
+          git diff --name-only -- packages apps scripts | sort > "${RUNNER_TEMP}/actual-12.txt"
+          diff -u "${RUNNER_TEMP}/expected-12.txt" "${RUNNER_TEMP}/actual-12.txt"
           git diff --check
-          test -f packages/templates/src/story-package/settled-reaction-contract.ts
-          test -f packages/templates/tests/fixtures/neutral-unbound-world.ts
-          test -f packages/templates/tests/settled-reaction-contract.test.ts
-          test -f packages/templates/tests/unbound-action-narrative-source.test.ts
           if grep -E -i 'sangtian|zhejiang|qingliu|巡抚|县册|回文' \
             packages/templates/src/story-package/settled-reaction-contract.ts; then
-            echo "STORY_SPECIFIC_TERM_IN_GENERIC_CONTRACT" >&2
             exit 1
           fi
 
       - name: Install workspace
-        shell: bash
         run: pnpm install --frozen-lockfile
 
-      - name: Compile Sangtian runtime package
+      - name: Compile authoritative runtime package
         shell: bash
         run: |
           set -euo pipefail
@@ -105,8 +89,7 @@ jobs:
           SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring-output" \
           SANGTIAN_RUNTIME_PACKAGE_PATH="${GITHUB_WORKSPACE}/packages/templates/config/sangtian/story-package/part-one-runtime.json" \
             node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
-
-          cat > "${RUNNER_TEMP}/expected-final-product.txt" <<'EOF'
+          cat > "${RUNNER_TEMP}/expected-13.txt" <<'EOF'
           apps/api/src/solo-story-engine/context-compiler.ts
           packages/templates/config/sangtian/story-package/part-one-runtime.json
           packages/templates/package.json
@@ -121,14 +104,11 @@ jobs:
           packages/templates/tests/unbound-action-narrative-source.test.ts
           scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
           EOF
-          git diff --name-only -- packages apps scripts \
-            | sort > "${RUNNER_TEMP}/actual-final-product.txt"
-          diff -u \
-            "${RUNNER_TEMP}/expected-final-product.txt" \
-            "${RUNNER_TEMP}/actual-final-product.txt"
+          git diff --name-only -- packages apps scripts | sort > "${RUNNER_TEMP}/actual-13.txt"
+          diff -u "${RUNNER_TEMP}/expected-13.txt" "${RUNNER_TEMP}/actual-13.txt"
           git diff --check
 
-      - name: Run focused deterministic tests
+      - name: Focused deterministic test matrix
         shell: bash
         run: |
           set -euo pipefail
@@ -137,31 +117,27 @@ jobs:
           pnpm --filter @ai-story/templates test:story-package
           pnpm --filter @ai-story/templates build
           pnpm --filter @apps/openovel-runtime typecheck
-          pnpm --filter @apps/openovel-runtime exec node --import tsx --test \
-            tests/intent-capability-routing.spec.ts
+          pnpm --filter @apps/openovel-runtime exec node --import tsx --test tests/intent-capability-routing.spec.ts
           pnpm --filter @apps/openovel-runtime test
           pnpm --filter @apps/api test:solo-story-engine
           pnpm test:story:v4
 
-      - name: Commit and push tested product
+      - name: Commit and push tested 13-file product
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mapfile -t PRODUCT_FILES < "${RUNNER_TEMP}/expected-final-product.txt"
+          mapfile -t PRODUCT_FILES < "${RUNNER_TEMP}/expected-13.txt"
           git add -- "${PRODUCT_FILES[@]}"
           git diff --cached --check
-          git diff --cached --name-only \
-            | sort > "${RUNNER_TEMP}/actual-staged-product.txt"
-          diff -u \
-            "${RUNNER_TEMP}/expected-final-product.txt" \
-            "${RUNNER_TEMP}/actual-staged-product.txt"
+          git diff --cached --name-only | sort > "${RUNNER_TEMP}/staged-13.txt"
+          diff -u "${RUNNER_TEMP}/expected-13.txt" "${RUNNER_TEMP}/staged-13.txt"
           git commit -m "feat(kernel-lite): complete settled reaction and unbound narrative contracts"
-          git rev-parse HEAD > "${RUNNER_TEMP}/product-commit-sha.txt"
+          git rev-parse HEAD > "${RUNNER_TEMP}/product-sha.txt"
           git push origin HEAD:"${TARGET_BRANCH}"
 
-      - name: Remove temporary transport after product push
+      - name: Clean transport only after product push
         shell: bash
         run: |
           set -euo pipefail
@@ -173,11 +149,9 @@ jobs:
           git diff --cached --check
           git commit -m "chore(kernel-lite): remove settled reaction delivery transport"
           git push origin HEAD:"${TARGET_BRANCH}"
-
           git fetch origin "${TARGET_BRANCH}"
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/${TARGET_BRANCH})"
-          echo "PRODUCT_COMMIT_SHA=$(cat "${RUNNER_TEMP}/product-commit-sha.txt")"
+          echo "PRODUCT_COMMIT_SHA=$(cat "${RUNNER_TEMP}/product-sha.txt")"
           echo "FINAL_REMOTE_SHA=$(git rev-parse HEAD)"
           echo "FINAL_REMOTE_TREE=$(git rev-parse HEAD^{tree})"
-          git diff --name-status \
-            "${PRODUCT_BASE}"..HEAD -- packages apps scripts
+          git diff --name-status "${PRODUCT_BASE}"..HEAD -- packages apps scripts
