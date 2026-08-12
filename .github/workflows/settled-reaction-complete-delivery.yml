@@ -1,4 +1,4 @@
-name: Inspect Frozen Settled Reaction Delivery
+name: Deliver Frozen Settled Reaction Source
 
 on:
   push:
@@ -7,25 +7,121 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: settled-reaction-source-delivery
+  cancel-in-progress: false
+
+env:
+  BRANCH: codex/chatgpt-pro-dynamic-kernel-lite
+  DELIVERY_BASE: 4dc1e6eac971a2a53a297c7fe1b62949ce494d43
+  PRODUCT_TREE_BASE: 8fba8ef1e0305a6651b2b2cd7eb737815da07ab8
 
 jobs:
-  inspect:
+  deliver:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
         with:
           ref: codex/chatgpt-pro-dynamic-kernel-lite
           fetch-depth: 0
-      - name: Read frozen delivery workflow
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Apply frozen source patches
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          gh api repos/$GITHUB_REPOSITORY/git/blobs/135e08bec725137c828836d1b31759bcc2868b9c --jq .content \
-            | tr -d '[:space:]' | base64 -d > /tmp/frozen-workflow.xz
-          echo 'ac4b93fe1751ee35c915be5162007328996265459c81ea06b9d33d88cbb45737  /tmp/frozen-workflow.xz' \
+          test "$(git branch --show-current)" = "$BRANCH"
+          git merge-base --is-ancestor "$DELIVERY_BASE" HEAD
+          git diff --quiet "$DELIVERY_BASE"..HEAD -- packages apps scripts
+          git diff --quiet "$PRODUCT_TREE_BASE"..HEAD -- packages apps scripts
+          test -z "$(git status --porcelain)"
+
+          cat \
+            .github/transport/settled-reaction-contract-product.py \
+            .github/transport/settled-reaction-wiring.py \
+            .github/transport/settled-reaction-tests.py \
+            | tr -d '[:space:]' | base64 -d > /tmp/base.xz
+          echo '9b2b53d95f9acf7462e479e8b5b85a7b30aa0e9e57bc8b4550627315b8751106  /tmp/base.xz' \
             | sha256sum -c -
-          xz -dc /tmp/frozen-workflow.xz > /tmp/frozen-workflow.yml
-          nl -ba /tmp/frozen-workflow.yml
+          xz -dc /tmp/base.xz > /tmp/base.patch
+          git apply --check /tmp/base.patch
+          git apply /tmp/base.patch
+
+          gh api repos/$GITHUB_REPOSITORY/git/blobs/92c3367926a9bde57748370022fe6b6a129025de \
+            --jq .content | tr -d '[:space:]' | base64 -d > /tmp/fix.xz
+          echo '1d87ea687604e079f5aa700975736f93e6666f04d38df871680f6b9781fca772  /tmp/fix.xz' \
+            | sha256sum -c -
+          xz -dc /tmp/fix.xz > /tmp/fix.patch
+          git apply --check /tmp/fix.patch
+          git apply /tmp/fix.patch
+
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('packages/templates/tests/unbound-action-narrative-source.test.ts')
+          path.write_text(path.read_text(encoding='utf-8').rstrip() + '\n', encoding='utf-8')
+          PY
+          git diff --check
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Compile authoritative runtime package
+        shell: bash
+        run: |
+          set -euo pipefail
+          SANGTIAN_SKIP_SOURCE_WRITES=1 \
+          SANGTIAN_AUTHORING_OUTPUT_ROOT="$RUNNER_TEMP/sangtian-authoring-output" \
+          SANGTIAN_RUNTIME_PACKAGE_PATH="$GITHUB_WORKSPACE/packages/templates/config/sangtian/story-package/part-one-runtime.json" \
+            node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
+          git diff --check
+
+      - name: Commit and push frozen 13-file source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/product-files.txt <<'EOF'
+          apps/api/src/solo-story-engine/context-compiler.ts
+          packages/templates/config/sangtian/story-package/part-one-runtime.json
+          packages/templates/package.json
+          packages/templates/src/runtime-facade.ts
+          packages/templates/src/story-package/index.ts
+          packages/templates/src/story-package/part-one-runtime-engine.ts
+          packages/templates/src/story-package/part-one-runtime-types.ts
+          packages/templates/src/story-package/settled-reaction-contract.ts
+          packages/templates/tests/fixtures/neutral-unbound-world.ts
+          packages/templates/tests/part-one-dynamic-kernel-lite.test.ts
+          packages/templates/tests/settled-reaction-contract.test.ts
+          packages/templates/tests/unbound-action-narrative-source.test.ts
+          scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
+          EOF
+
+          {
+            git diff --name-only -- packages apps scripts
+            git ls-files --others --exclude-standard -- packages apps scripts
+          } | sort -u > /tmp/actual-product-files.txt
+          diff -u /tmp/product-files.txt /tmp/actual-product-files.txt
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mapfile -t PRODUCT_FILES < /tmp/product-files.txt
+          git add -- "${PRODUCT_FILES[@]}"
+          git diff --cached --check
+          git diff --cached --name-only | sort > /tmp/staged-product-files.txt
+          diff -u /tmp/product-files.txt /tmp/staged-product-files.txt
+          git commit -m 'feat(kernel-lite): deliver current settled reaction source'
+          echo "PRODUCT_COMMIT_SHA=$(git rev-parse HEAD)"
+          git push origin HEAD:"$BRANCH"
