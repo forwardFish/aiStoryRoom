@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "sangtian_source_ref_audit_v1_1",
+  "verdict": "PASS",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "sourceFactCount": 33,
+  "referenceCount": 33,
+  "invalidReferences": [],
+  "paragraphAlgorithm": "dm1566-source-indexer-v1",
+  "sourceReferenceContentChanged": false
+}

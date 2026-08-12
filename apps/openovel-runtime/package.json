@@ -4,7 +4,35 @@
   "private": true,
   "type": "module",
   "description": "OpenNovel-first foreground and background runtime for Our Many Worlds.",
+  "exports": {
+    "./package.json": "./package.json",
+    "./pressure-narrative": {
+      "types": "./dist/pressure-narrative/index.d.ts",
+      "import": "./dist/pressure-narrative/index.js",
+      "require": "./dist-cjs/pressure-narrative/index.js",
+      "default": "./dist/pressure-narrative/index.js"
+    },
+    "./pressure-narrative/contracts": {
+      "types": "./dist/pressure-narrative/contracts.d.ts",
+      "import": "./dist/pressure-narrative/contracts.js",
+      "require": "./dist-cjs/pressure-narrative/contracts.js",
+      "default": "./dist/pressure-narrative/contracts.js"
+    },
+    "./pressure-narrative/errors": {
+      "types": "./dist/pressure-narrative/errors.d.ts",
+      "import": "./dist/pressure-narrative/errors.js",
+      "require": "./dist-cjs/pressure-narrative/errors.js",
+      "default": "./dist/pressure-narrative/errors.js"
+    },
+    "./pressure-narrative/ports": {
+      "types": "./dist/pressure-narrative/ports.d.ts",
+      "import": "./dist/pressure-narrative/ports.js",
+      "require": "./dist-cjs/pressure-narrative/ports.js",
+      "default": "./dist/pressure-narrative/ports.js"
+    }
+  },
   "scripts": {
+    "build:pressure-narrative": "node ./scripts/build-pressure-narrative.mjs",
     "prepare:templates": "pnpm --filter @ai-story/templates build",
     "predev": "pnpm run prepare:templates",
     "predev:test": "pnpm run prepare:templates",

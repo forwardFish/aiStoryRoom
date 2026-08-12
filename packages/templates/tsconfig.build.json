@@ -1,6 +1,11 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@ai-story/shared": ["../shared/dist/index.d.ts"],
+      "@ai-story/shared/*": ["../shared/dist/*"]
+    },
     "rootDir": "src",
     "outDir": "dist",
     "declaration": true

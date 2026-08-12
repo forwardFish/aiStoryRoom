@@ -1,0 +1,4 @@
+-- Intentionally empty.
+-- Lobby command receipts and start idempotency are part of the consolidated
+-- PressureRunLifecycle JSON envelope created by the preceding, not-yet-deployed
+-- Pressure MVP migration.

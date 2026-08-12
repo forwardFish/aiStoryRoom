@@ -1,0 +1,150 @@
+{
+  "schemaVersion": "sangtian_actors_v1",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "actors": [
+    {
+      "actorId": "actor.hu_zongxian",
+      "name": "胡宗宪",
+      "seatId": "seat.zhejiang_governor",
+      "activeFrom": "P0",
+      "activeUntil": "N7",
+      "status": "ACTIVE",
+      "knowledgeBoundary": "只继承本人已阅文书、正式总督档案和实际送达材料。"
+    },
+    {
+      "actorId": "actor.zheng_michang",
+      "name": "郑泌昌",
+      "seatId": "seat.zhejiang_administration",
+      "activeFrom": "P0",
+      "activeUntil": "N7",
+      "status": "ACTIVE_THEN_IMPRISONED",
+      "knowledgeBoundary": "N6 后若被捕，只能使用本人记忆、供状和获准通信。"
+    },
+    {
+      "actorId": "actor.tan_lun",
+      "name": "谭纶",
+      "seatId": "seat.qingliu_law",
+      "activeFrom": "P0",
+      "activeUntil": "N2",
+      "status": "HANDOFF",
+      "knowledgeBoundary": "只将公开事实、正式记录和实际交给海瑞的材料移交。"
+    },
+    {
+      "actorId": "actor.hai_rui",
+      "name": "海瑞",
+      "seatId": "seat.qingliu_law",
+      "activeFrom": "N3",
+      "activeUntil": "N7",
+      "status": "ACTIVE",
+      "knowledgeBoundary": "不自动继承谭纶未写入档案的私下判断。"
+    },
+    {
+      "actorId": "actor.shen_yishi",
+      "name": "沈一石",
+      "seatId": "seat.jiangnan_merchant",
+      "activeFrom": "P0",
+      "activeUntil": "N6",
+      "status": "MAY_DIE",
+      "knowledgeBoundary": "掌握自身粮、银、商路和账目，不自动知道官府未公开的内部决定。"
+    },
+    {
+      "actorId": "actor.merchant_legacy_executor",
+      "name": "商会遗命执行人",
+      "seatId": "seat.jiangnan_merchant",
+      "activeFrom": "N7",
+      "activeUntil": "N7",
+      "status": "LEGACY_ONLY",
+      "knowledgeBoundary": "只执行沈一石在 N6 冻结前已经形成并可验证的遗命、债权和递送安排。"
+    },
+    {
+      "actorId": "actor.yang_jinshui",
+      "name": "杨金水",
+      "seatId": "seat.sili_weaving",
+      "activeFrom": "P0",
+      "activeUntil": "N6",
+      "status": "MAY_BECOME_PUBLICLY_INCAPACITATED",
+      "knowledgeBoundary": "其真实精神状态保持 UNKNOWN；前台只使用公开可观察能力状态。"
+    },
+    {
+      "actorId": "actor.weaving_retainer",
+      "name": "织造局留守太监",
+      "seatId": "seat.sili_weaving",
+      "activeFrom": "N7",
+      "activeUntil": "N7",
+      "status": "AGENT_ONLY",
+      "knowledgeBoundary": "只知道织造局正式档案、杨金水已签发命令和已启动的内廷递送。"
+    },
+    {
+      "actorId": "actor.yan_shifan",
+      "name": "严世蕃与内阁财政网络",
+      "seatId": "seat.cabinet_finance",
+      "activeFrom": "P0",
+      "activeUntil": "N7",
+      "status": "ACTIVE",
+      "knowledgeBoundary": "只掌握中央收到的文书、财政目标和本席位建立的情报。"
+    },
+    {
+      "actorId": "actor.gao_hanwen",
+      "name": "高翰文",
+      "seatId": null,
+      "activeFrom": "N3",
+      "activeUntil": "N6",
+      "status": "NPC",
+      "knowledgeBoundary": "根据所见议案、田价、粮情与个人原则行动。"
+    },
+    {
+      "actorId": "actor.wang_yongji",
+      "name": "王用汲",
+      "seatId": null,
+      "activeFrom": "N3",
+      "activeUntil": "N7",
+      "status": "NPC",
+      "knowledgeBoundary": "只使用县政、公开案卷和合法交接材料。"
+    },
+    {
+      "actorId": "actor.ma_ningyuan",
+      "name": "马宁远",
+      "seatId": null,
+      "activeFrom": "N1",
+      "activeUntil": "N2",
+      "status": "WITNESS",
+      "knowledgeBoundary": "其供述范围以实际形成并签押的供状为准。"
+    },
+    {
+      "actorId": "actor.qi_dazhu",
+      "name": "齐大柱",
+      "seatId": null,
+      "activeFrom": "N1",
+      "activeUntil": "N7",
+      "status": "WITNESS_OR_ACTOR",
+      "knowledgeBoundary": "只知道灾民、粮船交易和亲历现场。"
+    },
+    {
+      "actorId": "actor.inoue_14",
+      "name": "井上十四郎",
+      "seatId": null,
+      "activeFrom": "N4",
+      "activeUntil": "N7",
+      "status": "PRISONER_WITNESS",
+      "knowledgeBoundary": "只知道自身交易、羁押和被利用的事实。"
+    },
+    {
+      "actorId": "actor.zhao_zhenji",
+      "name": "赵贞吉",
+      "seatId": null,
+      "activeFrom": "N7",
+      "activeUntil": "N7",
+      "status": "NPC_AUTHORITY",
+      "knowledgeBoundary": "只根据已送达廷寄、案卷、军情和程序压力行动。"
+    },
+    {
+      "actorId": "actor.jiajing_emperor",
+      "name": "嘉靖帝",
+      "seatId": null,
+      "activeFrom": "P0",
+      "activeUntil": "FINALE",
+      "status": "SYSTEM_AUTHORITY",
+      "knowledgeBoundary": "不由 Narrator 自由决定；只通过确定性采用矩阵投影。"
+    }
+  ]
+}

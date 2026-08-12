@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "adaptation-decision-set-v2",
+  "nodeId": "N6",
+  "adaptations": [
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionId": "adapt.n6.pressure_lock",
+      "sourceEntityOrArcIds": [
+        "N6-SF-01",
+        "N6-SF-02",
+        "N6-SF-03",
+        "N6-SF-04",
+        "N6-SF-05"
+      ],
+      "operation": "preserve",
+      "targetIds": [
+        "N6",
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "rationale": "将 N6 的历史压力设为不可跳过节点，但允许玩家改变发生程度与责任归属。",
+      "invariantsToPreserve": [
+        "不可撤销压力继续",
+        "玩家分支改变冻结状态"
+      ],
+      "intentionalDifferences": [
+        "把跨场景事件压缩成有限节点时间预算"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-mvp-content-lock-v1",
+      "approvedAt": "2026-08-10T00:00:00Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionId": "adapt.n6.two_beats",
+      "sourceEntityOrArcIds": [
+        "N6-SF-01",
+        "N6-SF-02",
+        "N6-SF-03",
+        "N6-SF-04",
+        "N6-SF-05"
+      ],
+      "operation": "compress",
+      "targetIds": [
+        "N6",
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "rationale": "将 N6 节点内部收敛为 PREPARE 与 COMMIT 两个连续决策拍。",
+      "invariantsToPreserve": [
+        "行动必须兑现",
+        "时间与 NPC 必须继续推进"
+      ],
+      "intentionalDifferences": [
+        "每个节点最多三幕前台场景"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-mvp-content-lock-v1",
+      "approvedAt": "2026-08-10T00:00:00Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionId": "adapt.n6.object_contest",
+      "sourceEntityOrArcIds": [
+        "N6-SF-01",
+        "N6-SF-02",
+        "N6-SF-03",
+        "N6-SF-04",
+        "N6-SF-05"
+      ],
+      "operation": "invent_for_gameplay",
+      "targetIds": [
+        "N6",
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "rationale": "把 N6 的冲突绑定到最多两个主要争夺物及其保管、签押、调度或送达状态。",
+      "invariantsToPreserve": [
+        "具体对象而非抽象支持度",
+        "同一对象不能双花"
+      ],
+      "intentionalDifferences": [
+        "使用统一对象状态和冲突比较规则"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-mvp-content-lock-v1",
+      "approvedAt": "2026-08-10T00:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,676 @@
+{
+  "schemaVersion": "sangtian_node_settlement_v1_1",
+  "nodeId": "N7",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "snapshotRule": "所有 COMMIT 基于同一节点快照；先后提交不产生天然优势。",
+  "conflictComparator": {
+    "hardRulesFirst": true,
+    "priorityOrder": [
+      "最终封印权限",
+      "程序效力等级",
+      "合法递送权限",
+      "实际到达时间",
+      "确定性哈希破同分"
+    ],
+    "tieBreak": {
+      "method": "STABLE_HASH",
+      "input": "runSeed|nodeId|objectId|seatId",
+      "aiInvolved": false
+    },
+    "objectRules": [
+      {
+        "objectId": "obj.final_testimonies",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      },
+      {
+        "objectId": "obj.final_dispatch_routes",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      }
+    ]
+  },
+  "hardRules": [
+    "权限、知识、保管、资源与截止时间先于 comparator。",
+    "同一可分资源不得双花；不可分对象同一时刻只有一个实际保管者。",
+    "SIGN 只能由本人或有明确代理权者完成。",
+    "本节点刚取得的对象不得在同一动作或同节点条件应变中立即销毁。",
+    "已冻结事实不能被后续自由文本撤销。"
+  ],
+  "defaultTrajectory": {
+    "policySynthesis": "省府犯官提出翻供，清流保留原供并完成程序有效但证言冲突的重审包，商会材料有限，织造局走内廷对照路线，内阁指定内阁收件，总督提供普通军驿；确定性矩阵默认采用到省级，更高层关联封存。",
+    "defaultInputState": {
+      "evidenceContentReach": 4,
+      "channelProcedureCap": 2,
+      "militaryFundsCap": 3,
+      "imperialExposureCap": 3,
+      "onTimeOfficialRouteCount": 1,
+      "proceduralGrade": "CONTESTED"
+    },
+    "defaultBranchId": "settlement.n7.mid",
+    "deterministic": true
+  },
+  "conditionalReaction": {
+    "trigger": "最终包程序等级至少 VALID 且已经分配一条正式路线。",
+    "eligible": [
+      "seat.zhejiang_governor",
+      "seat.zhejiang_administration",
+      "seat.qingliu_law",
+      "seat.jiangnan_merchant",
+      "seat.sili_weaving",
+      "seat.cabinet_finance"
+    ],
+    "actions": [
+      "SIGN",
+      "DISCLOSE",
+      "TRANSFER",
+      "DISPATCH",
+      "SEIZE"
+    ],
+    "window": "配置初值：60 秒；每席一次；应变后只允许重新封印一次。"
+  },
+  "branches": [
+    {
+      "branchId": "settlement.n7.high",
+      "level": "HIGH",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n7.settlement.high",
+      "frozenWorldState": "相互印证的材料沿独立正式路线按时到达，程序与保管链完整；责任至少进入中央财政或更高层内部采用。",
+      "objectMutations": [
+        {
+          "objectId": "obj.final_testimonies",
+          "resultVersionId": "obj.final_testimonies@N7.HIGH.v1",
+          "status": "CORROBORATED_FINAL_PACKET",
+          "custodyMode": "OFFICIAL_RECIPIENTS"
+        },
+        {
+          "objectId": "obj.final_dispatch_routes",
+          "resultVersionId": "obj.final_dispatch_routes@N7.HIGH.v1",
+          "status": "AT_LEAST_ONE_ON_TIME_FORMAL_ROUTE",
+          "custodyMode": "ROUTE_RECIPIENTS"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "最终供状",
+        "封印与签押",
+        "送达时间",
+        "收件渠道",
+        "程序等级",
+        "内容证明上限",
+        "皇权暴露",
+        "采用层级"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 15,
+        "track.mulberry_silk": 5,
+        "track.fiscal_military": 5,
+        "track.evidence_responsibility": 15,
+        "track.court_imperial_face": 5
+      },
+      "carryForward": [
+        "最终供状",
+        "封印与签押",
+        "送达时间",
+        "收件渠道",
+        "程序等级",
+        "内容证明上限",
+        "皇权暴露",
+        "采用层级",
+        "终局按最低上限裁剪公开责任",
+        "不开放最终演说"
+      ],
+      "transitionSceneId": "scene.n7.transition.high",
+      "predecessorIds": [
+        "scene.n7.commit_confrontation",
+        "scene.n7.reaction"
+      ],
+      "successorIds": [
+        "scene.n7.transition.high"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.final_testimonies",
+        "obj.final_dispatch_routes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTROLLED",
+        "frozenFacts": [
+          "至少两条独立正式路线按时到达",
+          "供词、证言与账目材料相互印证",
+          "最终封印、签押与收件链完整"
+        ],
+        "objectState": "最终包与合法副本分别到达；采用层级进入确定性矩阵。",
+        "carry": [
+          "终局按最低上限裁剪公开责任",
+          "不开放最终演说"
+        ]
+      },
+      "frozenFacts": [
+        "至少两条独立正式路线按时到达",
+        "供词、证言与账目材料相互印证",
+        "最终封印、签押与收件链完整"
+      ],
+      "frozenResultId": "frozen.N7.HIGH",
+      "branchSelector": {
+        "all": [
+          {
+            "expr": "min(evidenceContentReach,channelProcedureCap,militaryFundsCap,imperialExposureCap)",
+            "op": ">=",
+            "value": 4
+          },
+          {
+            "key": "onTimeOfficialRouteCount",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "key": "proceduralGrade",
+            "op": "IN",
+            "value": [
+              "VALID",
+              "CORROBORATED"
+            ]
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N7.HIGH.fact.01",
+        "frozen.N7.HIGH.fact.02",
+        "frozen.N7.HIGH.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N7.HIGH.fact.01",
+          "statement": "至少两条独立正式路线按时到达",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N7.HIGH.fact.02",
+          "statement": "供词、证言与账目材料相互印证",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N7.HIGH.fact.03",
+          "statement": "最终封印、签押与收件链完整",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.final_testimonies",
+          "versionId": "obj.final_testimonies@N7.HIGH.v1",
+          "status": "CORROBORATED_FINAL_PACKET",
+          "custodyMode": "OFFICIAL_RECIPIENTS",
+          "custodyRule": "只由前六阶段实际存在材料组成；供状、证言与摘要逐项保留来源。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N7.HIGH"
+        },
+        {
+          "objectId": "obj.final_dispatch_routes",
+          "versionId": "obj.final_dispatch_routes@N7.HIGH.v1",
+          "status": "AT_LEAST_ONE_ON_TIME_FORMAL_ROUTE",
+          "custodyMode": "ROUTE_RECIPIENTS",
+          "custodyRule": "每条路线有独立封印、发出时间、到达时间和签收。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N7.HIGH"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n7.mid",
+      "level": "MID",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n7.settlement.mid",
+      "frozenWorldState": "省级责任正式生效，更高层关联被内部封存；原供与翻供并存，朝局维持但真相被裁剪。",
+      "objectMutations": [
+        {
+          "objectId": "obj.final_testimonies",
+          "resultVersionId": "obj.final_testimonies@N7.MID.v1",
+          "status": "VALID_OR_CONTESTED_NARROW_PACKET",
+          "custodyMode": "PRIMARY_OFFICIAL_RECIPIENT"
+        },
+        {
+          "objectId": "obj.final_dispatch_routes",
+          "resultVersionId": "obj.final_dispatch_routes@N7.MID.v1",
+          "status": "ONE_EFFECTIVE_ROUTE_OTHERS_LIMITED",
+          "custodyMode": "PRIMARY_ROUTE_RECIPIENT"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "最终供状",
+        "封印与签押",
+        "送达时间",
+        "收件渠道",
+        "程序等级",
+        "内容证明上限",
+        "皇权暴露",
+        "采用层级"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 0,
+        "track.mulberry_silk": 0,
+        "track.fiscal_military": 0,
+        "track.evidence_responsibility": 0,
+        "track.court_imperial_face": 0
+      },
+      "carryForward": [
+        "最终供状",
+        "封印与签押",
+        "送达时间",
+        "收件渠道",
+        "程序等级",
+        "内容证明上限",
+        "皇权暴露",
+        "采用层级",
+        "省级或织造层责任生效",
+        "未采用事实成为重玩钩子"
+      ],
+      "transitionSceneId": "scene.n7.transition.mid",
+      "predecessorIds": [
+        "scene.n7.commit_confrontation",
+        "scene.n7.reaction"
+      ],
+      "successorIds": [
+        "scene.n7.transition.mid"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.final_testimonies",
+        "obj.final_dispatch_routes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTESTED",
+        "frozenFacts": [
+          "一份正式材料按时到达",
+          "原供与翻供仍有冲突",
+          "更高责任关联被封存或只作内部参考"
+        ],
+        "objectState": "单路线材料生效，其他路线迟到或效力不足。",
+        "carry": [
+          "省级或织造层责任生效",
+          "未采用事实成为重玩钩子"
+        ]
+      },
+      "frozenFacts": [
+        "一份正式材料按时到达",
+        "原供与翻供仍有冲突",
+        "更高责任关联被封存或只作内部参考"
+      ],
+      "frozenResultId": "frozen.N7.MID",
+      "branchSelector": {
+        "otherwise": true
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N7.MID.fact.01",
+        "frozen.N7.MID.fact.02",
+        "frozen.N7.MID.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N7.MID.fact.01",
+          "statement": "一份正式材料按时到达",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N7.MID.fact.02",
+          "statement": "原供与翻供仍有冲突",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N7.MID.fact.03",
+          "statement": "更高责任关联被封存或只作内部参考",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.final_testimonies",
+          "versionId": "obj.final_testimonies@N7.MID.v1",
+          "status": "VALID_OR_CONTESTED_NARROW_PACKET",
+          "custodyMode": "PRIMARY_OFFICIAL_RECIPIENT",
+          "custodyRule": "冲突供词并列，采用范围由最低上限裁剪。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N7.MID"
+        },
+        {
+          "objectId": "obj.final_dispatch_routes",
+          "versionId": "obj.final_dispatch_routes@N7.MID.v1",
+          "status": "ONE_EFFECTIVE_ROUTE_OTHERS_LIMITED",
+          "custodyMode": "PRIMARY_ROUTE_RECIPIENT",
+          "custodyRule": "单一路线生效；迟到或低效力路线保持独立状态。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N7.MID"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n7.low",
+      "level": "LOW",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n7.settlement.low",
+      "frozenWorldState": "翻供或窄化案卷成为唯一有效包，责任封在地方或商人；更高层关联未能按时、合法送达。",
+      "objectMutations": [
+        {
+          "objectId": "obj.final_testimonies",
+          "resultVersionId": "obj.final_testimonies@N7.LOW.v1",
+          "status": "INVALID_LATE_OR_NARROW_PACKET",
+          "custodyMode": "LAST_VERIFIED_HOLDER_OR_RECIPIENT"
+        },
+        {
+          "objectId": "obj.final_dispatch_routes",
+          "resultVersionId": "obj.final_dispatch_routes@N7.LOW.v1",
+          "status": "NO_EFFECTIVE_ROUTE_OR_CAPTURED_ROUTE",
+          "custodyMode": "LAST_VERIFIED_HOLDER"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "最终供状",
+        "封印与签押",
+        "送达时间",
+        "收件渠道",
+        "程序等级",
+        "内容证明上限",
+        "皇权暴露",
+        "采用层级"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": -15,
+        "track.mulberry_silk": -5,
+        "track.fiscal_military": -5,
+        "track.evidence_responsibility": -15,
+        "track.court_imperial_face": -10
+      },
+      "carryForward": [
+        "最终供状",
+        "封印与签押",
+        "送达时间",
+        "收件渠道",
+        "程序等级",
+        "内容证明上限",
+        "皇权暴露",
+        "采用层级",
+        "终局证据与责任轨迹处于低位",
+        "六席按既有冻结结果判胜负"
+      ],
+      "transitionSceneId": "scene.n7.transition.low",
+      "predecessorIds": [
+        "scene.n7.commit_confrontation",
+        "scene.n7.reaction"
+      ],
+      "successorIds": [
+        "scene.n7.transition.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.final_testimonies",
+        "obj.final_dispatch_routes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CAPTURED_BY_PRESSURE",
+        "frozenFacts": [
+          "材料未形成足够程序效力或未按时抵达",
+          "案件被压缩为地方贪墨、商人责任或无效材料",
+          "关键高层关联没有正式采用"
+        ],
+        "objectState": "最终包失效、迟到或被控制渠道收存。",
+        "carry": [
+          "终局证据与责任轨迹处于低位",
+          "六席按既有冻结结果判胜负"
+        ]
+      },
+      "frozenFacts": [
+        "材料未形成足够程序效力或未按时抵达",
+        "案件被压缩为地方贪墨、商人责任或无效材料",
+        "关键高层关联没有正式采用"
+      ],
+      "frozenResultId": "frozen.N7.LOW",
+      "branchSelector": {
+        "any": [
+          {
+            "expr": "min(evidenceContentReach,channelProcedureCap,militaryFundsCap,imperialExposureCap)",
+            "op": "<=",
+            "value": 1
+          },
+          {
+            "key": "onTimeOfficialRouteCount",
+            "op": "==",
+            "value": 0
+          },
+          {
+            "key": "proceduralGrade",
+            "op": "==",
+            "value": "INVALID"
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N7.LOW.fact.01",
+        "frozen.N7.LOW.fact.02",
+        "frozen.N7.LOW.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N7.LOW.fact.01",
+          "statement": "材料未形成足够程序效力或未按时抵达",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N7.LOW.fact.02",
+          "statement": "案件被压缩为地方贪墨、商人责任或无效材料",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N7.LOW.fact.03",
+          "statement": "关键高层关联没有正式采用",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.final_testimonies",
+          "versionId": "obj.final_testimonies@N7.LOW.v1",
+          "status": "INVALID_LATE_OR_NARROW_PACKET",
+          "custodyMode": "LAST_VERIFIED_HOLDER_OR_RECIPIENT",
+          "custodyRule": "迟到、无效或窄化材料只在实际到达范围内生效。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N7.LOW"
+        },
+        {
+          "objectId": "obj.final_dispatch_routes",
+          "versionId": "obj.final_dispatch_routes@N7.LOW.v1",
+          "status": "NO_EFFECTIVE_ROUTE_OR_CAPTURED_ROUTE",
+          "custodyMode": "LAST_VERIFIED_HOLDER",
+          "custodyRule": "未按时到达不进入正式采用，不因叙事补作送达。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N7.LOW"
+        }
+      ]
+    }
+  ],
+  "frozenResultFields": [
+    "最终供状",
+    "封印与签押",
+    "送达时间",
+    "收件渠道",
+    "程序等级",
+    "内容证明上限",
+    "皇权暴露",
+    "采用层级"
+  ],
+  "nextNodeId": "FINALE",
+  "provenanceClass": "ADAPTATION_RULE",
+  "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+  "selectorInputs": [
+    {
+      "inputKey": "evidenceContentReach",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "channelProcedureCap",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "militaryFundsCap",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "imperialExposureCap",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "onTimeOfficialRouteCount",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "proceduralGrade",
+      "source": "Frozen action/object/event state",
+      "required": true
+    }
+  ],
+  "branchSelector": {
+    "evaluationOrder": [
+      "HIGH",
+      "LOW",
+      "MID"
+    ],
+    "selectors": {
+      "HIGH": {
+        "all": [
+          {
+            "expr": "min(evidenceContentReach,channelProcedureCap,militaryFundsCap,imperialExposureCap)",
+            "op": ">=",
+            "value": 4
+          },
+          {
+            "key": "onTimeOfficialRouteCount",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "key": "proceduralGrade",
+            "op": "IN",
+            "value": [
+              "VALID",
+              "CORROBORATED"
+            ]
+          }
+        ]
+      },
+      "LOW": {
+        "any": [
+          {
+            "expr": "min(evidenceContentReach,channelProcedureCap,militaryFundsCap,imperialExposureCap)",
+            "op": "<=",
+            "value": 1
+          },
+          {
+            "key": "onTimeOfficialRouteCount",
+            "op": "==",
+            "value": 0
+          },
+          {
+            "key": "proceduralGrade",
+            "op": "==",
+            "value": "INVALID"
+          }
+        ]
+      },
+      "MID": {
+        "otherwise": true
+      }
+    },
+    "notes": "Thresholds are configuration seeds, not validated balance. HIGH is tested first, LOW second, MID is the only otherwise branch."
+  }
+}

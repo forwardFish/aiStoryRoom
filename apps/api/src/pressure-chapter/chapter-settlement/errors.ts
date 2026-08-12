@@ -1,0 +1,40 @@
+export const CHAPTER_SETTLEMENT_ERROR_CODES = {
+  INVALID_COMMAND: "INVALID_COMMAND",
+  SOURCE_NOT_FOUND: "SOURCE_NOT_FOUND",
+  CHAPTER_NOT_CLOSED: "CHAPTER_NOT_CLOSED",
+  WORKING_REVISION_MISMATCH: "WORKING_REVISION_MISMATCH",
+  POST_CLOSE_ACTION_DETECTED: "POST_CLOSE_ACTION_DETECTED",
+  WORLD_SEQUENCE_MISMATCH: "WORLD_SEQUENCE_MISMATCH",
+  WORLD_STATE_HASH_MISMATCH: "WORLD_STATE_HASH_MISMATCH",
+  SOURCE_REFERENCE_MISMATCH: "SOURCE_REFERENCE_MISMATCH",
+  REQUEST_FINGERPRINT_MISMATCH: "REQUEST_FINGERPRINT_MISMATCH",
+  CHAPTER_SETTLEMENT_FINGERPRINT_MISMATCH:
+    "CHAPTER_SETTLEMENT_FINGERPRINT_MISMATCH",
+  B0_CANONICAL_ADAPTER_INVALID: "B0_CANONICAL_ADAPTER_INVALID",
+  WORLD_DELTA_INVALID: "WORLD_DELTA_INVALID",
+  ATOMIC_RECORD_INVALID: "ATOMIC_RECORD_INVALID",
+  ATOMIC_RECORD_HASH_MISMATCH: "ATOMIC_RECORD_HASH_MISMATCH",
+  COMMITTED_RECORD_MISMATCH: "COMMITTED_RECORD_MISMATCH",
+} as const;
+
+export type ChapterSettlementErrorCode =
+  (typeof CHAPTER_SETTLEMENT_ERROR_CODES)[keyof typeof CHAPTER_SETTLEMENT_ERROR_CODES];
+
+export class ChapterSettlementError extends Error {
+  constructor(
+    readonly code: ChapterSettlementErrorCode,
+    readonly path: string,
+    readonly detail?: string,
+  ) {
+    super(`${code}:${path}${detail ? `:${detail}` : ""}`);
+    this.name = "ChapterSettlementError";
+  }
+}
+
+export function failChapterSettlement(
+  code: ChapterSettlementErrorCode,
+  path: string,
+  detail?: string,
+): never {
+  throw new ChapterSettlementError(code, path, detail);
+}

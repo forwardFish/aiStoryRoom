@@ -1,0 +1,4295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://our-many-worlds.local/schemas/pressure-chapter/pressure-chapter-v1.schema.json",
+  "title": "Our Many Worlds Pressure Chapter V1 shared contracts",
+  "description": "Machine-readable structural schemas. Existing shared validators remain authoritative for ordering, cross-reference and hash semantics.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/RunRouteSnapshotV1"
+    },
+    {
+      "$ref": "#/$defs/TrackStateV1"
+    },
+    {
+      "$ref": "#/$defs/WorldStateV1"
+    },
+    {
+      "$ref": "#/$defs/SangtianFinaleCompiledRulesV1"
+    },
+    {
+      "$ref": "#/$defs/GenesisSnapshotV1"
+    },
+    {
+      "$ref": "#/$defs/DecisionActionV1"
+    },
+    {
+      "$ref": "#/$defs/BeatResolutionV1"
+    },
+    {
+      "$ref": "#/$defs/ChapterSettlementInputV1"
+    },
+    {
+      "$ref": "#/$defs/ChapterSettlementEvaluationV1"
+    },
+    {
+      "$ref": "#/$defs/B0SettlementCommitResultV1"
+    },
+    {
+      "$ref": "#/$defs/FrozenChapterBundleV1"
+    },
+    {
+      "$ref": "#/$defs/SangtianFinaleInputV1"
+    },
+    {
+      "$ref": "#/$defs/SangtianPressureFinaleDecisionV1"
+    },
+    {
+      "$ref": "#/$defs/OpenNovelNarrativeProjectionJobV1"
+    },
+    {
+      "$ref": "#/$defs/OpenNovelNarrativeArtifactV1"
+    },
+    {
+      "$ref": "#/$defs/PressureReplayCommandV1"
+    },
+    {
+      "$ref": "#/$defs/ReplayCreationReceiptV1"
+    },
+    {
+      "$ref": "#/$defs/SangtianPressureResultV1"
+    },
+    {
+      "$ref": "#/$defs/SangtianPressureResultEnvelopeV1"
+    },
+    {
+      "$ref": "#/$defs/FrozenSangtianResultCatalogV1"
+    },
+    {
+      "$ref": "#/$defs/TerminalResultContextV1"
+    },
+    {
+      "$ref": "#/$defs/AuthoritativePressureResultSnapshotV1"
+    }
+  ],
+  "$defs": {
+    "ChapterIdV1": {
+      "type": "string",
+      "enum": [
+        "N1",
+        "N2",
+        "N3",
+        "N4",
+        "N5",
+        "N6",
+        "N7"
+      ]
+    },
+    "SeatIdV1": {
+      "type": "string",
+      "enum": [
+        "cabinet_finance",
+        "jiangnan_merchant",
+        "qingliu_law",
+        "sili_weaving",
+        "zhejiang_administration",
+        "zhejiang_governor"
+      ]
+    },
+    "TrackIdV1": {
+      "type": "string",
+      "enum": [
+        "civilian_land",
+        "mulberry_silk",
+        "fiscal_military",
+        "evidence_responsibility",
+        "court_imperial_face"
+      ]
+    },
+    "ScalarFactValueV1": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "CanonicalJsonValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ScalarFactValueV1"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CanonicalJsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/CanonicalJsonValue"
+          }
+        }
+      ]
+    },
+    "CanonicalJsonObject": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/CanonicalJsonValue"
+      }
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "SeatIdArray": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SeatIdV1"
+      },
+      "uniqueItems": true
+    },
+    "StringSet": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "ScalarFactRecord": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/ScalarFactValueV1"
+      }
+    },
+    "NonNegativeNumberRecord": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "type": "number",
+        "minimum": 0
+      }
+    },
+    "TrackStateV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "values",
+        "stateHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_track_state_v1"
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "civilian_land",
+            "mulberry_silk",
+            "fiscal_military",
+            "evidence_responsibility",
+            "court_imperial_face"
+          ],
+          "properties": {
+            "civilian_land": {
+              "type": "number"
+            },
+            "mulberry_silk": {
+              "type": "number"
+            },
+            "fiscal_military": {
+              "type": "number"
+            },
+            "evidence_responsibility": {
+              "type": "number"
+            },
+            "court_imperial_face": {
+              "type": "number"
+            }
+          }
+        },
+        "stateHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "ObjectStateV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectId",
+        "version",
+        "stateCode",
+        "holderSeatId",
+        "quantity",
+        "tags",
+        "factRefs"
+      ],
+      "properties": {
+        "objectId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "stateCode": {
+          "type": "string",
+          "minLength": 1
+        },
+        "holderSeatId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SeatIdV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tags": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "factRefs": {
+          "$ref": "#/$defs/StringSet"
+        }
+      }
+    },
+    "KnowledgeStateV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seatId",
+        "knownFactRefs",
+        "secretRefs",
+        "disclosedToSeatIds",
+        "stateHash"
+      ],
+      "properties": {
+        "seatId": {
+          "$ref": "#/$defs/SeatIdV1"
+        },
+        "knownFactRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "secretRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "disclosedToSeatIds": {
+          "$ref": "#/$defs/SeatIdArray"
+        },
+        "stateHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "EvidenceStateV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceId",
+        "version",
+        "status",
+        "holderSeatIds",
+        "supportsFactRefs",
+        "visibilityPolicyRef"
+      ],
+      "properties": {
+        "evidenceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ACTIVE",
+            "CONTESTED",
+            "INVALIDATED",
+            "SEALED"
+          ]
+        },
+        "holderSeatIds": {
+          "$ref": "#/$defs/SeatIdArray"
+        },
+        "supportsFactRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "visibilityPolicyRef": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "ResponsibilityStateV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "responsibilityId",
+        "subjectSeatId",
+        "sourceFactRefs",
+        "level",
+        "status"
+      ],
+      "properties": {
+        "responsibilityId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subjectSeatId": {
+          "$ref": "#/$defs/SeatIdV1"
+        },
+        "sourceFactRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "level": {
+          "type": "number",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "OPEN",
+            "ACKNOWLEDGED",
+            "TRANSFERRED",
+            "RESOLVED"
+          ]
+        }
+      }
+    },
+    "SeatArcStateV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seatId",
+        "arcStage",
+        "publicGoalProgress",
+        "privateGoalProgress",
+        "gainRefs",
+        "lossRefs",
+        "costRefs",
+        "stateHash"
+      ],
+      "properties": {
+        "seatId": {
+          "$ref": "#/$defs/SeatIdV1"
+        },
+        "arcStage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "publicGoalProgress": {
+          "type": "number"
+        },
+        "privateGoalProgress": {
+          "type": "number"
+        },
+        "gainRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "lossRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "costRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "stateHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "WorldStateV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "worldSequence",
+        "factValues",
+        "resources",
+        "tracks",
+        "objects",
+        "knowledgeBySeat",
+        "evidence",
+        "responsibilities",
+        "seatArcs",
+        "stateHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_world_state_v1"
+        },
+        "worldSequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7
+        },
+        "factValues": {
+          "$ref": "#/$defs/ScalarFactRecord"
+        },
+        "resources": {
+          "$ref": "#/$defs/NonNegativeNumberRecord"
+        },
+        "tracks": {
+          "$ref": "#/$defs/TrackStateV1"
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ObjectStateV1"
+          },
+          "uniqueItems": true
+        },
+        "knowledgeBySeat": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cabinet_finance",
+            "jiangnan_merchant",
+            "qingliu_law",
+            "sili_weaving",
+            "zhejiang_administration",
+            "zhejiang_governor"
+          ],
+          "properties": {
+            "cabinet_finance": {
+              "$ref": "#/$defs/KnowledgeStateV1"
+            },
+            "jiangnan_merchant": {
+              "$ref": "#/$defs/KnowledgeStateV1"
+            },
+            "qingliu_law": {
+              "$ref": "#/$defs/KnowledgeStateV1"
+            },
+            "sili_weaving": {
+              "$ref": "#/$defs/KnowledgeStateV1"
+            },
+            "zhejiang_administration": {
+              "$ref": "#/$defs/KnowledgeStateV1"
+            },
+            "zhejiang_governor": {
+              "$ref": "#/$defs/KnowledgeStateV1"
+            }
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceStateV1"
+          },
+          "uniqueItems": true
+        },
+        "responsibilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResponsibilityStateV1"
+          },
+          "uniqueItems": true
+        },
+        "seatArcs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cabinet_finance",
+            "jiangnan_merchant",
+            "qingliu_law",
+            "sili_weaving",
+            "zhejiang_administration",
+            "zhejiang_governor"
+          ],
+          "properties": {
+            "cabinet_finance": {
+              "$ref": "#/$defs/SeatArcStateV1"
+            },
+            "jiangnan_merchant": {
+              "$ref": "#/$defs/SeatArcStateV1"
+            },
+            "qingliu_law": {
+              "$ref": "#/$defs/SeatArcStateV1"
+            },
+            "sili_weaving": {
+              "$ref": "#/$defs/SeatArcStateV1"
+            },
+            "zhejiang_administration": {
+              "$ref": "#/$defs/SeatArcStateV1"
+            },
+            "zhejiang_governor": {
+              "$ref": "#/$defs/SeatArcStateV1"
+            }
+          }
+        },
+        "stateHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "CausalEdgeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "causeRef",
+        "effectRef",
+        "relation",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "causeRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effectRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relation": {
+          "type": "string",
+          "enum": [
+            "ENABLES",
+            "PREVENTS",
+            "SUPPORTS",
+            "CONFLICTS",
+            "COSTS",
+            "REVEALS",
+            "ASSIGNS_RESPONSIBILITY"
+          ]
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/StringSet"
+        }
+      }
+    },
+    "FactMutationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "factRef",
+        "before",
+        "after"
+      ],
+      "properties": {
+        "factRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "before": {
+          "$ref": "#/$defs/ScalarFactValueV1"
+        },
+        "after": {
+          "$ref": "#/$defs/ScalarFactValueV1"
+        }
+      }
+    },
+    "CommitmentMutationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commitmentId",
+        "operation",
+        "seatIds",
+        "sourceActionId"
+      ],
+      "properties": {
+        "commitmentId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "CREATE",
+            "FULFILL",
+            "BREAK",
+            "CANCEL"
+          ]
+        },
+        "seatIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SeatIdV1"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "sourceActionId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "KnowledgeMutationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seatId",
+        "addFactRefs",
+        "removeFactRefs"
+      ],
+      "properties": {
+        "seatId": {
+          "$ref": "#/$defs/SeatIdV1"
+        },
+        "addFactRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "removeFactRefs": {
+          "$ref": "#/$defs/StringSet"
+        }
+      }
+    },
+    "SeatArcWorkingMutationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seatId",
+        "progressDelta",
+        "sourceActionId"
+      ],
+      "properties": {
+        "seatId": {
+          "$ref": "#/$defs/SeatIdV1"
+        },
+        "progressDelta": {
+          "type": "number"
+        },
+        "sourceActionId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "WorkingDeltaV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workingFactMutations",
+        "commitmentMutations",
+        "knowledgeMutations",
+        "seatArcWorkingMutations"
+      ],
+      "properties": {
+        "workingFactMutations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FactMutationV1"
+          },
+          "uniqueItems": true
+        },
+        "commitmentMutations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CommitmentMutationV1"
+          },
+          "uniqueItems": true
+        },
+        "knowledgeMutations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KnowledgeMutationV1"
+          },
+          "uniqueItems": true
+        },
+        "seatArcWorkingMutations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SeatArcWorkingMutationV1"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "ResourceReservationMutationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reservationKey",
+        "seatId",
+        "resourceId",
+        "amount",
+        "operation",
+        "sourceActionId"
+      ],
+      "properties": {
+        "reservationKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seatId": {
+          "$ref": "#/$defs/SeatIdV1"
+        },
+        "resourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "RESERVE",
+            "RELEASE",
+            "CONSUME"
+          ]
+        },
+        "sourceActionId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "ResourceMutationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceId",
+        "before",
+        "after",
+        "sourceRefs"
+      ],
+      "properties": {
+        "resourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "before": {
+          "type": "number",
+          "minimum": 0
+        },
+        "after": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        }
+      }
+    },
+    "WorldDeltaV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "factMutations",
+        "resourceMutations"
+      ],
+      "properties": {
+        "factMutations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FactMutationV1"
+          },
+          "uniqueItems": true
+        },
+        "resourceMutations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceMutationV1"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "SeatArcDeltaV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seatId",
+        "beforeStateHash",
+        "afterState",
+        "sourceRefs"
+      ],
+      "properties": {
+        "seatId": {
+          "$ref": "#/$defs/SeatIdV1"
+        },
+        "beforeStateHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "afterState": {
+          "$ref": "#/$defs/SeatArcStateV1"
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        }
+      }
+    },
+    "TrackDeltaV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "civilian_land": {
+          "type": "number"
+        },
+        "mulberry_silk": {
+          "type": "number"
+        },
+        "fiscal_military": {
+          "type": "number"
+        },
+        "evidence_responsibility": {
+          "type": "number"
+        },
+        "court_imperial_face": {
+          "type": "number"
+        }
+      }
+    },
+    "ObjectKnowledgeEvidenceResponsibilityDeltaV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objectStates",
+        "knowledgeStates",
+        "evidenceStates",
+        "responsibilityStates"
+      ],
+      "properties": {
+        "objectStates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ObjectStateV1"
+          },
+          "uniqueItems": true
+        },
+        "knowledgeStates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KnowledgeStateV1"
+          },
+          "uniqueItems": true
+        },
+        "evidenceStates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceStateV1"
+          },
+          "uniqueItems": true
+        },
+        "responsibilityStates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResponsibilityStateV1"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "CarryForwardV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nextChapterId",
+        "unlockedContentRefs",
+        "unresolvedCommitmentRefs",
+        "pendingConsequenceRefs",
+        "carryForwardHash"
+      ],
+      "properties": {
+        "nextChapterId": {
+          "type": "string",
+          "enum": [
+            "N1",
+            "N2",
+            "N3",
+            "N4",
+            "N5",
+            "N6",
+            "N7",
+            "FINALE"
+          ]
+        },
+        "unlockedContentRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "unresolvedCommitmentRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "pendingConsequenceRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "carryForwardHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "DeterministicPredicateV1": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "clauses"
+          ],
+          "properties": {
+            "op": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "ANY"
+              ]
+            },
+            "clauses": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/DeterministicPredicateV1"
+              },
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "clause"
+          ],
+          "properties": {
+            "op": {
+              "const": "NOT"
+            },
+            "clause": {
+              "$ref": "#/$defs/DeterministicPredicateV1"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "factRef",
+            "comparator",
+            "value"
+          ],
+          "properties": {
+            "op": {
+              "const": "COMPARE"
+            },
+            "factRef": {
+              "type": "string",
+              "minLength": 1
+            },
+            "comparator": {
+              "type": "string",
+              "enum": [
+                "EQ",
+                "NE",
+                "GT",
+                "GTE",
+                "LT",
+                "LTE"
+              ]
+            },
+            "value": {
+              "$ref": "#/$defs/ScalarFactValueV1"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "op",
+            "factRef",
+            "comparator",
+            "value"
+          ],
+          "properties": {
+            "op": {
+              "const": "COMPARE"
+            },
+            "factRef": {
+              "type": "string",
+              "minLength": 1
+            },
+            "comparator": {
+              "const": "IN"
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ScalarFactValueV1"
+              },
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "DeadlinePolicyV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "durationMs",
+        "clock",
+        "expiryAction"
+      ],
+      "properties": {
+        "durationMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "clock": {
+          "const": "SERVER_MONOTONIC"
+        },
+        "expiryAction": {
+          "type": "string",
+          "enum": [
+            "APPLY_DEFAULT",
+            "FAIL_CLOSED"
+          ]
+        }
+      }
+    },
+    "DeterministicDefaultPolicyV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policyRef",
+        "actionType",
+        "payload",
+        "policyHash"
+      ],
+      "properties": {
+        "policyRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actionType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payload": {
+          "$ref": "#/$defs/ScalarFactRecord"
+        },
+        "policyHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "SangtianFinaleCompiledRulesV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "worldOutcomeRuleRefs",
+        "seatVerdictRuleRefs",
+        "disclosureRuleRefs",
+        "rulesHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_finale_compiled_rules_v1"
+        },
+        "worldOutcomeRuleRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "seatVerdictRuleRefs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cabinet_finance",
+            "jiangnan_merchant",
+            "qingliu_law",
+            "sili_weaving",
+            "zhejiang_administration",
+            "zhejiang_governor"
+          ],
+          "properties": {
+            "cabinet_finance": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            "jiangnan_merchant": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            "qingliu_law": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            "sili_weaving": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            "zhejiang_administration": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            },
+            "zhejiang_governor": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true,
+              "minItems": 1
+            }
+          }
+        },
+        "disclosureRuleRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "rulesHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "FrozenRunRouteV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "engineVersion",
+        "strategyVersion",
+        "runtimeProfile",
+        "endgamePolicyVersion",
+        "resultSchemaVersion"
+      ],
+      "properties": {
+        "engineVersion": {
+          "const": "pressure_chapter_v1"
+        },
+        "strategyVersion": {
+          "const": "sangtian_pressure_chapter_v1_0"
+        },
+        "runtimeProfile": {
+          "const": "SANGTIAN_CONTINUOUS_CHAPTER_V1"
+        },
+        "endgamePolicyVersion": {
+          "const": "sangtian_content_finale_v1"
+        },
+        "resultSchemaVersion": {
+          "const": "sangtian_pressure_result_v1"
+        }
+      }
+    },
+    "FrozenRunExecutionRefV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route",
+        "contentPackageVersion",
+        "contentPackageSha256",
+        "orchestrationPackageVersion",
+        "orchestrationPackageSha256",
+        "runtimeContractVersion",
+        "runtimeContractSha256",
+        "testMatrixVersion",
+        "testMatrixSha256",
+        "runSeed",
+        "narrativeProfileVersion",
+        "featureSetVersion",
+        "resultContractRegistryVersion",
+        "participantMode",
+        "seatIds",
+        "humanSeatIdsAtStart",
+        "controlTopologyVersion",
+        "initialRoleControlSnapshotHash"
+      ],
+      "properties": {
+        "route": {
+          "$ref": "#/$defs/FrozenRunRouteV1"
+        },
+        "contentPackageVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentPackageSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "orchestrationPackageVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "orchestrationPackageSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "runtimeContractVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeContractSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "testMatrixVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "testMatrixSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "runSeed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "narrativeProfileVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "featureSetVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resultContractRegistryVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "participantMode": {
+          "type": "string",
+          "enum": [
+            "SOLO",
+            "MULTIPLAYER"
+          ]
+        },
+        "seatIds": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "cabinet_finance"
+            },
+            {
+              "const": "jiangnan_merchant"
+            },
+            {
+              "const": "qingliu_law"
+            },
+            {
+              "const": "sili_weaving"
+            },
+            {
+              "const": "zhejiang_administration"
+            },
+            {
+              "const": "zhejiang_governor"
+            }
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "humanSeatIdsAtStart": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SeatIdV1"
+          },
+          "minItems": 1,
+          "maxItems": 6,
+          "uniqueItems": true
+        },
+        "controlTopologyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "initialRoleControlSnapshotHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "RunRouteSnapshotV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "runId",
+        "route",
+        "contentPackageVersion",
+        "contentPackageSha256",
+        "orchestrationPackageVersion",
+        "orchestrationPackageSha256",
+        "runtimeContractVersion",
+        "runtimeContractSha256",
+        "testMatrixVersion",
+        "testMatrixSha256",
+        "runSeed",
+        "narrativeProfileVersion",
+        "featureSetVersion",
+        "resultContractRegistryVersion",
+        "participantMode",
+        "seatIds",
+        "humanSeatIdsAtStart",
+        "controlTopologyVersion",
+        "initialRoleControlSnapshotHash",
+        "routeHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "pressure_run_route_snapshot_v1"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "route": {
+          "$ref": "#/$defs/FrozenRunRouteV1"
+        },
+        "contentPackageVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentPackageSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "orchestrationPackageVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "orchestrationPackageSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "runtimeContractVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeContractSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "testMatrixVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "testMatrixSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "runSeed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "narrativeProfileVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "featureSetVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resultContractRegistryVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "participantMode": {
+          "type": "string",
+          "enum": [
+            "SOLO",
+            "MULTIPLAYER"
+          ]
+        },
+        "seatIds": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "cabinet_finance"
+            },
+            {
+              "const": "jiangnan_merchant"
+            },
+            {
+              "const": "qingliu_law"
+            },
+            {
+              "const": "sili_weaving"
+            },
+            {
+              "const": "zhejiang_administration"
+            },
+            {
+              "const": "zhejiang_governor"
+            }
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "humanSeatIdsAtStart": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SeatIdV1"
+          },
+          "minItems": 1,
+          "maxItems": 6,
+          "uniqueItems": true
+        },
+        "controlTopologyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "initialRoleControlSnapshotHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "routeHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "GenesisSnapshotV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "runId",
+        "nodeId",
+        "sequence",
+        "routeHash",
+        "contentPackageSha256",
+        "orchestrationPackageSha256",
+        "initialWorldState",
+        "genesisHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_genesis_snapshot_v1"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeId": {
+          "const": "P0"
+        },
+        "sequence": {
+          "const": 0
+        },
+        "routeHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "contentPackageSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "orchestrationPackageSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "initialWorldState": {
+          "$ref": "#/$defs/WorldStateV1"
+        },
+        "genesisHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "DecisionPointReactionPolicyV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "eligibleSeatIds",
+        "trigger",
+        "maxDepth"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "eligibleSeatIds": {
+          "$ref": "#/$defs/SeatIdArray"
+        },
+        "trigger": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeterministicPredicateV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "maxDepth": {
+          "enum": [
+            0,
+            1
+          ]
+        }
+      }
+    },
+    "DecisionPointDefinitionV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decisionPointKey",
+        "chapterId",
+        "ordinal",
+        "mode",
+        "purpose",
+        "requiredSeatIds",
+        "allowedActionTypes",
+        "perSeatActionBudget",
+        "closeCondition",
+        "deadlinePolicy",
+        "absenceDefaultPolicy",
+        "aiFailureDefaultPolicy",
+        "beatResolutionPolicy",
+        "allowedWorkingDeltaTypes",
+        "feedbackVisibilityPolicy",
+        "reactionPolicy"
+      ],
+      "properties": {
+        "decisionPointKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "chapterId": {
+          "$ref": "#/$defs/ChapterIdV1"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "SOLO_BEAT",
+            "TARGETED_INTERACTION",
+            "SYNC_CONTEST"
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requiredSeatIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SeatIdV1"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "allowedActionTypes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "perSeatActionBudget": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/SeatIdV1"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "closeCondition": {
+          "$ref": "#/$defs/DeterministicPredicateV1"
+        },
+        "deadlinePolicy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeadlinePolicyV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "absenceDefaultPolicy": {
+          "$ref": "#/$defs/DeterministicDefaultPolicyV1"
+        },
+        "aiFailureDefaultPolicy": {
+          "$ref": "#/$defs/DeterministicDefaultPolicyV1"
+        },
+        "beatResolutionPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowedWorkingDeltaTypes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "feedbackVisibilityPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reactionPolicy": {
+          "$ref": "#/$defs/DecisionPointReactionPolicyV1"
+        }
+      }
+    },
+    "DecisionActionV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "actionId",
+        "runId",
+        "chapterRuntimeId",
+        "chapterId",
+        "decisionPointId",
+        "seatId",
+        "actionOrdinal",
+        "actionRevision",
+        "controlEpoch",
+        "expectedWorkingRevision",
+        "status",
+        "actionType",
+        "payload",
+        "payloadHash",
+        "idempotencyKey",
+        "requestFingerprint",
+        "sealedHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_decision_action_v1"
+        },
+        "actionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "chapterRuntimeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "chapterId": {
+          "$ref": "#/$defs/ChapterIdV1"
+        },
+        "decisionPointId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seatId": {
+          "$ref": "#/$defs/SeatIdV1"
+        },
+        "actionOrdinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "actionRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "controlEpoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "expectedWorkingRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "status": {
+          "const": "SEALED"
+        },
+        "actionType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payload": {
+          "$ref": "#/$defs/CanonicalJsonObject"
+        },
+        "payloadHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requestFingerprint": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "sealedHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "SourceHashRefV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceHash"
+      ],
+      "properties": {
+        "sourceHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "BeatResolutionV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "runId",
+        "chapterRuntimeId",
+        "decisionPointId",
+        "baseWorkingRevision",
+        "committedWorkingRevision",
+        "inputWorkingStateHash",
+        "sealedActionIds",
+        "sealedActionsHash",
+        "resolverVersion",
+        "workingDelta",
+        "reservationMutations",
+        "reactionContextRef",
+        "nextDecisionContextRef",
+        "resolutionHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_beat_resolution_v1"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "chapterRuntimeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decisionPointId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baseWorkingRevision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "committedWorkingRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "inputWorkingStateHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "sealedActionIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "sealedActionsHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "resolverVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workingDelta": {
+          "$ref": "#/$defs/WorkingDeltaV1"
+        },
+        "reservationMutations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceReservationMutationV1"
+          },
+          "uniqueItems": true
+        },
+        "reactionContextRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceHashRefV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "nextDecisionContextRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceHashRefV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolutionHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "ChapterSettlementInputV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "runId",
+        "chapterRuntimeId",
+        "chapterId",
+        "baseWorldSequence",
+        "baseWorldStateHash",
+        "runRouteHash",
+        "previousFrozenHash",
+        "decisionLedgerHash",
+        "finalWorkingStateHash",
+        "sealedDecisionActionIds",
+        "reservationLedgerHash",
+        "contentPolicyVersion",
+        "contentPolicyHash",
+        "settlementContractVersion",
+        "settlementContractHash",
+        "inputHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_chapter_settlement_input_v1"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "chapterRuntimeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "chapterId": {
+          "$ref": "#/$defs/ChapterIdV1"
+        },
+        "baseWorldSequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "baseWorldStateHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "runRouteHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "previousFrozenHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "decisionLedgerHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "finalWorkingStateHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "sealedDecisionActionIds": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "reservationLedgerHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "contentPolicyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentPolicyHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "settlementContractVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "settlementContractHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "inputHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "ChapterSettlementEvaluationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "inputHash",
+        "worldDelta",
+        "seatArcDeltas",
+        "trackDelta",
+        "objectKnowledgeEvidenceResponsibilityDelta",
+        "causalEdges",
+        "carryForward",
+        "evaluationHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_chapter_settlement_evaluation_v1"
+        },
+        "inputHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "worldDelta": {
+          "$ref": "#/$defs/WorldDeltaV1"
+        },
+        "seatArcDeltas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SeatArcDeltaV1"
+          },
+          "uniqueItems": true
+        },
+        "trackDelta": {
+          "$ref": "#/$defs/TrackDeltaV1"
+        },
+        "objectKnowledgeEvidenceResponsibilityDelta": {
+          "$ref": "#/$defs/ObjectKnowledgeEvidenceResponsibilityDeltaV1"
+        },
+        "causalEdges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CausalEdgeV1"
+          },
+          "uniqueItems": true
+        },
+        "carryForward": {
+          "$ref": "#/$defs/CarryForwardV1"
+        },
+        "evaluationHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "B0SettlementCommitResultV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "settlementId",
+        "frozenChapterBundleId",
+        "runId",
+        "chapterRuntimeId",
+        "chapterId",
+        "inputHash",
+        "evaluationHash",
+        "baseWorldSequence",
+        "committedWorldSequence",
+        "baseWorldStateHash",
+        "committedWorldStateHash",
+        "worldDeltaHash",
+        "commitManifestHash",
+        "bundleHash",
+        "rootEventId",
+        "outboxDedupeKeys",
+        "commitHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "b0_settlement_commit_result_v1"
+        },
+        "settlementId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "frozenChapterBundleId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "chapterRuntimeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "chapterId": {
+          "$ref": "#/$defs/ChapterIdV1"
+        },
+        "inputHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "evaluationHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "baseWorldSequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "committedWorldSequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "baseWorldStateHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "committedWorldStateHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "worldDeltaHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "commitManifestHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "bundleHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "rootEventId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outboxDedupeKeys": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "commitHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "FrozenChapterBundleV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "runId",
+        "chapterId",
+        "chapterSequence",
+        "baseWorldSequence",
+        "committedWorldSequence",
+        "previousFrozenHash",
+        "decisionLedgerHash",
+        "finalWorkingStateHash",
+        "settlementPolicyVersion",
+        "worldDelta",
+        "committedWorldStateHash",
+        "frozenWorldState",
+        "causalEdges",
+        "carryForward",
+        "bundleHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_frozen_chapter_bundle_v1"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "chapterId": {
+          "$ref": "#/$defs/ChapterIdV1"
+        },
+        "chapterSequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "baseWorldSequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "committedWorldSequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "previousFrozenHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "decisionLedgerHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "finalWorkingStateHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "settlementPolicyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "worldDelta": {
+          "$ref": "#/$defs/WorldDeltaV1"
+        },
+        "committedWorldStateHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "frozenWorldState": {
+          "$ref": "#/$defs/WorldStateV1"
+        },
+        "causalEdges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CausalEdgeV1"
+          },
+          "uniqueItems": true
+        },
+        "carryForward": {
+          "$ref": "#/$defs/CarryForwardV1"
+        },
+        "bundleHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "SangtianFinaleInputV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "runId",
+        "routeHash",
+        "runSeed",
+        "genesisHash",
+        "frozenChapterBundles",
+        "finalWorldState",
+        "causalEdges",
+        "policyVersion",
+        "policyHash",
+        "inputHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_finale_input_v1"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "routeHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "runSeed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "genesisHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "frozenChapterBundles": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/FrozenChapterBundleV1"
+            },
+            {
+              "$ref": "#/$defs/FrozenChapterBundleV1"
+            },
+            {
+              "$ref": "#/$defs/FrozenChapterBundleV1"
+            },
+            {
+              "$ref": "#/$defs/FrozenChapterBundleV1"
+            },
+            {
+              "$ref": "#/$defs/FrozenChapterBundleV1"
+            },
+            {
+              "$ref": "#/$defs/FrozenChapterBundleV1"
+            },
+            {
+              "$ref": "#/$defs/FrozenChapterBundleV1"
+            }
+          ],
+          "items": false,
+          "minItems": 7,
+          "maxItems": 7
+        },
+        "finalWorldState": {
+          "$ref": "#/$defs/WorldStateV1"
+        },
+        "causalEdges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CausalEdgeV1"
+          },
+          "uniqueItems": true
+        },
+        "policyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "inputHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "FrozenFinalePolicyV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policyVersion",
+        "policyHash",
+        "contentPackageVersion",
+        "contentPackageSha256",
+        "ruleSchemaVersion",
+        "compiledRules"
+      ],
+      "properties": {
+        "policyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "contentPackageVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentPackageSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "ruleSchemaVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "compiledRules": {
+          "$ref": "#/$defs/SangtianFinaleCompiledRulesV1"
+        }
+      }
+    },
+    "FinaleWorldOutcomeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcomeId",
+        "titleKey",
+        "verdictLineKey"
+      ],
+      "properties": {
+        "outcomeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "titleKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verdictLineKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "FinaleTrackOutcomeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trackId",
+        "level",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "trackId": {
+          "$ref": "#/$defs/TrackIdV1"
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "LOW",
+            "MID",
+            "HIGH"
+          ]
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/StringSet"
+        }
+      }
+    },
+    "FinaleSeatOutcomeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seatId",
+        "verdict",
+        "gainRefs",
+        "lossRefs",
+        "causeRefs"
+      ],
+      "properties": {
+        "seatId": {
+          "$ref": "#/$defs/SeatIdV1"
+        },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "WIN",
+            "COSTLY_WIN",
+            "LOSS"
+          ]
+        },
+        "gainRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "lossRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "causeRefs": {
+          "$ref": "#/$defs/StringSet"
+        }
+      }
+    },
+    "SangtianPressureFinaleDecisionV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "runId",
+        "runtimeProfile",
+        "policyVersion",
+        "packageSha256",
+        "routeHash",
+        "genesisHash",
+        "frozenChapterBundleHashes",
+        "worldOutcome",
+        "tracks",
+        "seats",
+        "objectOutcomeRefs",
+        "evidenceAndResponsibilityRefs",
+        "semanticOutcomeHash",
+        "executionFingerprint",
+        "decidedAt"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_pressure_finale_decision_v1"
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeProfile": {
+          "const": "SANGTIAN_CONTINUOUS_CHAPTER_V1"
+        },
+        "policyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "packageSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "routeHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "genesisHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "frozenChapterBundleHashes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "$ref": "#/$defs/Sha256"
+            }
+          ],
+          "items": false,
+          "minItems": 7,
+          "maxItems": 7
+        },
+        "worldOutcome": {
+          "$ref": "#/$defs/FinaleWorldOutcomeV1"
+        },
+        "tracks": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/FinaleTrackOutcomeV1"
+            },
+            {
+              "$ref": "#/$defs/FinaleTrackOutcomeV1"
+            },
+            {
+              "$ref": "#/$defs/FinaleTrackOutcomeV1"
+            },
+            {
+              "$ref": "#/$defs/FinaleTrackOutcomeV1"
+            },
+            {
+              "$ref": "#/$defs/FinaleTrackOutcomeV1"
+            }
+          ],
+          "items": false,
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "seats": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/FinaleSeatOutcomeV1"
+            },
+            {
+              "$ref": "#/$defs/FinaleSeatOutcomeV1"
+            },
+            {
+              "$ref": "#/$defs/FinaleSeatOutcomeV1"
+            },
+            {
+              "$ref": "#/$defs/FinaleSeatOutcomeV1"
+            },
+            {
+              "$ref": "#/$defs/FinaleSeatOutcomeV1"
+            },
+            {
+              "$ref": "#/$defs/FinaleSeatOutcomeV1"
+            }
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "objectOutcomeRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "evidenceAndResponsibilityRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "semanticOutcomeHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "executionFingerprint": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "decidedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "NarrativeProjectionKindV1": {
+      "type": "string",
+      "enum": [
+        "GENESIS_NARRATIVE",
+        "BEAT_NARRATIVE",
+        "CHAPTER_NARRATIVE",
+        "FINALE_NARRATIVE"
+      ]
+    },
+    "NarrativeStatusV1": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "GENERATING",
+        "VALIDATING",
+        "PUBLISHED",
+        "FALLBACK_PUBLISHED",
+        "FAILED_RETRYABLE"
+      ]
+    },
+    "NarrativeAudienceV1": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "seatId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "PUBLIC"
+            },
+            "seatId": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "seatId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "SEAT"
+            },
+            "seatId": {
+              "$ref": "#/$defs/SeatIdV1"
+            }
+          }
+        }
+      ]
+    },
+    "OpenNovelNarrativeProjectionJobV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "jobId",
+        "runId",
+        "audience",
+        "sourceRuntimeProfile",
+        "projectionKind",
+        "sourceAuthority",
+        "sourceId",
+        "sourceCommitHash",
+        "sourceContentHash",
+        "allowedFactIds",
+        "allowedObjectVersionIds",
+        "allowedKnowledgeIds",
+        "narrativeProfileVersion",
+        "idempotencyKey"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "openovel_narrative_projection_job_v1"
+        },
+        "jobId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audience": {
+          "$ref": "#/$defs/NarrativeAudienceV1"
+        },
+        "sourceRuntimeProfile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "projectionKind": {
+          "$ref": "#/$defs/NarrativeProjectionKindV1"
+        },
+        "sourceAuthority": {
+          "type": "string",
+          "enum": [
+            "GENESIS_FROZEN",
+            "CHAPTER_WORKING",
+            "CHAPTER_FROZEN",
+            "FINALE_FROZEN",
+            "LEGACY_TERMINAL_COMMITTED"
+          ]
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceCommitHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "sourceContentHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "allowedFactIds": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "allowedObjectVersionIds": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "allowedKnowledgeIds": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "narrativeProfileVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "OpenNovelNarrativeArtifactV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "jobId",
+        "runId",
+        "projectionKind",
+        "sourceId",
+        "sourceCommitHash",
+        "sourceContentHash",
+        "audience",
+        "narrativeProfileVersion",
+        "projectorVersion",
+        "text",
+        "usedFactRefs",
+        "validationReportHash",
+        "contentHash",
+        "renderMode",
+        "status"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "openovel_narrative_artifact_v1"
+        },
+        "jobId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "projectionKind": {
+          "$ref": "#/$defs/NarrativeProjectionKindV1"
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceCommitHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "sourceContentHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "audience": {
+          "$ref": "#/$defs/NarrativeAudienceV1"
+        },
+        "narrativeProfileVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "projectorVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "usedFactRefs": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "validationReportHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "contentHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "renderMode": {
+          "type": "string",
+          "enum": [
+            "PROVIDER",
+            "AUTHORED_FALLBACK"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PUBLISHED",
+            "FALLBACK_PUBLISHED"
+          ]
+        }
+      }
+    },
+    "PressureResultCauseV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceStageId",
+        "sourceKind",
+        "chapterSettlementId",
+        "frozenSourceHash",
+        "sourceDecisionActionIds",
+        "frozenFactRef",
+        "title",
+        "factText",
+        "direction"
+      ],
+      "properties": {
+        "sourceStageId": {
+          "type": "string",
+          "enum": [
+            "P0",
+            "N1",
+            "N2",
+            "N3",
+            "N4",
+            "N5",
+            "N6",
+            "N7"
+          ]
+        },
+        "sourceKind": {
+          "type": "string",
+          "enum": [
+            "GENESIS",
+            "CHAPTER_SETTLEMENT"
+          ]
+        },
+        "chapterSettlementId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "frozenSourceHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "sourceDecisionActionIds": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "frozenFactRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "factText": {
+          "type": "string",
+          "minLength": 1
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "HELPED",
+            "HURT",
+            "DECISIVE"
+          ]
+        }
+      }
+    },
+    "PressureReplayActionV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionId",
+        "requestSchemaVersion",
+        "type",
+        "label",
+        "targetExperience",
+        "targetParticipantMode",
+        "launchKind",
+        "href",
+        "enabled",
+        "disabledReason",
+        "actionFingerprint"
+      ],
+      "properties": {
+        "actionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requestSchemaVersion": {
+          "const": "pressure_replay_command_v1"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "RESTART_SAME_EXPERIENCE",
+            "START_LATEST_EXPERIENCE",
+            "CHANGE_ROLE",
+            "BACK_TO_WORLDS"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetExperience": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "SAME_FROZEN_ROUTE",
+                "LATEST_REGISTERED_ROUTE"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetParticipantMode": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "SOLO",
+                "MULTIPLAYER"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "launchKind": {
+          "type": "string",
+          "enum": [
+            "CREATE_RUN",
+            "CREATE_LOBBY",
+            "NAVIGATE"
+          ]
+        },
+        "href": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "disabledReason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actionFingerprint": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "PressureReplayCommandV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "sourceRunId",
+        "actionId",
+        "actionFingerprint",
+        "requestedRoleId",
+        "idempotencyKey",
+        "requestFingerprint"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "pressure_replay_command_v1"
+        },
+        "sourceRunId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actionFingerprint": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "requestedRoleId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SeatIdV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requestFingerprint": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "ReplayCreationReceiptV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "sourceRunId",
+        "actionId",
+        "launchKind",
+        "createdRunId",
+        "createdLobbyId",
+        "navigationTarget",
+        "frozenTargetRouteHash",
+        "receiptHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "replay_creation_receipt_v1"
+        },
+        "sourceRunId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "launchKind": {
+          "type": "string",
+          "enum": [
+            "CREATE_RUN",
+            "CREATE_LOBBY",
+            "NAVIGATE"
+          ]
+        },
+        "createdRunId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdLobbyId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "navigationTarget": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "frozenTargetRouteHash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receiptHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "ResultRoomV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "roomId",
+        "runId",
+        "worldId",
+        "participantMode",
+        "completedAt"
+      ],
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "worldId": {
+          "const": "sangtian"
+        },
+        "participantMode": {
+          "type": "string",
+          "enum": [
+            "SOLO",
+            "MULTIPLAYER"
+          ]
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "ResultRouteV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "engineVersion",
+        "strategyVersion",
+        "runtimeProfile",
+        "endgamePolicyVersion",
+        "contentPackageVersion",
+        "contentPackageSha256"
+      ],
+      "properties": {
+        "engineVersion": {
+          "const": "pressure_chapter_v1"
+        },
+        "strategyVersion": {
+          "const": "sangtian_pressure_chapter_v1_0"
+        },
+        "runtimeProfile": {
+          "const": "SANGTIAN_CONTINUOUS_CHAPTER_V1"
+        },
+        "endgamePolicyVersion": {
+          "const": "sangtian_content_finale_v1"
+        },
+        "contentPackageVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentPackageSha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "ResultWorldOutcomeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcomeId",
+        "title",
+        "verdictLine",
+        "summary"
+      ],
+      "properties": {
+        "outcomeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verdictLine": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "ResultTrackV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trackId",
+        "label",
+        "level",
+        "summary",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "trackId": {
+          "$ref": "#/$defs/TrackIdV1"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "LOW",
+            "MID",
+            "HIGH"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/StringSet"
+        }
+      }
+    },
+    "ResultViewerSeatV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seatId",
+        "roleKey",
+        "roleName",
+        "verdict",
+        "verdictLabel",
+        "gain",
+        "loss",
+        "causes"
+      ],
+      "properties": {
+        "seatId": {
+          "$ref": "#/$defs/SeatIdV1"
+        },
+        "roleKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "roleName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "WIN",
+            "COSTLY_WIN",
+            "LOSS"
+          ]
+        },
+        "verdictLabel": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gain": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "loss": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "causes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PressureResultCauseV1"
+          },
+          "maxItems": 3
+        }
+      }
+    },
+    "VisibleOutcomeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "outcomeId",
+        "title",
+        "summary",
+        "sourceRefs"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "OBJECT",
+            "EVIDENCE",
+            "RESPONSIBILITY"
+          ]
+        },
+        "outcomeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        }
+      }
+    },
+    "ResultRevealV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "text",
+        "sourceRefs"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        }
+      }
+    },
+    "ResultNarrativeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "text",
+        "contentHash",
+        "sourceCommitHash",
+        "sourceDecisionHash"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/NarrativeStatusV1"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contentHash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceCommitHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "sourceDecisionHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "SangtianPressureResultV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "resultType",
+        "room",
+        "route",
+        "worldOutcome",
+        "tracks",
+        "viewerSeat",
+        "visibleOutcomes",
+        "reveal",
+        "narrative",
+        "replayHint",
+        "replayActions",
+        "continueNextPartCapability",
+        "decisionHash",
+        "structuredResultHash",
+        "presentationHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "sangtian_pressure_result_v1"
+        },
+        "resultType": {
+          "type": "string",
+          "enum": [
+            "SANGTIAN_PRESSURE_SOLO_END",
+            "SANGTIAN_PRESSURE_SHARED_END"
+          ]
+        },
+        "room": {
+          "$ref": "#/$defs/ResultRoomV1"
+        },
+        "route": {
+          "$ref": "#/$defs/ResultRouteV1"
+        },
+        "worldOutcome": {
+          "$ref": "#/$defs/ResultWorldOutcomeV1"
+        },
+        "tracks": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/ResultTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultTrackV1"
+            }
+          ],
+          "items": false,
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "viewerSeat": {
+          "$ref": "#/$defs/ResultViewerSeatV1"
+        },
+        "visibleOutcomes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VisibleOutcomeV1"
+          },
+          "uniqueItems": true
+        },
+        "reveal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResultRevealV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "narrative": {
+          "$ref": "#/$defs/ResultNarrativeV1"
+        },
+        "replayHint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "replayActions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PressureReplayActionV1"
+          },
+          "uniqueItems": true
+        },
+        "continueNextPartCapability": {
+          "type": "null"
+        },
+        "decisionHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "structuredResultHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "presentationHash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "SangtianPressureResultEnvelopeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "envelopeSchemaVersion",
+        "roomId",
+        "runId",
+        "worldId",
+        "frozenRoute",
+        "resultContractRegistryVersion",
+        "payloadSchemaVersion",
+        "presentationSchemaVersion",
+        "rendererKey",
+        "authoritativeResultStatus",
+        "runtimeTerminalState",
+        "narrativeStatus",
+        "sourceCommitHash",
+        "decisionHash",
+        "presentationHash",
+        "payload"
+      ],
+      "properties": {
+        "envelopeSchemaVersion": {
+          "const": "endgame_result_envelope_v1"
+        },
+        "roomId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "worldId": {
+          "const": "sangtian"
+        },
+        "frozenRoute": {
+          "$ref": "#/$defs/FrozenRunRouteV1"
+        },
+        "resultContractRegistryVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payloadSchemaVersion": {
+          "const": "sangtian_pressure_result_v1"
+        },
+        "presentationSchemaVersion": {
+          "const": "sangtian_pressure_result_v1"
+        },
+        "rendererKey": {
+          "const": "sangtian_pressure_endgame_v1"
+        },
+        "authoritativeResultStatus": {
+          "const": "FINALIZED"
+        },
+        "runtimeTerminalState": {
+          "const": "FINALE_FROZEN"
+        },
+        "narrativeStatus": {
+          "$ref": "#/$defs/NarrativeStatusV1"
+        },
+        "sourceCommitHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "decisionHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "presentationHash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payload": {
+          "$ref": "#/$defs/SangtianPressureResultV1"
+        }
+      }
+    },
+    "FrozenResultReferenceV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "referenceId",
+        "kind",
+        "title",
+        "summary",
+        "sourceRefs",
+        "visibility",
+        "authorizedSeatIds",
+        "privateOriginSeatId",
+        "sourceStageId",
+        "sourceKind",
+        "chapterSettlementId",
+        "frozenSourceHash",
+        "sourceDecisionActionIds",
+        "revealEligible",
+        "revealText"
+      ],
+      "properties": {
+        "referenceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "FACT",
+            "RULE",
+            "OBJECT",
+            "EVIDENCE",
+            "RESPONSIBILITY"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "PUBLIC",
+            "AUTHORIZED"
+          ]
+        },
+        "authorizedSeatIds": {
+          "$ref": "#/$defs/SeatIdArray"
+        },
+        "privateOriginSeatId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SeatIdV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceStageId": {
+          "type": "string",
+          "enum": [
+            "P0",
+            "N1",
+            "N2",
+            "N3",
+            "N4",
+            "N5",
+            "N6",
+            "N7"
+          ]
+        },
+        "sourceKind": {
+          "type": "string",
+          "enum": [
+            "GENESIS",
+            "CHAPTER_SETTLEMENT"
+          ]
+        },
+        "chapterSettlementId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "frozenSourceHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "sourceDecisionActionIds": {
+          "$ref": "#/$defs/StringSet"
+        },
+        "revealEligible": {
+          "type": "boolean"
+        },
+        "revealText": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ResultCatalogWorldOutcomeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcomeId",
+        "sourceRuleRef",
+        "title",
+        "verdictLine",
+        "summary"
+      ],
+      "properties": {
+        "outcomeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceRuleRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verdictLine": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "ResultCatalogTrackV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trackId",
+        "label",
+        "summaries"
+      ],
+      "properties": {
+        "trackId": {
+          "$ref": "#/$defs/TrackIdV1"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summaries": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "LOW",
+            "MID",
+            "HIGH"
+          ],
+          "properties": {
+            "LOW": {
+              "type": "string",
+              "minLength": 1
+            },
+            "MID": {
+              "type": "string",
+              "minLength": 1
+            },
+            "HIGH": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "ResultCatalogSeatV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seatId",
+        "roleKey",
+        "roleName",
+        "verdictLabels"
+      ],
+      "properties": {
+        "seatId": {
+          "$ref": "#/$defs/SeatIdV1"
+        },
+        "roleKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "roleName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verdictLabels": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "WIN",
+            "COSTLY_WIN",
+            "LOSS"
+          ],
+          "properties": {
+            "WIN": {
+              "type": "string",
+              "minLength": 1
+            },
+            "COSTLY_WIN": {
+              "type": "string",
+              "minLength": 1
+            },
+            "LOSS": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "FrozenSangtianResultCatalogV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "locale",
+        "worldOutcomes",
+        "tracks",
+        "seats",
+        "references",
+        "replayHint",
+        "catalogHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "frozen_sangtian_result_catalog_v1"
+        },
+        "locale": {
+          "const": "zh-CN"
+        },
+        "worldOutcomes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResultCatalogWorldOutcomeV1"
+          },
+          "uniqueItems": true
+        },
+        "tracks": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/ResultCatalogTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultCatalogTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultCatalogTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultCatalogTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultCatalogTrackV1"
+            }
+          ],
+          "items": false,
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "seats": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/ResultCatalogSeatV1"
+            },
+            {
+              "$ref": "#/$defs/ResultCatalogSeatV1"
+            },
+            {
+              "$ref": "#/$defs/ResultCatalogSeatV1"
+            },
+            {
+              "$ref": "#/$defs/ResultCatalogSeatV1"
+            },
+            {
+              "$ref": "#/$defs/ResultCatalogSeatV1"
+            },
+            {
+              "$ref": "#/$defs/ResultCatalogSeatV1"
+            }
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FrozenResultReferenceV1"
+          },
+          "uniqueItems": true
+        },
+        "replayHint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "catalogHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "TerminalResultContextV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "roomId",
+        "runId",
+        "worldId",
+        "participantMode",
+        "completedAt",
+        "frozenRoute",
+        "frozenRouteHash",
+        "resultContractRegistryVersion",
+        "payloadSchemaVersion",
+        "presentationSchemaVersion",
+        "rendererKey",
+        "contentPackageVersion",
+        "contentPackageSha256",
+        "narrativeProfileVersion",
+        "catalog",
+        "contextHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "terminal_result_context_v1"
+        },
+        "roomId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "worldId": {
+          "const": "sangtian"
+        },
+        "participantMode": {
+          "type": "string",
+          "enum": [
+            "SOLO",
+            "MULTIPLAYER"
+          ]
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "frozenRoute": {
+          "$ref": "#/$defs/FrozenRunRouteV1"
+        },
+        "frozenRouteHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "resultContractRegistryVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payloadSchemaVersion": {
+          "const": "sangtian_pressure_result_v1"
+        },
+        "presentationSchemaVersion": {
+          "const": "sangtian_pressure_result_v1"
+        },
+        "rendererKey": {
+          "const": "sangtian_pressure_endgame_v1"
+        },
+        "contentPackageVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentPackageSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "narrativeProfileVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "catalog": {
+          "$ref": "#/$defs/FrozenSangtianResultCatalogV1"
+        },
+        "contextHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "AuthoritativeImpactV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "outcomeId",
+        "title",
+        "summary",
+        "sourceRefs",
+        "visibility",
+        "authorizedSeatIds",
+        "privateOriginSeatId"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "OBJECT",
+            "EVIDENCE",
+            "RESPONSIBILITY"
+          ]
+        },
+        "outcomeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "PUBLIC",
+            "AUTHORIZED"
+          ]
+        },
+        "authorizedSeatIds": {
+          "$ref": "#/$defs/SeatIdArray"
+        },
+        "privateOriginSeatId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SeatIdV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "AuthoritativeRevealV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revealId",
+        "authorizedSeatIds",
+        "title",
+        "text",
+        "sourceRefs"
+      ],
+      "properties": {
+        "revealId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorizedSeatIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SeatIdV1"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        }
+      }
+    },
+    "AuthoritativePressureResultSnapshotV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "roomId",
+        "runId",
+        "worldId",
+        "participantMode",
+        "completedAt",
+        "frozenRoute",
+        "frozenRouteHash",
+        "resultContractRegistryVersion",
+        "payloadSchemaVersion",
+        "presentationSchemaVersion",
+        "rendererKey",
+        "contentPackageVersion",
+        "contentPackageSha256",
+        "authoritativeResultStatus",
+        "runtimeTerminalState",
+        "sourceCommitHash",
+        "decisionHash",
+        "terminalContextHash",
+        "worldOutcome",
+        "tracks",
+        "seatOutcomes",
+        "impacts",
+        "reveals",
+        "replayHint",
+        "snapshotHash"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "authoritative_pressure_result_snapshot_v1"
+        },
+        "roomId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "worldId": {
+          "const": "sangtian"
+        },
+        "participantMode": {
+          "type": "string",
+          "enum": [
+            "SOLO",
+            "MULTIPLAYER"
+          ]
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "frozenRoute": {
+          "$ref": "#/$defs/FrozenRunRouteV1"
+        },
+        "frozenRouteHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "resultContractRegistryVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payloadSchemaVersion": {
+          "const": "sangtian_pressure_result_v1"
+        },
+        "presentationSchemaVersion": {
+          "const": "sangtian_pressure_result_v1"
+        },
+        "rendererKey": {
+          "const": "sangtian_pressure_endgame_v1"
+        },
+        "contentPackageVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentPackageSha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "authoritativeResultStatus": {
+          "const": "FINALIZED"
+        },
+        "runtimeTerminalState": {
+          "const": "FINALE_FROZEN"
+        },
+        "sourceCommitHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "decisionHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "terminalContextHash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "worldOutcome": {
+          "$ref": "#/$defs/ResultCatalogWorldOutcomeV1"
+        },
+        "tracks": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/ResultTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultTrackV1"
+            },
+            {
+              "$ref": "#/$defs/ResultTrackV1"
+            }
+          ],
+          "items": false,
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "seatOutcomes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/ResultViewerSeatV1"
+            },
+            {
+              "$ref": "#/$defs/ResultViewerSeatV1"
+            },
+            {
+              "$ref": "#/$defs/ResultViewerSeatV1"
+            },
+            {
+              "$ref": "#/$defs/ResultViewerSeatV1"
+            },
+            {
+              "$ref": "#/$defs/ResultViewerSeatV1"
+            },
+            {
+              "$ref": "#/$defs/ResultViewerSeatV1"
+            }
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "impacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AuthoritativeImpactV1"
+          },
+          "uniqueItems": true
+        },
+        "reveals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AuthoritativeRevealV1"
+          },
+          "uniqueItems": true
+        },
+        "replayHint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "snapshotHash": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    }
+  }
+}

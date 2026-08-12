@@ -1,0 +1,3 @@
+-- Intentionally empty.
+-- INTERACTION_COMPILE_REQUESTED and authority hashes are already present in
+-- the consolidated, not-yet-deployed Pressure MVP migration.

@@ -1,0 +1,182 @@
+{
+  "schemaVersion": "sangtian_finale_rules_v1",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "inputRule": "只读取 N1—N7 FrozenNodeResult、对象状态、事件账本和合法可见因果；不开放御前自由演说。",
+  "worldTracks": [
+    "track.civilian_land",
+    "track.mulberry_silk",
+    "track.fiscal_military",
+    "track.evidence_responsibility",
+    "track.court_imperial_face"
+  ],
+  "adoptionMatrix": {
+    "responsibilityLevels": {
+      "NONE": 0,
+      "LOCAL": 1,
+      "PROVINCIAL": 2,
+      "WEAVING_BUREAU": 3,
+      "INNER_CABINET": 4,
+      "IMPERIAL": 5
+    },
+    "channelProcedureCaps": {
+      "UNOFFICIAL": {
+        "INVALID": 0,
+        "CONTESTED": 0,
+        "VALID": 1,
+        "CORROBORATED": 2
+      },
+      "INNER_CABINET": {
+        "INVALID": 0,
+        "CONTESTED": 2,
+        "VALID": 3,
+        "CORROBORATED": 4
+      },
+      "CENSORATE_JUDICIAL": {
+        "INVALID": 0,
+        "CONTESTED": 1,
+        "VALID": 3,
+        "CORROBORATED": 4
+      },
+      "IMPERIAL_INNER": {
+        "INVALID": 0,
+        "CONTESTED": 2,
+        "VALID": 4,
+        "CORROBORATED": 5
+      },
+      "DUAL_INDEPENDENT": {
+        "INVALID": 0,
+        "CONTESTED": 2,
+        "VALID": 4,
+        "CORROBORATED": 5
+      }
+    },
+    "militaryFundsCaps": {
+      "CRITICAL": 2,
+      "TIGHT": 3,
+      "SECURE": 5
+    },
+    "imperialExposureCaps": {
+      "0": 5,
+      "1": 4,
+      "2": 3,
+      "3": 2
+    },
+    "formula": "finalAdoptedLevel = min(evidenceContentCap, channelProcedureCap, militaryFundsCap, imperialExposureCap)",
+    "narratorBoundary": "Narrator 只解释矩阵结果，不得以人物态度改变采用层级。"
+  },
+  "seatVerdicts": [
+    {
+      "seatId": "seat.zhejiang_governor",
+      "coreGoal": "同时保住东南军务与浙江基本秩序",
+      "required": [
+        "militaryFundsDeliveredPct >= 70",
+        "reliefCoveragePct >= 60 && publicOrderLevel >= 2"
+      ],
+      "fatal": "militaryFundsDeliveredPct < 40 || publicOrderLevel == 0",
+      "personalCost": "胡宗宪 REMOVED/IMPRISONED/DEAD 或 HEALTH_COLLAPSE"
+    },
+    {
+      "seatId": "seat.zhejiang_administration",
+      "coreGoal": "形成可执行行政方案并避免省府成为唯一责任层",
+      "required": [
+        "officialPlanExecutionPct >= 50",
+        "seatContinuityPct >= 50 && publicOrderLevel >= 2"
+      ],
+      "fatal": "S2 为主要责任席且 adoptedReach >= PROVINCIAL",
+      "personalCost": "郑泌昌 REMOVED/IMPRISONED"
+    },
+    {
+      "seatId": "seat.qingliu_law",
+      "coreGoal": "阻止冤案完成并使重大责任链取得正式效力",
+      "required": [
+        "wrongfulExecutionCount == 0",
+        "proceduralGrade >= VALID && adoptedReach >= PROVINCIAL"
+      ],
+      "fatal": "wrongfulExecutionCount > 0 && adoptedReach < PROVINCIAL",
+      "personalCost": "海瑞或谭纶 REMOVED/IMPRISONED/DEAD 或 FAMILY_COST"
+    },
+    {
+      "seatId": "seat.jiangnan_merchant",
+      "coreGoal": "使商业资源解决公共危机并避免商会成为唯一替罪者",
+      "required": [
+        "merchantVoluntaryContributionPct >= 50",
+        "merchantNetworkContinuityPct >= 40 || ledgerSetSurvives == true"
+      ],
+      "fatal": "merchantAssetsSeizedPct >= 80 && onlyPrimaryResponsibilitySeat == S4",
+      "personalCost": "沈一石 DEAD/IMPRISONED 或个人资产损失 >= 50%"
+    },
+    {
+      "seatId": "seat.sili_weaving",
+      "coreGoal": "保住最低织造能力与内廷名义，不被正式认定为毁堤或冤案主谋",
+      "required": [
+        "silkCapacityPct >= 60",
+        "imperialExposureLevel <= 1 && S5 not primary responsibility"
+      ],
+      "fatal": "adoptedReach >= WEAVING_BUREAU && S5 primary responsibility && imperialExposureLevel >= 2",
+      "personalCost": "杨金水 PUBLICLY_INCAPACITATED/REMOVED/IMPRISONED"
+    },
+    {
+      "seatId": "seat.cabinet_finance",
+      "coreGoal": "解决最低财政与军饷要求并维持中央决策体系",
+      "required": [
+        "fiscalGapResolvedPct >= 60",
+        "militaryFundsDeliveredPct >= 70 && courtStabilityLevel >= 2"
+      ],
+      "fatal": "fiscalGapResolvedPct < 40 && militaryFundsDeliveredPct < 40",
+      "personalCost": "严世蕃 REMOVED/IMPRISONED 或 seatContinuityPct < 50"
+    }
+  ],
+  "verdictFunction": "fatal -> LOSS; else both required true -> WIN or COSTLY_WIN by personalCost; otherwise LOSS",
+  "ranking": "NONE",
+  "worldOutcomeRules": [
+    {
+      "outcomeId": "EAST_SOUTH_COLLAPSE",
+      "priority": 1,
+      "when": "publicOrderLevel == 0 OR (militaryFundsDeliveredPct < 40 AND reliefCoveragePct < 40)",
+      "trackMix": "民生低 + 军饷低"
+    },
+    {
+      "outcomeId": "TRUTH_WITH_POLITICAL_SHOCK",
+      "priority": 2,
+      "when": "adoptedReach >= INNER_CABINET AND courtStabilityLevel < 2",
+      "trackMix": "证据高 + 朝局低"
+    },
+    {
+      "outcomeId": "BALANCED_SURVIVAL",
+      "priority": 3,
+      "when": "reliefCoveragePct >= 60 AND landRetentionPct >= 60 AND militaryFundsDeliveredPct >= 70 AND fiscalGapResolvedPct >= 60 AND publicOrderLevel >= 2",
+      "trackMix": "五轨至少中位，民生和军饷达标"
+    },
+    {
+      "outcomeId": "FISCAL_ORDER_AT_CIVIL_COST",
+      "priority": 4,
+      "when": "fiscalGapResolvedPct >= 60 AND (reliefCoveragePct < 60 OR landRetentionPct < 50)",
+      "trackMix": "财政高 + 民生低"
+    },
+    {
+      "outcomeId": "CIVIL_RELIEF_AT_WAR_COST",
+      "priority": 5,
+      "when": "reliefCoveragePct >= 60 AND landRetentionPct >= 60 AND militaryFundsDeliveredPct < 70",
+      "trackMix": "民生高 + 军饷低中"
+    },
+    {
+      "outcomeId": "SCAPEGOAT_STABILITY",
+      "priority": 6,
+      "when": "adoptedReach <= PROVINCIAL AND courtStabilityLevel >= 2 AND solePrimaryResponsibilitySeat != null",
+      "trackMix": "朝局中高 + 证据低中"
+    },
+    {
+      "outcomeId": "UNRESOLVED_COMPROMISE",
+      "priority": 7,
+      "when": "DEFAULT",
+      "trackMix": "多轨中位或相互抵消"
+    }
+  ],
+  "sceneAssemblyOrder": [
+    "按 priority 选择唯一 worldOutcome",
+    "为五条轨迹各选择 HIGH/MID/LOW 正文",
+    "插入六席各自 WIN/COSTLY_WIN/LOSS 判词",
+    "列出最多三条冻结因果",
+    "生成一个基于未采用事实的重玩钩子"
+  ]
+}

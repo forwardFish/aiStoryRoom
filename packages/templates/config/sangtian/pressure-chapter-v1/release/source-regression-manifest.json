@@ -1,0 +1,212 @@
+{
+  "schemaVersion": "pressure_chapter_source_regression_manifest_v1",
+  "manifestId": "pressure_chapter_source_regression_v1",
+  "manifestVersion": "pressure-source-regression-1.0.0",
+  "sourceFileHashAlgorithm": "SHA-256_GIT_BLOB_BYTES",
+  "sourceInventoryContract": {
+    "selectorEngine": "ECMASCRIPT_REGEXP_UNICODE_V1",
+    "treeListingSemantics": "GIT_LS_TREE_RECURSIVE_NAME_ONLY_AT_PINNED_SHA",
+    "pathNormalization": "GIT_FORWARD_SLASH_PATHS",
+    "pathOrdering": "UNICODE_CODE_POINT_ASC",
+    "inventoryItemFields": [
+      "path",
+      "sourceGitBlobSha1",
+      "sourceFileSha256"
+    ],
+    "inventoryHashAlgorithm": "SHA-256_CANONICAL_JSON_ARRAY",
+    "emptyScopePolicy": "FAIL_CLOSED"
+  },
+  "targetFileHashAlgorithm": "SHA-256_RAW_BYTES",
+  "aggregateCommand": "pnpm test:pressure-chapter:legacy",
+  "entries": [
+    {
+      "sourceBranch": "codex/chatgpt-pro-sangtian-runtime-v1",
+      "sourceCommitSha": "99031a083310f113457e210cf5a391e680d0a5d2",
+      "sourceScope": {
+        "includePathPatterns": [
+          "^packages/templates/src/pressure-spine/(?:loader|validator|indexer)\\.ts$",
+          "^packages/templates/tests/pressure-spine\\.test\\.ts$",
+          "^scripts/acceptance/run-sangtian-phase2-suite\\.mjs$"
+        ],
+        "resolvedFileCount": 5,
+        "inventorySha256": "5527acc174bfb3545a93f382721385f5f3dd70ce058d1a1b479300ae01bead3c",
+        "reason": "Freeze the exact Pressure Spine loader, validator, indexer, contract test and phase-2 suite entrypoint named by the source-regression specification."
+      },
+      "targetTests": [
+        {
+          "path": "packages/templates/tests/pressure-chapter-content.test.ts",
+          "sha256RawBytes": "ca253fd6397704ba00047e277ea9766c312d0808faf71e4d6c6b2631ec44d414"
+        },
+        {
+          "path": "packages/templates/tests/pressure-chapter-release-artifacts.test.ts",
+          "sha256RawBytes": "32accdd0bbc9eacf0bbedeece09dd381b5c54faaf88a817b5867921fc789df3e"
+        }
+      ],
+      "semanticDecision": "REBUILT",
+      "preservedSemantics": [
+        "P0_N1_N7_CONTENT_FACTS",
+        "CONTENT_LOADER_VALIDATOR_MANIFEST"
+      ],
+      "replacedSemantics": [
+        "FIXED_PREPARE_COMMIT_REACTION"
+      ],
+      "reason": "Continuous chapters use content-driven DecisionPoints and one ChapterSettlement per chapter."
+    },
+    {
+      "sourceBranch": "codex/chatgpt-pro-dynamic-kernel-lite",
+      "sourceCommitSha": "c6aafdc1a68811839c56e5e8ab3cdc9c3c3ac4ad",
+      "sourceScope": {
+        "includePathPatterns": [
+          "^packages/templates/tests/part-one-dynamic-kernel-[^/]+\\.test\\.ts$",
+          "^apps/openovel-runtime/tests/sangtian-dynamic-kernel-[^/]+\\.spec\\.ts$"
+        ],
+        "resolvedFileCount": 15,
+        "inventorySha256": "27f0717eca8627756e933032a2b9a4821f77aff74fc46f0c8650cc1a5a0d587b",
+        "reason": "Freeze only the Dynamic Kernel template and OpenNovel runtime regression entry sets explicitly required for Decision Kernel and Beat-boundary adaptation."
+      },
+      "targetTests": [
+        {
+          "path": "packages/templates/tests/pressure-chapter-domain.test.ts",
+          "sha256RawBytes": "b1723fbba2a56868456d412be654186b43061ac648f6358c190c5bbd454bb0bd"
+        },
+        {
+          "path": "packages/templates/tests/pressure-chapter-recovery.test.ts",
+          "sha256RawBytes": "ad4cf69d30798c10e93a11c05b61c5961bee7b252c9ab0cfc844559887e3ade9"
+        }
+      ],
+      "semanticDecision": "ADAPTED",
+      "preservedSemantics": [
+        "DETERMINISTIC_SELECTION",
+        "PIN_AND_RECOVERY",
+        "WORKING_SET_FINGERPRINT"
+      ],
+      "replacedSemantics": [
+        "PER_ACTION_WORLD_COMMIT",
+        "T20_SINGLE_SEAT_CLOCK"
+      ],
+      "reason": "Kernel selection operates inside ChapterWorkingState and BeatResolution without advancing the frozen world."
+    },
+    {
+      "sourceBranch": "codex/chatgpt-pro-maneuver-evidence-v1",
+      "sourceCommitSha": "689bf663e256a9d9ca71892ddbc076c356cdc1d6",
+      "sourceScope": {
+        "includePathPatterns": [
+          "^apps/api/src/b0-settlement/[^/]+\\.spec\\.ts$",
+          "^packages/templates/tests/[^/]*b0[^/]*\\.test\\.ts$",
+          "^scripts/e2e/continuous-strategy-fault-recovery\\.ts$",
+          "^scripts/verify-continuous-strategy-manifest(?:\\.test)?\\.mjs$"
+        ],
+        "resolvedFileCount": 20,
+        "inventorySha256": "b51b0748ab5d9dff38149b239e03226c16218a6ef1c117830b692fbd9c502ee4",
+        "reason": "Freeze the B0 API and template regression entry sets plus their explicit fault-recovery and manifest verification entrypoints, excluding unrelated evidence manifests."
+      },
+      "targetTests": [
+        {
+          "path": "packages/shared/tests/pressure-chapter-b0.spec.ts",
+          "sha256RawBytes": "816e1bb4f7a69b707ebc31eae16bab4bd76320b0c6dc9fd6ff8d6e690611fa67"
+        },
+        {
+          "path": "packages/templates/tests/pressure-chapter-domain.test.ts",
+          "sha256RawBytes": "b1723fbba2a56868456d412be654186b43061ac648f6358c190c5bbd454bb0bd"
+        },
+        {
+          "path": "packages/templates/tests/pressure-chapter-recovery.test.ts",
+          "sha256RawBytes": "ad4cf69d30798c10e93a11c05b61c5961bee7b252c9ab0cfc844559887e3ade9"
+        }
+      ],
+      "semanticDecision": "ADAPTED",
+      "preservedSemantics": [
+        "CANONICAL_BATCH_HASH",
+        "CAS_ATOMICITY",
+        "IDEMPOTENT_RECOVERY",
+        "OUTBOX_AFTER_AUTHORITY"
+      ],
+      "replacedSemantics": [
+        "ONE_WINDOW_ONE_WORLD_COMMIT",
+        "B0_PRIMARY_PRODUCT_CLOCK"
+      ],
+      "reason": "B0 is the injected ChapterSettlement commit core and owns no Sangtian policy or Narrative."
+    },
+    {
+      "sourceBranch": "codex/openovel-multiplayer-v1",
+      "sourceCommitSha": "9dce9f6d6c20e36dfc387ed87529de77a361e260",
+      "sourceScope": {
+        "includePathPatterns": [
+          "^apps/api/src/continuous-story-v2/(?:continuous-story-v2-world-first|game-page-projection-privacy|fact-audience|openovel-presence)\\.spec\\.ts$",
+          "^apps/web/tests/continuous-story-v2\\.test\\.mjs$",
+          "^scripts/e2e/openovel-mp-[^/]+$"
+        ],
+        "resolvedFileCount": 16,
+        "inventorySha256": "861cf8f095b0127ef065d2f000ecbe03066936ab6fc86c20b36af39f79abf14c",
+        "reason": "Freeze the four named multiplayer infrastructure regressions, the Legacy V2 web test and every openovel-mp E2E entrypoint without absorbing ActorThread authority into Pressure."
+      },
+      "targetTests": [
+        {
+          "path": "apps/api/src/pressure-chapter/seat-control/seat-control.service.spec.ts",
+          "sha256RawBytes": "969bd2c2af24d3ef3ef2006a1c379d0538c99004ee4bbe8ddb445ff3b5116dc6"
+        },
+        {
+          "path": "apps/api/src/pressure-chapter/seat-control-persistence/seat-control-persistence.spec.ts",
+          "sha256RawBytes": "cbf471ed910510731987b8046919d44e281da2a3648de7761076014fe303db7a"
+        },
+        {
+          "path": "apps/web/tests/continuous-story-v2.test.mjs",
+          "sha256RawBytes": "5cbd68220aec6f3b10e8f49a8cd38a6c45339b42f3ba4c323c6b06866657b281"
+        }
+      ],
+      "semanticDecision": "PRESERVED_AS_INFRASTRUCTURE_AND_LEGACY",
+      "preservedSemantics": [
+        "AI_SEAT_FILL",
+        "CONTROL_EPOCH",
+        "PRIVACY_PROJECTION",
+        "LEGACY_V2_READBACK"
+      ],
+      "replacedSemantics": [
+        "ACTOR_THREAD_AUTHORITY_CLOCK",
+        "LAST_THREAD_TERMINAL_TRIGGER"
+      ],
+      "reason": "Control and privacy infrastructure is reused while ActorThread remains a Legacy-only authority model."
+    },
+    {
+      "sourceBranch": "codex/chatgpt-pro-main-game-final-v1",
+      "sourceCommitSha": "99585c7a3fe85321bf2f339baba8aa08f2b2be46",
+      "sourceScope": {
+        "includePathPatterns": [
+          "^packages/shared/tests/generic-endgame-[^/]+\\.spec\\.mjs$",
+          "^apps/openovel-runtime/tests/[^/]*ending[^/]*\\.spec\\.ts$",
+          "^apps/api/src/openovel-adapter/[^/]+\\.spec\\.ts$",
+          "^apps/web/tests/[^/]*endgame[^/]*\\.test\\.mjs$"
+        ],
+        "resolvedFileCount": 27,
+        "inventorySha256": "c90bb163f75948e182cf3b7aa5ae2bc3a6d7b58f0e9495a7f43b578df841ffe3",
+        "reason": "Freeze the complete Generic S0-S6, OpenNovel ending, adapter and endgame web regression entry sets while keeping Generic shadow-only for the Pressure route."
+      },
+      "targetTests": [
+        {
+          "path": "packages/templates/tests/pressure-chapter-finale.test.ts",
+          "sha256RawBytes": "34f574ba07993f020a553bfa83a9448e9a53da06bb4f6ed405b02a9d0490e5f9"
+        },
+        {
+          "path": "apps/openovel-runtime/tests/sangtian-ending.spec.ts",
+          "sha256RawBytes": "bc05434ace81d7013be0f57d32ff9a3c09903fcf4286196a0f32caf48d1ebb54"
+        },
+        {
+          "path": "apps/web/tests/endgame-result-registry-v1.pressure-chapter.browser.test.mjs",
+          "sha256RawBytes": "9db76d774cdc9da2b4e629e8bdad329804d1c53753bbd2cf264c4b97f22b5617"
+        }
+      ],
+      "semanticDecision": "PRESERVED_WITH_AUTHORITY_SPLIT",
+      "preservedSemantics": [
+        "DETERMINISTIC_FINALE_TOOLING",
+        "GENERIC_S0_S6_REGRESSION",
+        "LEGACY_SOLO_READBACK"
+      ],
+      "replacedSemantics": [
+        "T20_PRESSURE_AUTHORITY",
+        "LEGACY_FIVE_METRIC_PRESSURE_POLICY",
+        "NARRATIVE_ATOMIC_HEAD_ROLLBACK"
+      ],
+      "reason": "Accepted five-track content owns Pressure Finale; Generic is shadow-only and Legacy Solo stays readable."
+    }
+  ]
+}

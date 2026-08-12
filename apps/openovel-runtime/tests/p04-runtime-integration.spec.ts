@@ -10,6 +10,7 @@ import { sangtianDecisionAdapter } from "../src/sangtian-decisions.js";
 import type {
   OpenNovelProvider,
   ProviderRequest,
+  TurnEvent,
 } from "../src/types.js";
 import { FileStoryWorkspace } from "../src/workspace.js";
 import { sangtianWorkspaceSeeder } from "../src/sangtian-workspace.js";
@@ -19,6 +20,40 @@ const projectRoot = path.basename(process.cwd()) === "openovel-runtime"
   ? path.resolve(process.cwd(), "..", "..")
   : path.resolve(currentDir, "..", "..", "..");
 const upstreamCommit = "1b4404e85d03d1e41e5d745e303372333b29c610";
+
+test("authority-first authored turn commits FINALIZED/PENDING before any Provider call", async () => {
+  const provider = new UnavailableProvider();
+  await withRuntime(provider, async ({ runtime, workspace, runId }) => {
+    const opening = await workspace.snapshot(runId);
+    const selected = opening.previousOptions.find((option) => option.id === "opening_d2");
+    assert.ok(selected);
+    const events: TurnEvent[] = [];
+    const result = await runtime.processAction({
+      runId,
+      action: selected.label,
+      submissionId: "authority_first_t01",
+      boundOption: { id: selected.id, label: selected.label },
+      onEvent: (event) => events.push(event),
+    });
+
+    assert.equal(provider.profiles.length, 0);
+    assert.equal(result.authoritativeResultStatus, "FINALIZED");
+    assert.equal(result.narrativeStatus, "PENDING");
+    assert.equal(result.narration, "");
+    assert.match(result.sourceCommitHash || "", /^[a-f0-9]{64}$/u);
+    assert.equal(result.authoritativeCommit?.sourceCommitHash, result.sourceCommitHash);
+    assert.equal(result.authoritativeCommit?.artifactDirectory, result.artifactDirectory);
+    assert.ok(events.some((event) => event.type === "turn.committed"));
+    assert.equal(events.some((event) => event.type === "narration.complete"), false);
+
+    const head = JSON.parse(await readFile(workspace.paths(runId).head, "utf8"));
+    assert.equal(result.sourceCommitHash, head.headHash);
+    assert.equal(result.artifactDirectory, head.artifactDirectory);
+    const root = path.join(workspace.paths(runId).root, head.artifactDirectory);
+    await assert.rejects(() => readFile(path.join(root, "published-prose.md")), /ENOENT/u);
+    assert.equal((await runtime.getRun(runId)).status, "READY");
+  }, { authorityFirstNarrativeProjection: true });
+});
 
 test("critical Sangtian turn uses the protected Story Package asset when the provider is unavailable", async () => {
   const provider = new UnavailableProvider();
@@ -142,6 +177,7 @@ async function withRuntime(
     workspace: FileStoryWorkspace;
     runId: string;
   }) => Promise<void>,
+  runtimeOptions: { authorityFirstNarrativeProjection?: boolean } = {},
 ) {
   const root = await mkdtemp(path.join(os.tmpdir(), "omw-scene-runtime-"));
   const runId = "scene_" + Date.now() + "_" + Math.random().toString(16).slice(2);
@@ -154,6 +190,7 @@ async function withRuntime(
     {
       decisionMode: "AUTHORED_WHEN_AVAILABLE",
       authoredDecisionAdapter: sangtianDecisionAdapter,
+      ...runtimeOptions,
     },
   );
   try {

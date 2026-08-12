@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "adaptation-decision-set-v2",
+  "nodeId": "P0",
+  "adaptations": [
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionId": "adapt.p0.pressure_lock",
+      "sourceEntityOrArcIds": [
+        "P0-SF-01",
+        "P0-SF-02",
+        "P0-SF-03",
+        "P0-SF-04"
+      ],
+      "operation": "preserve",
+      "targetIds": [
+        "P0",
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "rationale": "将 P0 的历史压力设为不可跳过节点，但允许玩家改变发生程度与责任归属。",
+      "invariantsToPreserve": [
+        "不可撤销压力继续",
+        "玩家分支改变冻结状态"
+      ],
+      "intentionalDifferences": [
+        "把跨场景事件压缩成有限节点时间预算"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-mvp-content-lock-v1",
+      "approvedAt": "2026-08-10T00:00:00Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionId": "adapt.p0.two_beats",
+      "sourceEntityOrArcIds": [
+        "P0-SF-01",
+        "P0-SF-02",
+        "P0-SF-03",
+        "P0-SF-04"
+      ],
+      "operation": "compress",
+      "targetIds": [
+        "P0",
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "rationale": "将 P0 节点内部收敛为 PREPARE 与 COMMIT 两个连续决策拍。",
+      "invariantsToPreserve": [
+        "行动必须兑现",
+        "时间与 NPC 必须继续推进"
+      ],
+      "intentionalDifferences": [
+        "每个节点最多三幕前台场景"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-mvp-content-lock-v1",
+      "approvedAt": "2026-08-10T00:00:00Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionId": "adapt.p0.object_contest",
+      "sourceEntityOrArcIds": [
+        "P0-SF-01",
+        "P0-SF-02",
+        "P0-SF-03",
+        "P0-SF-04"
+      ],
+      "operation": "invent_for_gameplay",
+      "targetIds": [
+        "P0",
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "rationale": "把 P0 的冲突绑定到最多两个主要争夺物及其保管、签押、调度或送达状态。",
+      "invariantsToPreserve": [
+        "具体对象而非抽象支持度",
+        "同一对象不能双花"
+      ],
+      "intentionalDifferences": [
+        "使用统一对象状态和冲突比较规则"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-mvp-content-lock-v1",
+      "approvedAt": "2026-08-10T00:00:00Z"
+    }
+  ]
+}

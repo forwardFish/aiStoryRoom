@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "sangtian_replay_hooks_v1",
+  "hooks": [
+    {
+      "hookId": "replay.n1.save_evidence",
+      "condition": "N1 breach order chain weak",
+      "text": "下一局若在九堰先保住调令和见证，N2 的第一道奏疏可能完全不同。"
+    },
+    {
+      "hookId": "replay.n3.land_price",
+      "condition": "landRetentionPct < 60",
+      "text": "下一局试着在三日断粮前建立田价底线，而不是等粮食已经被买田合同占用。"
+    },
+    {
+      "hookId": "replay.n4.witness",
+      "condition": "wrongfulExecutionCount > 0 or keyWitnessAliveCount low",
+      "text": "下一局把人犯控制、案卷和签押拆开处理，可能保住决定性证言。"
+    },
+    {
+      "hookId": "replay.n5.fleet",
+      "condition": "grain fleet used for land purchase",
+      "text": "下一局争夺粮船的合同和公开名义，而不只争船本身。"
+    },
+    {
+      "hookId": "replay.n6.ledgers",
+      "condition": "both ledger sets ineffective",
+      "text": "下一局提前建立见证、摘要和独立路线，避免账册只剩“听说存在”。"
+    },
+    {
+      "hookId": "replay.n7.adoption",
+      "condition": "adoptedReach <= PROVINCIAL",
+      "text": "下一局提高程序效力或改走独立正式路线，看看责任能否进入更高采用层级。"
+    }
+  ],
+  "selectionRule": "按与本局关键失败因果最接近者选一条；不做全场排名。"
+}

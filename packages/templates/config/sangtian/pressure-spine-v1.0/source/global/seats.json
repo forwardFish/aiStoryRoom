@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "sangtian_seats_v1",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "playerVisibleRule": "你扮演的是持续存在的制度立场；当前行动人物会按节点更替，人物个人结局仍单独保留。",
+  "seats": [
+    {
+      "seatId": "seat.zhejiang_governor",
+      "roleKey": "zhejiang_governor",
+      "displayName": "浙江总督",
+      "institutionalMission": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "coreQuestion": "何时承担责任，何时把责任写进制度，而不是转给百姓或下属。",
+      "initialActorId": "actor.hu_zongxian",
+      "persistentAssets": [
+        "obj.governor_command_seal",
+        "obj.military_dispatch_channel",
+        "obj.governor_memorial_channel"
+      ],
+      "publicPower": "调兵、跨省协调、总督担保、领衔奏报。",
+      "hardLimit": "不能取消国策、替皇帝裁决，也不能把未取得的证据写成既成事实。"
+    },
+    {
+      "seatId": "seat.zhejiang_administration",
+      "roleKey": "zhejiang_administration",
+      "displayName": "浙江省府",
+      "institutionalMission": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "coreQuestion": "推进速度与责任暴露之间，省府愿意留下哪一份可追溯记录。",
+      "initialActorId": "actor.zheng_michang",
+      "persistentAssets": [
+        "obj.provincial_seal",
+        "obj.local_official_network",
+        "obj.enforcement_roster"
+      ],
+      "publicPower": "签发地方命令、调用差役、登记田契、控制省府公文。",
+      "hardLimit": "不能越过总督调动前线军队，不能把被捕后的旧权限继续当作现行权限。"
+    },
+    {
+      "seatId": "seat.qingliu_law",
+      "roleKey": "qingliu_law",
+      "displayName": "清流法度",
+      "institutionalMission": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "coreQuestion": "真相若不能合法留存、递送和被采用，知道得再多也不能改变结局。",
+      "initialActorId": "actor.tan_lun",
+      "persistentAssets": [
+        "obj.law_review_channel",
+        "obj.witness_protection_roster",
+        "obj.sealed_evidence_index"
+      ],
+      "publicPower": "调查、拒签、保护证人、制作证据索引、主持重审。",
+      "hardLimit": "不能凭道德判断代替案卷、保管、签押与送达。"
+    },
+    {
+      "seatId": "seat.jiangnan_merchant",
+      "roleKey": "jiangnan_merchant",
+      "displayName": "江南商会",
+      "institutionalMission": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "coreQuestion": "商人救急时得到的是契约、政治保护，还是一张将来抄家的清单。",
+      "initialActorId": "actor.shen_yishi",
+      "persistentAssets": [
+        "obj.merchant_grain_pool",
+        "obj.merchant_credit_network",
+        "obj.merchant_fleet",
+        "obj.merchant_legacy_orders"
+      ],
+      "publicPower": "调粮、放贷、定契约、转运、留下遗命和账目交接。",
+      "hardLimit": "不能决定官员任免、司法结论或御前采用。"
+    },
+    {
+      "seatId": "seat.sili_weaving",
+      "roleKey": "sili_weaving",
+      "displayName": "司礼监织造",
+      "institutionalMission": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "coreQuestion": "宫廷名义既能救人，也会把责任直接引到御前。",
+      "initialActorId": "actor.yang_jinshui",
+      "persistentAssets": [
+        "obj.weaving_bureau_banner",
+        "obj.inner_court_dispatch_channel",
+        "obj.weaving_records"
+      ],
+      "publicPower": "织造局名义、密奏、内廷差使、锦衣卫递送。",
+      "hardLimit": "不能替皇帝预先裁决；杨金水公开失能后只能依靠既有代理和已启动命令。"
+    },
+    {
+      "seatId": "seat.cabinet_finance",
+      "roleKey": "cabinet_finance",
+      "displayName": "内阁财政",
+      "institutionalMission": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "coreQuestion": "若没有银子，前线会败；若追到底，中央筹款网络可能先崩。",
+      "initialActorId": "actor.yan_shifan",
+      "persistentAssets": [
+        "obj.cabinet_urgent_dispatch",
+        "obj.fiscal_target_register",
+        "obj.capital_receipt_channel"
+      ],
+      "publicPower": "设定财政期限、回批、收件路径、抄没归属和中央口径。",
+      "hardLimit": "不能让未送达材料自动被朝廷知道，不能把皇帝的意志交给 AI 临时决定。"
+    }
+  ]
+}

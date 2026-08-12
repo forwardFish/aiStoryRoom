@@ -1,0 +1,209 @@
+{
+  "schemaVersion": "sangtian_pressure_chapter_release_manifest_v1",
+  "releaseId": "sangtian_pressure_chapter_release_v1",
+  "releaseVersion": "1.0.0",
+  "hashAlgorithm": "SHA-256_PRESSURE_CHAPTER_CANONICAL_JSON_V1",
+  "routeRegistry": {
+    "schemaVersion": "pressure_chapter_route_registry_v1",
+    "registryVersion": "pressure-route-registry-1.0.0",
+    "defaultRouteKey": "sangtian_pressure_chapter_v1",
+    "routes": [
+      {
+        "routeKey": "sangtian_pressure_chapter_v1",
+        "worldId": "sangtian",
+        "status": "PUBLISHED",
+        "createEnabled": true,
+        "participantModes": [
+          "SOLO",
+          "MULTIPLAYER"
+        ],
+        "route": {
+          "engineVersion": "pressure_chapter_v1",
+          "strategyVersion": "sangtian_pressure_chapter_v1_0",
+          "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+          "endgamePolicyVersion": "sangtian_content_finale_v1",
+          "resultSchemaVersion": "sangtian_pressure_result_v1"
+        },
+        "contentPackageVersion": "1.0.0",
+        "contentPackageSha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b",
+        "orchestrationPackageVersion": "sangtian-orchestration-1.0.0",
+        "orchestrationPackageSha256": "16d99a0401a993d28ec8893ace02fb088870926bcc095fa454d557dfd1642d0d",
+        "runtimeContractVersion": "pressure-runtime-contract-1.0.0",
+        "runtimeContractSha256": "a06818b414837e9086113c8c1b74204dc10f8aef55c52b06d70e6c618836c55d",
+        "testMatrixVersion": "pressure-test-matrix-1.0.0",
+        "testMatrixSha256": "3a10a2334dcf4f46ff09ae836ea65151187f3906aef950a030c7e52a0420c015",
+        "narrativeProfileVersion": "openovel-pressure-1.0.0",
+        "featureSetVersion": "pressure-feature-set-1.0.0",
+        "resultContractRegistryVersion": "result-contract-registry-1.0.0",
+        "controlTopologyVersion": "six-seat-control-1.0.0",
+        "handlerKey": "pressure_chapter_v1",
+        "resultAdapterKey": "SangtianPressureResultV1Adapter",
+        "presentationSchemaVersion": "sangtian_pressure_result_v1",
+        "rendererKey": "sangtian_pressure_endgame_v1"
+      }
+    ],
+    "registryHash": "ed7b03f220fb6ba2e6b1b64d7e78bde7db8b20b0fd7499b9dc5d0dcbe48b40a6"
+  },
+  "immutableInputs": [
+    {
+      "artifactId": "accepted_content_package",
+      "path": "../content.json",
+      "version": "1.0.0",
+      "sha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "accepted_content_manifest",
+      "path": "../manifest.json",
+      "version": "1.0.0",
+      "sha256": "d13dd04333e8c0e16901285f6fef61145c5bc3ef537b682e639a2f4b6d95a404",
+      "hashMode": "CANONICAL_JSON"
+    }
+  ],
+  "artifacts": [
+    {
+      "artifactId": "a_emotion_lifecycle_bindings",
+      "path": "a-emotion-lifecycle-bindings.json",
+      "version": "sangtian-a-emotion-lifecycle-1.0.0",
+      "sha256": "247169a562849e15da74987c39a4f0456ced5e9310707a51a571bad1831a622b",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "a_emotion_policy",
+      "path": "a-emotion-policy.json",
+      "version": "sangtian-a-emotion-1.0.0",
+      "sha256": "13557b10e458191846728d973b2f5829f2f85ff634009e56944c1b6765cd9c8c",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "action_effect_compiler_core",
+      "path": "action-effect-compiler.cjs",
+      "version": "sangtian-action-effect-compiler-1.0.0",
+      "sha256": "70a47dcb3a3e28e3c8261865f45a4c0834c22b261629a592a1bc4a3f7ea95f63",
+      "hashMode": "RAW_BYTES"
+    },
+    {
+      "artifactId": "action_effect_compiler_esm_wrapper",
+      "path": "action-effect-compiler.mjs",
+      "version": "sangtian-action-effect-compiler-1.0.0",
+      "sha256": "335ca5e0c134aa6d48a896d3bbcf06ba5a0ca3b95997bafee25381aefd234405",
+      "hashMode": "RAW_BYTES"
+    },
+    {
+      "artifactId": "action_effect_policy",
+      "path": "action-effect-policy.json",
+      "version": "sangtian-action-effect-1.0.0",
+      "sha256": "a149635a1419ead43f1f18017adc279d18973de8b3d52bdea5debf5af114b807",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "action_presentation_catalog",
+      "path": "action-presentation-catalog.json",
+      "version": "sangtian-action-presentation-1.0.0",
+      "sha256": "ab50754c4ef6419325b0f4c52fc1ede876701304c46edb322b0822e45152948a",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "ai_decision_policy",
+      "path": "ai-decision-policy.json",
+      "version": "sangtian-ai-decision-1.0.0",
+      "sha256": "b9d752ab8ab40cc5885ef43d04c8404f18e184198db8ce52fc95e0e0a6fa9231",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "control_topology",
+      "path": "control-topology.json",
+      "version": "six-seat-control-1.0.0",
+      "sha256": "ab3e3ab402a0b16160887379fe0228b48a2dd95931fad499bccbe570a365cee3",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "feature_set",
+      "path": "feature-set.json",
+      "version": "pressure-feature-set-1.0.0",
+      "sha256": "0779ae779bedf5430249b73dbf0fa28422005a1bd3c203e740a41cba65db0b7e",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "illegal_route_matrix",
+      "path": "illegal-route-matrix.json",
+      "version": "pressure-illegal-route-matrix-1.0.0",
+      "sha256": "de56f89b109d845d6386cbd12e1f031338c123e73e0bcd72a63fe8aee1d6a606",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "legacy_route_mapping",
+      "path": "legacy-route-mapping.json",
+      "version": "legacy-route-resolver-1.0.0",
+      "sha256": "7ba70e3e30019a186ea05373239f8bd23e68e9765e4a979618cd3f9b4c483fe6",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "narrative_profile",
+      "path": "narrative-profile.json",
+      "version": "openovel-pressure-1.0.0",
+      "sha256": "1c096d06aa3dabb7149b6cb9243aa33ca3b884edbe3154863a2de30561a1a302",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "orchestration_package",
+      "path": "orchestration-package.json",
+      "version": "sangtian-orchestration-1.0.0",
+      "sha256": "16d99a0401a993d28ec8893ace02fb088870926bcc095fa454d557dfd1642d0d",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "result_contract_registry",
+      "path": "result-contract-registry.json",
+      "version": "result-contract-registry-1.0.0",
+      "sha256": "8513ad06527585b0d8295755de7b9026476c5fccd6dfd91bfb7ffffd6376358a",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "runtime_contract",
+      "path": "runtime-contract.json",
+      "version": "pressure-runtime-contract-1.0.0",
+      "sha256": "a06818b414837e9086113c8c1b74204dc10f8aef55c52b06d70e6c618836c55d",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "source_regression_manifest",
+      "path": "source-regression-manifest.json",
+      "version": "pressure-source-regression-1.0.0",
+      "sha256": "d3764c96d04ca2938b34d1413c04a04b19e2afb9ce2241a002d06da1a89980c1",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "test_matrix",
+      "path": "test-matrix.json",
+      "version": "pressure-test-matrix-1.0.0",
+      "sha256": "3a10a2334dcf4f46ff09ae836ea65151187f3906aef950a030c7e52a0420c015",
+      "hashMode": "CANONICAL_JSON"
+    }
+  ],
+  "rejectedRouteCandidates": [
+    {
+      "candidateId": "legacy_pressure_spine_profile",
+      "routeMutation": {
+        "runtimeProfile": "SANGTIAN_PRESSURE_SPINE_V1"
+      },
+      "reasonCode": "RUNTIME_PROFILE_UNSUPPORTED"
+    },
+    {
+      "candidateId": "legacy_openovel_t20_profile",
+      "routeMutation": {
+        "runtimeProfile": "OPENNOVEL_T20_V1"
+      },
+      "reasonCode": "RUNTIME_PROFILE_UNSUPPORTED"
+    },
+    {
+      "candidateId": "legacy_fixed_phase_orchestration",
+      "fixedPhases": [
+        "PREPARE",
+        "COMMIT",
+        "REACTION"
+      ],
+      "reasonCode": "SANGTIAN_PRESSURE_CONTENT_LEGACY_FIXED_WINDOW_FORBIDDEN"
+    }
+  ]
+}

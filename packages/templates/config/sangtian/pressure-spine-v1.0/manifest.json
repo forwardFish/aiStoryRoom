@@ -1,0 +1,19 @@
+{
+  "contentVersion": "sangtian_pressure_v1_0",
+  "manifestLockPath": "manifest.lock.json",
+  "manifestLockSha256": "3BD558B569601F437EFE5329868602C6DB87E967080FBCD85B9C3D224FFC6405",
+  "packageId": "sangtian_complete_story_content_package_v1_1",
+  "packageVersion": "1.1.0-repair-final",
+  "runtimeIndexPath": "runtime-index.json",
+  "runtimeIndexSha256": "313D6F8B1057C4D44CE86C7AE34B6FBC12A47B19211CF3CA0EA0ADCC615196B3",
+  "runtimeProfile": "SANGTIAN_PRESSURE_SPINE_V1",
+  "schemaVersion": "pressure_spine_registration_manifest_v1",
+  "sourceDirectory": "source",
+  "sourceFileCount": 95,
+  "sourceLineCount": 30547,
+  "sourcePackageArchivePath": "source-package/sangtian_complete_story_content_package_v1_1.zip",
+  "sourcePackageByteSize": 277041,
+  "sourcePackageSha256": "38AC19ABFBB89288F80C5E128141B705535D2A9E11D370B293402DC106760317",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "templateKey": "sangtian"
+}

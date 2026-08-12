@@ -1,0 +1,35 @@
+export const WORKING_LEDGER_ERROR_CODES = {
+  EMPTY: "WORKING_LEDGER_EMPTY",
+  CORRUPT: "WORKING_LEDGER_CORRUPT",
+  CONTEXT_MISMATCH: "WORKING_LEDGER_CONTEXT_MISMATCH",
+  HEAD_CONFLICT: "WORKING_LEDGER_HEAD_CONFLICT",
+  ALREADY_OPEN: "WORKING_LEDGER_ALREADY_OPEN",
+  ACTION_DUPLICATE: "WORKING_LEDGER_ACTION_DUPLICATE",
+  ACTION_MISSING: "WORKING_LEDGER_ACTION_MISSING",
+  ACTION_ALREADY_RESOLVED: "WORKING_LEDGER_ACTION_ALREADY_RESOLVED",
+  IDEMPOTENCY_MISMATCH: "WORKING_LEDGER_IDEMPOTENCY_MISMATCH",
+  DEFINITION_MISMATCH: "WORKING_LEDGER_DEFINITION_MISMATCH",
+  REVISION_MISMATCH: "WORKING_LEDGER_REVISION_MISMATCH",
+  AUTHORITY_FIELD_FORBIDDEN: "WORKING_LEDGER_AUTHORITY_FIELD_FORBIDDEN",
+  INVALID_INPUT: "WORKING_LEDGER_INVALID_INPUT",
+} as const;
+
+export type WorkingLedgerErrorCode =
+  (typeof WORKING_LEDGER_ERROR_CODES)[keyof typeof WORKING_LEDGER_ERROR_CODES];
+
+export class WorkingLedgerError extends Error {
+  constructor(
+    readonly code: WorkingLedgerErrorCode,
+    readonly detail?: string,
+  ) {
+    super(detail ? `${code}:${detail}` : code);
+    this.name = "WorkingLedgerError";
+  }
+}
+
+export function failWorkingLedger(
+  code: WorkingLedgerErrorCode,
+  detail?: string,
+): never {
+  throw new WorkingLedgerError(code, detail);
+}

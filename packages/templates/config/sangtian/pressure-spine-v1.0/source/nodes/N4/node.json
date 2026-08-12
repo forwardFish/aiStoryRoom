@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "sangtian_pressure_node_v1",
+  "nodeId": "N4",
+  "sequence": 4,
+  "title": "通倭死局",
+  "subtitle": "午时三刻前，人犯、案卷与签押必须落到具体手里",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "entryCondition": "N3 已 FROZEN 且过场已生成。",
+  "deadline": "SOURCE_FACT：午时三刻；配置初值：一个 PREPARE 时段后进入行刑倒计时。",
+  "pressure": "拒绝卖田与自购粮者被卷入通倭案；一旦人犯死亡，毁堤、买田与倭商之间的证言链会断。",
+  "contestedObjectIds": [
+    "obj.tongwo_prisoners",
+    "obj.tongwo_case_file"
+  ],
+  "secondaryObjectIds": [],
+  "startState": {
+    "pressureLevel": 2,
+    "timeUsed": 0,
+    "sceneBudget": 3,
+    "frozen": false
+  },
+  "lockedFacts": [
+    "午时三刻的行刑压力真实存在。",
+    "执行门槛是本节点的玩法抽象，不宣称为普遍明代法制。",
+    "人犯生死一经冻结不可回滚。"
+  ],
+  "freeTextBoundary": [
+    "输入只形成意图或尝试。",
+    "休息、等待、饮酒、回避可以成功，但必须消耗时间或行动机会。",
+    "编造已成功事实、越权命令和不存在资源必须失败并推进世界。",
+    "固定压力不能被“换故事”或假设句取消。"
+  ],
+  "actionBudget": {
+    "preparePerSeat": 1,
+    "commitPerSeat": 1,
+    "reactionPerSeat": 1
+  },
+  "earlySettlementCondition": "人犯状态、案卷状态和签押状态均唯一确定，且应变已结束。",
+  "forcedSettlementCondition": "午时三刻到达，或执行条件全部具备触发应变。",
+  "nextNodeId": "N5",
+  "provenanceClaimIds": [
+    "N4-SF-01",
+    "N4-SF-02",
+    "N4-SF-03",
+    "N4-SF-04",
+    "N4-INF-01",
+    "N4-UNK-01"
+  ],
+  "adaptationDecisionIds": [
+    "adapt.n4.pressure_lock",
+    "adapt.n4.two_beats",
+    "adapt.n4.object_contest",
+    "adapt.n4.reaction"
+  ]
+}

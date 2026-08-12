@@ -274,6 +274,24 @@ export type RuntimeWarning = {
   details?: Record<string, string>;
 };
 
+export type NarrativeStatus =
+  | "PENDING"
+  | "GENERATING"
+  | "VALIDATING"
+  | "PUBLISHED"
+  | "FALLBACK_PUBLISHED"
+  | "FAILED_RETRYABLE";
+
+export type AuthoritativeCommitMetadata = {
+  schema: string;
+  sourceCommitHash: string;
+  artifactDirectory: string;
+  previousSourceCommitHash: string | null;
+  committedAt: string;
+  turnId: string;
+  turnNumber: number;
+};
+
 export type TurnResult = {
   runId: string;
   turnId: string;
@@ -286,9 +304,14 @@ export type TurnResult = {
   ending?: EndingPresentation;
   causalDelta: CausalDelta;
   warnings: RuntimeWarning[];
-  narrator: ProviderResult;
+  narrator?: ProviderResult;
   optionsProvider?: ProviderResult;
   committedAt: string;
+  authoritativeResultStatus?: "FINALIZED";
+  narrativeStatus?: NarrativeStatus;
+  sourceCommitHash?: string;
+  artifactDirectory?: string;
+  authoritativeCommit?: AuthoritativeCommitMetadata;
 };
 
 export type EndingPresentation = {

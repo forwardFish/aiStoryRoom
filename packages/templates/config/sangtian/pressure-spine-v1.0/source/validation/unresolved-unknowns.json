@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "sangtian_unresolved_unknowns_v1",
+  "verdict": "PASS_WITH_EXPLICIT_UNKNOWNS",
+  "items": [
+    {
+      "unknownId": "unknown.ledger_original_copy_relation",
+      "statement": "两组四箱账册的原件、副本及逐箱对应关系无法由原文确认。",
+      "runtimeRule": "不随机分配内容，只结算保管、封印、接触、焚毁、路线、时间与采用。"
+    },
+    {
+      "unknownId": "unknown.yang_madness_truth",
+      "statement": "杨金水是真疯还是以疯自保保持不确定。",
+      "runtimeRule": "只记录 PUBLICLY_INCAPACITATED，不写内心真相。"
+    },
+    {
+      "unknownId": "unknown.exact_casualties_by_branch",
+      "statement": "不同玩家分支的精确伤亡与受灾数字不是原作既定事实。",
+      "runtimeRule": "由配置化结算产生，Narrator 不自行报数。"
+    },
+    {
+      "unknownId": "unknown.imperial_inner_motive",
+      "statement": "皇帝或朝廷为何采用或压下材料不交给 AI 猜测。",
+      "runtimeRule": "采用层级由确定性矩阵决定。"
+    }
+  ]
+}

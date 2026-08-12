@@ -30,6 +30,42 @@ export type OpenNovelVisibleOption = {
   key?: boolean;
 };
 
+export type OpenNovelNarrativeStatus =
+  | "PENDING"
+  | "GENERATING"
+  | "VALIDATING"
+  | "PUBLISHED"
+  | "FALLBACK_PUBLISHED"
+  | "FAILED_RETRYABLE";
+
+export type OpenNovelAuthoritativeCommit = {
+  schema: string;
+  sourceCommitHash: string;
+  artifactDirectory: string;
+  previousSourceCommitHash: string | null;
+  committedAt: string;
+  turnId: string;
+  turnNumber: number;
+};
+
+export type OpenNovelCommittedTurn = {
+  runId: string;
+  turnId: string;
+  turnNumber: number;
+  narration: string;
+  options: OpenNovelVisibleOption[];
+  framing: string;
+  tension: string;
+  storyComplete: boolean;
+  committedAt: string;
+  authoritativeResultStatus: "FINALIZED";
+  narrativeStatus: OpenNovelNarrativeStatus;
+  sourceCommitHash: string;
+  artifactDirectory: string;
+  authoritativeCommit: OpenNovelAuthoritativeCommit;
+  [key: string]: unknown;
+};
+
 export type OpenNovelPublicRun = {
   runId: string;
   worldId: string;
@@ -55,10 +91,12 @@ export type OpenNovelPublicRun = {
   updatedAt: string;
 };
 
-export type OpenNovelTurnEvent = {
-  type: "narration.delta" | "narration.complete" | "options.complete" | "runtime.warning" | "turn.committed";
-  data: any;
-};
+export type OpenNovelTurnEvent =
+  | { type: "turn.committed"; data: OpenNovelCommittedTurn }
+  | {
+      type: "narration.delta" | "narration.complete" | "options.complete" | "runtime.warning";
+      data: any;
+    };
 
 export type OpenNovelSharedRun = {
   schemaVersion: "openovel_shared_run_v1";
@@ -192,12 +230,13 @@ export class OpenNovelRuntimeClient {
       message: "The story runtime did not return a readable stream.",
     });
 
-    let committed: any = null;
+    let committed: OpenNovelCommittedTurn | null = null;
     await readSse(response.body, async (event) => {
       if (event.type === "turn.committed") committed = event.data;
       await onEvent(event);
     });
-    if (!committed) {
+    const committedTurn = committed as OpenNovelCommittedTurn | null;
+    if (!committedTurn) {
       throw new ServiceUnavailableException({
         code: "OPENOVEL_TURN_NOT_COMMITTED",
         message: "The story runtime ended before committing the turn.",
@@ -210,11 +249,11 @@ export class OpenNovelRuntimeClient {
       // recovery cannot inject the same maneuver context a second time.
       await this.consumeConfirmedManeuverBridge(
         input.runId,
-        Math.max(0, Number(committed.turnNumber || input.expectedStateRevision || 0)),
+        Math.max(0, Number(committedTurn.turnNumber || input.expectedStateRevision || 0)),
         bridge.context.sourceResultIds,
       ).catch(() => undefined);
     }
-    return committed;
+    return committedTurn;
   }
 
   private async prepareConfirmedManeuverBridge(

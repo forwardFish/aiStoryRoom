@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Inject, Param, Post, ServiceUnavailableException, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpException, HttpStatus, Inject, Optional, Param, Post, ServiceUnavailableException, UseGuards } from "@nestjs/common";
 import type { CreateStoryRunInput, MockLoginInput, SubmitActionInput } from "@ai-story/shared";
 import { AdminGuard } from "./auth/admin.guard";
 import { AuthGuard } from "./auth/auth.guard";
@@ -8,6 +8,11 @@ import { LegacyStoryAccessGuard } from "./auth/legacy-story-access.guard";
 import { creemConfigurationReadiness } from "./billing/creem.client";
 import { EmailService } from "./email/email.service";
 import { PrismaService } from "./prisma.service";
+import {
+  PRESSURE_CHAPTER_PRODUCT_TOKENS,
+  type PressureChapterOperationalReadinessV1,
+} from "./pressure-chapter/product";
+import { inspectPressureSupabaseDatabaseV1 } from "./pressure-chapter/production-config";
 import { StoryService } from "./story.service";
 
 const deploymentVersion = () => process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || "local";
@@ -15,7 +20,14 @@ const deploymentVersion = () => process.env.RAILWAY_GIT_COMMIT_SHA || process.en
 @Controller()
 @UseGuards(AuthGuard, LegacyStoryAccessGuard)
 export class StoryController {
-  constructor(@Inject(StoryService) private readonly story: StoryService, @Inject(PrismaService) private readonly prisma: PrismaService, @Inject(EmailService) private readonly email: EmailService) {}
+  constructor(
+    @Inject(StoryService) private readonly story: StoryService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(EmailService) private readonly email: EmailService,
+    @Optional()
+    @Inject(PRESSURE_CHAPTER_PRODUCT_TOKENS.OPERATIONAL_READINESS)
+    private readonly pressureOperations?: PressureChapterOperationalReadinessV1,
+  ) {}
 
   @Get()
   @Public()
@@ -48,8 +60,49 @@ export class StoryController {
   async ready() {
     const [database, email] = await Promise.all([this.prisma.readiness(), Promise.resolve(this.email.readiness())]);
     const billing = creemConfigurationReadiness();
-    if (!database.ready || !email.ready || !billing.ready) throw new ServiceUnavailableException({ code: "DEPENDENCY_NOT_READY", database, email, billing });
-    return { ok: true, service: "ai-story-room-api", status: "ready", version: deploymentVersion(), database, email, billing };
+    const pressureDatabase = inspectPressureSupabaseDatabaseV1(process.env);
+    const pressure = this.pressureOperations?.readiness() ?? {
+      ready: false,
+      status: "not_ready",
+      reason: "PRESSURE_OPERATIONS_NOT_REGISTERED",
+    };
+    if (!database.ready || !email.ready || !billing.ready || !pressureDatabase.ready || !pressure.ready) {
+      throw new ServiceUnavailableException({
+        code: "DEPENDENCY_NOT_READY",
+        database,
+        email,
+        billing,
+        pressureDatabase,
+        pressure,
+      });
+    }
+    return {
+      ok: true,
+      service: "ai-story-room-api",
+      status: pressure.status,
+      version: deploymentVersion(),
+      database,
+      email,
+      billing,
+      pressureDatabase,
+      pressure,
+    };
+  }
+
+  @Get("health/diagnostic")
+  @Public()
+  diagnostic() {
+    return {
+      ok: true,
+      service: "ai-story-room-api",
+      version: deploymentVersion(),
+      pressureDatabase: inspectPressureSupabaseDatabaseV1(process.env),
+      pressure: this.pressureOperations?.readiness() ?? {
+        ready: false,
+        status: "not_ready",
+        reason: "PRESSURE_OPERATIONS_NOT_REGISTERED",
+      },
+    };
   }
 
   @Post("auth/wechat-login")

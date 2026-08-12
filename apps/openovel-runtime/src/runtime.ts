@@ -90,6 +90,12 @@ export class OpenNovelRuntime {
       surfaceGuard?: SurfaceGuardModule;
       endingModule?: EndingModule;
       worldModules?: WorldModuleRegistry;
+      /**
+       * Commit the authored settlement before any literary rendering. The
+       * resulting turn is FINALIZED with narrativeStatus=PENDING and is the
+       * source consumed by the external Narrative Projector.
+       */
+      authorityFirstNarrativeProjection?: boolean;
     } = {},
   ) {
     this.describeTurnModules();
@@ -194,7 +200,6 @@ export class OpenNovelRuntime {
           const completedRepository = this.atomicCommitter().open(
             this.workspace.paths(input.runId),
           );
-          await completedRepository.restoreMaterializedViews();
           const replayed = await completedRepository.resultBySubmission(
             completedSubmissionId,
             action,
@@ -470,6 +475,143 @@ export class OpenNovelRuntime {
       selectedOption,
       causalDelta,
     });
+
+    if (
+      preparedDecision
+      && authoredAdapter
+      && atomicRepository
+      && this.runtimeOptions.authorityFirstNarrativeProjection === true
+    ) {
+      await this.workspace.updateMetadata(input.runId, { status: "COMMITTING" });
+      const authorityOptions = preparedDecision.storyComplete
+        ? []
+        : authoredAdapter.nextOptions(preparedDecision);
+      const committedAt = new Date().toISOString();
+      const ending = preparedDecision.storyComplete
+        ? await executeTurnModule({
+            runId: input.runId,
+            turnId,
+            descriptor: {
+              kind: "ENDING",
+              moduleId: this.endingModule(snapshot.metadata.worldId).moduleId,
+              mode: "REQUIRED",
+            },
+            value: {
+              turnNumber,
+              finalNarration: "",
+              sourceRef: preparedDecision.sourceRef,
+            },
+            execute: () => this.endingModule(snapshot.metadata.worldId).build({
+              runId: input.runId,
+              turnId,
+              turnNumber,
+              finalNarration: "",
+              preparedDecision,
+            }),
+            onRecord: (record) => this.recordModuleExecution(input.runId, record),
+          })
+        : undefined;
+      const authorityResult: TurnResult = {
+        runId: input.runId,
+        turnId,
+        turnNumber,
+        narration: "",
+        options: authorityOptions,
+        framing: "",
+        tension: "reader-directed",
+        storyComplete: preparedDecision.storyComplete,
+        ...(ending ? { ending } : {}),
+        causalDelta,
+        warnings: [],
+        committedAt,
+        authoritativeResultStatus: "FINALIZED",
+        narrativeStatus: "PENDING",
+      };
+      const projection = await authoredAdapter.projectCommit(
+        this.workspace,
+        input.runId,
+        preparedDecision,
+      );
+      const authoritativeCanonText = preparedDecision.settledNarrative.trim();
+      projection.materializedViews = [
+        ...await this.workspace.atomicNarrationViews(input.runId, {
+          turnId,
+          action: input.action,
+          result: { ...authorityResult, narration: authoritativeCanonText },
+          selectedOption,
+          contextNarration: authoritativeCanonText,
+          shadowClaims: [],
+        }),
+        ...(projection.materializedViews || []),
+      ];
+      const commitInput = {
+        runId: input.runId,
+        submissionId,
+        turnId,
+        turnNumber,
+        action: input.action,
+        selectedOption,
+        result: authorityResult,
+        beatManifest: preparedDecision.beatManifest,
+        narrative: {
+          status: "PENDING" as const,
+          originalText: "",
+          contextText: "",
+          factText: authoritativeCanonText,
+          shadowClaims: [],
+          disposition: { kind: "PENDING" },
+        },
+        projection,
+        modelLedger: [],
+        previousCanon: snapshot.chapters,
+        previousContextCanon: snapshot.contextChapters,
+        authoritativeCanonText,
+      };
+      const committed = await executeTurnModule({
+        runId: input.runId,
+        turnId,
+        descriptor: {
+          kind: "ATOMIC_COMMITTER",
+          moduleId: atomicCommitter.moduleId,
+          mode: "REQUIRED",
+        },
+        value: commitInput,
+        execute: () => atomicCommitter.commitAuthored(atomicRepository, commitInput),
+        onRecord: (record) => this.recordModuleExecution(input.runId, record),
+      });
+      const result = committed.result;
+      await this.workspace.recordSceneEvent(input.runId, {
+        type: "foreground_authored_state_committed",
+        turnId,
+        sourceCommitHash: result.sourceCommitHash,
+        artifactDirectory: result.artifactDirectory,
+        narrativeStatus: result.narrativeStatus,
+        ...preparedDecision.audit,
+      });
+      emit({
+        type: "options.complete",
+        data: { options: result.options, framing: result.framing },
+      });
+      await this.mirror.publish({
+        kind: "turn.committed",
+        runId: input.runId,
+        payload: {
+          submissionId: normalizeSubmissionId(input.submissionId),
+          result,
+        },
+      }).catch(async (error) => {
+        const warning: RuntimeWarning = {
+          code: "DATABASE_MIRROR_DEFERRED",
+          message: String((error as Error).message || error),
+          severity: "MEDIUM",
+          blocksPlayer: false,
+        };
+        result.warnings.push(warning);
+        emit({ type: "runtime.warning", data: warning });
+      });
+      emit({ type: "turn.committed", data: result });
+      return result;
+    }
 
     const paths = this.workspace.paths(input.runId);
     const contextCompiler = this.contextCompiler();
@@ -913,7 +1055,7 @@ export class OpenNovelRuntime {
         previousCanon: currentSnapshot.chapters,
         previousContextCanon: currentSnapshot.contextChapters,
       };
-      await executeTurnModule({
+      const committed = await executeTurnModule({
         runId: input.runId,
         turnId,
         descriptor: {
@@ -925,6 +1067,7 @@ export class OpenNovelRuntime {
         execute: () => atomicCommitter.commitAuthored(atomicRepository!, commitInput),
         onRecord: (record) => this.recordModuleExecution(input.runId, record),
       });
+      Object.assign(result, committed.result);
       await this.workspace.recordSceneEvent(input.runId, {
         type: "foreground_authored_state_committed",
         turnId,

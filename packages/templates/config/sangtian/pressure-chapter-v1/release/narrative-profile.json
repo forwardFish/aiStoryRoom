@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "openovel_pressure_narrative_profile_v1",
+  "profileId": "openovel_pressure_narrative_v1",
+  "profileVersion": "openovel-pressure-1.0.0",
+  "runtimeRole": "NON_AUTHORITATIVE_NARRATIVE_PROJECTOR",
+  "audienceProjectionRequiredBeforeRender": true,
+  "projectionBindings": [
+    {
+      "projectionKind": "GENESIS_NARRATIVE",
+      "allowedSourceAuthorities": ["GENESIS_FROZEN"]
+    },
+    {
+      "projectionKind": "BEAT_NARRATIVE",
+      "allowedSourceAuthorities": ["CHAPTER_WORKING"]
+    },
+    {
+      "projectionKind": "CHAPTER_NARRATIVE",
+      "allowedSourceAuthorities": ["CHAPTER_FROZEN"]
+    },
+    {
+      "projectionKind": "FINALE_NARRATIVE",
+      "allowedSourceAuthorities": ["FINALE_FROZEN", "LEGACY_TERMINAL_COMMITTED"]
+    }
+  ],
+  "pipeline": [
+    "AUDIENCE_PROJECTOR",
+    "NARRATIVE_CONTEXT_COMPILER",
+    "NARRATIVE_RENDERER",
+    "NARRATIVE_TRUTH_GUARD",
+    "NARRATIVE_FALLBACK_RENDERER",
+    "NARRATIVE_PUBLISHER"
+  ],
+  "statuses": [
+    "PENDING",
+    "GENERATING",
+    "VALIDATING",
+    "PUBLISHED",
+    "FALLBACK_PUBLISHED",
+    "FAILED_RETRYABLE"
+  ],
+  "sourceBinding": {
+    "requiresSourceCommitHash": true,
+    "requiresSourceContentHash": true,
+    "requiresAudience": true,
+    "idempotencyScope": [
+      "projectionKind",
+      "sourceCommitHash",
+      "sourceContentHash",
+      "narrativeProfileVersion",
+      "projectorVersion",
+      "audience"
+    ]
+  },
+  "failurePolicy": {
+    "providerFailureMode": "RETRY_OR_DETERMINISTIC_FALLBACK",
+    "truthGuardFailureMode": "REJECT_ARTIFACT_THEN_RETRY_OR_FALLBACK",
+    "publisherFailureMode": "RESUME_FROM_DURABLE_CHECKPOINT",
+    "mayBlockAuthorityCommit": false,
+    "mayRollbackAuthorityCommit": false,
+    "mayReopenTerminalState": false
+  },
+  "authorityCapabilities": []
+}

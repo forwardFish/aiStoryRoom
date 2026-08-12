@@ -56,6 +56,19 @@ test("P07 Head atomically owns prose, state and idempotent submission replay", a
       previousContextCanon: "",
     });
     assert.equal(first.alreadyCommitted, false);
+    assert.equal(first.result.sourceCommitHash, first.head.headHash);
+    assert.equal(first.result.artifactDirectory, first.head.artifactDirectory);
+    assert.equal(first.result.authoritativeResultStatus, "FINALIZED");
+    assert.equal(first.result.narrativeStatus, "PUBLISHED");
+    assert.deepEqual(first.result.authoritativeCommit, {
+      schema: first.head.schema,
+      sourceCommitHash: first.head.headHash,
+      artifactDirectory: first.head.artifactDirectory,
+      previousSourceCommitHash: null,
+      committedAt: first.head.committedAt,
+      turnId: first.head.turnId,
+      turnNumber: first.head.turnNumber,
+    });
     assert.equal((await repository.loadHead())?.turnNumber, 1);
     assert.equal(
       await repository.readArtifactText(first.head, "published-prose.md"),
@@ -106,6 +119,7 @@ test("P07 Head atomically owns prose, state and idempotent submission replay", a
       "Hold the order and inspect the register.",
     );
     assert.equal(replay?.narration, result.narration);
+    assert.equal(replay?.sourceCommitHash, first.head.headHash);
     assert.equal((await repository.loadHead())?.headHash, first.head.headHash);
 
     await repository.restoreMaterializedViews();
@@ -169,6 +183,67 @@ test("P07 Head atomically owns prose, state and idempotent submission replay", a
       () => repository.resultBySubmission("submission_0001", "A different action."),
       /IDEMPOTENCY_KEY_REUSED/,
     );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("authority-first Head finalizes structured result without owning a Narrative Artifact", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "omw-authority-first-head-"));
+  const paths = workspacePaths(root, "authority_first_run");
+  const repository = new FileAtomicTurnRepository(paths);
+  try {
+    const pendingResult: TurnResult = {
+      ...turnResult(),
+      runId: paths.runId,
+      narration: "",
+      authoritativeResultStatus: "FINALIZED",
+      narrativeStatus: "PENDING",
+    };
+    const committed = await repository.commit({
+      runId: paths.runId,
+      submissionId: "authority_first_submission",
+      turnId: "T01",
+      turnNumber: 1,
+      action: "Settle the authoritative beat.",
+      selectedOption: null,
+      result: pendingResult,
+      beatManifest: { beatId: "authority.beat" },
+      narrative: {
+        status: "PENDING",
+        originalText: "",
+        disposition: { kind: "PENDING" },
+      },
+      projection: {
+        stateRevision: { revision: 1, result: "SETTLED" },
+        causalEvents: [{ eventId: "authority_event_t01" }],
+        delayedEvents: [],
+        projectionSummary: { changed: ["result"] },
+      },
+      modelLedger: [],
+      previousCanon: "",
+      authoritativeCanonText: "The authoritative beat is settled.",
+    });
+
+    assert.equal(committed.result.sourceCommitHash, committed.head.headHash);
+    assert.equal(committed.result.narrativeStatus, "PENDING");
+    assert.equal(committed.head.narrativeStatus, "PENDING");
+    const artifactNames = await readdir(
+      path.join(paths.root, ...committed.head.artifactDirectory.split("/")),
+    );
+    assert.ok(artifactNames.includes("authoritative-canon.json"));
+    assert.ok(artifactNames.includes("result.json"));
+    assert.equal(artifactNames.includes("narrative.final.md"), false);
+    assert.equal(artifactNames.includes("published-prose.md"), false);
+    assert.equal(artifactNames.includes("model-calls.json"), false);
+    assert.match(await repository.canonicalText() || "", /authoritative beat is settled/u);
+
+    const replay = await repository.resultBySubmission(
+      "authority_first_submission",
+      "Settle the authoritative beat.",
+    );
+    assert.equal(replay?.sourceCommitHash, committed.head.headHash);
+    assert.equal(replay?.artifactDirectory, committed.head.artifactDirectory);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

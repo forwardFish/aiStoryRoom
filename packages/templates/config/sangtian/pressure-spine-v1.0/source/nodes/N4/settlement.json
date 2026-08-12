@@ -1,0 +1,646 @@
+{
+  "schemaVersion": "sangtian_node_settlement_v1_1",
+  "nodeId": "N4",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "snapshotRule": "所有 COMMIT 基于同一节点快照；先后提交不产生天然优势。",
+  "conflictComparator": {
+    "hardRulesFirst": true,
+    "priorityOrder": [
+      "人犯开始保管权",
+      "本节点已满足的执行门槛数量",
+      "合法保护或执行权限",
+      "实际投入执法资源",
+      "确定性哈希破同分"
+    ],
+    "tieBreak": {
+      "method": "STABLE_HASH",
+      "input": "runSeed|nodeId|objectId|seatId",
+      "aiInvolved": false
+    },
+    "objectRules": [
+      {
+        "objectId": "obj.tongwo_prisoners",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      },
+      {
+        "objectId": "obj.tongwo_case_file",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      }
+    ]
+  },
+  "hardRules": [
+    "权限、知识、保管、资源与截止时间先于 comparator。",
+    "同一可分资源不得双花；不可分对象同一时刻只有一个实际保管者。",
+    "SIGN 只能由本人或有明确代理权者完成。",
+    "本节点刚取得的对象不得在同一动作或同节点条件应变中立即销毁。",
+    "已冻结事实不能被后续自由文本撤销。"
+  ],
+  "defaultTrajectory": {
+    "policySynthesis": "总督要求联合复核，省府控制人犯，清流拒绝执行签押，商会提供交易痕迹，织造局发暂缓核查，内阁指令未及时改变地方；无人被处决，证人存活，案件进入争议状态。",
+    "defaultInputState": {
+      "wrongfulExecutionCount": 0,
+      "keyWitnessAliveCount": 2,
+      "caseFileState": "CONTESTED_REVIEW",
+      "refusalOrReviewRecordValid": true
+    },
+    "defaultBranchId": "settlement.n4.high",
+    "deterministic": true
+  },
+  "conditionalReaction": {
+    "trigger": "同一批人犯同时具备控制权、可引用案卷与执行签押，进入 EXECUTION_READY。",
+    "eligible": [
+      "seat.zhejiang_governor",
+      "seat.qingliu_law",
+      "seat.sili_weaving"
+    ],
+    "actions": [
+      "SIGN",
+      "DISCLOSE",
+      "SEIZE"
+    ],
+    "window": "配置初值：30 秒；每席一次。"
+  },
+  "branches": [
+    {
+      "branchId": "settlement.n4.high",
+      "level": "HIGH",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n4.settlement.high",
+      "frozenWorldState": "无人被错杀，关键证人存活，案卷进入争议审查；执行链上每一次催促与拒签均有记录。",
+      "objectMutations": [
+        {
+          "objectId": "obj.tongwo_prisoners",
+          "resultVersionId": "obj.tongwo_prisoners@N4.HIGH.v1",
+          "status": "ALIVE_UNDER_REVIEW",
+          "custodyMode": "seat.qingliu_law"
+        },
+        {
+          "objectId": "obj.tongwo_case_file",
+          "resultVersionId": "obj.tongwo_case_file@N4.HIGH.v1",
+          "status": "CONTESTED_REVIEW_FILE",
+          "custodyMode": "seat.qingliu_law"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "人犯存活",
+        "案卷版本",
+        "执行与拒签记录",
+        "证人知识",
+        "通倭口径合法性",
+        "百姓恐惧"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 15,
+        "track.mulberry_silk": 5,
+        "track.fiscal_military": 5,
+        "track.evidence_responsibility": 15,
+        "track.court_imperial_face": 5
+      },
+      "carryForward": [
+        "人犯存活",
+        "案卷版本",
+        "执行与拒签记录",
+        "证人知识",
+        "通倭口径合法性",
+        "百姓恐惧",
+        "N5可引用证言增加",
+        "省府与清流公开决裂"
+      ],
+      "transitionSceneId": "scene.n4.transition.high",
+      "predecessorIds": [
+        "scene.n4.commit_confrontation",
+        "scene.n4.reaction"
+      ],
+      "successorIds": [
+        "scene.n4.transition.high"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.tongwo_prisoners",
+        "obj.tongwo_case_file"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTROLLED",
+        "frozenFacts": [
+          "无人被正式冤杀",
+          "抓捕、审讯与上报时序进入记录",
+          "关键证人移交复核或保护"
+        ],
+        "objectState": "人犯活着进入新保管；案卷处于可审查而不可直接执行状态。",
+        "carry": [
+          "N5可引用证言增加",
+          "省府与清流公开决裂"
+        ]
+      },
+      "frozenFacts": [
+        "无人被正式冤杀",
+        "抓捕、审讯与上报时序进入记录",
+        "关键证人移交复核或保护"
+      ],
+      "frozenResultId": "frozen.N4.HIGH",
+      "branchSelector": {
+        "all": [
+          {
+            "key": "wrongfulExecutionCount",
+            "op": "==",
+            "value": 0
+          },
+          {
+            "key": "keyWitnessAliveCount",
+            "op": ">=",
+            "value": 2
+          },
+          {
+            "key": "caseFileState",
+            "op": "IN",
+            "value": [
+              "CONTESTED_REVIEW",
+              "VALID_REVIEW"
+            ]
+          },
+          {
+            "key": "refusalOrReviewRecordValid",
+            "op": "==",
+            "value": true
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N4.HIGH.fact.01",
+        "frozen.N4.HIGH.fact.02",
+        "frozen.N4.HIGH.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N4.HIGH.fact.01",
+          "statement": "无人被正式冤杀",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N4.HIGH.fact.02",
+          "statement": "抓捕、审讯与上报时序进入记录",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N4.HIGH.fact.03",
+          "statement": "关键证人移交复核或保护",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.tongwo_prisoners",
+          "versionId": "obj.tongwo_prisoners@N4.HIGH.v1",
+          "status": "ALIVE_UNDER_REVIEW",
+          "custodyMode": "seat.qingliu_law",
+          "custodyRule": "合法转押或联合审查成立；每名人犯状态单独冻结。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N4.HIGH"
+        },
+        {
+          "objectId": "obj.tongwo_case_file",
+          "versionId": "obj.tongwo_case_file@N4.HIGH.v1",
+          "status": "CONTESTED_REVIEW_FILE",
+          "custodyMode": "seat.qingliu_law",
+          "custodyRule": "案卷、拒签和时序异议组成可复核版本。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N4.HIGH"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n4.mid",
+      "level": "MID",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n4.settlement.mid",
+      "frozenWorldState": "主要人犯暂时保住，但一名次要证人失踪或案卷被改写；案件仍可复核，责任链已经受损。",
+      "objectMutations": [
+        {
+          "objectId": "obj.tongwo_prisoners",
+          "resultVersionId": "obj.tongwo_prisoners@N4.MID.v1",
+          "status": "PRINCIPALS_ALIVE_PARTIAL_WITNESS_LOSS",
+          "custodyMode": "VALID_CUSTODY_WINNER"
+        },
+        {
+          "objectId": "obj.tongwo_case_file",
+          "resultVersionId": "obj.tongwo_case_file@N4.MID.v1",
+          "status": "CONTESTED_WITH_GAPS",
+          "custodyMode": "FROM_CONFLICT_WINNER"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "人犯存活",
+        "案卷版本",
+        "执行与拒签记录",
+        "证人知识",
+        "通倭口径合法性",
+        "百姓恐惧"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 0,
+        "track.mulberry_silk": 0,
+        "track.fiscal_military": 0,
+        "track.evidence_responsibility": 0,
+        "track.court_imperial_face": 0
+      },
+      "carryForward": [
+        "人犯存活",
+        "案卷版本",
+        "执行与拒签记录",
+        "证人知识",
+        "通倭口径合法性",
+        "百姓恐惧",
+        "保护方承担官位风险",
+        "N7可使用非法处置记录"
+      ],
+      "transitionSceneId": "scene.n4.transition.mid",
+      "predecessorIds": [
+        "scene.n4.commit_confrontation",
+        "scene.n4.reaction"
+      ],
+      "successorIds": [
+        "scene.n4.transition.mid"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.tongwo_prisoners",
+        "obj.tongwo_case_file"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTESTED",
+        "frozenFacts": [
+          "至少一名关键证人存活",
+          "案卷或签押存在缺口",
+          "发生胁迫、非法转移或相互拒签"
+        ],
+        "objectState": "人犯和案卷分别落入不同控制，程序效力有争议。",
+        "carry": [
+          "保护方承担官位风险",
+          "N7可使用非法处置记录"
+        ]
+      },
+      "frozenFacts": [
+        "至少一名关键证人存活",
+        "案卷或签押存在缺口",
+        "发生胁迫、非法转移或相互拒签"
+      ],
+      "frozenResultId": "frozen.N4.MID",
+      "branchSelector": {
+        "otherwise": true
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N4.MID.fact.01",
+        "frozen.N4.MID.fact.02",
+        "frozen.N4.MID.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N4.MID.fact.01",
+          "statement": "至少一名关键证人存活",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N4.MID.fact.02",
+          "statement": "案卷或签押存在缺口",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N4.MID.fact.03",
+          "statement": "发生胁迫、非法转移或相互拒签",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.tongwo_prisoners",
+          "versionId": "obj.tongwo_prisoners@N4.MID.v1",
+          "status": "PRINCIPALS_ALIVE_PARTIAL_WITNESS_LOSS",
+          "custodyMode": "VALID_CUSTODY_WINNER",
+          "custodyRule": "主犯与证人分别按实际转押、失踪和看守记录确定。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N4.MID"
+        },
+        {
+          "objectId": "obj.tongwo_case_file",
+          "versionId": "obj.tongwo_case_file@N4.MID.v1",
+          "status": "CONTESTED_WITH_GAPS",
+          "custodyMode": "FROM_CONFLICT_WINNER",
+          "custodyRule": "由拥有最多合法案卷组成部分且具审查权限者保管；缺页保持缺失。",
+          "knownBy": [
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N4.MID"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n4.low",
+      "level": "LOW",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n4.settlement.low",
+      "frozenWorldState": "人犯被处决或秘密处置，案卷被补作成正式口径；拒绝卖田者被定为通倭，恐惧推动后续买田。",
+      "objectMutations": [
+        {
+          "objectId": "obj.tongwo_prisoners",
+          "resultVersionId": "obj.tongwo_prisoners@N4.LOW.v1",
+          "status": "EXECUTED_OR_DISAPPEARED",
+          "custodyMode": "SYSTEM_FINAL"
+        },
+        {
+          "objectId": "obj.tongwo_case_file",
+          "resultVersionId": "obj.tongwo_case_file@N4.LOW.v1",
+          "status": "OFFICIAL_EXECUTION_VERSION",
+          "custodyMode": "seat.zhejiang_administration"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "人犯存活",
+        "案卷版本",
+        "执行与拒签记录",
+        "证人知识",
+        "通倭口径合法性",
+        "百姓恐惧"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": -15,
+        "track.mulberry_silk": -5,
+        "track.fiscal_military": -5,
+        "track.evidence_responsibility": -15,
+        "track.court_imperial_face": -10
+      },
+      "carryForward": [
+        "人犯存活",
+        "案卷版本",
+        "执行与拒签记录",
+        "证人知识",
+        "通倭口径合法性",
+        "百姓恐惧",
+        "N5民田抵抗降低",
+        "终局证据证明上限下降"
+      ],
+      "transitionSceneId": "scene.n4.transition.low",
+      "predecessorIds": [
+        "scene.n4.commit_confrontation",
+        "scene.n4.reaction"
+      ],
+      "successorIds": [
+        "scene.n4.transition.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.tongwo_prisoners",
+        "obj.tongwo_case_file"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CAPTURED_BY_PRESSURE",
+        "frozenFacts": [
+          "关键人犯被处决、失踪或不可再作证",
+          "处置责任落到具名与实际控制者",
+          "反抗卖田者受到震慑"
+        ],
+        "objectState": "人犯状态不可逆；案卷成为既成处置依据或事后补作材料。",
+        "carry": [
+          "N5民田抵抗降低",
+          "终局证据证明上限下降"
+        ]
+      },
+      "frozenFacts": [
+        "关键人犯被处决、失踪或不可再作证",
+        "处置责任落到具名与实际控制者",
+        "反抗卖田者受到震慑"
+      ],
+      "frozenResultId": "frozen.N4.LOW",
+      "branchSelector": {
+        "any": [
+          {
+            "key": "wrongfulExecutionCount",
+            "op": ">",
+            "value": 0
+          },
+          {
+            "key": "keyWitnessAliveCount",
+            "op": "==",
+            "value": 0
+          },
+          {
+            "key": "caseFileState",
+            "op": "==",
+            "value": "OFFICIAL_EXECUTION_VERSION"
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N4.LOW.fact.01",
+        "frozen.N4.LOW.fact.02",
+        "frozen.N4.LOW.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N4.LOW.fact.01",
+          "statement": "关键人犯被处决、失踪或不可再作证",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N4.LOW.fact.02",
+          "statement": "处置责任落到具名与实际控制者",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N4.LOW.fact.03",
+          "statement": "反抗卖田者受到震慑",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.tongwo_prisoners",
+          "versionId": "obj.tongwo_prisoners@N4.LOW.v1",
+          "status": "EXECUTED_OR_DISAPPEARED",
+          "custodyMode": "SYSTEM_FINAL",
+          "custodyRule": "死亡或失踪人物进入不可逆状态，不能由后续供状恢复。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N4.LOW"
+        },
+        {
+          "objectId": "obj.tongwo_case_file",
+          "versionId": "obj.tongwo_case_file@N4.LOW.v1",
+          "status": "OFFICIAL_EXECUTION_VERSION",
+          "custodyMode": "seat.zhejiang_administration",
+          "custodyRule": "补作案卷成为公开口径，但非法经手痕迹若实际留存仍独立存在。",
+          "knownBy": [
+            "seat.zhejiang_administration",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N4.LOW"
+        }
+      ]
+    }
+  ],
+  "frozenResultFields": [
+    "人犯存活",
+    "案卷版本",
+    "执行与拒签记录",
+    "证人知识",
+    "通倭口径合法性",
+    "百姓恐惧"
+  ],
+  "nextNodeId": "N5",
+  "provenanceClass": "ADAPTATION_RULE",
+  "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+  "selectorInputs": [
+    {
+      "inputKey": "wrongfulExecutionCount",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "keyWitnessAliveCount",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "caseFileState",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "refusalOrReviewRecordValid",
+      "source": "Frozen action/object/event state",
+      "required": true
+    }
+  ],
+  "branchSelector": {
+    "evaluationOrder": [
+      "HIGH",
+      "LOW",
+      "MID"
+    ],
+    "selectors": {
+      "HIGH": {
+        "all": [
+          {
+            "key": "wrongfulExecutionCount",
+            "op": "==",
+            "value": 0
+          },
+          {
+            "key": "keyWitnessAliveCount",
+            "op": ">=",
+            "value": 2
+          },
+          {
+            "key": "caseFileState",
+            "op": "IN",
+            "value": [
+              "CONTESTED_REVIEW",
+              "VALID_REVIEW"
+            ]
+          },
+          {
+            "key": "refusalOrReviewRecordValid",
+            "op": "==",
+            "value": true
+          }
+        ]
+      },
+      "LOW": {
+        "any": [
+          {
+            "key": "wrongfulExecutionCount",
+            "op": ">",
+            "value": 0
+          },
+          {
+            "key": "keyWitnessAliveCount",
+            "op": "==",
+            "value": 0
+          },
+          {
+            "key": "caseFileState",
+            "op": "==",
+            "value": "OFFICIAL_EXECUTION_VERSION"
+          }
+        ]
+      },
+      "MID": {
+        "otherwise": true
+      }
+    },
+    "notes": "Thresholds are configuration seeds, not validated balance. HIGH is tested first, LOW second, MID is the only otherwise branch."
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "sangtian_pressure_node_v1",
+  "nodeId": "N1",
+  "sequence": 1,
+  "title": "九堰将决",
+  "subtitle": "端午汛前，堰口、兵力与毁堤责任同时失控",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "entryCondition": "P0 已 FROZEN 且过场已生成。",
+  "deadline": "配置初值：两个时段；第二时段结束或压力达到 4 时强制结算。",
+  "pressure": "毁堤命令已进入执行链，汛水到来；玩家能改变受灾程度、疏散、证据和责任，不能让密谋与汛期从未存在。",
+  "contestedObjectIds": [
+    "obj.nine_weirs",
+    "obj.breach_order_chain"
+  ],
+  "secondaryObjectIds": [],
+  "startState": {
+    "pressureLevel": 2,
+    "timeUsed": 0,
+    "sceneBudget": 3,
+    "frozen": false
+  },
+  "lockedFacts": [
+    "至少一处关键堰口在开局前已被破坏。",
+    "端午汛不会停止。",
+    "本节点必然形成一次重大民生冲击，但范围和代价可改变。"
+  ],
+  "freeTextBoundary": [
+    "输入只形成意图或尝试。",
+    "休息、等待、饮酒、回避可以成功，但必须消耗时间或行动机会。",
+    "编造已成功事实、越权命令和不存在资源必须失败并推进世界。",
+    "固定压力不能被“换故事”或假设句取消。"
+  ],
+  "actionBudget": {
+    "preparePerSeat": 1,
+    "commitPerSeat": 1,
+    "reactionPerSeat": 0
+  },
+  "earlySettlementCondition": "六席均已提交 COMMIT，且堰口、疏散与命令保管均有唯一可结算状态。",
+  "forcedSettlementCondition": "第二时段结束、压力达到 4，或任一关键堰口状态进入 IRREVERSIBLE。",
+  "nextNodeId": "N2",
+  "provenanceClaimIds": [
+    "N1-SF-01",
+    "N1-SF-02",
+    "N1-SF-03",
+    "N1-SF-04",
+    "N1-INF-01",
+    "N1-UNK-01"
+  ],
+  "adaptationDecisionIds": [
+    "adapt.n1.pressure_lock",
+    "adapt.n1.two_beats",
+    "adapt.n1.object_contest"
+  ]
+}

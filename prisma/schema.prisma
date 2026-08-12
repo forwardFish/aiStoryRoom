@@ -116,94 +116,106 @@ model WorldTemplate {
 }
 
 model StoryRun {
-  id                 String         @id @default(cuid())
-  templateId         String
-  ownerUserId        String
-  title              String
-  hook               String         @db.Text
-  mode               String         @default("invite")
-  templateKey        String         @default("sangtian")
-  userId             String?
-  selectedRoleKey    String?
-  status             String         @default("waiting_players")
-  currentDay         Int            @default(1)
-  totalDays          Int            @default(7)
-  version            Int            @default(1)
-  currentChapter     Int            @default(1)
-  currentNodeId      String?
-  maxPlayers         Int            @default(5)
-  activeHumanCount   Int            @default(1)
-  aiPlayerCount      Int            @default(0)
-  dangerLevel        Int            @default(1)
-  maxDangerLevel     Int            @default(5)
-  chapterCount       Int            @default(0)
-  completedNodeCount Int            @default(0)
-  summary            String?        @db.Text
-  stateJson          Json
-  visibility         String         @default("link")
-  inviteCode         String         @unique
-  accessLevel        RunAccessLevel @default(FREE_TRIAL)
-  freeDecisionsUsed  Int            @default(0)
-  paywallReachedAt   DateTime?
-  unlockedAt         DateTime?
-  engineVersion      String         @default("legacy_v1")
-  strategyVersion    String         @default("legacy_v1")
-  billingPolicyVersion String       @default("world_unlock_v1")
-  billingPriceJson     Json         @default("{}")
-  worldSequence      Int            @default(0)
-  reservedWorldSequence Int         @default(0)
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  id                    String         @id @default(cuid())
+  templateId            String
+  ownerUserId           String
+  title                 String
+  hook                  String         @db.Text
+  mode                  String         @default("invite")
+  templateKey           String         @default("sangtian")
+  userId                String?
+  selectedRoleKey       String?
+  status                String         @default("waiting_players")
+  currentDay            Int            @default(1)
+  totalDays             Int            @default(7)
+  version               Int            @default(1)
+  currentChapter        Int            @default(1)
+  currentNodeId         String?
+  maxPlayers            Int            @default(5)
+  activeHumanCount      Int            @default(1)
+  aiPlayerCount         Int            @default(0)
+  dangerLevel           Int            @default(1)
+  maxDangerLevel        Int            @default(5)
+  chapterCount          Int            @default(0)
+  completedNodeCount    Int            @default(0)
+  summary               String?        @db.Text
+  stateJson             Json
+  visibility            String         @default("link")
+  inviteCode            String         @unique
+  accessLevel           RunAccessLevel @default(FREE_TRIAL)
+  freeDecisionsUsed     Int            @default(0)
+  paywallReachedAt      DateTime?
+  unlockedAt            DateTime?
+  engineVersion         String         @default("legacy_v1")
+  strategyVersion       String         @default("legacy_v1")
+  billingPolicyVersion  String         @default("world_unlock_v1")
+  billingPriceJson      Json           @default("{}")
+  worldSequence         Int            @default(0)
+  reservedWorldSequence Int            @default(0)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
-  template              WorldTemplate          @relation(fields: [templateId], references: [id], onDelete: Restrict)
-  owner                 User                   @relation("StoryRunOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  players               StoryPlayer[]
-  roles                 StoryRole[]
-  relations             RoleRelation[]
-  sandboxes             ChapterSandbox[]
-  nodes                 SceneNode[]
-  actions               PlayerAction[]
-  resolutions           DirectorResolution[]
-  narrativeSegments     NarrativeSegment[]
-  clues                 Clue[]
-  snapshots             WorldStateSnapshot[]
-  chapters              Chapter[]
-  notifications         Notification[]
-  aiTasks               AiTask[]
-  outboxTasks           StoryTaskOutbox[]
-  events                EventLog[]
-  storyEvents           StoryEvent[]           @relation("StoryRunStoryEvents")
-  shareTokens           ShareToken[]
-  worldUnlock           WorldUnlock?
-  canonFacts            CanonFact[]
-  characterMinds        CharacterMind[]
-  storyThreads          StoryThread[]
-  sceneSnapshots        SceneSnapshot[]
-  narrativeEntries      NarrativeEntry[]
-  actionWindows         ActionWindow[]
-  roleControls          RoleControl[]
-  interactionRequests   InteractionRequest[]
-  roleAssets            RoleAsset[]
-  storyEventCursor      StoryEventCursor?
-  eventDeliveries       EventDelivery[]
-  eventDeliveryCursors  EventDeliveryCursor[]
-  presenceSessions      PresenceSession[]
-  roleAgentPolicies     RoleAgentPolicy[]
-  roleAgentProjections  RoleAgentProjection[]
-  roleAgentDecisions    RoleAgentDecision[]
-  resolutionWorkflows   ResolutionWorkflow[]
-  actorThreads          ActorThread[]
-  actorTurns            ActorTurn[]
-  decisionSets          DecisionSet[]
-  decisionSubmissions   DecisionSubmission[]
-  actionResolutions     ActionResolution[]
-  contentQualityReviews ContentQualityReview[]
-  interactionRequestsV2 InteractionRequestV2[]
-  conditionalActionsV2  ConditionalActionV2[]
-  commitmentsV2         CommitmentV2[]
-  storyContextSnapshotsV2 StoryContextSnapshotV2[]
-  promptExecutionRecords  PromptExecutionRecord[]
-  soloGenerationAttempts  SoloGenerationAttempt[]
+  template                     WorldTemplate                  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  owner                        User                           @relation("StoryRunOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  players                      StoryPlayer[]
+  roles                        StoryRole[]
+  relations                    RoleRelation[]
+  sandboxes                    ChapterSandbox[]
+  nodes                        SceneNode[]
+  actions                      PlayerAction[]
+  resolutions                  DirectorResolution[]
+  narrativeSegments            NarrativeSegment[]
+  clues                        Clue[]
+  snapshots                    WorldStateSnapshot[]
+  chapters                     Chapter[]
+  notifications                Notification[]
+  aiTasks                      AiTask[]
+  outboxTasks                  StoryTaskOutbox[]
+  events                       EventLog[]
+  storyEvents                  StoryEvent[]                   @relation("StoryRunStoryEvents")
+  shareTokens                  ShareToken[]
+  worldUnlock                  WorldUnlock?
+  canonFacts                   CanonFact[]
+  characterMinds               CharacterMind[]
+  storyThreads                 StoryThread[]
+  sceneSnapshots               SceneSnapshot[]
+  narrativeEntries             NarrativeEntry[]
+  actionWindows                ActionWindow[]
+  roleControls                 RoleControl[]
+  interactionRequests          InteractionRequest[]
+  roleAssets                   RoleAsset[]
+  storyEventCursor             StoryEventCursor?
+  eventDeliveries              EventDelivery[]
+  eventDeliveryCursors         EventDeliveryCursor[]
+  presenceSessions             PresenceSession[]
+  roleAgentPolicies            RoleAgentPolicy[]
+  roleAgentProjections         RoleAgentProjection[]
+  roleAgentDecisions           RoleAgentDecision[]
+  resolutionWorkflows          ResolutionWorkflow[]
+  actorThreads                 ActorThread[]
+  actorTurns                   ActorTurn[]
+  decisionSets                 DecisionSet[]
+  decisionSubmissions          DecisionSubmission[]
+  actionResolutions            ActionResolution[]
+  contentQualityReviews        ContentQualityReview[]
+  interactionRequestsV2        InteractionRequestV2[]
+  conditionalActionsV2         ConditionalActionV2[]
+  commitmentsV2                CommitmentV2[]
+  storyContextSnapshotsV2      StoryContextSnapshotV2[]
+  promptExecutionRecords       PromptExecutionRecord[]
+  soloGenerationAttempts       SoloGenerationAttempt[]
+  pressureRouteSnapshot        PressureRunRouteSnapshot?
+  pressureLifecycle            PressureRunLifecycle?
+  pressureGenesisCommit        PressureGenesisCommit?
+  pressureChapterRuntimes      PressureChapterRuntime[]
+  pressureDecisionActions      PressureDecisionAction[]
+  pressureSettlements          PressureChapterSettlement[]
+  pressureFinaleDecision       PressureFinaleDecision?
+  pressureNarrativeProjections PressureNarrativeProjection[]
+  pressureOutboxTasks          PressureOutboxTask[]
+  pressureReplayReceipts       PressureReplayCommandReceipt[]
+  pressureLegacyTerminalCommit PressureLegacyTerminalCommit?
+  pressureSeatControlSnapshot  PressureSeatControlSnapshot?
 
   @@index([templateId])
   @@index([ownerUserId])
@@ -1087,13 +1099,13 @@ model ActorTurn {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  run                          StoryRun              @relation(fields: [runId], references: [id], onDelete: Cascade)
-  thread                       ActorThread           @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  role                         StoryRole             @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  run                          StoryRun                 @relation(fields: [runId], references: [id], onDelete: Cascade)
+  thread                       ActorThread              @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role                         StoryRole                @relation(fields: [roleId], references: [id], onDelete: Cascade)
   decisionSet                  DecisionSet?
   submission                   DecisionSubmission?
   resolution                   ActionResolution?
-  interactionResponseRequestV2 InteractionRequestV2? @relation("InteractionV2ResponseTurn")
+  interactionResponseRequestV2 InteractionRequestV2?    @relation("InteractionV2ResponseTurn")
   storyContextSnapshotsV2      StoryContextSnapshotV2[]
   promptExecutionRecords       PromptExecutionRecord[]
 
@@ -1179,15 +1191,15 @@ model ActionResolution {
   resolvedAt           DateTime @default(now())
   createdAt            DateTime @default(now())
 
-  run                   StoryRun               @relation(fields: [runId], references: [id], onDelete: Cascade)
-  thread                ActorThread            @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  turn                  ActorTurn              @relation(fields: [turnId], references: [id], onDelete: Cascade)
-  submission            DecisionSubmission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  role                  StoryRole              @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  playerAction          PlayerAction           @relation(fields: [playerActionId], references: [id], onDelete: Restrict)
-  interactionRequestsV2 InteractionRequestV2[]
-  triggeredConditionV2  ConditionalActionV2?   @relation("ConditionalV2TriggeredResolution")
-  sourceCommitmentsV2   CommitmentV2[]
+  run                    StoryRun                @relation(fields: [runId], references: [id], onDelete: Cascade)
+  thread                 ActorThread             @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  turn                   ActorTurn               @relation(fields: [turnId], references: [id], onDelete: Cascade)
+  submission             DecisionSubmission      @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  role                   StoryRole               @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  playerAction           PlayerAction            @relation(fields: [playerActionId], references: [id], onDelete: Restrict)
+  interactionRequestsV2  InteractionRequestV2[]
+  triggeredConditionV2   ConditionalActionV2?    @relation("ConditionalV2TriggeredResolution")
+  sourceCommitmentsV2    CommitmentV2[]
   promptExecutionRecords PromptExecutionRecord[]
 
   @@unique([runId, appliedWorldSequence])
@@ -1310,23 +1322,23 @@ model ContentQualityReview {
 /// purpose. A rejected row stores the fail-closed ContextReport without a
 /// snapshot; READY rows bind every later prompt to the same snapshot hash.
 model StoryContextSnapshotV2 {
-  id                   String   @id @default(cuid())
-  runId                String
-  roleId               String
-  actorTurnId          String?
-  purpose              String
-  baseWorldSequence    Int
-  turnRevision         Int
-  controlEpoch         Int
-  contextVersion       String   @default("story-context-v2.1")
-  snapshotJson         Json?
-  reportJson           Json
-  snapshotHash         String?
-  status               String   @default("READY")
-  createdAt            DateTime @default(now())
+  id                String   @id @default(cuid())
+  runId             String
+  roleId            String
+  actorTurnId       String?
+  purpose           String
+  baseWorldSequence Int
+  turnRevision      Int
+  controlEpoch      Int
+  contextVersion    String   @default("story-context-v2.1")
+  snapshotJson      Json?
+  reportJson        Json
+  snapshotHash      String?
+  status            String   @default("READY")
+  createdAt         DateTime @default(now())
 
-  run              StoryRun               @relation(fields: [runId], references: [id], onDelete: Cascade)
-  role             StoryRole              @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  run              StoryRun                @relation(fields: [runId], references: [id], onDelete: Cascade)
+  role             StoryRole               @relation(fields: [roleId], references: [id], onDelete: Cascade)
   actorTurn        ActorTurn?              @relation(fields: [actorTurnId], references: [id], onDelete: SetNull)
   promptExecutions PromptExecutionRecord[]
 
@@ -1339,38 +1351,38 @@ model StoryContextSnapshotV2 {
 /// Audit record for exactly one isolated model call. Internal prompt payloads
 /// never enter the player projection, but remain available to test/audit code.
 model PromptExecutionRecord {
-  id                   String   @id
-  runId                String
-  roleId               String
-  actorTurnId          String?
-  actionResolutionId   String?
-  contextSnapshotId    String
-  pipelineStep         String
-  promptVersion        String
-  schemaVersion        String
-  provider             String
-  modelName            String
-  systemPromptHash     String
-  contextSnapshotHash  String
-  inputHash            String
-  outputHash           String?
-  attempt              Int      @default(1)
-  inputJson            Json
-  outputJson           Json?
-  issueCodesJson       Json
-  tokenUsageJson       Json?
-  status               String
-  supersededReason     String?
-  startedAt            DateTime
-  finishedAt           DateTime
-  latencyMs            Int
-  createdAt            DateTime @default(now())
+  id                  String   @id
+  runId               String
+  roleId              String
+  actorTurnId         String?
+  actionResolutionId  String?
+  contextSnapshotId   String
+  pipelineStep        String
+  promptVersion       String
+  schemaVersion       String
+  provider            String
+  modelName           String
+  systemPromptHash    String
+  contextSnapshotHash String
+  inputHash           String
+  outputHash          String?
+  attempt             Int      @default(1)
+  inputJson           Json
+  outputJson          Json?
+  issueCodesJson      Json
+  tokenUsageJson      Json?
+  status              String
+  supersededReason    String?
+  startedAt           DateTime
+  finishedAt          DateTime
+  latencyMs           Int
+  createdAt           DateTime @default(now())
 
-  run                StoryRun              @relation(fields: [runId], references: [id], onDelete: Cascade)
-  role               StoryRole             @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  actorTurn          ActorTurn?             @relation(fields: [actorTurnId], references: [id], onDelete: SetNull)
-  actionResolution   ActionResolution?      @relation(fields: [actionResolutionId], references: [id], onDelete: SetNull)
-  contextSnapshot    StoryContextSnapshotV2 @relation(fields: [contextSnapshotId], references: [id], onDelete: Cascade)
+  run              StoryRun               @relation(fields: [runId], references: [id], onDelete: Cascade)
+  role             StoryRole              @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  actorTurn        ActorTurn?             @relation(fields: [actorTurnId], references: [id], onDelete: SetNull)
+  actionResolution ActionResolution?      @relation(fields: [actionResolutionId], references: [id], onDelete: SetNull)
+  contextSnapshot  StoryContextSnapshotV2 @relation(fields: [contextSnapshotId], references: [id], onDelete: Cascade)
 
   @@index([runId, roleId, startedAt])
   @@index([actorTurnId, pipelineStep, status])
@@ -1402,7 +1414,7 @@ model SoloGenerationAttempt {
   confirmedResolutionJson Json?
   contextReportJson       Json?
   rawOutput               String?   @db.Text
-  parsedOutput             Json?
+  parsedOutput            Json?
   issueCodesJson          Json
   failureReason           String?   @db.Text
   timingsJson             Json?
@@ -2036,4 +2048,475 @@ model WorldUnlock {
   run StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade)
 
   @@index([paidByUserId, createdAt])
+}
+
+// Pressure Chapter v1 is deliberately additive. These records do not reuse
+// ActionWindow or ActorThread uniqueness because those tables remain the
+// immutable contract for legacy runs.
+
+enum PressureParticipantMode {
+  SOLO
+  MULTIPLAYER
+}
+
+enum PressureChapterRuntimeState {
+  CHAPTER_OPENING
+  CHAPTER_ACTIVE
+  DECISION_POINT_OPEN
+  ACTION_DRAFTING
+  ACTIONS_SEALED
+  BEAT_RESOLVING
+  BEAT_RESOLVED
+  CHAPTER_CLOSING
+  CHAPTER_SETTLING
+  CHAPTER_FROZEN
+}
+
+enum PressureDecisionActionStatus {
+  DRAFT
+  CONFIRMED
+  SEALED
+  REJECTED
+}
+
+enum PressureNarrativeProjectionKind {
+  GENESIS_NARRATIVE
+  BEAT_NARRATIVE
+  CHAPTER_NARRATIVE
+  FINALE_NARRATIVE
+}
+
+enum PressureNarrativeSourceAuthority {
+  GENESIS_FROZEN
+  CHAPTER_WORKING
+  CHAPTER_FROZEN
+  FINALE_FROZEN
+  LEGACY_TERMINAL_COMMITTED
+}
+
+enum PressureNarrativeAudienceKind {
+  PUBLIC
+  SEAT
+}
+
+enum PressureNarrativeStatus {
+  PENDING
+  GENERATING
+  VALIDATING
+  PUBLISHED
+  FALLBACK_PUBLISHED
+  FAILED_RETRYABLE
+}
+
+enum PressureOutboxTaskType {
+  OPEN_CHAPTER
+  PROJECT_GENESIS_NARRATIVE
+  PROJECT_BEAT_NARRATIVE
+  PROJECT_CHAPTER_NARRATIVE
+  COMPUTE_FINALE
+  PROJECT_FINALE_NARRATIVE
+  INTERACTION_COMPILE_REQUESTED
+  PUBLISH_RESULT
+}
+
+enum PressureOutboxStatus {
+  PENDING
+  LEASED
+  RETRYABLE
+  COMPLETED
+  DEAD_LETTER
+}
+
+enum PressureOutboxCheckpoint {
+  PERSISTED
+  LEASED
+  HANDLER_STARTED
+  HANDLER_COMMITTED
+  PUBLISHED
+  ACKNOWLEDGED
+  FAILED_RETRYABLE
+  DEAD_LETTER
+}
+
+enum PressureReplayLaunchKind {
+  CREATE_RUN
+  CREATE_LOBBY
+  NAVIGATE
+}
+
+/// Mutable lobby/start lifecycle for new Pressure runs. StoryRun.stateJson is
+/// reserved for the exact WorldStateV1 authority payload after Genesis and
+/// must never be used to co-locate this metadata.
+model PressureRunLifecycle {
+  runId                   String                  @id
+  schemaVersion           String
+  participantMode         PressureParticipantMode
+  lifecycle               String
+  routeFreeze             String
+  requestFingerprint      String
+  idempotencyKey          String
+  shellHash               String
+  shellJson               Json
+  lobbyJson               Json
+  startJson               Json
+  stateHash               String
+  startRequestFingerprint String?
+  startIdempotencyKey     String?
+  startRunSeed            String?
+  startMaterialHash       String?
+  version                 Int                     @default(1)
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+
+  run StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade, map: "pc_lifecycle_run_fkey")
+
+  @@index([lifecycle, updatedAt], map: "pc_lifecycle_state_updated_idx")
+  @@index([idempotencyKey, requestFingerprint], map: "pc_lifecycle_request_idx")
+}
+
+model PressureRunRouteSnapshot {
+  id                             String                  @id @default(cuid())
+  runId                          String                  @unique(map: "pc_route_run_key")
+  schemaVersion                  String
+  engineVersion                  String
+  strategyVersion                String
+  runtimeProfile                 String
+  endgamePolicyVersion           String
+  resultSchemaVersion            String
+  contentPackageVersion          String
+  contentPackageSha256           String
+  orchestrationPackageVersion    String
+  orchestrationPackageSha256     String
+  runtimeContractVersion         String
+  runtimeContractSha256          String
+  testMatrixVersion              String
+  testMatrixSha256               String
+  runSeed                        String
+  narrativeProfileVersion        String
+  featureSetVersion              String
+  resultContractRegistryVersion  String
+  participantMode                PressureParticipantMode
+  seatIdsJson                    Json
+  humanSeatIdsAtStartJson        Json
+  controlTopologyVersion         String
+  initialRoleControlSnapshotHash String
+  routeJson                      Json
+  routeHash                      String                  @unique(map: "pc_route_hash_key")
+  createdAt                      DateTime                @default(now())
+
+  run             StoryRun                 @relation(fields: [runId], references: [id], onDelete: Restrict, map: "pc_route_run_fkey")
+  chapterRuntimes PressureChapterRuntime[] @relation("PressureChapterRoute")
+  finaleDecisions PressureFinaleDecision[] @relation("PressureFinaleRoute")
+
+  @@unique([routeHash, runId], map: "pc_route_hash_run_key")
+  @@index([runtimeProfile, createdAt], map: "pc_route_profile_created_idx")
+}
+
+model PressureGenesisCommit {
+  id                   String   @id @default(cuid())
+  runId                String   @unique(map: "pc_genesis_commit_run_key")
+  schemaVersion        String
+  sequence             Int      @default(0)
+  idempotencyKey       String
+  requestFingerprint   String
+  inputHash            String
+  genesisHash          String
+  commitManifestJson   Json
+  commitManifestHash   String
+  rootEventId          String
+  outboxDedupeKeysJson Json
+  commitHash           String
+  createdAt            DateTime @default(now())
+
+  run StoryRun @relation(fields: [runId], references: [id], onDelete: Restrict, map: "pc_genesis_commit_run_fkey")
+
+  @@unique([runId, idempotencyKey], map: "pc_genesis_idempotency_key")
+}
+
+model PressureChapterRuntime {
+  id                          String                      @id @default(cuid())
+  runId                       String
+  chapterId                   String
+  chapterSequence             Int
+  state                       PressureChapterRuntimeState @default(CHAPTER_OPENING)
+  baseWorldSequence           Int
+  baseWorldStateHash          String
+  previousFrozenHash          String
+  routeHash                   String
+  contentPackageVersion       String
+  contentHash                 String
+  orchestrationPackageVersion String
+  orchestrationHash           String
+  runtimeContractVersion      String
+  runtimeContractHash         String
+  workingRevision             Int                         @default(0)
+  workingStateJson            Json
+  workingStateHash            String
+  decisionStateJson           Json
+  ledgerProjectionJson        Json
+  closeInputHash              String?
+  lockVersion                 Int                         @default(0)
+  openedAt                    DateTime                    @default(now())
+  closingAt                   DateTime?
+  frozenAt                    DateTime?
+  createdAt                   DateTime                    @default(now())
+  updatedAt                   DateTime                    @updatedAt
+
+  run             StoryRun                   @relation(fields: [runId], references: [id], onDelete: Cascade, map: "pc_chapter_run_fkey")
+  routeSnapshot   PressureRunRouteSnapshot   @relation("PressureChapterRoute", fields: [routeHash, runId], references: [routeHash, runId], onDelete: Restrict, map: "pc_chapter_route_fkey")
+  decisionActions PressureDecisionAction[]
+  settlement      PressureChapterSettlement?
+
+  @@unique([runId, chapterSequence], map: "pc_chapter_run_sequence_key")
+  @@unique([runId, chapterId], map: "pc_chapter_run_id_key")
+  @@unique([id, runId], map: "pc_chapter_id_run_key")
+  @@index([runId, state], map: "pc_chapter_run_state_idx")
+}
+
+model PressureDecisionAction {
+  id                      String                       @id @default(cuid())
+  runId                   String
+  chapterRuntimeId        String
+  decisionPointId         String
+  seatId                  String
+  actionOrdinal           Int
+  actionType              String
+  status                  PressureDecisionActionStatus @default(DRAFT)
+  controlEpoch            Int
+  expectedWorkingRevision Int
+  currentRevision         Int                          @default(1)
+  idempotencyKey          String
+  requestFingerprint      String
+  payloadJson             Json
+  payloadHash             String
+  sealedHash              String?
+  authorityEventHash      String                       @unique(map: "pc_action_authority_event_key")
+  confirmedAt             DateTime?
+  sealedAt                DateTime?
+  createdAt               DateTime                     @default(now())
+  updatedAt               DateTime                     @updatedAt
+
+  run            StoryRun               @relation(fields: [runId], references: [id], onDelete: Cascade, map: "pc_action_run_fkey")
+  chapterRuntime PressureChapterRuntime @relation(fields: [chapterRuntimeId, runId], references: [id, runId], onDelete: Cascade, map: "pc_action_chapter_fkey")
+
+  @@unique([runId, decisionPointId, seatId, actionOrdinal], map: "pc_action_point_seat_ordinal_key")
+  @@unique([runId, idempotencyKey], map: "pc_action_run_idempotency_key")
+  @@unique([id, chapterRuntimeId], map: "pc_action_id_chapter_key")
+  @@index([chapterRuntimeId, seatId, status], map: "pc_action_chapter_seat_status_idx")
+}
+
+model PressureChapterSettlement {
+  id                      String   @id @default(cuid())
+  runId                   String
+  chapterRuntimeId        String   @unique(map: "pc_settlement_chapter_key")
+  chapterId               String
+  chapterSequence         Int
+  schemaVersion           String
+  idempotencyKey          String
+  requestFingerprint      String
+  baseWorldSequence       Int
+  committedWorldSequence  Int
+  baseWorldStateHash      String
+  committedWorldStateHash String
+  inputJson               Json
+  inputHash               String
+  evaluationJson          Json
+  evaluationHash          String
+  worldDeltaJson          Json
+  worldDeltaHash          String
+  decisionLedgerHash      String
+  finalWorkingStateHash   String
+  reservationLedgerHash   String
+  frozenBundleHash        String   @unique(map: "pc_settlement_bundle_hash_key")
+  commitManifestJson      Json
+  commitManifestHash      String
+  rootEventId             String
+  outboxDedupeKeysJson    Json
+  commitHash              String
+  committedAt             DateTime @default(now())
+
+  run            StoryRun               @relation(fields: [runId], references: [id], onDelete: Restrict, map: "pc_settlement_run_fkey")
+  chapterRuntime PressureChapterRuntime @relation(fields: [chapterRuntimeId, runId], references: [id, runId], onDelete: Restrict, map: "pc_settlement_chapter_fkey")
+
+  @@unique([runId, chapterSequence], map: "pc_settlement_run_sequence_key")
+  @@unique([runId, idempotencyKey], map: "pc_settlement_run_idempotency_key")
+  @@unique([runId, committedWorldSequence], map: "pc_settlement_run_world_sequence_key")
+  @@unique([id, runId, chapterRuntimeId], map: "pc_settlement_id_run_chapter_key")
+  @@unique([chapterRuntimeId, runId], map: "pc_settlement_chapter_run_key")
+}
+
+model PressureFinaleDecision {
+  id                             String   @id @default(cuid())
+  runId                          String   @unique(map: "pc_finale_run_key")
+  schemaVersion                  String
+  runtimeProfile                 String
+  policyVersion                  String
+  policyHash                     String
+  packageSha256                  String
+  routeHash                      String
+  genesisHash                    String
+  frozenChapterBundleHashesJson  Json
+  inputHash                      String
+  evaluationHash                 String
+  semanticOutcomeHash            String
+  executionFingerprint           String
+  idempotencyKey                 String
+  requestFingerprint             String
+  worldOutcomeJson               Json
+  trackOutcomesJson              Json
+  objectOutcomeRefsJson          Json
+  evidenceResponsibilityRefsJson Json
+  decisionJson                   Json
+  decisionHash                   String
+  commitManifestJson             Json
+  commitManifestHash             String
+  rootEventId                    String
+  outboxDedupeKeysJson           Json
+  commitHash                     String
+  decidedAt                      DateTime
+  createdAt                      DateTime @default(now())
+
+  run           StoryRun                 @relation(fields: [runId], references: [id], onDelete: Restrict, map: "pc_finale_run_fkey")
+  routeSnapshot PressureRunRouteSnapshot @relation("PressureFinaleRoute", fields: [routeHash, runId], references: [routeHash, runId], onDelete: Restrict, map: "pc_finale_route_fkey")
+
+  @@unique([runId, idempotencyKey], map: "pc_finale_run_idempotency_key")
+  @@unique([id, runId], map: "pc_finale_id_run_key")
+}
+
+model PressureLegacyTerminalCommit {
+  id                   String   @id @default(cuid())
+  runId                String   @unique(map: "pc_legacy_terminal_run_key")
+  schemaVersion        String
+  sourceTurn           Int
+  sourceRevision       Int
+  sourceStateHash      String
+  sourceCanonHash      String
+  endingHash           String
+  resultHash           String
+  terminalState        String
+  sourceCommitHash     String   @unique(map: "pc_legacy_source_commit_key")
+  idempotencyKey       String
+  requestFingerprint   String
+  commitManifestJson   Json
+  commitManifestHash   String
+  rootEventId          String
+  outboxDedupeKeysJson Json
+  commitHash           String
+  committedAt          DateTime @default(now())
+
+  run StoryRun @relation(fields: [runId], references: [id], onDelete: Restrict, map: "pc_legacy_terminal_run_fkey")
+
+  @@unique([runId, idempotencyKey], map: "pc_legacy_terminal_idempotency_key")
+}
+
+model PressureNarrativeProjection {
+  id                      String                           @id @default(cuid())
+  runId                   String
+  projectionKind          PressureNarrativeProjectionKind
+  sourceAuthority         PressureNarrativeSourceAuthority
+  sourceId                String
+  sourceCommitHash        String
+  sourceContentHash       String
+  narrativeProfileVersion String
+  projectorVersion        String
+  audienceKind            PressureNarrativeAudienceKind
+  audienceSeatId          String?
+  audienceKey             String
+  status                  PressureNarrativeStatus          @default(PENDING)
+  requestFingerprint      String
+  attempt                 Int                              @default(0)
+  maxAttempts             Int                              @default(3)
+  checkpoint              PressureOutboxCheckpoint         @default(PERSISTED)
+  leaseOwner              String?
+  leaseExpiresAt          DateTime?
+  leaseVersion            Int                              @default(0)
+  lastError               String?                          @db.Text
+  artifactJson            Json?
+  artifactContentHash     String?
+  createdAt               DateTime                         @default(now())
+  updatedAt               DateTime                         @updatedAt
+  publishedAt             DateTime?
+
+  run StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade, map: "pc_narrative_projection_run_fkey")
+
+  @@unique([projectionKind, sourceCommitHash, narrativeProfileVersion, projectorVersion, audienceKind, audienceKey], map: "pc_narrative_projection_logical_key")
+  @@index([runId, status, createdAt], map: "pc_narrative_projection_status_idx")
+  @@index([leaseExpiresAt, status], map: "pc_narrative_projection_lease_idx")
+}
+
+model PressureOutboxTask {
+  id               String                           @id @default(cuid())
+  runId            String
+  taskType         PressureOutboxTaskType
+  status           PressureOutboxStatus             @default(PENDING)
+  checkpoint       PressureOutboxCheckpoint         @default(PERSISTED)
+  dedupeKey        String                           @unique(map: "pc_outbox_dedupe_key")
+  sourceAuthority  PressureNarrativeSourceAuthority
+  sourceId         String
+  sourceCommitHash String
+  payloadJson      Json
+  payloadHash      String
+  attempt          Int                              @default(0)
+  maxAttempts      Int                              @default(5)
+  availableAt      DateTime                         @default(now())
+  leaseOwner       String?
+  leaseExpiresAt   DateTime?
+  leaseVersion     Int                              @default(0)
+  lastError        String?                          @db.Text
+  createdAt        DateTime                         @default(now())
+  updatedAt        DateTime                         @updatedAt
+  completedAt      DateTime?
+
+  run StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade, map: "pc_outbox_run_fkey")
+
+  @@index([status, availableAt], map: "pc_outbox_ready_idx")
+  @@index([runId, taskType, status], map: "pc_outbox_run_type_status_idx")
+  @@index([leaseOwner, leaseExpiresAt, leaseVersion], map: "pc_outbox_lease_idx")
+}
+
+model PressureReplayCommandReceipt {
+  id                    String                   @id @default(cuid())
+  sourceRunId           String
+  idempotencyKey        String
+  requestFingerprint    String
+  actionId              String
+  actionFingerprint     String
+  launchKind            PressureReplayLaunchKind
+  createdRunId          String?
+  createdLobbyId        String?
+  navigationTarget      String?
+  frozenTargetRouteHash String?
+  receiptJson           Json
+  receiptHash           String
+  createdAt             DateTime                 @default(now())
+
+  sourceRun StoryRun @relation(fields: [sourceRunId], references: [id], onDelete: Restrict, map: "pc_replay_source_run_fkey")
+
+  @@unique([sourceRunId, idempotencyKey], map: "pc_replay_source_idempotency_key")
+  @@index([createdRunId], map: "pc_replay_created_run_idx")
+  @@index([createdLobbyId], map: "pc_replay_created_lobby_idx")
+}
+
+model PressureSeatControlSnapshot {
+  id                      String                  @id @default(cuid())
+  runId                   String                  @unique(map: "pc_seat_snapshot_run_key")
+  routeHash               String
+  genesisHash             String
+  genesisAtomicRecordHash String
+  initialTopologyHash     String
+  controlTopologyVersion  String
+  participantMode         PressureParticipantMode
+  stateRevision           Int
+  timelineLength          Int
+  timelineHeadHash        String
+  initializationInputHash String
+  stateHash               String                  @unique(map: "pc_seat_snapshot_hash_key")
+  snapshotJson            Json
+  version                 Int                     @default(1)
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+
+  run StoryRun @relation(fields: [runId], references: [id], onDelete: Cascade, map: "pc_seat_snapshot_run_fkey")
+
+  @@index([runId, stateRevision], map: "pc_seat_snapshot_run_revision_idx")
 }

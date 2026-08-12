@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "result_contract_registry_v1",
+  "registryId": "our_many_worlds_result_contract_registry_v1",
+  "registryVersion": "result-contract-registry-1.0.0",
+  "selectionAuthority": "FROZEN_RUN_ROUTE",
+  "unknownSchemaPolicy": "FAIL_CLOSED",
+  "inferFromPayloadShape": false,
+  "mappings": [
+    {
+      "mappingKey": "legacy_openovel_v1",
+      "runtimeProfile": "OPENNOVEL_T20_V1",
+      "endgamePolicyVersion": "sangtian_openovel_ending_v1",
+      "resultSchemaVersion": "openovel_result_v2",
+      "payloadSchemaVersion": "openovel_result_v2",
+      "presentationSchemaVersion": "endgame_presentation_v1",
+      "rendererKey": "legacy_openovel_endgame_v1"
+    },
+    {
+      "mappingKey": "legacy_continuous_story_v2",
+      "runtimeProfile": "CONTINUOUS_STORY_ACTOR_THREAD_V2",
+      "endgamePolicyVersion": "endgame_mvp_v1",
+      "resultSchemaVersion": "continuous_story_result_v3",
+      "payloadSchemaVersion": "continuous_story_result_v3",
+      "presentationSchemaVersion": "endgame_presentation_v1",
+      "rendererKey": "legacy_continuous_story_endgame_v1"
+    },
+    {
+      "mappingKey": "sangtian_pressure_chapter_v1",
+      "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+      "endgamePolicyVersion": "sangtian_content_finale_v1",
+      "resultSchemaVersion": "sangtian_pressure_result_v1",
+      "payloadSchemaVersion": "sangtian_pressure_result_v1",
+      "presentationSchemaVersion": "sangtian_pressure_result_v1",
+      "rendererKey": "sangtian_pressure_endgame_v1"
+    },
+    {
+      "mappingKey": "generic_endgame_v3",
+      "runtimeProfile": "CONFIG_ENDGAME_RUNTIME_V1",
+      "endgamePolicyVersion": "config_driven_endgame_v3",
+      "resultSchemaVersion": "endgame_presentation_v3",
+      "payloadSchemaVersion": "endgame_presentation_v3",
+      "presentationSchemaVersion": "endgame_presentation_v3",
+      "rendererKey": "generic_endgame_v3"
+    }
+  ],
+  "pressureBinding": {
+    "routeResultSchemaVersion": "sangtian_pressure_result_v1",
+    "resultAdapterKey": "SangtianPressureResultV1Adapter",
+    "rendererKey": "sangtian_pressure_endgame_v1",
+    "authoritativeResultStatus": "FINALIZED",
+    "runtimeTerminalState": "FINALE_FROZEN",
+    "narrativeStatusIsIndependent": true
+  }
+}

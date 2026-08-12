@@ -1,0 +1,418 @@
+{
+  "schemaVersion": "sangtian_scene_flow_v1",
+  "nodeId": "P0",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "threeActRule": "P0 为序章；N1—N7 前台只呈现 Opening、After Prepare、Settlement/Transition 三幕，私有开场和差异变体作为同一幕的角色投影。",
+  "decisionBeats": [
+    {
+      "beatId": "beat.p0.prologue",
+      "phase": "PROLOGUE",
+      "currentSceneId": "scene.p0.opening.public",
+      "currentScene": {
+        "sceneId": "scene.p0.opening.public"
+      },
+      "legalIntentSpace": [],
+      "actionRealization": "不可操作；只初始化六席、人物、资源、知识边界和固定压力。",
+      "timeAdvance": "京师急递抵达浙江，端午汛前时钟开始。",
+      "npcMove": "六席分别按制度目标形成第一轮准备，但不提前生成N1结算事实。",
+      "pressureEscalation": "P0 冻结后强制进入 N1。",
+      "nextSceneIds": [
+        "scene.p0.freeze",
+        "scene.p0.transition.n1"
+      ],
+      "nextScene": {
+        "sceneId": "scene.p0.transition.n1"
+      },
+      "provenanceClass": "ADAPTATION_RULE"
+    }
+  ],
+  "scenes": [
+    {
+      "sceneId": "scene.p0.opening.public",
+      "nodeId": "P0",
+      "sceneType": "OPENING",
+      "title": "桑田诏南下",
+      "text": "西苑议定方略之后，急递沿驿路南下。杭州尚未见洪水，浙江各衙门已经先感到同一股压力：要在不增加明面赋税的情况下，从土地、丝绸和商路里挤出银粮。总督府案上还没有答案，只有期限、职责和彼此冲突的盘算。",
+      "predecessorIds": [],
+      "successorIds": [
+        "scene.p0.opening.private.zhejiang_governor",
+        "scene.p0.opening.private.zhejiang_administration",
+        "scene.p0.opening.private.qingliu_law",
+        "scene.p0.opening.private.jiangnan_merchant",
+        "scene.p0.opening.private.sili_weaving",
+        "scene.p0.opening.private.cabinet_finance"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "P0",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "P0-SF-03"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.p0.opening.private.zhejiang_governor",
+      "nodeId": "P0",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "总督案前",
+      "text": "胡宗宪拆开急递时，案上只有财政缺口、丝绸任务和自己必须承担的地方后果。皇帝的信任让他能调度，也让任何失败都更像欺瞒。",
+      "predecessorIds": [
+        "scene.p0.opening.public"
+      ],
+      "successorIds": [
+        "scene.p0.freeze"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor"
+      ],
+      "availableFrom": "P0",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "P0-SF-01",
+        "P0-SF-02",
+        "P0-SF-03",
+        "P0-SF-04"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.p0.zhejiang_governor.pressure",
+        "known.p0.zhejiang_governor.claim.p0-sf-01",
+        "known.p0.zhejiang_governor.claim.p0-sf-02",
+        "known.p0.zhejiang_governor.claim.p0-sf-03",
+        "known.p0.zhejiang_governor.claim.p0-sf-04",
+        "known.p0.zhejiang_governor.object.governor_command_seal"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.zhejiang_governor.system.p0-unk-01"
+      ],
+      "ruleHintId": "rulehint.p0.zhejiang_governor"
+    },
+    {
+      "sceneId": "scene.p0.opening.private.zhejiang_administration",
+      "nodeId": "P0",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "省府所议",
+      "text": "郑泌昌先看见的是限额、名册和各府县能否在时令前交差。谁最早把执行清单发下去，谁便先取得口径，也先留下经手。",
+      "predecessorIds": [
+        "scene.p0.opening.public"
+      ],
+      "successorIds": [
+        "scene.p0.freeze"
+      ],
+      "knownBy": [
+        "seat.zhejiang_administration"
+      ],
+      "availableFrom": "P0",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "P0-SF-03",
+        "P0-SF-04"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.p0.zhejiang_administration.pressure",
+        "known.p0.zhejiang_administration.claim.p0-sf-03",
+        "known.p0.zhejiang_administration.claim.p0-sf-04",
+        "known.p0.zhejiang_administration.object.provincial_seal"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.zhejiang_administration.claim.p0-sf-01",
+        "unknown.p0.zhejiang_administration.claim.p0-sf-02",
+        "unknown.p0.zhejiang_administration.system.p0-unk-01"
+      ],
+      "ruleHintId": "rulehint.p0.zhejiang_administration"
+    },
+    {
+      "sceneId": "scene.p0.opening.private.qingliu_law",
+      "nodeId": "P0",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "清流所见",
+      "text": "谭纶知道国策已经形成，真正还能争的是地方采用何种手段。若县册、田契和命令不先留底，后来只剩各说各话。",
+      "predecessorIds": [
+        "scene.p0.opening.public"
+      ],
+      "successorIds": [
+        "scene.p0.freeze"
+      ],
+      "knownBy": [
+        "seat.qingliu_law"
+      ],
+      "availableFrom": "P0",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "P0-SF-02",
+        "P0-SF-03"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.p0.qingliu_law.pressure",
+        "known.p0.qingliu_law.claim.p0-sf-02",
+        "known.p0.qingliu_law.claim.p0-sf-03",
+        "known.p0.qingliu_law.object.law_review_channel"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.qingliu_law.claim.p0-sf-01",
+        "unknown.p0.qingliu_law.claim.p0-sf-04",
+        "unknown.p0.qingliu_law.system.p0-unk-01"
+      ],
+      "ruleHintId": "rulehint.p0.qingliu_law"
+    },
+    {
+      "sceneId": "scene.p0.opening.private.jiangnan_merchant",
+      "nodeId": "P0",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "商会账房",
+      "text": "沈一石清点粮、银、船和账期，知道官府很快会来借用商会。每一笔救急都可能成为未来查封时最清楚的一行。",
+      "predecessorIds": [
+        "scene.p0.opening.public"
+      ],
+      "successorIds": [
+        "scene.p0.freeze"
+      ],
+      "knownBy": [
+        "seat.jiangnan_merchant"
+      ],
+      "availableFrom": "P0",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "P0-SF-03",
+        "P0-SF-04"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.p0.jiangnan_merchant.pressure",
+        "known.p0.jiangnan_merchant.claim.p0-sf-03",
+        "known.p0.jiangnan_merchant.claim.p0-sf-04",
+        "known.p0.jiangnan_merchant.object.merchant_grain_pool"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.jiangnan_merchant.claim.p0-sf-01",
+        "unknown.p0.jiangnan_merchant.claim.p0-sf-02",
+        "unknown.p0.jiangnan_merchant.system.p0-unk-01"
+      ],
+      "ruleHintId": "rulehint.p0.jiangnan_merchant"
+    },
+    {
+      "sceneId": "scene.p0.opening.private.sili_weaving",
+      "nodeId": "P0",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "织造局内",
+      "text": "杨金水面对的是宫里要的丝与浙江将怎样取得桑田。织造局名义可替行动挡风，也可能把风一路引到内廷。",
+      "predecessorIds": [
+        "scene.p0.opening.public"
+      ],
+      "successorIds": [
+        "scene.p0.freeze"
+      ],
+      "knownBy": [
+        "seat.sili_weaving"
+      ],
+      "availableFrom": "P0",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "P0-SF-01",
+        "P0-SF-03"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.p0.sili_weaving.pressure",
+        "known.p0.sili_weaving.claim.p0-sf-01",
+        "known.p0.sili_weaving.claim.p0-sf-03",
+        "known.p0.sili_weaving.object.weaving_bureau_banner"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.sili_weaving.claim.p0-sf-02",
+        "unknown.p0.sili_weaving.claim.p0-sf-04",
+        "unknown.p0.sili_weaving.system.p0-unk-01"
+      ],
+      "ruleHintId": "rulehint.p0.sili_weaving"
+    },
+    {
+      "sceneId": "scene.p0.opening.private.cabinet_finance",
+      "nodeId": "P0",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "京师值房",
+      "text": "严世蕃看到的是国库和军饷的空缺。地方每要求一分宽限，内阁就必须另找一分银粮，责任也会随之改写。",
+      "predecessorIds": [
+        "scene.p0.opening.public"
+      ],
+      "successorIds": [
+        "scene.p0.freeze"
+      ],
+      "knownBy": [
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "P0",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "P0-SF-01",
+        "P0-SF-02",
+        "P0-SF-03"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.p0.cabinet_finance.pressure",
+        "known.p0.cabinet_finance.claim.p0-sf-01",
+        "known.p0.cabinet_finance.claim.p0-sf-02",
+        "known.p0.cabinet_finance.claim.p0-sf-03",
+        "known.p0.cabinet_finance.object.fiscal_target_register"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.cabinet_finance.claim.p0-sf-04",
+        "unknown.p0.cabinet_finance.system.p0-unk-01"
+      ],
+      "ruleHintId": "rulehint.p0.cabinet_finance"
+    },
+    {
+      "sceneId": "scene.p0.freeze",
+      "nodeId": "P0",
+      "sceneType": "FROZEN_PROLOGUE",
+      "title": "急递已发",
+      "text": "急递上的国策、国库缺口与东南军饷已经成为各衙门必须承担的现实。各方手里只有自己的公文、资源与职责，无人能让诏令、财政压力和端午汛从未到来。",
+      "predecessorIds": [
+        "scene.p0.opening.private.zhejiang_governor",
+        "scene.p0.opening.private.zhejiang_administration",
+        "scene.p0.opening.private.qingliu_law",
+        "scene.p0.opening.private.jiangnan_merchant",
+        "scene.p0.opening.private.sili_weaving",
+        "scene.p0.opening.private.cabinet_finance"
+      ],
+      "successorIds": [
+        "scene.p0.transition.n1"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "P0",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock"
+      ],
+      "stopCondition": "停在已经确认的新压力上；不得替玩家追加下一项决定。"
+    },
+    {
+      "sceneId": "scene.p0.transition.n1",
+      "nodeId": "P0",
+      "sceneType": "TRANSITION",
+      "title": "汛前急报",
+      "text": "急递抵达杭州时，各方已经分别作好第一层准备。没有任何人能撤回国策，端午汛水位与守堰异常却把问题从纸上推到了河堤。第一封真正需要回应的堰口急报已经送入总督府。",
+      "predecessorIds": [
+        "scene.p0.freeze"
+      ],
+      "successorIds": [
+        "scene.n1.opening.public"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "P0",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.sangtian_edict",
+        "obj.fiscal_gap"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    }
+  ],
+  "inputRealizations": []
+}

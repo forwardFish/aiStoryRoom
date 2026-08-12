@@ -1,0 +1,118 @@
+{
+  "schemaVersion": "adaptation-decision-set-v2",
+  "nodeId": "N2",
+  "adaptations": [
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionId": "adapt.n2.pressure_lock",
+      "sourceEntityOrArcIds": [
+        "N2-SF-01",
+        "N2-SF-02",
+        "N2-SF-03",
+        "N2-SF-04"
+      ],
+      "operation": "preserve",
+      "targetIds": [
+        "N2",
+        "obj.first_memorial",
+        "obj.ma_confession"
+      ],
+      "rationale": "将 N2 的历史压力设为不可跳过节点，但允许玩家改变发生程度与责任归属。",
+      "invariantsToPreserve": [
+        "不可撤销压力继续",
+        "玩家分支改变冻结状态"
+      ],
+      "intentionalDifferences": [
+        "把跨场景事件压缩成有限节点时间预算"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-mvp-content-lock-v1",
+      "approvedAt": "2026-08-10T00:00:00Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionId": "adapt.n2.two_beats",
+      "sourceEntityOrArcIds": [
+        "N2-SF-01",
+        "N2-SF-02",
+        "N2-SF-03",
+        "N2-SF-04"
+      ],
+      "operation": "compress",
+      "targetIds": [
+        "N2",
+        "obj.first_memorial",
+        "obj.ma_confession"
+      ],
+      "rationale": "将 N2 节点内部收敛为 PREPARE 与 COMMIT 两个连续决策拍。",
+      "invariantsToPreserve": [
+        "行动必须兑现",
+        "时间与 NPC 必须继续推进"
+      ],
+      "intentionalDifferences": [
+        "每个节点最多三幕前台场景"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-mvp-content-lock-v1",
+      "approvedAt": "2026-08-10T00:00:00Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionId": "adapt.n2.object_contest",
+      "sourceEntityOrArcIds": [
+        "N2-SF-01",
+        "N2-SF-02",
+        "N2-SF-03",
+        "N2-SF-04"
+      ],
+      "operation": "invent_for_gameplay",
+      "targetIds": [
+        "N2",
+        "obj.first_memorial",
+        "obj.ma_confession"
+      ],
+      "rationale": "把 N2 的冲突绑定到最多两个主要争夺物及其保管、签押、调度或送达状态。",
+      "invariantsToPreserve": [
+        "具体对象而非抽象支持度",
+        "同一对象不能双花"
+      ],
+      "intentionalDifferences": [
+        "使用统一对象状态和冲突比较规则"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-mvp-content-lock-v1",
+      "approvedAt": "2026-08-10T00:00:00Z"
+    },
+    {
+      "schemaVersion": "adaptation-decision-v2",
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionId": "adapt.n2.reaction",
+      "sourceEntityOrArcIds": [
+        "N2-SF-01",
+        "N2-SF-02",
+        "N2-SF-03",
+        "N2-SF-04"
+      ],
+      "operation": "invent_for_gameplay",
+      "targetIds": [
+        "N2",
+        "obj.first_memorial",
+        "obj.ma_confession"
+      ],
+      "rationale": "仅在 N2 的固定触发事件出现时开放一次条件应变。",
+      "invariantsToPreserve": [
+        "触发确定性",
+        "每席最多一次"
+      ],
+      "intentionalDifferences": [
+        "使用配置时窗，不由 Narrator 决定"
+      ],
+      "reviewStatus": "APPROVED",
+      "approvedBy": "sangtian-mvp-content-lock-v1",
+      "approvedAt": "2026-08-10T00:00:00Z"
+    }
+  ]
+}

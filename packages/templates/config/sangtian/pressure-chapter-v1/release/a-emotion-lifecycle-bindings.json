@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "sangtian_a_emotion_lifecycle_bindings_v1",
+  "bindingVersion": "sangtian-a-emotion-lifecycle-1.0.0",
+  "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+  "canonicalRoles": {
+    "promiseIssuerSeatId": "zhejiang_administration",
+    "promiseReceiverSeatId": "zhejiang_governor",
+    "investigatorSeatId": "qingliu_law"
+  },
+  "formalPromise": {
+    "entry": "TALK",
+    "sharedObjectId": "original-grain-ledger",
+    "maxPerIssuerPerRun": 1,
+    "promiseCodes": [
+      "DELIVER_ORIGINAL_LEDGER",
+      "DO_NOT_PUBLICLY_BLAME",
+      "TESTIFY_FOR_TARGET"
+    ],
+    "deliverOriginalLedgerOperations": [
+      {
+        "operationCode": "PROMISE_DELIVER_ORIGINAL_FULFILL",
+        "commitmentOperation": "FULFILL"
+      },
+      {
+        "operationCode": "PROMISE_DELIVER_COPY_BREAK",
+        "commitmentOperation": "BREAK"
+      },
+      {
+        "operationCode": "PROMISE_HIDE_OR_DELAY_BREAK",
+        "commitmentOperation": "BREAK"
+      }
+    ],
+    "genericDeliverLedgerMayInferOriginal": false,
+    "brokenImpliesRevealed": false
+  },
+  "disclosureLifecycle": {
+    "sharedObjectId": "original-grain-ledger",
+    "rootEventCode": "LEDGER_DELIVERY_ANOMALY",
+    "transitions": [
+      {
+        "bindingId": "original-grain-ledger-hidden-to-suspected",
+        "fromDisclosure": "HIDDEN",
+        "toDisclosure": "SUSPECTED",
+        "actionCode": "INVESTIGATE_LEDGER_SOURCE",
+        "effectCode": "SANGTIAN_LEDGER_SOURCE_SUSPECTED",
+        "factCode": "fact.formal-promise.ledger-source-suspected",
+        "suspectedSeatIds": [
+          "zhejiang_administration"
+        ],
+        "requiresAuthorizedEvidence": false
+      },
+      {
+        "bindingId": "original-grain-ledger-suspected-to-confirmed",
+        "fromDisclosure": "SUSPECTED",
+        "toDisclosure": "CONFIRMED",
+        "actionCode": "CONFIRM_LEDGER_SOURCE_WITH_EVIDENCE",
+        "effectCode": "SANGTIAN_LEDGER_SOURCE_CONFIRMED",
+        "factCode": "fact.formal-promise.ledger-source-confirmed",
+        "suspectedSeatIds": [],
+        "requiresAuthorizedEvidence": true
+      }
+    ]
+  },
+  "authorityBoundary": {
+    "promiseAuthority": "WORKING_LEDGER_COMMITMENT_MUTATION",
+    "aEmotionRole": "POST_COMMIT_CONSUMER_ONLY",
+    "providerCallsAllowed": false,
+    "freeTextInferenceAllowed": false,
+    "frozenWorldFactMutationAllowed": false
+  }
+}

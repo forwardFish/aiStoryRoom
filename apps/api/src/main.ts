@@ -2,33 +2,20 @@ import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { configureApiTransport } from "./api-transport";
+import { configurePressureSupabaseDatabaseV1 } from "./pressure-chapter/production-config";
+import { PRESSURE_CHAPTER_WORKER_OWNER_ENV_V1 } from "./pressure-chapter/product";
 
-// Supabase is the default shared test database, but an explicit remote DATABASE_URL wins so isolated acceptance schemas are preserved.
-{
-  const explicit = process.env.DATABASE_URL;
-  const fallback = process.env.SUPABASE_DATABASE_URL;
-  let selected = explicit;
-  if (fallback) {
-    let explicitIsLocal = !explicit;
-    if (explicit) {
-      try {
-        const host = new URL(explicit).hostname.toLowerCase();
-        explicitIsLocal = host === "127.0.0.1" || host === "localhost" || host === "::1";
-      } catch {
-        explicitIsLocal = true;
-      }
-    }
-    if (explicitIsLocal) selected = fallback;
-  }
-  if (selected) {
-    const databaseUrl = new URL(selected);
-    if (!databaseUrl.searchParams.has("connection_limit")) databaseUrl.searchParams.set("connection_limit", "2");
-    process.env.DATABASE_URL = databaseUrl.toString();
-  }
-}
+// Pressure is Supabase-only. Resolve and bind the selected project before
+// Nest constructs Prisma or any production adapter; diagnostics never expose
+// the selected URL, credentials, or project ref.
+configurePressureSupabaseDatabaseV1(process.env);
 async function bootstrap() {
   if (process.env.STORY_WORKER_ENABLED === undefined) process.env.STORY_WORKER_ENABLED = "true";
+  if (process.env[PRESSURE_CHAPTER_WORKER_OWNER_ENV_V1] === undefined) {
+    process.env[PRESSURE_CHAPTER_WORKER_OWNER_ENV_V1] = "embedded_api";
+  }
   const app = await NestFactory.create(AppModule, { rawBody: true });
+  app.enableShutdownHooks();
   configureApiTransport(app);
   app.setGlobalPrefix("api");
   const port = Number(process.env.PORT || process.env.API_PORT || 3001);

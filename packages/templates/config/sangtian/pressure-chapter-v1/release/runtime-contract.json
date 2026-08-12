@@ -1,0 +1,172 @@
+{
+  "schemaVersion": "pressure_runtime_contract_release_v1",
+  "contractId": "pressure_runtime_contract_v1",
+  "contractVersion": "pressure-runtime-contract-1.0.0",
+  "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+  "canonicalization": "PRESSURE_CHAPTER_CANONICAL_JSON_V1",
+  "routeSchemaVersion": "pressure_run_route_snapshot_v1",
+  "sharedSchemaVersions": [
+    "openovel_narrative_artifact_v1",
+    "openovel_narrative_projection_job_v1",
+    "sangtian_finale_input_v1",
+    "sangtian_frozen_chapter_bundle_v1",
+    "sangtian_genesis_snapshot_v1",
+    "sangtian_pressure_finale_decision_v1",
+    "sangtian_pressure_result_v1",
+    "sangtian_world_state_v1"
+  ],
+  "runStateMachine": [
+    "RUN_ROUTE_FROZEN",
+    "GENESIS_COMPUTING",
+    "GENESIS_FROZEN",
+    "CHAPTER_ACTIVE",
+    "FINALE_COMPUTING",
+    "FINALE_FROZEN"
+  ],
+  "chapterStateMachine": [
+    "CHAPTER_OPENING",
+    "DECISION_OPEN",
+    "BEAT_RESOLVING",
+    "CHAPTER_WORKING",
+    "CHAPTER_CLOSING",
+    "CHAPTER_SETTLING",
+    "CHAPTER_FROZEN"
+  ],
+  "requiredCommandFields": [
+    "chapterRuntimeId",
+    "controlEpoch",
+    "decisionPointId",
+    "expectedWorkingRevision",
+    "idempotencyKey",
+    "runId"
+  ],
+  "actionCompilation": {
+    "policySchemaVersion": "sangtian_action_effect_policy_v1",
+    "policyVersion": "sangtian-action-effect-1.0.0",
+    "compilerVersion": "sangtian-action-effect-compiler-1.0.0",
+    "bindingFields": ["chapterId", "decisionPointKey", "seatId", "actionType"],
+    "workingIntentAuthority": "SERVER_POLICY_ONLY",
+    "settlementFactAuthority": "SERVER_POLICY_AGGREGATION_ONLY",
+    "defaultTrajectoryApplication": "AT_MOST_ONCE_PER_CHAPTER",
+    "resourcePolicy": "NONE",
+    "customTextMayAffectAuthority": false,
+    "providerMayAffectAuthority": false,
+    "failureMode": "FAIL_CLOSED_ZERO_WRITE"
+  },
+  "commandVocabulary": [
+    {
+      "name": "FREEZE_GENESIS",
+      "schemaVersion": "pressure_freeze_genesis_command_v1"
+    },
+    {
+      "name": "DRAFT_DECISION_ACTION",
+      "schemaVersion": "pressure_draft_decision_action_command_v1"
+    },
+    {
+      "name": "SEAL_DECISION_ACTION",
+      "schemaVersion": "pressure_seal_decision_action_command_v1"
+    }
+  ],
+  "eventVocabulary": [
+    {
+      "name": "GENESIS_FROZEN",
+      "schemaVersion": "pressure_genesis_frozen_event_v1"
+    },
+    {
+      "name": "CHAPTER_OPENED",
+      "schemaVersion": "pressure_chapter_opened_event_v1"
+    },
+    {
+      "name": "DECISION_POINT_OPENED",
+      "schemaVersion": "pressure_decision_point_opened_event_v1"
+    },
+    {
+      "name": "BEAT_RESOLVED",
+      "schemaVersion": "pressure_beat_resolved_event_v1"
+    },
+    {
+      "name": "CHAPTER_CLOSING_STARTED",
+      "schemaVersion": "pressure_chapter_closing_started_event_v1"
+    },
+    {
+      "name": "CHAPTER_SETTLEMENT_COMMITTED",
+      "schemaVersion": "pressure_chapter_settlement_committed_event_v1"
+    },
+    {
+      "name": "CHAPTER_FROZEN",
+      "schemaVersion": "pressure_chapter_frozen_event_v1"
+    },
+    {
+      "name": "FINALE_FROZEN",
+      "schemaVersion": "pressure_finale_frozen_event_v1"
+    },
+    {
+      "name": "NARRATIVE_PROJECTION_PUBLISHED",
+      "schemaVersion": "pressure_narrative_projection_published_event_v1"
+    }
+  ],
+  "transactionBoundaries": [
+    {
+      "name": "GENESIS",
+      "advancesWorldSequence": false,
+      "writesNarrativeArtifact": false
+    },
+    {
+      "name": "BEAT",
+      "advancesWorldSequence": false,
+      "writesNarrativeArtifact": false
+    },
+    {
+      "name": "CHAPTER",
+      "advancesWorldSequence": true,
+      "writesNarrativeArtifact": false
+    },
+    {
+      "name": "PRESSURE_FINALE",
+      "advancesWorldSequence": false,
+      "writesNarrativeArtifact": false
+    },
+    {
+      "name": "LEGACY_TERMINAL",
+      "advancesWorldSequence": false,
+      "writesNarrativeArtifact": false
+    }
+  ],
+  "invariants": {
+    "genesisSequence": 0,
+    "chapterSettlementCount": 7,
+    "finalWorldSequence": 7,
+    "finaleDecisionCount": 1,
+    "seatCount": 6,
+    "narrativeMayBlockAuthorityCommit": false,
+    "webMayProduceVerdict": false,
+    "genericShadowMayWriteAuthority": false
+    ,"actionEffectReducersAreOrderIndependent": true
+    ,"resourceReservationAmount": 0
+  },
+  "terminalTrigger": {
+    "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+    "event": "CHAPTER_FROZEN",
+    "chapterId": "N7",
+    "requiresPersistedFrozenChapterBundle": true
+  },
+  "rejectedTerminalTriggers": [
+    "ACTOR_THREAD_COMPLETE",
+    "ALL_ACTOR_THREADS_COMPLETE",
+    "BEAT_RESOLVED",
+    "FRONTEND_RESULT_CLICK",
+    "HANDOFF_READY",
+    "NARRATIVE_PROJECTION_PUBLISHED",
+    "T20"
+  ],
+  "legacyFixedPhaseRoute": {
+    "fixedPhases": [
+      "PREPARE",
+      "COMMIT",
+      "REACTION"
+    ],
+    "accepted": false,
+    "failureMode": "FAIL_CLOSED",
+    "errorCode": "SANGTIAN_PRESSURE_CONTENT_LEGACY_FIXED_WINDOW_FORBIDDEN"
+  }
+}

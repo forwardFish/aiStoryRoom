@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "pressure_chapter_feature_set_v1",
+  "featureSetId": "sangtian_pressure_feature_set_v1",
+  "featureSetVersion": "pressure-feature-set-1.0.0",
+  "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+  "assignmentScope": "CREATE_RUN_ONLY",
+  "supportedParticipantModes": [
+    "SOLO",
+    "MULTIPLAYER"
+  ],
+  "capabilities": {
+    "createPressureSolo": true,
+    "createPressureMultiplayer": true,
+    "createOpenNovelT20": false,
+    "legacyOpenNovelRead": true,
+    "legacyOpenNovelTerminalAdapter": true,
+    "legacyOpenNovelSameExperienceReplay": false,
+    "contentDrivenDecisionPoints": true,
+    "frozenActionEffectPolicy": true,
+    "localizedActionPresentationCatalog": true,
+    "chapterWorkingRecovery": true,
+    "oneSettlementPerChapter": true,
+    "authorityFirstTerminalCommit": true,
+    "openNovelNarrativeProjection": true,
+    "genericFinaleCandidateShadow": true,
+    "genericFinaleCandidateAuthority": false
+  },
+  "rolloutStages": [
+    "off",
+    "contract_shadow",
+    "internal_single_player",
+    "internal_multiplayer",
+    "limited_on",
+    "default_on"
+  ],
+  "artifactReleaseStage": "contract_shadow",
+  "activationRequirements": [
+    "EXACT_ROUTE_REGISTRATION",
+    "ALL_CANONICAL_HASHES_VERIFIED",
+    "ILLEGAL_ROUTE_MATRIX_FAILS_CLOSED",
+    "FEATURE_ASSIGNMENT_AUDITABLE",
+    "STORED_ROUTE_DISPATCH"
+    ,"ACTION_EFFECT_POLICY_HASH_VERIFIED"
+    ,"ACTION_EFFECT_COMPILER_WIRED"
+    ,"ACTION_PRESENTATION_CATALOG_WIRED"
+  ],
+  "rollbackPolicy": {
+    "mayDisableFutureCreate": true,
+    "mayChangeExistingFrozenRoute": false,
+    "mayReinterpretExistingResult": false,
+    "mayEnableLegacyT20Fallback": false
+  }
+}

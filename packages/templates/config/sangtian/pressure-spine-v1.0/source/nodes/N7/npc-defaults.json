@@ -1,0 +1,215 @@
+{
+  "schemaVersion": "sangtian_npc_defaults_v1",
+  "nodeId": "N7",
+  "seatDefaults": [
+    {
+      "defaultPolicyId": "default.n7.zhejiang_governor",
+      "nodeId": "N7",
+      "seatId": "seat.zhejiang_governor",
+      "currentActorId": "actor.hu_zongxian",
+      "normalNoSubmission": {
+        "prepare": "准备军驿和军情说明",
+        "commit": "把有效材料按时送达，不为政治意见改写内容"
+      },
+      "objective": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n7.zhejiang_administration",
+      "nodeId": "N7",
+      "seatId": "seat.zhejiang_administration",
+      "currentActorId": "actor.zheng_michang",
+      "normalNoSubmission": {
+        "prepare": "比较原供、翻供和自保后果",
+        "commit": "选择维持、翻供或拒签并承担本人责任"
+      },
+      "objective": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n7.qingliu_law",
+      "nodeId": "N7",
+      "seatId": "seat.qingliu_law",
+      "currentActorId": "actor.hai_rui",
+      "normalNoSubmission": {
+        "prepare": "交叉核验并制作终审笔录",
+        "commit": "保留程序有效、来源可追溯的最强材料"
+      },
+      "objective": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n7.jiangnan_merchant",
+      "nodeId": "N7",
+      "seatId": "seat.jiangnan_merchant",
+      "currentActorId": "actor.merchant_legacy_executor",
+      "normalNoSubmission": {
+        "prepare": "整理既有遗言、摘要和见证",
+        "commit": "只提交 N6 冻结前已存在的商会材料"
+      },
+      "objective": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n7.sili_weaving",
+      "nodeId": "N7",
+      "seatId": "seat.sili_weaving",
+      "currentActorId": "actor.weaving_retainer",
+      "normalNoSubmission": {
+        "prepare": "整理内廷对照材料与收件路线",
+        "commit": "走正式内廷渠道并保留签收"
+      },
+      "objective": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n7.cabinet_finance",
+      "nodeId": "N7",
+      "seatId": "seat.cabinet_finance",
+      "currentActorId": "actor.yan_shifan",
+      "normalNoSubmission": {
+        "prepare": "指定中央收件与立案路径",
+        "commit": "按军饷和皇权压力限制正式采用范围"
+      },
+      "objective": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    }
+  ],
+  "inputFallbackPolicies": [
+    {
+      "fallbackId": "inputfallback.n7.silence",
+      "nodeId": "N7",
+      "inputClass": "SILENCE",
+      "playerFacingMeaning": "沉默",
+      "actionRealization": "消耗当前机会；按席位默认政策执行。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "其他席位取得先手",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "七日重审 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n7.small_talk",
+      "nodeId": "N7",
+      "inputClass": "SMALL_TALK",
+      "playerFacingMeaning": "反复闲聊",
+      "actionRealization": "第一次编译为 DELAY；后续直接等待超时。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "默认政策继续",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "七日重审 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n7.rest_delay",
+      "nodeId": "N7",
+      "inputClass": "REST_DELAY",
+      "playerFacingMeaning": "休息或等待",
+      "actionRealization": "休息成功，恢复少量精力，消耗 PREPARE。",
+      "timeAdvance": "+半日",
+      "npcMove": "五个 AI/NPC 先手",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "七日重审 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n7.fabricated_success",
+      "nodeId": "N7",
+      "inputClass": "FABRICATED_SUCCESS",
+      "playerFacingMeaning": "声称已经取得命令、账册或同意",
+      "actionRealization": "编译为尝试取得；无来源则 FAILED_ATTEMPT。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "目标保管人加强防护或继续原计划",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "七日重审 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n7.overreach",
+      "nodeId": "N7",
+      "inputClass": "OVERREACH",
+      "playerFacingMeaning": "越权调兵、替皇帝裁决或控制他人",
+      "actionRealization": "动作失败；保留真实目标但不改写成别的政策选择。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "被越权对象留下可观察反应",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "七日重审 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n7.insufficient_resource",
+      "nodeId": "N7",
+      "inputClass": "INSUFFICIENT_RESOURCE",
+      "playerFacingMeaning": "资源不足",
+      "actionRealization": "允许部分执行或失败，已投入资源仍可能消耗。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "竞争方利用资源缺口",
+      "pressureDelta": "0 或 +1",
+      "nextSceneSeed": "七日重审 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n7.timeout",
+      "nodeId": "N7",
+      "inputClass": "TIMEOUT",
+      "playerFacingMeaning": "超时",
+      "actionRealization": "注入该席位 defaultPrepare 或 defaultCommit。",
+      "timeAdvance": "推进到阶段截止",
+      "npcMove": "AI/NPC 完成默认行动",
+      "pressureDelta": "至少 +1",
+      "nextSceneSeed": "七日重审 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n7.normal_no_submission",
+      "nodeId": "N7",
+      "inputClass": "NORMAL_NO_SUBMISSION",
+      "playerFacingMeaning": "无人提交有效替代行动",
+      "actionRealization": "六席默认政策合成推进。",
+      "timeAdvance": "推进到本拍截止",
+      "npcMove": "按席位目标同时执行",
+      "pressureDelta": "按节点默认轨迹",
+      "nextSceneSeed": "七日重审 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    }
+  ],
+  "composedDefaultProgression": "省府犯官提出翻供，清流保留原供并完成程序有效但证言冲突的重审包，商会材料有限，织造局走内廷对照路线，内阁指定内阁收件，总督提供普通军驿；确定性矩阵默认采用到省级，更高层关联封存。"
+}

@@ -4,7 +4,13 @@
     "rootDir": "src",
     "outDir": "dist",
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@ai-story/shared/pressure-chapter/a-emotion": ["../../packages/shared/dist/pressure-chapter/a-emotion/index.d.ts"],
+      "@apps/openovel-runtime/pressure-narrative": ["../openovel-runtime/dist/pressure-narrative/index.d.ts"],
+      "@apps/openovel-runtime/pressure-narrative/contracts": ["../openovel-runtime/dist/pressure-narrative/contracts.d.ts"],
+      "@apps/openovel-runtime/pressure-narrative/errors": ["../openovel-runtime/dist/pressure-narrative/errors.d.ts"],
+      "@apps/openovel-runtime/pressure-narrative/ports": ["../openovel-runtime/dist/pressure-narrative/ports.d.ts"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.spec.ts"]

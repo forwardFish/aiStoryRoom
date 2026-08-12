@@ -1,0 +1,1021 @@
+{
+  "schemaVersion": "sangtian_ai_decision_policy_v1",
+  "policyRef": "sangtian.ai.decision.v1",
+  "policyVersion": "sangtian-ai-decision-1.0.0",
+  "selectorVersion": "sangtian-ai-decision-selector-1.0.0",
+  "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+  "sourceBinding": {
+    "contentPackageVersion": "1.0.0",
+    "contentPackageSha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b"
+  },
+  "authorityBoundary": {
+    "acceptedInputFields": [
+      "schemaVersion",
+      "runId",
+      "routeHash",
+      "runSeed",
+      "contentPackageVersion",
+      "contentPackageSha256",
+      "chapterRuntimeId",
+      "chapterId",
+      "decisionPointId",
+      "seatId",
+      "eligibleActionTypes",
+      "inputHash"
+    ],
+    "selectionEntropyFields": [
+      "runSeed",
+      "chapterId",
+      "decisionPointId",
+      "seatId"
+    ],
+    "forbiddenInputClasses": [
+      "FREE_TEXT",
+      "MUTABLE_WORKING_STATE",
+      "NARRATIVE_ARTIFACT",
+      "PROVIDER_OUTPUT",
+      "UI_PROJECTION"
+    ],
+    "mayCreateActionTypes": false,
+    "mayCompileWorkingIntent": false,
+    "maySupplySettlementFacts": false,
+    "contextualHumanOnlyActionTypes": [
+      "CONFIRM_LEDGER_SOURCE_WITH_EVIDENCE",
+      "INVESTIGATE_LEDGER_SOURCE"
+    ],
+    "unknownBindingPolicy": "FAIL_CLOSED",
+    "eligibleSetMismatchPolicy": "FAIL_CLOSED",
+    "noNonDefaultCandidatePolicy": "DEFAULT_PASS_ONLY"
+  },
+  "selectionAlgorithm": {
+    "kind": "SHA256_CANONICAL_PREFIX_MODULO_RANKED_NON_DEFAULT_V1",
+    "digestWindow": "FIRST_8_HEX_UINT32_BE",
+    "rankingSource": "PUBLISHED_POLICY_EXACT_ORDER",
+    "defaultActionType": "DEFAULT_PASS"
+  },
+  "decisions": [
+    {
+      "chapterId": "N1",
+      "decisionPointId": "N1.weir_crisis",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "EVACUATE_WEIRS",
+        "SEAL_BREACH_RECORD",
+        "SUPPORT_WEIR"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "EVACUATE_WEIRS",
+            "SEAL_BREACH_RECORD",
+            "SUPPORT_WEIR"
+          ]
+        },
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "EVACUATE_WEIRS",
+            "SEAL_BREACH_RECORD",
+            "SUPPORT_WEIR"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "EVACUATE_WEIRS",
+            "SEAL_BREACH_RECORD",
+            "SUPPORT_WEIR"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "EVACUATE_WEIRS",
+            "SEAL_BREACH_RECORD",
+            "SUPPORT_WEIR"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "EVACUATE_WEIRS",
+            "SEAL_BREACH_RECORD",
+            "SUPPORT_WEIR"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "EVACUATE_WEIRS",
+            "SEAL_BREACH_RECORD",
+            "SUPPORT_WEIR"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N2",
+      "decisionPointId": "N2.memorial_draft",
+      "publishedAllowedActionTypes": [
+        "ADD_CAUSE",
+        "ADD_RELIEF_REQUEST",
+        "DEFAULT_PASS"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "ADD_CAUSE",
+            "ADD_RELIEF_REQUEST"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "ADD_CAUSE",
+            "ADD_RELIEF_REQUEST"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "ADD_CAUSE",
+            "ADD_RELIEF_REQUEST"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N2",
+      "decisionPointId": "N2.confession_custody",
+      "publishedAllowedActionTypes": [
+        "ATTACH_CONFESSION",
+        "DEFAULT_PASS",
+        "SEAL_CONFESSION"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "ATTACH_CONFESSION",
+            "SEAL_CONFESSION"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "ATTACH_CONFESSION",
+            "SEAL_CONFESSION"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "ATTACH_CONFESSION",
+            "SEAL_CONFESSION"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N2",
+      "decisionPointId": "N2.signature_chain",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "SIGN_MEMORIAL",
+        "VERIFY_ROUTE"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "SIGN_MEMORIAL",
+            "VERIFY_ROUTE"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "SIGN_MEMORIAL",
+            "VERIFY_ROUTE"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "SIGN_MEMORIAL",
+            "VERIFY_ROUTE"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "SIGN_MEMORIAL",
+            "VERIFY_ROUTE"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "SIGN_MEMORIAL",
+            "VERIFY_ROUTE"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N2",
+      "decisionPointId": "N2.dispatch",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "DISPATCH_MEMORIAL"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "DISPATCH_MEMORIAL"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "DISPATCH_MEMORIAL"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N3",
+      "decisionPointId": "N3.relief_offer",
+      "publishedAllowedActionTypes": [
+        "ALLOCATE_GRAIN",
+        "DEFAULT_PASS",
+        "PROPOSE_RELIEF"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "ALLOCATE_GRAIN",
+            "PROPOSE_RELIEF"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "ALLOCATE_GRAIN",
+            "PROPOSE_RELIEF"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "ALLOCATE_GRAIN",
+            "PROPOSE_RELIEF"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N3",
+      "decisionPointId": "N3.deed_negotiation",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "PROTECT_DEEDS",
+        "PURCHASE_LAND",
+        "SET_PRICE_FLOOR"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "PROTECT_DEEDS",
+            "PURCHASE_LAND",
+            "SET_PRICE_FLOOR"
+          ]
+        },
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "PROTECT_DEEDS",
+            "PURCHASE_LAND",
+            "SET_PRICE_FLOOR"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "PROTECT_DEEDS",
+            "PURCHASE_LAND",
+            "SET_PRICE_FLOOR"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "PROTECT_DEEDS",
+            "PURCHASE_LAND",
+            "SET_PRICE_FLOOR"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "PROTECT_DEEDS",
+            "PURCHASE_LAND",
+            "SET_PRICE_FLOOR"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "PROTECT_DEEDS",
+            "PURCHASE_LAND",
+            "SET_PRICE_FLOOR"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N3",
+      "decisionPointId": "N3.credit_bridge",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "OFFER_CREDIT",
+        "PLEDGE_REPAYMENT"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "OFFER_CREDIT",
+            "PLEDGE_REPAYMENT"
+          ]
+        },
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "OFFER_CREDIT",
+            "PLEDGE_REPAYMENT"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "OFFER_CREDIT",
+            "PLEDGE_REPAYMENT"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N3",
+      "decisionPointId": "N3.price_floor_review",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "REVIEW_PRICE_FLOOR",
+        "SEAL_DEED_SAMPLE"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "REVIEW_PRICE_FLOOR",
+            "SEAL_DEED_SAMPLE"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "REVIEW_PRICE_FLOOR",
+            "SEAL_DEED_SAMPLE"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "REVIEW_PRICE_FLOOR",
+            "SEAL_DEED_SAMPLE"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N4",
+      "decisionPointId": "N4.prisoner_review",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "PROTECT_WITNESS",
+        "REQUEST_REVIEW",
+        "SIGN_EXECUTION"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "PROTECT_WITNESS",
+            "REQUEST_REVIEW",
+            "SIGN_EXECUTION"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "PROTECT_WITNESS",
+            "REQUEST_REVIEW",
+            "SIGN_EXECUTION"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "PROTECT_WITNESS",
+            "REQUEST_REVIEW",
+            "SIGN_EXECUTION"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "PROTECT_WITNESS",
+            "REQUEST_REVIEW",
+            "SIGN_EXECUTION"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N4",
+      "decisionPointId": "N4.case_file_seal",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "SEAL_CASE_FILE"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "SEAL_CASE_FILE"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "SEAL_CASE_FILE"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N5",
+      "decisionPointId": "N5.inspect_fleet",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "INSPECT_FLEET"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "INSPECT_FLEET"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "INSPECT_FLEET"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "INSPECT_FLEET"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N5",
+      "decisionPointId": "N5.claim_grain",
+      "publishedAllowedActionTypes": [
+        "CLAIM_GRAIN",
+        "DEFAULT_PASS"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "CLAIM_GRAIN"
+          ]
+        },
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "CLAIM_GRAIN"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "CLAIM_GRAIN"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "CLAIM_GRAIN"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "CLAIM_GRAIN"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N5",
+      "decisionPointId": "N5.public_frame",
+      "publishedAllowedActionTypes": [
+        "DECLARE_PUBLIC_FRAME",
+        "DEFAULT_PASS"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "DECLARE_PUBLIC_FRAME"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "DECLARE_PUBLIC_FRAME"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N5",
+      "decisionPointId": "N5.relief_allocation",
+      "publishedAllowedActionTypes": [
+        "ALLOCATE_RELIEF",
+        "DEFAULT_PASS"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "ALLOCATE_RELIEF"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "ALLOCATE_RELIEF"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "ALLOCATE_RELIEF"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N5",
+      "decisionPointId": "N5.land_purchase_limit",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "LIMIT_LAND_PURCHASE"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "LIMIT_LAND_PURCHASE"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "LIMIT_LAND_PURCHASE"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "LIMIT_LAND_PURCHASE"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N5",
+      "decisionPointId": "N5.contract_reconcile",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "RECONCILE_CONTRACT"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "RECONCILE_CONTRACT"
+          ]
+        },
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "RECONCILE_CONTRACT"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "RECONCILE_CONTRACT"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "RECONCILE_CONTRACT"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N5",
+      "decisionPointId": "N5.final_manifest",
+      "publishedAllowedActionTypes": [
+        "CONFIRM_MANIFEST",
+        "DEFAULT_PASS"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "CONFIRM_MANIFEST"
+          ]
+        },
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "CONFIRM_MANIFEST"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "CONFIRM_MANIFEST"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "CONFIRM_MANIFEST"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "CONFIRM_MANIFEST"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "CONFIRM_MANIFEST"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N6",
+      "decisionPointId": "N6.asset_audit",
+      "publishedAllowedActionTypes": [
+        "AUDIT_ASSETS",
+        "DEFAULT_PASS"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "AUDIT_ASSETS"
+          ]
+        },
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "AUDIT_ASSETS"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "AUDIT_ASSETS"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "AUDIT_ASSETS"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N6",
+      "decisionPointId": "N6.ledger_exchange",
+      "publishedAllowedActionTypes": [
+        "CONFIRM_LEDGER_SOURCE_WITH_EVIDENCE",
+        "DEFAULT_PASS",
+        "DELIVER_LEDGER",
+        "INVESTIGATE_LEDGER_SOURCE",
+        "SEAL_LEDGER"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "DELIVER_LEDGER",
+            "SEAL_LEDGER"
+          ]
+        },
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "DELIVER_LEDGER",
+            "SEAL_LEDGER"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "DELIVER_LEDGER",
+            "SEAL_LEDGER"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "DELIVER_LEDGER",
+            "SEAL_LEDGER"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "DELIVER_LEDGER",
+            "SEAL_LEDGER"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "DELIVER_LEDGER",
+            "SEAL_LEDGER"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N6",
+      "decisionPointId": "N6.responsibility_record",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "RECORD_EXPLANATION",
+        "REFUSE_SCAPEGOAT"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "RECORD_EXPLANATION",
+            "REFUSE_SCAPEGOAT"
+          ]
+        },
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "RECORD_EXPLANATION",
+            "REFUSE_SCAPEGOAT"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "RECORD_EXPLANATION",
+            "REFUSE_SCAPEGOAT"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "RECORD_EXPLANATION",
+            "REFUSE_SCAPEGOAT"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N7",
+      "decisionPointId": "N7.testimony_review",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "REVIEW_TESTIMONY",
+        "SEAL_TESTIMONY"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "REVIEW_TESTIMONY",
+            "SEAL_TESTIMONY"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "REVIEW_TESTIMONY",
+            "SEAL_TESTIMONY"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "REVIEW_TESTIMONY",
+            "SEAL_TESTIMONY"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N7",
+      "decisionPointId": "N7.route_selection",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "OPEN_ROUTE",
+        "SEAL_DISPATCH"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "OPEN_ROUTE",
+            "SEAL_DISPATCH"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "OPEN_ROUTE",
+            "SEAL_DISPATCH"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "OPEN_ROUTE",
+            "SEAL_DISPATCH"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "OPEN_ROUTE",
+            "SEAL_DISPATCH"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "OPEN_ROUTE",
+            "SEAL_DISPATCH"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N7",
+      "decisionPointId": "N7.funds_exposure",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "LIMIT_EXPOSURE",
+        "SECURE_FUNDS"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "LIMIT_EXPOSURE",
+            "SECURE_FUNDS"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "LIMIT_EXPOSURE",
+            "SECURE_FUNDS"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "LIMIT_EXPOSURE",
+            "SECURE_FUNDS"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N7",
+      "decisionPointId": "N7.procedure_grade",
+      "publishedAllowedActionTypes": [
+        "CORROBORATE_PACKET",
+        "DEFAULT_PASS",
+        "VALIDATE_PROCEDURE"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "CORROBORATE_PACKET",
+            "VALIDATE_PROCEDURE"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "CORROBORATE_PACKET",
+            "VALIDATE_PROCEDURE"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "CORROBORATE_PACKET",
+            "VALIDATE_PROCEDURE"
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N7",
+      "decisionPointId": "N7.final_seal",
+      "publishedAllowedActionTypes": [
+        "DEFAULT_PASS",
+        "SEAL_CHAPTER"
+      ],
+      "seatPolicies": [
+        {
+          "seatId": "cabinet_finance",
+          "rankedNonDefaultActionTypes": [
+            "SEAL_CHAPTER"
+          ]
+        },
+        {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "SEAL_CHAPTER"
+          ]
+        },
+        {
+          "seatId": "qingliu_law",
+          "rankedNonDefaultActionTypes": [
+            "SEAL_CHAPTER"
+          ]
+        },
+        {
+          "seatId": "sili_weaving",
+          "rankedNonDefaultActionTypes": [
+            "SEAL_CHAPTER"
+          ]
+        },
+        {
+          "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "SEAL_CHAPTER"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
+          "rankedNonDefaultActionTypes": [
+            "SEAL_CHAPTER"
+          ]
+        }
+      ]
+    }
+  ],
+  "coverage": {
+    "chapterCount": 7,
+    "decisionPointCount": 26,
+    "applicableSeatBindingCount": 100,
+    "coverageRule": "EXACT_ACCEPTED_DECISION_REQUIRED_SEAT_BINDINGS"
+  },
+  "policySha256": "a761a04232bc59bfba671a8abb0d7e04111635ce0bba0d52d5f0623278170888"
+}

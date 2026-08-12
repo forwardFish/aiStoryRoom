@@ -1,0 +1,8 @@
+{
+  "extends": "../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["./*.ts", "../a-emotion-lifecycle/*.ts", "../interaction/*.ts", "../working-ledger/*.ts"]
+}

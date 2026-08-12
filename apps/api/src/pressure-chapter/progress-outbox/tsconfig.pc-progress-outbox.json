@@ -1,0 +1,16 @@
+{
+  "extends": "../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": "../../../../../",
+    "paths": {
+      "@ai-story/shared": [
+        "packages/shared/src/pressure-chapter/contracts/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "./**/*.ts"
+  ]
+}
+

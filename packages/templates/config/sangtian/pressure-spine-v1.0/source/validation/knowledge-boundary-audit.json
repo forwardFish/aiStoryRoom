@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "sangtian_knowledge_boundary_audit_v1_1",
+  "verdict": "PASS",
+  "seatCount": 6,
+  "handoffCount": 5,
+  "publicSceneCount": 76,
+  "publicLimitedClaimLeakCount": 0,
+  "seatKnownFactRefCount": 164,
+  "seatUnknownFactRefCount": 124,
+  "findings": [
+    "N6 公共开场不公开两组四箱的存在、保管或路线。",
+    "所有公开场景只能引用 PUBLIC claim；私有 claim 仅进入允许席位。",
+    "当前行动人物只使用具体 claim/object/handoff 引用。",
+    "交接后不自动继承玩家记忆。"
+  ],
+  "violations": []
+}

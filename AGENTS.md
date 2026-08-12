@@ -1,56 +1,99 @@
-# Project Rules for AI Agents
+# AI 代理项目规则
 
-These rules are mandatory for every Codex task, agent, sub-agent, automation,
-and human-assisted workflow operating in this repository. The repository
-owner's explicit instruction in the current conversation may override them.
+本规则适用于在本仓库中工作的所有 Codex 任务、代理、子代理、自动化流程、
+外部 AI 协作者及人工辅助流程。项目所有者在当前对话中的明确指令拥有最高优先级。
 
-## Branch Policy (Mandatory)
+## 分支规则（强制）
 
-1. **All normal development happens directly on `main`.**
-   - Before editing files, verify that the current branch is `main`.
-   - Do not create a feature, fix, task, temporary, `codex/*`, or similarly
-     named development branch as a routine precaution.
-   - Do not switch development to a detached HEAD or a separate development
-     worktree to avoid this rule.
+1. **所有正常开发都直接在 `main` 分支进行。**
+   - 修改文件前必须确认当前分支是 `main`。
+   - 不得以常规预防措施为由创建 feature、fix、task、temporary、`codex/*`
+     或其他开发分支。
+   - 不得通过 detached HEAD 或额外开发 worktree 绕过本规则。
 
-2. **Creating any other development branch requires advance approval from the
-   repository owner.**
-   - If conflicts, concurrent Codex tasks, permissions, tooling, or worktree
-     state make safe development on `main` impossible, stop before creating or
-     switching branches.
-   - Immediately tell the owner what is conflicting, why `main` cannot be used,
-     what work is at risk, and the exact proposed branch/worktree name.
-   - Wait for the owner's explicit approval. Approval is specific to that
-     branch and situation; never treat earlier approval as permanent.
-   - Never create the branch first and ask for approval afterward.
+2. **创建其他开发分支必须事先获得项目所有者批准。**
+   - 如果冲突、并发任务、权限、工具或工作树状态导致无法安全地在 `main`
+     开发，必须在创建或切换分支前停止操作。
+   - 必须立即说明冲突原因、受影响工作、风险和拟创建的准确分支或
+     worktree 名称。
+   - 必须等待项目所有者明确批准。一次批准只适用于当次说明的分支和场景，
+     不得视为长期授权。
+   - 禁止先创建分支，再补问批准。
 
-3. **Concurrent-task conflicts must be surfaced, not hidden.**
-   - Assume multiple Codex tasks may share this checkout at the same time.
-   - Inspect the current branch and working tree before editing.
-   - Preserve changes owned by other tasks. Do not overwrite, reset, discard,
-     or silently incorporate them.
-   - If edits overlap or ownership is unclear, pause the conflicting work and
-     notify the owner before proceeding.
+3. **并发任务冲突必须公开，禁止隐藏处理。**
+   - 始终假设可能有多个 Codex 任务共享当前工作区。
+   - 编辑前检查当前分支和工作树状态。
+   - 保留其他任务的修改，不得覆盖、重置、丢弃或擅自吸收。
+   - 如果修改范围重叠或无法确认归属，暂停冲突工作并通知项目所有者。
 
-4. **`release` is deployment-only.**
-   - Do not perform feature development or ordinary fixes directly on
-     `release`.
-   - `main` is the development source of truth.
-   - Promote only reviewed and verified commits from `main` to `release` for an
-     authorized production release.
-   - Do not use `release` as a conflict-resolution or temporary development
-     branch.
+4. **`release` 只用于部署。**
+   - 不得在 `release` 上进行功能开发或普通修复。
+   - `main` 是开发代码的唯一事实来源。
+   - 只有经过审查和验证、并获得上线授权的 `main` 提交才能进入 `release`。
+   - 不得把 `release` 当作解决冲突或临时开发的分支。
 
-5. **Verification clones are not development branches.**
-   - A disposable clone may be used only to test the exact `main` commit in a
-     clean environment.
-   - Do not author changes or create commits there. If a fix is needed, return
-     to `main`; if that is unsafe, follow the approval process above.
+5. **验证克隆不是开发分支。**
+   - 可以创建一次性的干净克隆，用于验证某个准确的 `main` 提交。
+   - 不得在验证克隆中编写或提交修复。需要修复时必须回到 `main`；如果
+     `main` 无法安全开发，则执行前述审批流程。
 
-## Owner's Rule (Chinese Summary)
+## 玩家可见页面审批规则（强制）
 
-- 默认且正常的开发全部在 `main` 分支进行。
-- 因冲突或并发任务导致无法安全地在 `main` 开发时，必须立刻通知项目所有者；说明冲突原因、风险和拟创建的分支名称，并在获得明确批准后才能创建其他分支或开发 worktree。
-- 禁止先创建其他分支，再补问批准。
-- `release` 分支只用于把已经审查、验证通过的 `main` 提交上线发布，不用于日常开发或临时解决冲突。
-- 多个 Codex 任务并发时，不得覆盖、丢弃或擅自合并其他任务的未提交改动；无法确认归属时必须暂停并通知项目所有者。
+本节适用于现在和未来的所有功能，也适用于所有代理、子代理、外部
+ChatGPT、Claude、Gemini 协作者、自动化及人工辅助流程。
+
+1. **所有正式玩家可见改动都必须事先取得项目所有者明确批准。**
+   - 未经批准，不得编辑、生成、替换、重做样式、改名、改路由或删除任何
+     玩家页面、组件、布局、交互、文案、图片、图标或动画。
+   - 批准只覆盖明确说明的页面、路由、文件和可见结果。其他页面或过去的
+     批准不能自动沿用。
+   - 测试通过、设计文档、代理建议或后端需求都不能代替项目所有者批准。
+
+2. **页面冻结范围包含间接可见变化。**
+   - 如果 API 投影、公开目录数据、角色名称、头像、公开简介、路由选择、
+     功能开关或响应结构会改变玩家看到的内容或进入的页面，它们同样属于
+     页面改动。
+   - 未经批准，不得暂存、提交、推送、部署或启用这些直接或间接页面改动。
+
+3. **新增功能必须保留已经批准的正式页面。**
+   - 优先在现有页面背后实现领域逻辑、权威链、持久化和面向玩家的安全数据
+     合同。
+   - 新后端数据必须适配已有页面和已有交互，不得为了方便而在真实产品流程
+     中创建平行游戏页面、替代渲染器、临时玩家外壳或测试专用产品路由。
+   - 后端内部代码、哈希、证据 ID、控制权 fence、Provider 信息和调试标签
+     不得直接显示给玩家。
+
+4. **临时测试页面只能存在于隔离测试边界。**
+   - 为开发和验证可以创建临时测试页面或测试路由，但不得改变已经批准的
+     正式页面。
+   - 临时测试页面不得被真实玩家流程、生产路由、入口、导航、公开目录、
+     功能开关或运行时回退逻辑链接、跳转、选择、导入或启用。
+   - 必须明确标记为“仅供测试”，并隔离测试数据、认证、存储和 URL。
+   - 测试结束后必须立即删除临时页面和路径，删除全部引用，并验证正式流程
+     中不存在残留路由、导入、重定向、开关、资源或导航入口。
+   - 除非项目所有者明确批准保留某个具名测试工具，否则临时测试页面和路径
+     不得暂存、提交、推送或部署。测试完成不代表允许保留页面。
+
+5. **修改正式页面前必须提交审批说明。**
+   - 审批说明必须包含：修改原因、影响的路由和用户流程、准确文件、修改前后
+     行为、数据合同影响、视觉参考或示意图、测试方案和回滚方案。
+   - 必须等待项目所有者明确批准后才能开始修改。
+   - 如果实施范围需要超出已批准内容，必须停止并重新申请批准。
+
+6. **桑田 `/game` 页面有冻结的事实来源。**
+   - 权威规范和六张视觉参考位于 `docs/主游戏最终版/`。
+   - 必须保留真实 `/game` 页面及已批准的三栏信息架构，不得新增平行主游戏
+     页面。
+   - 视觉和交互验收必须使用真实 `/game` 路由与六张参考图进行对比；只有
+     合同测试或静态模拟页面不能证明页面验收通过。
+
+7. **意外页面变化是立即停止条件。**
+   - 如果后端或集成修改意外改变页面，立即停止页面工作，不得发布受影响文件，
+     并向项目所有者报告准确原因和受影响文件。
+   - 不得自行“优化”、重新设计或直接修补正式页面。必须先提交范围明确的恢复
+     方案，并等待批准。
+
+8. **提交和推送前必须证明没有越过页面边界。**
+   - 每次提交或推送前，必须列出所有已暂存的玩家可见文件，以及每个文件对应
+     的批准内容。
+   - 如果没有页面修改批准，已暂存的玩家可见文件列表必须为空。

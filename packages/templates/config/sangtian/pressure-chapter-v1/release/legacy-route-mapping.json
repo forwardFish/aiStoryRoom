@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "pressure_legacy_route_mapping_v1",
+  "resolverId": "pressure_legacy_route_resolver_v1",
+  "resolverVersion": "legacy-route-resolver-1.0.0",
+  "routeAuthority": "STORED_FROZEN_ROUTE",
+  "ambiguityPolicy": "FAIL_CLOSED",
+  "unknownRoutePolicy": "FAIL_CLOSED",
+  "inferRouteFromParticipantCount": false,
+  "inferRouteFromPayloadShape": false,
+  "mappings": [
+    {
+      "mappingKey": "legacy_openovel_completed",
+      "runtimeProfile": "OPENNOVEL_T20_V1_OR_STORED_EQUIVALENT",
+      "runState": "COMPLETED",
+      "worldStatePolicy": "READ_ONLY_NO_RECALCULATION",
+      "terminalAdapterKey": null,
+      "resultSchemaVersion": "openovel_result_v2",
+      "creationPolicy": "REJECT"
+    },
+    {
+      "mappingKey": "legacy_openovel_in_progress",
+      "runtimeProfile": "OPENNOVEL_T20_V1_OR_STORED_EQUIVALENT",
+      "runState": "IN_PROGRESS",
+      "worldStatePolicy": "CONTINUE_STORED_T20_STATE",
+      "terminalAdapterKey": "LegacyTerminalInputAdapter",
+      "terminalCommitPolicy": "AUTHORITY_FIRST_THEN_NARRATIVE",
+      "resultSchemaVersion": "openovel_result_v2",
+      "creationPolicy": "REJECT"
+    },
+    {
+      "mappingKey": "legacy_continuous_story_v2",
+      "runtimeProfile": "CONTINUOUS_STORY_ACTOR_THREAD_V2_OR_STORED_EQUIVALENT",
+      "runState": "ANY_STORED_STATE",
+      "worldStatePolicy": "USE_STORED_ACTOR_THREAD_ROUTE",
+      "terminalAdapterKey": "EndgameMvpV1LegacyAdapter",
+      "resultSchemaVersion": "continuous_story_result_v3",
+      "creationPolicy": "INDEPENDENT_CAPABILITY"
+    }
+  ],
+  "createAndReplayRules": [
+    {
+      "command": "CREATE_OPENNOVEL_T20",
+      "disposition": "REJECT_ZERO_WRITE",
+      "errorCode": "RUNTIME_PROFILE_UNSUPPORTED"
+    },
+    {
+      "command": "LEGACY_OPENNOVEL_RESTART_SAME_EXPERIENCE",
+      "disposition": "REJECT_ZERO_WRITE",
+      "errorCode": "RUNTIME_PROFILE_UNSUPPORTED"
+    },
+    {
+      "command": "LEGACY_OPENNOVEL_START_LATEST_EXPERIENCE",
+      "disposition": "CREATE_PRESSURE_ROUTE",
+      "targetRoute": {
+        "engineVersion": "pressure_chapter_v1",
+        "strategyVersion": "sangtian_pressure_chapter_v1_0",
+        "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+        "endgamePolicyVersion": "sangtian_content_finale_v1",
+        "resultSchemaVersion": "sangtian_pressure_result_v1"
+      }
+    },
+    {
+      "command": "LEGACY_CONTINUOUS_STORY_RESTART_SAME_EXPERIENCE",
+      "disposition": "RESOLVE_INDEPENDENT_CAPABILITY",
+      "targetRoute": null
+    }
+  ],
+  "requiredStoredFields": [
+    "engineVersion",
+    "strategyVersion",
+    "runtimeProfile",
+    "endgamePolicyVersion",
+    "resultSchemaVersion"
+  ]
+}

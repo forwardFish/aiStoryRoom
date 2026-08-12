@@ -1,0 +1,355 @@
+{
+  "schemaVersion": "sangtian_pressure_chapter_content_v1",
+  "packageId": "sangtian_pressure_chapter_v1",
+  "packageVersion": "1.0.0",
+  "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+  "defaultPolicies": {
+    "absence": { "policyRef": "sangtian.default.absence.v1", "actionType": "DEFAULT_PASS", "payload": { "reason": "ABSENT" } },
+    "aiFailure": { "policyRef": "sangtian.default.ai_failure.v1", "actionType": "DEFAULT_PASS", "payload": { "reason": "AI_FAILURE" } }
+  },
+  "genesis": {
+    "nodeId": "P0",
+    "title": "桑田诏下",
+    "pressure": "朝廷以改桑补足财政与军饷缺口，浙江六席必须从同一不可撤销的历史压力出发。",
+    "lockedFacts": [
+      "桑田诏已经下达，任何席位都不能通过自由输入取消国策。",
+      "财政、军饷、民田、粮食和地方秩序从开局即互相制约。",
+      "六席进入 N1 前共享同一个世界起点，但只获得各自权限内的知识。"
+    ],
+    "factValues": {
+      "fact.P0.edict_issued": true,
+      "fact.P0.fiscal_gap_exists": true,
+      "fact.P0.policy_cancelled": false,
+      "fact.P0.public_risk_known": true
+    },
+    "resources": {
+      "resource.credit": 100,
+      "resource.grain": 100,
+      "resource.troops": 100
+    },
+    "seats": [
+      {
+        "seatId": "cabinet_finance",
+        "sourceSeatId": "seat.cabinet_finance",
+        "displayName": "内阁财政",
+        "institutionalMission": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+        "initialActorId": "actor.yan_shifan",
+        "persistentObjectRefs": ["obj.cabinet_urgent_dispatch", "obj.capital_receipt_channel", "obj.fiscal_target_register"]
+      },
+      {
+        "seatId": "jiangnan_merchant",
+        "sourceSeatId": "seat.jiangnan_merchant",
+        "displayName": "江南商会",
+        "institutionalMission": "用粮、银、船和信用解决公共危机，同时避免成为唯一替罪者。",
+        "initialActorId": "actor.shen_yishi",
+        "persistentObjectRefs": ["obj.merchant_credit_network", "obj.merchant_fleet", "obj.merchant_grain_pool", "obj.merchant_legacy_orders"]
+      },
+      {
+        "seatId": "qingliu_law",
+        "sourceSeatId": "seat.qingliu_law",
+        "displayName": "清流法度",
+        "institutionalMission": "阻止无案卷杀人、保住证人与文书，使责任链取得程序效力。",
+        "initialActorId": "actor.tan_lun",
+        "persistentObjectRefs": ["obj.law_review_channel", "obj.sealed_evidence_index", "obj.witness_protection_roster"]
+      },
+      {
+        "seatId": "sili_weaving",
+        "sourceSeatId": "seat.sili_weaving",
+        "displayName": "司礼监织造",
+        "institutionalMission": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+        "initialActorId": "actor.yang_jinshui",
+        "persistentObjectRefs": ["obj.inner_court_dispatch_channel", "obj.weaving_bureau_banner", "obj.weaving_records"]
+      },
+      {
+        "seatId": "zhejiang_administration",
+        "sourceSeatId": "seat.zhejiang_administration",
+        "displayName": "浙江省府",
+        "institutionalMission": "维持地方行政机器，并把改桑、赈灾与责任安排写成可执行文书。",
+        "initialActorId": "actor.zheng_michang",
+        "persistentObjectRefs": ["obj.enforcement_roster", "obj.local_official_network", "obj.provincial_seal"]
+      },
+      {
+        "seatId": "zhejiang_governor",
+        "sourceSeatId": "seat.zhejiang_governor",
+        "displayName": "浙江总督",
+        "institutionalMission": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+        "initialActorId": "actor.hu_zongxian",
+        "persistentObjectRefs": ["obj.governor_command_seal", "obj.governor_memorial_channel", "obj.military_dispatch_channel"]
+      }
+    ],
+    "tracks": [
+      { "trackId": "civilian_land", "sourceTrackId": "track.civilian_land", "name": "民生与土地", "low": "断粮、失序与低价兼并扩大", "mid": "赈济有限，部分田契转移", "high": "赈粮稳定且多数家庭保有耕作权", "initialValue": 50 },
+      { "trackId": "mulberry_silk", "sourceTrackId": "track.mulberry_silk", "name": "改桑与丝绸", "low": "国策失速且织造能力受损", "mid": "局部改桑与织造维持", "high": "改桑路径可执行且未以全面失田为代价", "initialValue": 50 },
+      { "trackId": "fiscal_military", "sourceTrackId": "track.fiscal_military", "name": "财政与军饷", "low": "缺口未解，前线军饷严重迟滞", "mid": "只解一时，仍需后续筹款", "high": "最低军饷按时送达且财政责任可追溯", "initialValue": 45 },
+      { "trackId": "evidence_responsibility", "sourceTrackId": "track.evidence_responsibility", "name": "证据与责任", "low": "证人或材料灭失，责任封在替罪者", "mid": "省级责任生效，更高层关联封存", "high": "多路材料相互印证并取得更高采用层级", "initialValue": 50 },
+      { "trackId": "court_imperial_face", "sourceTrackId": "track.court_imperial_face", "name": "朝局与皇权颜面", "low": "朝局震荡或皇权公开受损", "mid": "有限追责，材料内部封存", "high": "朝局可继续运行且制度责任未被完全抹去", "initialValue": 50 }
+    ],
+    "objects": [
+      { "objectId": "obj.breach_order_chain", "name": "毁堤命令与经手责任链", "kind": "EVIDENCE_CHAIN", "initialHolderSeatId": "zhejiang_administration", "sourceCustody": "seat.zhejiang_administration", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.cabinet_urgent_dispatch", "name": "内阁急递与廷寄渠道", "kind": "CHANNEL", "initialHolderSeatId": "cabinet_finance", "sourceCustody": "seat.cabinet_finance", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.capital_receipt_channel", "name": "中央收件与立案路径", "kind": "CHANNEL", "initialHolderSeatId": "cabinet_finance", "sourceCustody": "seat.cabinet_finance", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.enforcement_roster", "name": "差役与押解名册", "kind": "RESOURCE", "initialHolderSeatId": "zhejiang_administration", "sourceCustody": "seat.zhejiang_administration", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.final_dispatch_routes", "name": "封印、急递路线与收件渠道", "kind": "DISPATCH_NETWORK", "initialHolderSeatId": null, "sourceCustody": "MIXED", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.final_testimonies", "name": "原供、翻供、证言与问官签押", "kind": "EVIDENCE_PACKET", "initialHolderSeatId": "qingliu_law", "sourceCustody": "seat.qingliu_law", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.first_memorial", "name": "水灾后的第一道奏疏", "kind": "DOCUMENT", "initialHolderSeatId": "zhejiang_governor", "sourceCustody": "seat.zhejiang_governor", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.fiscal_gap", "name": "国库与军饷缺口", "kind": "PRESSURE", "initialHolderSeatId": null, "sourceCustody": "SYSTEM", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.fiscal_target_register", "name": "财政与丝绸目标簿", "kind": "OBLIGATION", "initialHolderSeatId": "cabinet_finance", "sourceCustody": "seat.cabinet_finance", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.fleet_contract_and_banners", "name": "粮船契约、织造局灯笼与公开名义", "kind": "PUBLIC_FRAME", "initialHolderSeatId": null, "sourceCustody": "MIXED", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.governor_command_seal", "name": "总督军政令印", "kind": "AUTHORITY", "initialHolderSeatId": "zhejiang_governor", "sourceCustody": "seat.zhejiang_governor", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.governor_memorial_channel", "name": "总督奏报渠道", "kind": "CHANNEL", "initialHolderSeatId": "zhejiang_governor", "sourceCustody": "seat.zhejiang_governor", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.grain_fleet", "name": "到埠粮船及其唯一用途", "kind": "DIVISIBLE_RESOURCE", "initialHolderSeatId": "jiangnan_merchant", "sourceCustody": "seat.jiangnan_merchant", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.inner_court_dispatch_channel", "name": "司礼监与锦衣卫递送渠道", "kind": "CHANNEL", "initialHolderSeatId": "sili_weaving", "sourceCustody": "seat.sili_weaving", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.inner_court_four_boxes", "name": "内廷四口木箱账册", "kind": "LEDGER_SET", "initialHolderSeatId": "sili_weaving", "sourceCustody": "seat.sili_weaving", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.land_deed_pool", "name": "灾民田契、田价与改桑地域", "kind": "CONTRACT_POOL", "initialHolderSeatId": null, "sourceCustody": "HOUSEHOLDS_AND_OFFICES", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.law_review_channel", "name": "法度审查与拒签渠道", "kind": "AUTHORITY", "initialHolderSeatId": "qingliu_law", "sourceCustody": "seat.qingliu_law", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.local_four_boxes", "name": "本地四口木箱账册", "kind": "LEDGER_SET", "initialHolderSeatId": "zhejiang_administration", "sourceCustody": "seat.zhejiang_administration", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.local_official_network", "name": "府县执行官吏网络", "kind": "NETWORK", "initialHolderSeatId": "zhejiang_administration", "sourceCustody": "seat.zhejiang_administration", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.ma_confession", "name": "马宁远供状", "kind": "EVIDENCE", "initialHolderSeatId": null, "sourceCustody": "actor.ma_ningyuan", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.merchant_credit_network", "name": "商会信用与借据网络", "kind": "NETWORK", "initialHolderSeatId": "jiangnan_merchant", "sourceCustody": "seat.jiangnan_merchant", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.merchant_fleet", "name": "商船与运输队", "kind": "RESOURCE", "initialHolderSeatId": "jiangnan_merchant", "sourceCustody": "seat.jiangnan_merchant", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.merchant_grain_pool", "name": "商会粮仓", "kind": "DIVISIBLE_RESOURCE", "initialHolderSeatId": "jiangnan_merchant", "sourceCustody": "seat.jiangnan_merchant", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.merchant_legacy_orders", "name": "商会遗命与预设递送", "kind": "PENDING_ORDER", "initialHolderSeatId": "jiangnan_merchant", "sourceCustody": "seat.jiangnan_merchant", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.military_dispatch_channel", "name": "总督军驿与前线渠道", "kind": "CHANNEL", "initialHolderSeatId": "zhejiang_governor", "sourceCustody": "seat.zhejiang_governor", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.nine_weirs", "name": "九处堰口及其处置权", "kind": "INFRASTRUCTURE", "initialHolderSeatId": null, "sourceCustody": "MIXED_LOCAL", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.provincial_seal", "name": "浙江省府印信", "kind": "AUTHORITY", "initialHolderSeatId": "zhejiang_administration", "sourceCustody": "seat.zhejiang_administration", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.relief_grain_pool", "name": "官仓与商粮可用粮池", "kind": "DIVISIBLE_RESOURCE", "initialHolderSeatId": null, "sourceCustody": "MIXED", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.sangtian_edict", "name": "桑田诏与改桑国策", "kind": "POLICY", "initialHolderSeatId": "cabinet_finance", "sourceCustody": "seat.cabinet_finance", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.sealed_evidence_index", "name": "封存证据索引", "kind": "EVIDENCE_INDEX", "initialHolderSeatId": "qingliu_law", "sourceCustody": "seat.qingliu_law", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.shen_yishi_person_and_assets", "name": "沈一石、商产与可划拨现银", "kind": "PERSON_AND_ASSETS", "initialHolderSeatId": "jiangnan_merchant", "sourceCustody": "seat.jiangnan_merchant", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.silk_quota", "name": "丝绸任务与织造产能", "kind": "OBLIGATION", "initialHolderSeatId": "sili_weaving", "sourceCustody": "seat.sili_weaving", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.tongwo_case_file", "name": "通倭案卷、口供与执行签押", "kind": "CASE_FILE", "initialHolderSeatId": "zhejiang_administration", "sourceCustody": "seat.zhejiang_administration", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.tongwo_prisoners", "name": "齐大柱、井上十四郎及相关人犯", "kind": "PERSON_CUSTODY", "initialHolderSeatId": "zhejiang_administration", "sourceCustody": "seat.zhejiang_administration", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.weaving_bureau_banner", "name": "织造局公开名义", "kind": "PUBLIC_FRAME", "initialHolderSeatId": "sili_weaving", "sourceCustody": "seat.sili_weaving", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.weaving_records", "name": "织造局供货与银路记录", "kind": "RECORDS", "initialHolderSeatId": "sili_weaving", "sourceCustody": "seat.sili_weaving", "sourceStatus": "SOURCE_FACT" },
+      { "objectId": "obj.weir_troop_deployment", "name": "守堰、分洪与疏散兵力", "kind": "RESOURCE", "initialHolderSeatId": "zhejiang_governor", "sourceCustody": "seat.zhejiang_governor", "sourceStatus": "ADAPTATION_RULE" },
+      { "objectId": "obj.witness_protection_roster", "name": "证人保护名册", "kind": "RESOURCE", "initialHolderSeatId": "qingliu_law", "sourceCustody": "seat.qingliu_law", "sourceStatus": "ADAPTATION_RULE" }
+    ],
+    "knowledgeBySeat": [
+      { "seatId": "cabinet_finance", "knownFactRefs": ["P0-SF-01", "P0-SF-02", "P0-SF-03", "obj.cabinet_urgent_dispatch", "obj.capital_receipt_channel", "obj.fiscal_target_register"], "secretRefs": ["P0-SF-01", "P0-SF-02"] },
+      { "seatId": "jiangnan_merchant", "knownFactRefs": ["P0-SF-03", "P0-SF-04", "obj.merchant_credit_network", "obj.merchant_fleet", "obj.merchant_grain_pool", "obj.merchant_legacy_orders"], "secretRefs": ["P0-SF-04"] },
+      { "seatId": "qingliu_law", "knownFactRefs": ["P0-SF-02", "P0-SF-03", "obj.law_review_channel", "obj.sealed_evidence_index", "obj.witness_protection_roster"], "secretRefs": ["P0-SF-02"] },
+      { "seatId": "sili_weaving", "knownFactRefs": ["P0-SF-01", "P0-SF-03", "obj.inner_court_dispatch_channel", "obj.weaving_bureau_banner", "obj.weaving_records"], "secretRefs": ["P0-SF-01"] },
+      { "seatId": "zhejiang_administration", "knownFactRefs": ["P0-SF-03", "P0-SF-04", "obj.enforcement_roster", "obj.local_official_network", "obj.provincial_seal"], "secretRefs": ["P0-SF-04"] },
+      { "seatId": "zhejiang_governor", "knownFactRefs": ["P0-SF-01", "P0-SF-02", "P0-SF-03", "P0-SF-04", "obj.governor_command_seal", "obj.governor_memorial_channel", "obj.military_dispatch_channel"], "secretRefs": ["P0-SF-01", "P0-SF-02", "P0-SF-04"] }
+    ],
+    "evidence": [
+      { "evidenceId": "P0-SF-01", "holderSeatIds": ["cabinet_finance", "sili_weaving", "zhejiang_governor"], "supportsFactRefs": ["fact.P0.edict_issued"], "visibilityPolicyRef": "visibility.limited.p0_sf_01" },
+      { "evidenceId": "P0-SF-02", "holderSeatIds": ["cabinet_finance", "qingliu_law", "zhejiang_governor"], "supportsFactRefs": ["fact.P0.governor_dual_office"], "visibilityPolicyRef": "visibility.limited.p0_sf_02" },
+      { "evidenceId": "P0-SF-03", "holderSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"], "supportsFactRefs": ["fact.P0.public_risk_known"], "visibilityPolicyRef": "visibility.public" },
+      { "evidenceId": "P0-SF-04", "holderSeatIds": ["jiangnan_merchant", "zhejiang_administration", "zhejiang_governor"], "supportsFactRefs": ["fact.P0.governor_relief_duty"], "visibilityPolicyRef": "visibility.limited.p0_sf_04" }
+    ],
+    "responsibilities": [
+      { "responsibilityId": "responsibility.P0.cabinet_fiscal", "subjectSeatId": "cabinet_finance", "sourceFactRefs": ["P0-SF-01"], "level": 1 },
+      { "responsibilityId": "responsibility.P0.governor_governance", "subjectSeatId": "zhejiang_governor", "sourceFactRefs": ["P0-SF-02", "P0-SF-04"], "level": 1 }
+    ],
+    "sourceRefs": [
+      "packages/templates/config/sangtian/pressure-spine-v1.0/source/global/objects.json",
+      "packages/templates/config/sangtian/pressure-spine-v1.0/source/global/seats.json",
+      "packages/templates/config/sangtian/pressure-spine-v1.0/source/global/world-tracks.json",
+      "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/P0/source-evidence.jsonl"
+    ]
+  },
+  "chapters": [
+    {
+      "chapterId": "N1",
+      "title": "九堰将决",
+      "pressure": "九处堰口同时承压，六席必须在守堰、分洪、疏散与责任留痕之间作出选择。",
+      "lockedFacts": ["九堰危机已经发生，本章不能通过叙事输入取消灾情。"],
+      "decisionPlan": "STATIC",
+      "decisionPoints": [
+        {
+          "decisionPointKey": "N1.weir_crisis",
+          "ordinal": 1,
+          "mode": "SYNC_CONTEST",
+          "purpose": "共同配置守堰、分洪、疏散兵力并封存命令链。",
+          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "allowedActionTypes": ["DEFAULT_PASS", "EVACUATE_WEIRS", "SEAL_BREACH_RECORD", "SUPPORT_WEIR"],
+          "perSeatActionBudget": 2,
+          "closeFactRef": "chapter.N1.weir_crisis.closed",
+          "deadlineMs": 300000,
+          "absenceDefaultRef": "sangtian.default.absence.v1",
+          "aiFailureDefaultRef": "sangtian.default.ai_failure.v1",
+          "beatResolutionPolicy": "sangtian.N1.weir_crisis.beat_v1",
+          "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"],
+          "feedbackVisibilityPolicy": "feedback.N1.audience_scoped",
+          "availability": null,
+          "reaction": { "enabled": true, "eligibleSeatIds": ["qingliu_law", "zhejiang_administration", "zhejiang_governor"], "triggerFactRef": "chapter.N1.breach_record_contested" },
+          "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/node.json"]
+        }
+      ],
+      "closePolicy": { "exitPredicate": { "op": "COMPARE", "factRef": "chapter.N1.exit_ready", "comparator": "EQ", "value": true }, "settlementPolicyRef": "sangtian.N1.settlement_v1", "failureMode": "FAIL_CLOSED" },
+      "settlementPolicy": {
+        "policyVersion": "sangtian.N1.settlement_v1",
+        "evaluationOrder": ["HIGH", "LOW", "MID"],
+        "branches": [
+          { "branchId": "N1.HIGH", "outcomeBand": "HIGH", "selector": { "op": "ALL", "clauses": [{ "op": "COMPARE", "factRef": "evacuationCoveragePct", "comparator": "GTE", "value": 70 }, { "op": "COMPARE", "factRef": "criticalWeirsSecuredCount", "comparator": "GTE", "value": 2 }, { "op": "COMPARE", "factRef": "verifiedBreachRecordCount", "comparator": "GTE", "value": 1 }, { "op": "COMPARE", "factRef": "disasterSeverity", "comparator": "LTE", "value": 2 }] }, "trackDelta": { "civilian_land": 15, "mulberry_silk": 5, "fiscal_military": 5, "evidence_responsibility": 15, "court_imperial_face": 5 }, "seatArcProgressDelta": 1, "objectRefs": ["obj.breach_order_chain", "obj.nine_weirs"], "evidenceRefs": ["evidence.N1.breach_chain"], "carryForwardRefs": ["carry.N1.evacuation_stable"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json"] },
+          { "branchId": "N1.LOW", "outcomeBand": "LOW", "selector": { "op": "ANY", "clauses": [{ "op": "COMPARE", "factRef": "evacuationCoveragePct", "comparator": "LT", "value": 35 }, { "op": "COMPARE", "factRef": "disasterSeverity", "comparator": "GTE", "value": 4 }, { "op": "ALL", "clauses": [{ "op": "COMPARE", "factRef": "criticalWeirsSecuredCount", "comparator": "EQ", "value": 0 }, { "op": "COMPARE", "factRef": "verifiedBreachRecordCount", "comparator": "EQ", "value": 0 }] }] }, "trackDelta": { "civilian_land": -15, "mulberry_silk": -5, "fiscal_military": -5, "evidence_responsibility": -15, "court_imperial_face": -10 }, "seatArcProgressDelta": -1, "objectRefs": ["obj.breach_order_chain", "obj.nine_weirs"], "evidenceRefs": ["evidence.N1.breach_chain"], "carryForwardRefs": ["carry.N1.disaster_escalated"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json"] },
+          { "branchId": "N1.MID", "outcomeBand": "MID", "selector": { "op": "DEFAULT" }, "trackDelta": {}, "seatArcProgressDelta": 0, "objectRefs": ["obj.breach_order_chain", "obj.nine_weirs"], "evidenceRefs": ["evidence.N1.breach_chain"], "carryForwardRefs": ["carry.N1.partial_control"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json"] }
+        ]
+      },
+      "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/node.json", "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json"]
+    },
+    {
+      "chapterId": "N2",
+      "title": "第一道奏疏",
+      "pressure": "水灾后的第一道奏疏必须在时限、救济请求、责任说明与供状效力之间形成正式路径。",
+      "lockedFacts": ["第一道奏疏是否送达与采用由结构化行动和渠道状态决定。"],
+      "decisionPlan": "STATIC",
+      "decisionPoints": [
+        { "decisionPointKey": "N2.memorial_draft", "ordinal": 1, "mode": "TARGETED_INTERACTION", "purpose": "起草救济请求与原因说明。", "requiredSeatIds": ["cabinet_finance", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["ADD_CAUSE", "ADD_RELIEF_REQUEST", "DEFAULT_PASS"], "perSeatActionBudget": 2, "closeFactRef": "chapter.N2.memorial_draft.closed", "deadlineMs": 240000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N2.memorial_draft.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N2.draft_participants", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N2/node.json"] },
+        { "decisionPointKey": "N2.confession_custody", "ordinal": 2, "mode": "TARGETED_INTERACTION", "purpose": "决定马宁远供状的保管与附送。", "requiredSeatIds": ["qingliu_law", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["ATTACH_CONFESSION", "DEFAULT_PASS", "SEAL_CONFESSION"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N2.confession_custody.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N2.confession_custody.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N2.custody_scoped", "availability": null, "reaction": { "enabled": true, "eligibleSeatIds": ["qingliu_law", "zhejiang_administration", "zhejiang_governor"], "triggerFactRef": "chapter.N2.confession_seizure_attempt" }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N2/node.json"] },
+        { "decisionPointKey": "N2.signature_chain", "ordinal": 3, "mode": "SYNC_CONTEST", "purpose": "取得必要签押并确认正式送达路线。", "requiredSeatIds": ["cabinet_finance", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["DEFAULT_PASS", "SIGN_MEMORIAL", "VERIFY_ROUTE"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N2.signature_chain.closed", "deadlineMs": 240000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N2.signature_chain.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N2.audience_scoped", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N2/node.json"] },
+        { "decisionPointKey": "N2.dispatch", "ordinal": 4, "mode": "TARGETED_INTERACTION", "purpose": "在时限前发出第一道奏疏。", "requiredSeatIds": ["cabinet_finance", "zhejiang_governor"], "allowedActionTypes": ["DEFAULT_PASS", "DISPATCH_MEMORIAL"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N2.dispatch.closed", "deadlineMs": 120000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N2.dispatch.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N2.dispatch_receipt", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N2/node.json"] }
+      ],
+      "closePolicy": { "exitPredicate": { "op": "COMPARE", "factRef": "chapter.N2.exit_ready", "comparator": "EQ", "value": true }, "settlementPolicyRef": "sangtian.N2.settlement_v1", "failureMode": "FAIL_CLOSED" },
+      "settlementPolicy": {
+        "policyVersion": "sangtian.N2.settlement_v1", "evaluationOrder": ["HIGH", "LOW", "MID"],
+        "branches": [
+          { "branchId": "N2.HIGH", "outcomeBand": "HIGH", "selector": { "op": "ALL", "clauses": [{ "op": "COMPARE", "factRef": "dispatchOnTime", "comparator": "EQ", "value": true }, { "op": "COMPARE", "factRef": "memorialContainsReliefRequest", "comparator": "EQ", "value": true }, { "op": "COMPARE", "factRef": "causeSpecificityLevel", "comparator": "GTE", "value": 2 }, { "op": "COMPARE", "factRef": "necessarySignatureCount", "comparator": "GTE", "value": 2 }, { "op": "COMPARE", "factRef": "confessionEffectState", "comparator": "IN", "value": ["ATTACHED_VALID", "SEPARATE_VALID"] }] }, "trackDelta": { "civilian_land": 15, "mulberry_silk": 5, "fiscal_military": 5, "evidence_responsibility": 15, "court_imperial_face": 5 }, "seatArcProgressDelta": 1, "objectRefs": ["obj.first_memorial", "obj.ma_confession"], "evidenceRefs": ["evidence.N2.memorial_chain"], "carryForwardRefs": ["carry.N2.valid_memorial"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N2/settlement.json"] },
+          { "branchId": "N2.LOW", "outcomeBand": "LOW", "selector": { "op": "ANY", "clauses": [{ "op": "COMPARE", "factRef": "dispatchOnTime", "comparator": "EQ", "value": false }, { "op": "ALL", "clauses": [{ "op": "COMPARE", "factRef": "memorialContainsReliefRequest", "comparator": "EQ", "value": false }, { "op": "COMPARE", "factRef": "causeSpecificityLevel", "comparator": "LTE", "value": 1 }, { "op": "COMPARE", "factRef": "confessionEffectState", "comparator": "IN", "value": ["DESTROYED", "INACCESSIBLE", "SEIZED"] }] }] }, "trackDelta": { "civilian_land": -15, "mulberry_silk": -5, "fiscal_military": -5, "evidence_responsibility": -15, "court_imperial_face": -10 }, "seatArcProgressDelta": -1, "objectRefs": ["obj.first_memorial", "obj.ma_confession"], "evidenceRefs": ["evidence.N2.memorial_chain"], "carryForwardRefs": ["carry.N2.memorial_failed"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N2/settlement.json"] },
+          { "branchId": "N2.MID", "outcomeBand": "MID", "selector": { "op": "DEFAULT" }, "trackDelta": {}, "seatArcProgressDelta": 0, "objectRefs": ["obj.first_memorial", "obj.ma_confession"], "evidenceRefs": ["evidence.N2.memorial_chain"], "carryForwardRefs": ["carry.N2.memorial_partial"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N2/settlement.json"] }
+        ]
+      },
+      "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N2/node.json", "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N2/settlement.json"]
+    },
+    {
+      "chapterId": "N3",
+      "title": "三日断粮",
+      "pressure": "断粮倒计时迫使玩家在赈粮、田契、田价与后续信用之间连续互动。",
+      "lockedFacts": ["本章互动点由当前粮价、田契和信用状态动态解锁，不采用固定窗口数量。"],
+      "decisionPlan": "DYNAMIC",
+      "decisionPoints": [
+        { "decisionPointKey": "N3.relief_offer", "ordinal": 1, "mode": "TARGETED_INTERACTION", "purpose": "提出官仓与商粮赈济方案。", "requiredSeatIds": ["jiangnan_merchant", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["ALLOCATE_GRAIN", "DEFAULT_PASS", "PROPOSE_RELIEF"], "perSeatActionBudget": 2, "closeFactRef": "chapter.N3.relief_offer.closed", "deadlineMs": 240000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N3.relief_offer.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N3.relief_participants", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N3/node.json"] },
+        { "decisionPointKey": "N3.deed_negotiation", "ordinal": 2, "mode": "SYNC_CONTEST", "purpose": "谈判田契保留、低价转让和改桑地域。", "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["DEFAULT_PASS", "PROTECT_DEEDS", "PURCHASE_LAND", "SET_PRICE_FLOOR"], "perSeatActionBudget": 2, "closeFactRef": "chapter.N3.deed_negotiation.closed", "deadlineMs": 300000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N3.deed_negotiation.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N3.audience_scoped", "availability": { "op": "COMPARE", "factRef": "chapter.N3.land_pressure_active", "comparator": "EQ", "value": true }, "reaction": { "enabled": true, "eligibleSeatIds": ["jiangnan_merchant", "qingliu_law", "zhejiang_administration"], "triggerFactRef": "chapter.N3.low_price_transfer_detected" }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N3/node.json"] },
+        { "decisionPointKey": "N3.credit_bridge", "ordinal": 3, "mode": "TARGETED_INTERACTION", "purpose": "在赈粮不足时协商信用与运输补位。", "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "zhejiang_governor"], "allowedActionTypes": ["DEFAULT_PASS", "OFFER_CREDIT", "PLEDGE_REPAYMENT"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N3.credit_bridge.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N3.credit_bridge.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N3.credit_participants", "availability": { "op": "COMPARE", "factRef": "chapter.N3.relief_gap_exists", "comparator": "EQ", "value": true }, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N3/node.json"] },
+        { "decisionPointKey": "N3.price_floor_review", "ordinal": 4, "mode": "TARGETED_INTERACTION", "purpose": "根据已公开粮价反馈决定是否启动田价保护。", "requiredSeatIds": ["jiangnan_merchant", "qingliu_law", "zhejiang_administration"], "allowedActionTypes": ["DEFAULT_PASS", "REVIEW_PRICE_FLOOR", "SEAL_DEED_SAMPLE"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N3.price_floor_review.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N3.price_floor_review.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N3.review_participants", "availability": { "op": "COMPARE", "factRef": "chapter.N3.need_price_floor_review", "comparator": "EQ", "value": true }, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N3/node.json"] }
+      ],
+      "closePolicy": { "exitPredicate": { "op": "COMPARE", "factRef": "chapter.N3.exit_ready", "comparator": "EQ", "value": true }, "settlementPolicyRef": "sangtian.N3.settlement_v1", "failureMode": "FAIL_CLOSED" },
+      "settlementPolicy": {
+        "policyVersion": "sangtian.N3.settlement_v1", "evaluationOrder": ["HIGH", "LOW", "MID"],
+        "branches": [
+          { "branchId": "N3.HIGH", "outcomeBand": "HIGH", "selector": { "op": "ALL", "clauses": [{ "op": "COMPARE", "factRef": "reliefGrainSharePct", "comparator": "GTE", "value": 60 }, { "op": "COMPARE", "factRef": "landRetentionPct", "comparator": "GTE", "value": 65 }, { "op": "COMPARE", "factRef": "lowPriceDeedTransferPct", "comparator": "LTE", "value": 20 }, { "op": "COMPARE", "factRef": "priceFloorEffective", "comparator": "EQ", "value": true }] }, "trackDelta": { "civilian_land": 15, "mulberry_silk": 5, "fiscal_military": 5, "evidence_responsibility": 15, "court_imperial_face": 5 }, "seatArcProgressDelta": 1, "objectRefs": ["obj.land_deed_pool", "obj.relief_grain_pool"], "evidenceRefs": ["evidence.N3.deed_and_relief"], "carryForwardRefs": ["carry.N3.relief_stable"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N3/settlement.json"] },
+          { "branchId": "N3.LOW", "outcomeBand": "LOW", "selector": { "op": "ANY", "clauses": [{ "op": "COMPARE", "factRef": "reliefGrainSharePct", "comparator": "LT", "value": 30 }, { "op": "COMPARE", "factRef": "landRetentionPct", "comparator": "LT", "value": 40 }, { "op": "COMPARE", "factRef": "lowPriceDeedTransferPct", "comparator": "GT", "value": 60 }] }, "trackDelta": { "civilian_land": -15, "mulberry_silk": 5, "fiscal_military": -5, "evidence_responsibility": -15, "court_imperial_face": -10 }, "seatArcProgressDelta": -1, "objectRefs": ["obj.land_deed_pool", "obj.relief_grain_pool"], "evidenceRefs": ["evidence.N3.deed_and_relief"], "carryForwardRefs": ["carry.N3.famine_and_transfer"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N3/settlement.json"] },
+          { "branchId": "N3.MID", "outcomeBand": "MID", "selector": { "op": "DEFAULT" }, "trackDelta": {}, "seatArcProgressDelta": 0, "objectRefs": ["obj.land_deed_pool", "obj.relief_grain_pool"], "evidenceRefs": ["evidence.N3.deed_and_relief"], "carryForwardRefs": ["carry.N3.relief_partial"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N3/settlement.json"] }
+        ]
+      },
+      "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N3/node.json", "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N3/settlement.json"]
+    },
+    {
+      "chapterId": "N4",
+      "title": "通倭死局",
+      "pressure": "人犯、证人、案卷与执行签押被置于同一死局，程序选择会改变后续责任链。",
+      "lockedFacts": ["任何叙事输出都不能代替案卷、保管、签押和送达。"],
+      "decisionPlan": "STATIC",
+      "decisionPoints": [
+        { "decisionPointKey": "N4.prisoner_review", "ordinal": 1, "mode": "SYNC_CONTEST", "purpose": "决定人犯处置、证人保护与案卷审查。", "requiredSeatIds": ["qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["DEFAULT_PASS", "PROTECT_WITNESS", "REQUEST_REVIEW", "SIGN_EXECUTION"], "perSeatActionBudget": 2, "closeFactRef": "chapter.N4.prisoner_review.closed", "deadlineMs": 300000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N4.prisoner_review.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N4.audience_scoped", "availability": null, "reaction": { "enabled": true, "eligibleSeatIds": ["qingliu_law", "zhejiang_administration", "zhejiang_governor"], "triggerFactRef": "chapter.N4.execution_signature_requested" }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N4/node.json"] },
+        { "decisionPointKey": "N4.case_file_seal", "ordinal": 2, "mode": "TARGETED_INTERACTION", "purpose": "封存拒签、复核或执行版本并确认唯一正式案卷。", "requiredSeatIds": ["qingliu_law", "zhejiang_administration"], "allowedActionTypes": ["DEFAULT_PASS", "SEAL_CASE_FILE"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N4.case_file_seal.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N4.case_file_seal.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N4.case_custody", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N4/node.json"] }
+      ],
+      "closePolicy": { "exitPredicate": { "op": "COMPARE", "factRef": "chapter.N4.exit_ready", "comparator": "EQ", "value": true }, "settlementPolicyRef": "sangtian.N4.settlement_v1", "failureMode": "FAIL_CLOSED" },
+      "settlementPolicy": {
+        "policyVersion": "sangtian.N4.settlement_v1", "evaluationOrder": ["HIGH", "LOW", "MID"],
+        "branches": [
+          { "branchId": "N4.HIGH", "outcomeBand": "HIGH", "selector": { "op": "ALL", "clauses": [{ "op": "COMPARE", "factRef": "wrongfulExecutionCount", "comparator": "EQ", "value": 0 }, { "op": "COMPARE", "factRef": "keyWitnessAliveCount", "comparator": "GTE", "value": 2 }, { "op": "COMPARE", "factRef": "caseFileState", "comparator": "IN", "value": ["CONTESTED_REVIEW", "VALID_REVIEW"] }, { "op": "COMPARE", "factRef": "refusalOrReviewRecordValid", "comparator": "EQ", "value": true }] }, "trackDelta": { "civilian_land": 15, "mulberry_silk": 5, "fiscal_military": 5, "evidence_responsibility": 15, "court_imperial_face": 5 }, "seatArcProgressDelta": 1, "objectRefs": ["obj.tongwo_case_file", "obj.tongwo_prisoners"], "evidenceRefs": ["evidence.N4.case_review"], "carryForwardRefs": ["carry.N4.witnesses_preserved"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N4/settlement.json"] },
+          { "branchId": "N4.LOW", "outcomeBand": "LOW", "selector": { "op": "ANY", "clauses": [{ "op": "COMPARE", "factRef": "wrongfulExecutionCount", "comparator": "GT", "value": 0 }, { "op": "COMPARE", "factRef": "keyWitnessAliveCount", "comparator": "EQ", "value": 0 }, { "op": "COMPARE", "factRef": "caseFileState", "comparator": "EQ", "value": "OFFICIAL_EXECUTION_VERSION" }] }, "trackDelta": { "civilian_land": -15, "mulberry_silk": -5, "fiscal_military": -5, "evidence_responsibility": -15, "court_imperial_face": -10 }, "seatArcProgressDelta": -1, "objectRefs": ["obj.tongwo_case_file", "obj.tongwo_prisoners"], "evidenceRefs": ["evidence.N4.case_review"], "carryForwardRefs": ["carry.N4.wrongful_execution"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N4/settlement.json"] },
+          { "branchId": "N4.MID", "outcomeBand": "MID", "selector": { "op": "DEFAULT" }, "trackDelta": {}, "seatArcProgressDelta": 0, "objectRefs": ["obj.tongwo_case_file", "obj.tongwo_prisoners"], "evidenceRefs": ["evidence.N4.case_review"], "carryForwardRefs": ["carry.N4.case_contested"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N4/settlement.json"] }
+        ]
+      },
+      "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N4/node.json", "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N4/settlement.json"]
+    },
+    {
+      "chapterId": "N5",
+      "title": "粮船到埠",
+      "pressure": "粮船到埠后，船、粮、契约、公开名义和土地用途必须在多次互动中逐项确认。",
+      "lockedFacts": ["到埠粮船只能按正式行动分配，普通交谈不能直接改变用途。"],
+      "decisionPlan": "STATIC",
+      "decisionPoints": [
+        { "decisionPointKey": "N5.inspect_fleet", "ordinal": 1, "mode": "TARGETED_INTERACTION", "purpose": "核验粮船、契约和灯笼名义。", "requiredSeatIds": ["jiangnan_merchant", "sili_weaving", "zhejiang_administration"], "allowedActionTypes": ["DEFAULT_PASS", "INSPECT_FLEET"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N5.inspect_fleet.closed", "deadlineMs": 150000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N5.inspect_fleet.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N5.inspectors", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/node.json"] },
+        { "decisionPointKey": "N5.claim_grain", "ordinal": 2, "mode": "SYNC_CONTEST", "purpose": "各席提出赈济、军饷、织造或购地用途。", "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "sili_weaving", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["CLAIM_GRAIN", "DEFAULT_PASS"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N5.claim_grain.closed", "deadlineMs": 240000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N5.claim_grain.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N5.audience_scoped", "availability": null, "reaction": { "enabled": true, "eligibleSeatIds": ["cabinet_finance", "jiangnan_merchant", "sili_weaving", "zhejiang_administration", "zhejiang_governor"], "triggerFactRef": "chapter.N5.claims_conflict" }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/node.json"] },
+        { "decisionPointKey": "N5.public_frame", "ordinal": 3, "mode": "TARGETED_INTERACTION", "purpose": "确认对外公开的粮船名义。", "requiredSeatIds": ["jiangnan_merchant", "sili_weaving"], "allowedActionTypes": ["DECLARE_PUBLIC_FRAME", "DEFAULT_PASS"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N5.public_frame.closed", "deadlineMs": 150000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N5.public_frame.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N5.public", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/node.json"] },
+        { "decisionPointKey": "N5.relief_allocation", "ordinal": 4, "mode": "TARGETED_INTERACTION", "purpose": "封存赈济粮比例。", "requiredSeatIds": ["jiangnan_merchant", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["ALLOCATE_RELIEF", "DEFAULT_PASS"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N5.relief_allocation.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N5.relief_allocation.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N5.relief", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/node.json"] },
+        { "decisionPointKey": "N5.land_purchase_limit", "ordinal": 5, "mode": "TARGETED_INTERACTION", "purpose": "决定是否停止用粮购买灾民田契。", "requiredSeatIds": ["jiangnan_merchant", "qingliu_law", "zhejiang_administration"], "allowedActionTypes": ["DEFAULT_PASS", "LIMIT_LAND_PURCHASE"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N5.land_purchase_limit.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N5.land_purchase_limit.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N5.land", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/node.json"] },
+        { "decisionPointKey": "N5.contract_reconcile", "ordinal": 6, "mode": "TARGETED_INTERACTION", "purpose": "对照契约、货物和公开名义。", "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving"], "allowedActionTypes": ["DEFAULT_PASS", "RECONCILE_CONTRACT"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N5.contract_reconcile.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N5.contract_reconcile.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N5.contract", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/node.json"] },
+        { "decisionPointKey": "N5.final_manifest", "ordinal": 7, "mode": "SYNC_CONTEST", "purpose": "六席确认本章唯一粮船用途清单。", "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["CONFIRM_MANIFEST", "DEFAULT_PASS"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N5.final_manifest.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N5.final_manifest.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N5.audience_scoped", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/node.json"] }
+      ],
+      "closePolicy": { "exitPredicate": { "op": "COMPARE", "factRef": "chapter.N5.exit_ready", "comparator": "EQ", "value": true }, "settlementPolicyRef": "sangtian.N5.settlement_v1", "failureMode": "FAIL_CLOSED" },
+      "settlementPolicy": {
+        "policyVersion": "sangtian.N5.settlement_v1", "evaluationOrder": ["HIGH", "LOW", "MID"],
+        "branches": [
+          { "branchId": "N5.HIGH", "outcomeBand": "HIGH", "selector": { "op": "ALL", "clauses": [{ "op": "COMPARE", "factRef": "reliefUsePct", "comparator": "GTE", "value": 60 }, { "op": "COMPARE", "factRef": "landPurchaseUsePct", "comparator": "LTE", "value": 20 }, { "op": "COMPARE", "factRef": "contractConsistency", "comparator": "EQ", "value": "CONSISTENT" }, { "op": "COMPARE", "factRef": "landSaleStopped", "comparator": "EQ", "value": true }] }, "trackDelta": { "civilian_land": 15, "mulberry_silk": 5, "fiscal_military": 5, "evidence_responsibility": 15, "court_imperial_face": 5 }, "seatArcProgressDelta": 1, "objectRefs": ["obj.fleet_contract_and_banners", "obj.grain_fleet"], "evidenceRefs": ["evidence.N5.fleet_manifest"], "carryForwardRefs": ["carry.N5.relief_fleet"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/settlement.json"] },
+          { "branchId": "N5.LOW", "outcomeBand": "LOW", "selector": { "op": "ANY", "clauses": [{ "op": "COMPARE", "factRef": "landPurchaseUsePct", "comparator": "GT", "value": 60 }, { "op": "COMPARE", "factRef": "reliefUsePct", "comparator": "LT", "value": 30 }, { "op": "COMPARE", "factRef": "publicFrameFalse", "comparator": "EQ", "value": true }] }, "trackDelta": { "civilian_land": -15, "mulberry_silk": 5, "fiscal_military": -5, "evidence_responsibility": -15, "court_imperial_face": -10 }, "seatArcProgressDelta": -1, "objectRefs": ["obj.fleet_contract_and_banners", "obj.grain_fleet"], "evidenceRefs": ["evidence.N5.fleet_manifest"], "carryForwardRefs": ["carry.N5.land_purchase_fleet"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/settlement.json"] },
+          { "branchId": "N5.MID", "outcomeBand": "MID", "selector": { "op": "DEFAULT" }, "trackDelta": {}, "seatArcProgressDelta": 0, "objectRefs": ["obj.fleet_contract_and_banners", "obj.grain_fleet"], "evidenceRefs": ["evidence.N5.fleet_manifest"], "carryForwardRefs": ["carry.N5.mixed_manifest"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/settlement.json"] }
+        ]
+      },
+      "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/node.json", "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/settlement.json"]
+    },
+    {
+      "chapterId": "N6",
+      "title": "以商乱政",
+      "pressure": "沈一石与两组四箱账册把商业救急、抄没与替罪责任连接在一起。",
+      "lockedFacts": ["账册原件、副本及逐箱对应关系保持未知，除非结构化证据正式确认。"],
+      "decisionPlan": "STATIC",
+      "decisionPoints": [
+        { "decisionPointKey": "N6.asset_audit", "ordinal": 1, "mode": "TARGETED_INTERACTION", "purpose": "盘点沈一石人身、商产与可划拨现银。", "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "zhejiang_administration"], "allowedActionTypes": ["AUDIT_ASSETS", "DEFAULT_PASS"], "perSeatActionBudget": 2, "closeFactRef": "chapter.N6.asset_audit.closed", "deadlineMs": 240000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N6.asset_audit.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N6.audit", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N6/node.json"] },
+        { "decisionPointKey": "N6.ledger_exchange", "ordinal": 2, "mode": "SYNC_CONTEST", "purpose": "决定本地四箱与内廷四箱的封存、递送和相互印证。", "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["CONFIRM_LEDGER_SOURCE_WITH_EVIDENCE", "DEFAULT_PASS", "DELIVER_LEDGER", "INVESTIGATE_LEDGER_SOURCE", "SEAL_LEDGER"], "perSeatActionBudget": 2, "closeFactRef": "chapter.N6.ledger_exchange.closed", "deadlineMs": 300000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N6.ledger_exchange.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N6.audience_scoped", "availability": null, "reaction": { "enabled": true, "eligibleSeatIds": ["cabinet_finance", "qingliu_law", "sili_weaving", "zhejiang_administration"], "triggerFactRef": "chapter.N6.ledger_seizure_attempt" }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N6/node.json"] },
+        { "decisionPointKey": "N6.responsibility_record", "ordinal": 3, "mode": "TARGETED_INTERACTION", "purpose": "记录商人说明链并决定是否形成唯一替罪者。", "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "zhejiang_governor"], "allowedActionTypes": ["DEFAULT_PASS", "RECORD_EXPLANATION", "REFUSE_SCAPEGOAT"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N6.responsibility_record.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N6.responsibility_record.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N6.responsibility", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N6/node.json"] }
+      ],
+      "closePolicy": { "exitPredicate": { "op": "COMPARE", "factRef": "chapter.N6.exit_ready", "comparator": "EQ", "value": true }, "settlementPolicyRef": "sangtian.N6.settlement_v1", "failureMode": "FAIL_CLOSED" },
+      "settlementPolicy": {
+        "policyVersion": "sangtian.N6.settlement_v1", "evaluationOrder": ["HIGH", "LOW", "MID"],
+        "branches": [
+          { "branchId": "N6.HIGH", "outcomeBand": "HIGH", "selector": { "op": "ALL", "clauses": [{ "op": "COMPARE", "factRef": "ledgerCount", "comparator": "GTE", "value": 1 }, { "op": "COMPARE", "factRef": "merchantExplanationChainPreserved", "comparator": "EQ", "value": true }, { "op": "COMPARE", "factRef": "assetAuditGrade", "comparator": "IN", "value": ["CORROBORATED", "VALID"] }, { "op": "COMPARE", "factRef": "soleScapegoat", "comparator": "EQ", "value": false }] }, "trackDelta": { "civilian_land": 15, "mulberry_silk": 5, "fiscal_military": 5, "evidence_responsibility": 15, "court_imperial_face": 5 }, "seatArcProgressDelta": 1, "objectRefs": ["obj.inner_court_four_boxes", "obj.local_four_boxes", "obj.shen_yishi_person_and_assets"], "evidenceRefs": ["evidence.N6.ledger_chain"], "carryForwardRefs": ["carry.N6.ledger_preserved"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N6/settlement.json"] },
+          { "branchId": "N6.LOW", "outcomeBand": "LOW", "selector": { "op": "ANY", "clauses": [{ "op": "ALL", "clauses": [{ "op": "COMPARE", "factRef": "ledgerCount", "comparator": "EQ", "value": 0 }, { "op": "COMPARE", "factRef": "soleScapegoat", "comparator": "EQ", "value": true }] }, { "op": "COMPARE", "factRef": "assetAuditGrade", "comparator": "EQ", "value": "INVALID" }] }, "trackDelta": { "civilian_land": -15, "mulberry_silk": -5, "fiscal_military": -5, "evidence_responsibility": -15, "court_imperial_face": -10 }, "seatArcProgressDelta": -1, "objectRefs": ["obj.inner_court_four_boxes", "obj.local_four_boxes", "obj.shen_yishi_person_and_assets"], "evidenceRefs": ["evidence.N6.ledger_chain"], "carryForwardRefs": ["carry.N6.scapegoat_fixed"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N6/settlement.json"] },
+          { "branchId": "N6.MID", "outcomeBand": "MID", "selector": { "op": "DEFAULT" }, "trackDelta": {}, "seatArcProgressDelta": 0, "objectRefs": ["obj.inner_court_four_boxes", "obj.local_four_boxes", "obj.shen_yishi_person_and_assets"], "evidenceRefs": ["evidence.N6.ledger_chain"], "carryForwardRefs": ["carry.N6.partial_audit"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N6/settlement.json"] }
+        ]
+      },
+      "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N6/node.json", "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N6/settlement.json"]
+    },
+    {
+      "chapterId": "N7",
+      "title": "七日重审",
+      "pressure": "最后七日要求把证言、封印、急递路线、军饷压力和御前暴露共同压入唯一 N7 结算。",
+      "lockedFacts": ["N7 只允许一次 ChapterSettlement；冻结后直接进入唯一 Finale，不存在 N8。"],
+      "decisionPlan": "STATIC",
+      "decisionPoints": [
+        { "decisionPointKey": "N7.testimony_review", "ordinal": 1, "mode": "TARGETED_INTERACTION", "purpose": "核验原供、翻供、证言和问官签押。", "requiredSeatIds": ["qingliu_law", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["DEFAULT_PASS", "REVIEW_TESTIMONY", "SEAL_TESTIMONY"], "perSeatActionBudget": 2, "closeFactRef": "chapter.N7.testimony_review.closed", "deadlineMs": 240000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N7.testimony_review.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N7.testimony", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/node.json"] },
+        { "decisionPointKey": "N7.route_selection", "ordinal": 2, "mode": "SYNC_CONTEST", "purpose": "选择一条或多条独立正式递送路线。", "requiredSeatIds": ["cabinet_finance", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["DEFAULT_PASS", "OPEN_ROUTE", "SEAL_DISPATCH"], "perSeatActionBudget": 2, "closeFactRef": "chapter.N7.route_selection.closed", "deadlineMs": 300000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N7.route_selection.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N7.audience_scoped", "availability": null, "reaction": { "enabled": true, "eligibleSeatIds": ["cabinet_finance", "qingliu_law", "sili_weaving", "zhejiang_governor"], "triggerFactRef": "chapter.N7.route_blocked" }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/node.json"] },
+        { "decisionPointKey": "N7.funds_exposure", "ordinal": 3, "mode": "TARGETED_INTERACTION", "purpose": "确认军饷保障与御前暴露上限。", "requiredSeatIds": ["cabinet_finance", "sili_weaving", "zhejiang_governor"], "allowedActionTypes": ["DEFAULT_PASS", "LIMIT_EXPOSURE", "SECURE_FUNDS"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N7.funds_exposure.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N7.funds_exposure.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N7.funds", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/node.json"] },
+        { "decisionPointKey": "N7.procedure_grade", "ordinal": 4, "mode": "TARGETED_INTERACTION", "purpose": "给证据内容与渠道程序形成结构化等级。", "requiredSeatIds": ["cabinet_finance", "qingliu_law", "sili_weaving"], "allowedActionTypes": ["CORROBORATE_PACKET", "DEFAULT_PASS", "VALIDATE_PROCEDURE"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N7.procedure_grade.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N7.procedure_grade.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N7.procedure", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/node.json"] },
+        { "decisionPointKey": "N7.final_seal", "ordinal": 5, "mode": "SYNC_CONTEST", "purpose": "六席封存本章全部正式行动并请求唯一 ChapterSettlement。", "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"], "allowedActionTypes": ["DEFAULT_PASS", "SEAL_CHAPTER"], "perSeatActionBudget": 1, "closeFactRef": "chapter.N7.final_seal.closed", "deadlineMs": 180000, "absenceDefaultRef": "sangtian.default.absence.v1", "aiFailureDefaultRef": "sangtian.default.ai_failure.v1", "beatResolutionPolicy": "sangtian.N7.final_seal.beat_v1", "allowedWorkingDeltaTypes": ["COMMITMENT", "KNOWLEDGE", "RESERVATION", "SEAT_ARC"], "feedbackVisibilityPolicy": "feedback.N7.audience_scoped", "availability": null, "reaction": { "enabled": false, "eligibleSeatIds": [], "triggerFactRef": null }, "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/node.json"] }
+      ],
+      "closePolicy": { "exitPredicate": { "op": "COMPARE", "factRef": "chapter.N7.exit_ready", "comparator": "EQ", "value": true }, "settlementPolicyRef": "sangtian.N7.settlement_v1", "failureMode": "FAIL_CLOSED" },
+      "settlementPolicy": {
+        "policyVersion": "sangtian.N7.settlement_v1", "evaluationOrder": ["HIGH", "LOW", "MID"],
+        "branches": [
+          { "branchId": "N7.HIGH", "outcomeBand": "HIGH", "selector": { "op": "ALL", "clauses": [{ "op": "MIN_COMPARE", "factRefs": ["channelProcedureCap", "evidenceContentReach", "imperialExposureCap", "militaryFundsCap"], "comparator": "GTE", "value": 4 }, { "op": "COMPARE", "factRef": "onTimeOfficialRouteCount", "comparator": "GTE", "value": 1 }, { "op": "COMPARE", "factRef": "proceduralGrade", "comparator": "IN", "value": ["CORROBORATED", "VALID"] }] }, "trackDelta": { "civilian_land": 15, "mulberry_silk": 5, "fiscal_military": 5, "evidence_responsibility": 15, "court_imperial_face": 5 }, "seatArcProgressDelta": 1, "objectRefs": ["obj.final_dispatch_routes", "obj.final_testimonies"], "evidenceRefs": ["evidence.N7.final_packet"], "carryForwardRefs": ["carry.N7.to_finale_high"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/finale/ending-rules.json", "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/settlement.json"] },
+          { "branchId": "N7.LOW", "outcomeBand": "LOW", "selector": { "op": "ANY", "clauses": [{ "op": "MIN_COMPARE", "factRefs": ["channelProcedureCap", "evidenceContentReach", "imperialExposureCap", "militaryFundsCap"], "comparator": "LTE", "value": 1 }, { "op": "COMPARE", "factRef": "onTimeOfficialRouteCount", "comparator": "EQ", "value": 0 }, { "op": "COMPARE", "factRef": "proceduralGrade", "comparator": "EQ", "value": "INVALID" }] }, "trackDelta": { "civilian_land": -15, "mulberry_silk": -5, "fiscal_military": -5, "evidence_responsibility": -15, "court_imperial_face": -10 }, "seatArcProgressDelta": -1, "objectRefs": ["obj.final_dispatch_routes", "obj.final_testimonies"], "evidenceRefs": ["evidence.N7.final_packet"], "carryForwardRefs": ["carry.N7.to_finale_low"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/finale/ending-rules.json", "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/settlement.json"] },
+          { "branchId": "N7.MID", "outcomeBand": "MID", "selector": { "op": "DEFAULT" }, "trackDelta": {}, "seatArcProgressDelta": 0, "objectRefs": ["obj.final_dispatch_routes", "obj.final_testimonies"], "evidenceRefs": ["evidence.N7.final_packet"], "carryForwardRefs": ["carry.N7.to_finale_mid"], "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/finale/ending-rules.json", "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/settlement.json"] }
+        ]
+      },
+      "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/finale/ending-rules.json", "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/node.json", "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/settlement.json"]
+    }
+  ],
+  "finale": {
+    "policyVersion": "sangtian_content_finale_v1",
+    "ruleSchemaVersion": "sangtian_five_track_finale_rules_v1",
+    "worldOutcomeRuleRefs": [
+      "world.01.east_south_collapse",
+      "world.02.truth_with_political_shock",
+      "world.03.balanced_survival",
+      "world.04.fiscal_order_at_civil_cost",
+      "world.05.civil_relief_at_war_cost",
+      "world.06.scapegoat_stability",
+      "world.07.unresolved_compromise"
+    ],
+    "seatVerdictRuleRefs": {
+      "cabinet_finance": ["seat.cabinet_finance.fiscal_and_court_floor"],
+      "jiangnan_merchant": ["seat.jiangnan_merchant.civil_and_fiscal_floor"],
+      "qingliu_law": ["seat.qingliu_law.evidence_floor"],
+      "sili_weaving": ["seat.sili_weaving.silk_and_court_floor"],
+      "zhejiang_administration": ["seat.zhejiang_administration.civil_and_court_floor"],
+      "zhejiang_governor": ["seat.zhejiang_governor.civil_and_fiscal_floor"]
+    },
+    "disclosureRuleRefs": ["disclosure.authoritative_world_and_seat_projection"],
+    "sourceRefs": ["packages/templates/config/sangtian/pressure-spine-v1.0/source/finale/ending-rules.json"]
+  }
+}

@@ -1,0 +1,934 @@
+{
+  "schemaVersion": "sangtian_scene_flow_v1",
+  "nodeId": "N1",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "threeActRule": "P0 为序章；N1—N7 前台只呈现 Opening、After Prepare、Settlement/Transition 三幕，私有开场和差异变体作为同一幕的角色投影。",
+  "decisionBeats": [
+    {
+      "beatId": "beat.n1.prepare",
+      "phase": "PREPARE",
+      "currentSceneId": "scene.n1.opening.public",
+      "legalIntentSpace": [
+        "调查当前对象",
+        "与当前人物交谈或交换",
+        "分配本席位真实资源",
+        "REST/DELAY",
+        "沉默或闲聊但承担时间代价"
+      ],
+      "actionRealization": "输入编译为合法行动、失败尝试、休息或拖延；先结算再叙事。",
+      "timeAdvance": "配置初值：正常行动 +1 时段；REST/DELAY +半日；失败尝试或闲聊 +1 时段。",
+      "npcMove": "其他五席按知识、目标和默认 Prepare 同时行动；玩家未提交不阻塞。",
+      "pressureEscalation": "至少推进时间、NPC、压力、对象、证据责任或下一现场之一。",
+      "nextSceneIds": [
+        "scene.n1.after_prepare.common",
+        "scene.n1.after_prepare.controlled",
+        "scene.n1.after_prepare.contested",
+        "scene.n1.after_prepare.lost_initiative"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "currentScene": {
+        "sceneId": "scene.n1.opening.public"
+      },
+      "nextScene": {
+        "sceneIds": [
+          "scene.n1.after_prepare.common",
+          "scene.n1.after_prepare.controlled",
+          "scene.n1.after_prepare.contested",
+          "scene.n1.after_prepare.lost_initiative"
+        ]
+      }
+    },
+    {
+      "beatId": "beat.n1.commit",
+      "phase": "COMMIT",
+      "currentSceneId": "scene.n1.commit_confrontation",
+      "legalIntentSpace": [
+        "对本节点争夺物作出一次正式提交",
+        "使用已持有权限、资源、签押或渠道",
+        "设置与当前对象直接相关的条件和代价"
+      ],
+      "actionRealization": "六席基于同一冻结快照同步结算；超时注入席位 defaultCommit。",
+      "timeAdvance": "COMMIT 本身不追加自由对话；结算推进到节点截止。",
+      "npcMove": "AI 席位或超时席位按默认 Commit 锁定。",
+      "pressureEscalation": "节点压力转为不可逆结果并冻结。",
+      "nextSceneIds": [
+        "scene.n1.settlement.high",
+        "scene.n1.settlement.mid",
+        "scene.n1.settlement.low"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "currentScene": {
+        "sceneId": "scene.n1.commit_confrontation"
+      },
+      "nextScene": {
+        "sceneIds": [
+          "scene.n1.settlement.high",
+          "scene.n1.settlement.mid",
+          "scene.n1.settlement.low"
+        ]
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "sceneId": "scene.n1.opening.public",
+      "nodeId": "N1",
+      "sceneType": "OPENING",
+      "title": "九堰将决",
+      "text": "杭州总督府内厅，河图压在长案上。上游急报接连送到：水位上涨，守堰官兵调动异常，乡民已向高处搬运。幕僚不敢断言九堰必决，只把最危险的时刻圈在图上。门外省府差役仍催取回令。",
+      "predecessorIds": [
+        "scene.p0.transition.n1"
+      ],
+      "successorIds": [
+        "scene.n1.opening.private.zhejiang_governor",
+        "scene.n1.opening.private.zhejiang_administration",
+        "scene.n1.opening.private.qingliu_law",
+        "scene.n1.opening.private.jiangnan_merchant",
+        "scene.n1.opening.private.sili_weaving",
+        "scene.n1.opening.private.cabinet_finance"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n1.opening.private.zhejiang_governor",
+      "nodeId": "N1",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "总督案前",
+      "text": "胡宗宪把河图推到案边。调兵守堰能救人，也会抽空海防；不调兵，堰口与责任都会先落到别人手里。",
+      "predecessorIds": [
+        "scene.n1.opening.public"
+      ],
+      "successorIds": [
+        "scene.n1.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N1-SF-02"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n1.zhejiang_governor.pressure",
+        "known.n1.zhejiang_governor.claim.n1-sf-02",
+        "known.n1.zhejiang_governor.object.weir_troop_deployment"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.zhejiang_governor.claim.n1-sf-01",
+        "unknown.n1.zhejiang_governor.system.n1-unk-01"
+      ],
+      "ruleHintId": "rulehint.n1.zhejiang_governor"
+    },
+    {
+      "sceneId": "scene.n1.opening.private.zhejiang_administration",
+      "nodeId": "N1",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "省府所议",
+      "text": "郑泌昌掌握府县行政链，却不能公开承认其中是否有人传过异常命令。守堰、疏散与继续催办，任何一项都会留下省府印记。",
+      "predecessorIds": [
+        "scene.n1.opening.public"
+      ],
+      "successorIds": [
+        "scene.n1.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.zhejiang_administration"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N1-SF-01"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n1.zhejiang_administration.pressure",
+        "known.n1.zhejiang_administration.claim.n1-sf-01",
+        "known.n1.zhejiang_administration.object.breach_order_chain"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.zhejiang_administration.claim.n1-sf-02",
+        "unknown.n1.zhejiang_administration.claim.n1-sf-03",
+        "unknown.n1.zhejiang_administration.system.n1-unk-01"
+      ],
+      "ruleHintId": "rulehint.n1.zhejiang_administration"
+    },
+    {
+      "sceneId": "scene.n1.opening.private.qingliu_law",
+      "nodeId": "N1",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "清流所见",
+      "text": "谭纶掌握的是预警、见证和可能存在的命令痕迹，还不足以指认最高层。若不先把材料送进安全渠道，水退后便只剩口头说法。",
+      "predecessorIds": [
+        "scene.n1.opening.public"
+      ],
+      "successorIds": [
+        "scene.n1.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.qingliu_law"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N1-SF-02"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n1.qingliu_law.pressure",
+        "known.n1.qingliu_law.claim.n1-sf-02",
+        "known.n1.qingliu_law.object.sealed_evidence_index"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.qingliu_law.claim.n1-sf-01",
+        "unknown.n1.qingliu_law.system.n1-unk-01"
+      ],
+      "ruleHintId": "rulehint.n1.qingliu_law"
+    },
+    {
+      "sceneId": "scene.n1.opening.private.jiangnan_merchant",
+      "nodeId": "N1",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "商会账房",
+      "text": "沈一石的船可以救堤，也必须为后面的粮路留出运力。救人越多，商路越弱；保船越多，见死不救的罪名越近。",
+      "predecessorIds": [
+        "scene.n1.opening.public"
+      ],
+      "successorIds": [
+        "scene.n1.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.jiangnan_merchant"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n1.jiangnan_merchant.pressure",
+        "known.n1.jiangnan_merchant.object.merchant_fleet"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.jiangnan_merchant.claim.n1-sf-01",
+        "unknown.n1.jiangnan_merchant.claim.n1-sf-02",
+        "unknown.n1.jiangnan_merchant.system.n1-unk-01"
+      ],
+      "ruleHintId": "rulehint.n1.jiangnan_merchant"
+    },
+    {
+      "sceneId": "scene.n1.opening.private.sili_weaving",
+      "nodeId": "N1",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "织造局内",
+      "text": "杨金水知道河道监管簿可能牵出织造人员，却不能让这层担忧出现在公共回令里。封簿与追查都必须沿内廷可控的手走。",
+      "predecessorIds": [
+        "scene.n1.opening.public"
+      ],
+      "successorIds": [
+        "scene.n1.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.sili_weaving"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N1-SF-02"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n1.sili_weaving.pressure",
+        "known.n1.sili_weaving.claim.n1-sf-02",
+        "known.n1.sili_weaving.object.weaving_records"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.sili_weaving.claim.n1-sf-01",
+        "unknown.n1.sili_weaving.claim.n1-sf-03",
+        "unknown.n1.sili_weaving.system.n1-unk-01"
+      ],
+      "ruleHintId": "rulehint.n1.sili_weaving"
+    },
+    {
+      "sceneId": "scene.n1.opening.private.cabinet_finance",
+      "nodeId": "N1",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "京师值房",
+      "text": "京师只收到水患急报和地方求缓的可能。期限若不松，地方会用更激烈手段；期限若公开松动，财政威信先受损。",
+      "predecessorIds": [
+        "scene.n1.opening.public"
+      ],
+      "successorIds": [
+        "scene.n1.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N1-SF-01"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n1.cabinet_finance.pressure",
+        "known.n1.cabinet_finance.claim.n1-sf-01",
+        "known.n1.cabinet_finance.object.cabinet_urgent_dispatch"
+      ],
+      "unknownFactIds": [
+        "unknown.n1.cabinet_finance.claim.n1-sf-02",
+        "unknown.n1.cabinet_finance.claim.n1-sf-03",
+        "unknown.n1.cabinet_finance.system.n1-unk-01"
+      ],
+      "ruleHintId": "rulehint.n1.cabinet_finance"
+    },
+    {
+      "sceneId": "scene.n1.after_prepare.common",
+      "nodeId": "N1",
+      "sceneType": "AFTER_PREPARE_COMMON",
+      "title": "第一批回令",
+      "text": "第一轮命令沿不同渠道发出后，半日过去。守堰兵力、商船、民夫和公文不再停在纸上：有人赶到堤上，有人被另一道命令调走，也有人只留下无法立即核实的口头回报。",
+      "predecessorIds": [
+        "scene.n1.opening.private.zhejiang_governor",
+        "scene.n1.opening.private.zhejiang_administration",
+        "scene.n1.opening.private.qingliu_law",
+        "scene.n1.opening.private.jiangnan_merchant",
+        "scene.n1.opening.private.sili_weaving",
+        "scene.n1.opening.private.cabinet_finance"
+      ],
+      "successorIds": [
+        "scene.n1.after_prepare.controlled",
+        "scene.n1.after_prepare.contested",
+        "scene.n1.after_prepare.lost_initiative"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n1.after_prepare.controlled",
+      "nodeId": "N1",
+      "sceneType": "AFTER_PREPARE_VARIANT",
+      "title": "先手在握",
+      "text": "急报称局部分洪仍可选择，百姓已开始有序撤离。",
+      "predecessorIds": [
+        "scene.n1.after_prepare.common"
+      ],
+      "successorIds": [
+        "scene.n1.npc_urgent"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "CONDITIONAL",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n1.after_prepare.contested",
+      "nodeId": "N1",
+      "sceneType": "AFTER_PREPARE_VARIANT",
+      "title": "各执一端",
+      "text": "急报称一处堰口出现决口，另两处守军等待最后命令。",
+      "predecessorIds": [
+        "scene.n1.after_prepare.common"
+      ],
+      "successorIds": [
+        "scene.n1.npc_urgent"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "CONDITIONAL",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n1.after_prepare.lost_initiative",
+      "nodeId": "N1",
+      "sceneType": "AFTER_PREPARE_VARIANT",
+      "title": "先手旁落",
+      "text": "幕僚将总督从短暂休息中唤醒：一处决口已成事实，另一处守军被调离。",
+      "predecessorIds": [
+        "scene.n1.after_prepare.common"
+      ],
+      "successorIds": [
+        "scene.n1.npc_urgent"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "CONDITIONAL",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n1.npc_urgent",
+      "nodeId": "N1",
+      "sceneType": "NPC_URGENT",
+      "title": "浑水越过田埂",
+      "text": "入夜前，浑水已经漫过第一道田埂。新的问题不再是要不要相信急报，而是剩余兵力守哪里、哪些村先撤、谁保管那份调兵与毁堤命令。",
+      "predecessorIds": [
+        "scene.n1.after_prepare.controlled",
+        "scene.n1.after_prepare.contested",
+        "scene.n1.after_prepare.lost_initiative"
+      ],
+      "successorIds": [
+        "scene.n1.commit_confrontation"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n1.commit_confrontation",
+      "nodeId": "N1",
+      "sceneType": "COMMIT_CONFRONTATION",
+      "title": "封缄守堰诸令",
+      "text": "总督、省府、清流、商会、织造局与内阁的正式命令同刻封缄：守堰、分洪、疏散、保全命令、维持期限或保住商路。每一道命令都会占用另一处资源，谁也不能等结果揭晓后再改。",
+      "predecessorIds": [
+        "scene.n1.npc_urgent"
+      ],
+      "successorIds": [
+        "scene.n1.settlement.high",
+        "scene.n1.settlement.mid",
+        "scene.n1.settlement.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n1.settlement.high",
+      "nodeId": "N1",
+      "sceneType": "SETTLEMENT_RESULT",
+      "title": "水势受控",
+      "text": "局部分洪把水势引向预定低地，多数村落在夜前撤出；军饷和海防准备受到损耗，但毁堤命令、调兵痕迹与见证人至少保住两条独立记录。",
+      "predecessorIds": [
+        "scene.n1.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n1.transition.high"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "frozenResultId": "frozen.N1.HIGH",
+      "frozenFactIds": [
+        "frozen.N1.HIGH.fact.01",
+        "frozen.N1.HIGH.fact.02",
+        "frozen.N1.HIGH.fact.03"
+      ],
+      "publicObjectVersionIds": [
+        "obj.nine_weirs@N1.HIGH.v1"
+      ]
+    },
+    {
+      "sceneId": "scene.n1.transition.high",
+      "nodeId": "N1",
+      "sceneType": "TRANSITION",
+      "title": "灾后第一封奏稿",
+      "text": "天明时，第一批灾民和第一份有见证的调兵记录同时到达总督府。朝廷尚不知道发生了什么，第一道奏疏必须决定它将知道什么。",
+      "predecessorIds": [
+        "scene.n1.settlement.high"
+      ],
+      "successorIds": [
+        "scene.n2.opening.public"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n1.settlement.mid",
+      "nodeId": "N1",
+      "sceneType": "SETTLEMENT_RESULT",
+      "title": "水势与命令相冲",
+      "text": "一县与邻近低地遭灾，疏散只完成一半；抢险与省府命令互相抵消，责任链存在却彼此冲突。",
+      "predecessorIds": [
+        "scene.n1.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n1.transition.mid"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "frozenResultId": "frozen.N1.MID",
+      "frozenFactIds": [
+        "frozen.N1.MID.fact.01",
+        "frozen.N1.MID.fact.02",
+        "frozen.N1.MID.fact.03"
+      ],
+      "publicObjectVersionIds": [
+        "obj.nine_weirs@N1.MID.v1"
+      ]
+    },
+    {
+      "sceneId": "scene.n1.transition.mid",
+      "nodeId": "N1",
+      "sceneType": "TRANSITION",
+      "title": "两套记录同案",
+      "text": "水退得比争论慢。两套互相矛盾的记录摆到同一张案上，谁先署名，谁就先定义这场灾是天灾、失修还是人为。",
+      "predecessorIds": [
+        "scene.n1.settlement.mid"
+      ],
+      "successorIds": [
+        "scene.n2.opening.public"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n1.settlement.low",
+      "nodeId": "N1",
+      "sceneType": "SETTLEMENT_RESULT",
+      "title": "堰口接连失守",
+      "text": "多处堰口接连失守，撤离迟缓，毁堤命令被层层口头化；地方立刻进入断粮与低价卖田风险。",
+      "predecessorIds": [
+        "scene.n1.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n1.transition.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "frozenResultId": "frozen.N1.LOW",
+      "frozenFactIds": [
+        "frozen.N1.LOW.fact.01",
+        "frozen.N1.LOW.fact.02",
+        "frozen.N1.LOW.fact.03"
+      ],
+      "publicObjectVersionIds": [
+        "obj.nine_weirs@N1.LOW.v1"
+      ]
+    },
+    {
+      "sceneId": "scene.n1.transition.low",
+      "nodeId": "N1",
+      "sceneType": "TRANSITION",
+      "title": "省府奏稿先成",
+      "text": "灾民涌向官署，省府已经准备一份只写“河工失修”的奏稿。若无人改写，第一版事实将在午后发出。",
+      "predecessorIds": [
+        "scene.n1.settlement.low"
+      ],
+      "successorIds": [
+        "scene.n2.opening.public"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N1",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n1.pressure_lock",
+        "adapt.n1.two_beats",
+        "adapt.n1.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    }
+  ],
+  "inputRealizations": [
+    {
+      "inputId": "input.n1.normal",
+      "inputClass": "NORMAL_ACTION",
+      "playerTextExamples": [
+        "调动我实际能调动的人与物，先处理眼前最危险的一项。"
+      ],
+      "intentCompilation": "编译为针对堰口、兵力与调令的合法 PREPARE 尝试，不预告 COMMIT 结果。",
+      "actionResult": {
+        "status": "SUCCESS_OR_PARTIAL",
+        "confirmed": "只确认权限、资源和现场能够兑现的步骤",
+        "notConfirmed": "不确认全部目标已经成功"
+      },
+      "timeDelta": "配置初值：+1 时段",
+      "npcMoves": "省府继续原有调令；商会保船路；清流保存经手痕迹；织造封存监管簿；内阁不撤期限",
+      "pressureDelta": "0 或 +1，取决于是否真正压住最高压力",
+      "nextSceneId": "scene.n1.after_prepare.controlled",
+      "narratorAllowed": "写出行动实际完成的步骤、NPC可观察反应和新的停止点。",
+      "narratorForbidden": "不得扩大为全局成功，不得替玩家追加第二项命令。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n1.rest_delay",
+      "inputClass": "REST_DELAY",
+      "playerTextExamples": [
+        "我什么都不管，先睡半天。",
+        "先喝酒歇一阵，等消息自己来。"
+      ],
+      "intentCompilation": "REST/DELAY；休息或回避本身合法，不偷偷改写成政策选择。",
+      "actionResult": {
+        "status": "SUCCESS",
+        "confirmed": "当前人物休息、少量恢复精力、PREPARE机会消耗",
+        "notConfirmed": "没有任何关键对象自动改变"
+      },
+      "timeDelta": "配置初值：+半日",
+      "npcMoves": "省府继续原有调令；商会保船路；清流保存经手痕迹；织造封存监管簿；内阁不撤期限；五个AI席位取得先手",
+      "pressureDelta": "+1",
+      "nextSceneId": "scene.n1.after_prepare.lost_initiative",
+      "narratorAllowed": "真实写出休息及被急报唤醒，并只引用结算后新增事实。",
+      "narratorForbidden": "不得写世界暂停，不得捏造某一对象已经落入玩家手中。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n1.fabricated_success",
+      "inputClass": "FABRICATED_SUCCESS",
+      "playerTextExamples": [
+        "我已经拿到那份命令。",
+        "皇帝已经同意了。",
+        "账册已经在我手里。"
+      ],
+      "intentCompilation": "把既成陈述降级为“尝试取得、核验、递送或争取同意”。",
+      "actionResult": {
+        "status": "FAILED_ATTEMPT_OR_PARTIAL",
+        "confirmed": "执行一次来源、权限或保管核验并留下回执",
+        "notConfirmed": "未提供来源的命令、同意、账册或兵力不存在"
+      },
+      "timeDelta": "配置初值：+1 时段",
+      "npcMoves": "省府继续原有调令；商会保船路；清流保存经手痕迹；织造封存监管簿；内阁不撤期限；对象原保管者可加强控制",
+      "pressureDelta": "+1",
+      "nextSceneId": "scene.n1.after_prepare.contested",
+      "narratorAllowed": "写核验失败、保管者反应和由此形成的新压力。",
+      "narratorForbidden": "不得把玩家陈述升级成 Canon。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n1.silence_chatter",
+      "inputClass": "SILENCE_OR_SMALL_TALK",
+      "playerTextExamples": [
+        "继续闲聊。",
+        "不说话。",
+        "再喝一盏茶。"
+      ],
+      "intentCompilation": "第一次编译为 DELAY；同一拍继续闲聊则等待超时并执行默认政策。",
+      "actionResult": {
+        "status": "DELAY",
+        "confirmed": "场景/时间预算消耗，玩家失去本拍先手",
+        "notConfirmed": "不改变对象保管、签押或资源"
+      },
+      "timeDelta": "配置初值：+1 时段",
+      "npcMoves": "省府继续原有调令；商会保船路；清流保存经手痕迹；织造封存监管簿；内阁不撤期限",
+      "pressureDelta": "+1",
+      "nextSceneId": "scene.n1.after_prepare.lost_initiative",
+      "narratorAllowed": "让NPC动作和急报进入现场，停在玩家尚未回应之处。",
+      "narratorForbidden": "不得无限聊天，不得无成本重复输入。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n1.overreach",
+      "inputClass": "OVERREACH_OR_INSUFFICIENT_RESOURCE",
+      "playerTextExamples": [
+        "召来十万大军。",
+        "命所有人立刻服从。",
+        "不经交付就烧掉刚抢到的材料。"
+      ],
+      "intentCompilation": "保留目标，校验权限、资源与时序；越权效果被拒绝或改写请求返回玩家确认。",
+      "actionResult": {
+        "status": "REJECTED_EFFECT_OR_REWRITE_REQUIRED",
+        "confirmed": "只有确认后的失败尝试才消耗时段",
+        "notConfirmed": "不存在的资源、对他人意志的控制、抢夺与同拍销毁均不成立"
+      },
+      "timeDelta": "改写确认前为0；确认执行后的失败尝试为+1时段",
+      "npcMoves": "省府继续原有调令；商会保船路；清流保存经手痕迹；织造封存监管簿；内阁不撤期限",
+      "pressureDelta": "0 或 +1",
+      "nextSceneId": "scene.n1.after_prepare.contested",
+      "narratorAllowed": "写越权请求被现实阻断及目标人物的可观察反应。",
+      "narratorForbidden": "不得替玩家选择另一政策，不得用“虽然越权但成功”绕过规则。",
+      "provenanceClass": "ADAPTATION_RULE"
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "pressure_illegal_route_matrix_v1",
+  "matrixId": "sangtian_pressure_illegal_route_matrix_v1",
+  "matrixVersion": "pressure-illegal-route-matrix-1.0.0",
+  "failureMode": "FAIL_CLOSED_ZERO_WRITE",
+  "cases": [
+    {
+      "caseId": "ILLEGAL_ENGINE",
+      "mutationPath": "route.engineVersion",
+      "mutationValue": "continuous_story_v2",
+      "errorCode": "RUN_ROUTE_UNREGISTERED"
+    },
+    {
+      "caseId": "ILLEGAL_STRATEGY",
+      "mutationPath": "route.strategyVersion",
+      "mutationValue": "sangtian_pressure_spine_v1_0",
+      "errorCode": "RUN_ROUTE_UNREGISTERED"
+    },
+    {
+      "caseId": "ILLEGAL_RUNTIME_PROFILE",
+      "mutationPath": "route.runtimeProfile",
+      "mutationValue": "SANGTIAN_PRESSURE_SPINE_V1",
+      "errorCode": "RUNTIME_PROFILE_UNSUPPORTED"
+    },
+    {
+      "caseId": "ILLEGAL_ENDGAME_POLICY",
+      "mutationPath": "route.endgamePolicyVersion",
+      "mutationValue": "config_driven_endgame_v3",
+      "errorCode": "ENDGAME_POLICY_MISMATCH"
+    },
+    {
+      "caseId": "ILLEGAL_RESULT_SCHEMA",
+      "mutationPath": "route.resultSchemaVersion",
+      "mutationValue": "endgame_presentation_v3",
+      "errorCode": "RESULT_SCHEMA_UNSUPPORTED"
+    },
+    {
+      "caseId": "ILLEGAL_CONTENT_HASH",
+      "mutationPath": "contentPackageSha256",
+      "mutationValue": "0000000000000000000000000000000000000000000000000000000000000000",
+      "errorCode": "CONTENT_PACKAGE_HASH_MISMATCH"
+    },
+    {
+      "caseId": "ILLEGAL_ORCHESTRATION_HASH",
+      "mutationPath": "orchestrationPackageSha256",
+      "mutationValue": "0000000000000000000000000000000000000000000000000000000000000000",
+      "errorCode": "ORCHESTRATION_PACKAGE_HASH_MISMATCH"
+    },
+    {
+      "caseId": "ILLEGAL_RUNTIME_CONTRACT_HASH",
+      "mutationPath": "runtimeContractSha256",
+      "mutationValue": "0000000000000000000000000000000000000000000000000000000000000000",
+      "errorCode": "RUNTIME_CONTRACT_HASH_MISMATCH"
+    },
+    {
+      "caseId": "ILLEGAL_TEST_MATRIX_HASH",
+      "mutationPath": "testMatrixSha256",
+      "mutationValue": "0000000000000000000000000000000000000000000000000000000000000000",
+      "errorCode": "TEST_MATRIX_HASH_MISMATCH"
+    },
+    {
+      "caseId": "ILLEGAL_HANDLER",
+      "mutationPath": "handlerKey",
+      "mutationValue": "openovel_runtime_v1",
+      "errorCode": "ROUTE_HANDLER_MISMATCH"
+    },
+    {
+      "caseId": "ILLEGAL_RESULT_ADAPTER",
+      "mutationPath": "resultAdapterKey",
+      "mutationValue": "GenericEndgameV3Adapter",
+      "errorCode": "ROUTE_HANDLER_MISMATCH"
+    },
+    {
+      "caseId": "ILLEGAL_PRESENTATION_SCHEMA",
+      "mutationPath": "presentationSchemaVersion",
+      "mutationValue": "endgame_presentation_v3",
+      "errorCode": "RESULT_SCHEMA_UNSUPPORTED"
+    },
+    {
+      "caseId": "ILLEGAL_RENDERER",
+      "mutationPath": "rendererKey",
+      "mutationValue": "generic_endgame_v3",
+      "errorCode": "ROUTE_HANDLER_MISMATCH"
+    },
+    {
+      "caseId": "ILLEGAL_PARTICIPANT_MODES",
+      "mutationPath": "participantModes",
+      "mutationValue": ["SOLO"],
+      "errorCode": "ROUTE_REGISTRY_INVALID"
+    },
+    {
+      "caseId": "ILLEGAL_FIXED_PHASE_CLOCK",
+      "mutationPath": "orchestration.fixedPhases",
+      "mutationValue": ["PREPARE", "COMMIT", "REACTION"],
+      "errorCode": "SANGTIAN_PRESSURE_CONTENT_LEGACY_FIXED_WINDOW_FORBIDDEN"
+    }
+  ]
+}

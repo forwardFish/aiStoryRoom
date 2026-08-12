@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "pressure_chapter_control_topology_v1",
+  "topologyId": "sangtian_six_seat_control_v1",
+  "topologyVersion": "six-seat-control-1.0.0",
+  "seatIds": [
+    "cabinet_finance",
+    "jiangnan_merchant",
+    "qingliu_law",
+    "sili_weaving",
+    "zhejiang_administration",
+    "zhejiang_governor"
+  ],
+  "participantModes": {
+    "SOLO": {
+      "humanSeatCountMin": 1,
+      "humanSeatCountMax": 1,
+      "aiFillRemainingSeats": true
+    },
+    "MULTIPLAYER": {
+      "humanSeatCountMin": 2,
+      "humanSeatCountMax": 6,
+      "aiFillRemainingSeats": true
+    }
+  },
+  "initialFreeze": {
+    "moment": "LOBBY_LOCK_OR_RUN_START",
+    "requiresInitialRoleControlSnapshotHash": true,
+    "participantModeImmutableAfterFreeze": true,
+    "humanSeatIdsAtStartImmutableAfterFreeze": true
+  },
+  "orderedControlEvents": [
+    "AI_DEFAULT_ASSIGNED",
+    "HUMAN_HANDOFF_REQUESTED",
+    "AI_TAKEOVER_ACTIVATED",
+    "HUMAN_RECLAIMED"
+  ],
+  "submissionRules": {
+    "requiresControlEpoch": true,
+    "staleControlEpochPolicy": "REJECT_ZERO_WRITE",
+    "requiredSeatMaySubmit": true,
+    "notRequiredSeatBlocksResolution": false,
+    "ordinaryChatBecomesFormalAction": false
+  },
+  "privacy": {
+    "audienceProjectionBeforeProvider": true,
+    "crossSeatSecretsAllowed": false,
+    "publicProjectionMayContainPrivateKnowledge": false
+  }
+}

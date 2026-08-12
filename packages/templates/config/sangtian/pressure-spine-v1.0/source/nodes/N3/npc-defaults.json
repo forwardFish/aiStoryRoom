@@ -1,0 +1,215 @@
+{
+  "schemaVersion": "sangtian_npc_defaults_v1",
+  "nodeId": "N3",
+  "seatDefaults": [
+    {
+      "defaultPolicyId": "default.n3.zhejiang_governor",
+      "nodeId": "N3",
+      "seatId": "seat.zhejiang_governor",
+      "currentActorId": "actor.hu_zongxian",
+      "normalNoSubmission": {
+        "prepare": "联络外省粮并准备总督担保",
+        "commit": "把主要粮用于赈灾借贷并分散改桑地域"
+      },
+      "objective": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n3.zhejiang_administration",
+      "nodeId": "N3",
+      "seatId": "seat.zhejiang_administration",
+      "currentActorId": "actor.zheng_michang",
+      "normalNoSubmission": {
+        "prepare": "拟定田价底线、登记和粮市规则",
+        "commit": "在保证部分改桑进度下执行中等底价"
+      },
+      "objective": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n3.qingliu_law",
+      "nodeId": "N3",
+      "seatId": "seat.qingliu_law",
+      "currentActorId": "actor.hai_rui",
+      "normalNoSubmission": {
+        "prepare": "核验田契与灾民生计",
+        "commit": "拒绝登记极低价契约并保护乡约借粮"
+      },
+      "objective": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n3.jiangnan_merchant",
+      "nodeId": "N3",
+      "seatId": "seat.jiangnan_merchant",
+      "currentActorId": "actor.shen_yishi",
+      "normalNoSubmission": {
+        "prepare": "清点粮仓与信用",
+        "commit": "把多数粮转为有借据赈灾，保留少量商路和军需"
+      },
+      "objective": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n3.sili_weaving",
+      "nodeId": "N3",
+      "seatId": "seat.sili_weaving",
+      "currentActorId": "actor.yang_jinshui",
+      "normalNoSubmission": {
+        "prepare": "提出未来丝绸订单担保",
+        "commit": "以订单换粮但不直接强迫灾民卖田"
+      },
+      "objective": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "defaultPolicyId": "default.n3.cabinet_finance",
+      "nodeId": "N3",
+      "seatId": "seat.cabinet_finance",
+      "currentActorId": "actor.yan_shifan",
+      "normalNoSubmission": {
+        "prepare": "维持最低丝绸与财政目标",
+        "commit": "允许有限缓办，但要求军饷替代来源"
+      },
+      "objective": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "knowledgeLimit": "只使用本席位已知事实、保管对象和正式交接记录。",
+      "provenanceClass": "ADAPTATION_RULE"
+    }
+  ],
+  "inputFallbackPolicies": [
+    {
+      "fallbackId": "inputfallback.n3.silence",
+      "nodeId": "N3",
+      "inputClass": "SILENCE",
+      "playerFacingMeaning": "沉默",
+      "actionRealization": "消耗当前机会；按席位默认政策执行。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "其他席位取得先手",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "三日断粮 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n3.small_talk",
+      "nodeId": "N3",
+      "inputClass": "SMALL_TALK",
+      "playerFacingMeaning": "反复闲聊",
+      "actionRealization": "第一次编译为 DELAY；后续直接等待超时。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "默认政策继续",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "三日断粮 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n3.rest_delay",
+      "nodeId": "N3",
+      "inputClass": "REST_DELAY",
+      "playerFacingMeaning": "休息或等待",
+      "actionRealization": "休息成功，恢复少量精力，消耗 PREPARE。",
+      "timeAdvance": "+半日",
+      "npcMove": "五个 AI/NPC 先手",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "三日断粮 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n3.fabricated_success",
+      "nodeId": "N3",
+      "inputClass": "FABRICATED_SUCCESS",
+      "playerFacingMeaning": "声称已经取得命令、账册或同意",
+      "actionRealization": "编译为尝试取得；无来源则 FAILED_ATTEMPT。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "目标保管人加强防护或继续原计划",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "三日断粮 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n3.overreach",
+      "nodeId": "N3",
+      "inputClass": "OVERREACH",
+      "playerFacingMeaning": "越权调兵、替皇帝裁决或控制他人",
+      "actionRealization": "动作失败；保留真实目标但不改写成别的政策选择。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "被越权对象留下可观察反应",
+      "pressureDelta": "+1",
+      "nextSceneSeed": "三日断粮 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n3.insufficient_resource",
+      "nodeId": "N3",
+      "inputClass": "INSUFFICIENT_RESOURCE",
+      "playerFacingMeaning": "资源不足",
+      "actionRealization": "允许部分执行或失败，已投入资源仍可能消耗。",
+      "timeAdvance": "+1 时段",
+      "npcMove": "竞争方利用资源缺口",
+      "pressureDelta": "0 或 +1",
+      "nextSceneSeed": "三日断粮 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n3.timeout",
+      "nodeId": "N3",
+      "inputClass": "TIMEOUT",
+      "playerFacingMeaning": "超时",
+      "actionRealization": "注入该席位 defaultPrepare 或 defaultCommit。",
+      "timeAdvance": "推进到阶段截止",
+      "npcMove": "AI/NPC 完成默认行动",
+      "pressureDelta": "至少 +1",
+      "nextSceneSeed": "三日断粮 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    },
+    {
+      "fallbackId": "inputfallback.n3.normal_no_submission",
+      "nodeId": "N3",
+      "inputClass": "NORMAL_NO_SUBMISSION",
+      "playerFacingMeaning": "无人提交有效替代行动",
+      "actionRealization": "六席默认政策合成推进。",
+      "timeAdvance": "推进到本拍截止",
+      "npcMove": "按席位目标同时执行",
+      "pressureDelta": "按节点默认轨迹",
+      "nextSceneSeed": "三日断粮 的最高压力已经变化，新的急报必须体现已经确认的时间、NPC 行动和对象状态。",
+      "neverDo": [
+        "不得偷偷改成另一项政策选择",
+        "不得让世界停止",
+        "不得让 Narrator 补造关键事实"
+      ]
+    }
+  ],
+  "composedDefaultProgression": "总督取得有限外粮担保，省府保留粮市控制，清流拒登极低价田契，商会默认将多数可用粮转为有借据赈粮，织造局提供名义保护，内阁维持指标；形成中高赈济、低中改桑与商会债权。"
+}

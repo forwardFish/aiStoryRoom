@@ -1,0 +1,1236 @@
+{
+  "schemaVersion": "sangtian_node_seat_content_v1",
+  "nodeId": "P0",
+  "seatCount": 6,
+  "seats": [
+    {
+      "seatContentId": "seatcontent.p0.zhejiang_governor",
+      "nodeId": "P0",
+      "seatId": "seat.zhejiang_governor",
+      "roleKey": "zhejiang_governor",
+      "currentActorId": "actor.hu_zongxian",
+      "institutionalMission": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "knownFacts": [
+        {
+          "factRefId": "known.p0.zhejiang_governor.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "P0",
+          "statement": "国库、军饷与丝绸收入共同逼出改稻为桑；玩家不能让财政危机从未发生。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.p0.zhejiang_governor.claim.p0-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-01",
+          "statement": "朝廷把增加桑田和蚕丝视为填补财政缺口的办法，并决定向胡宗宪下急递。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.p0.zhejiang_governor.claim.p0-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-02",
+          "statement": "胡宗宪兼有浙直总督与浙江巡抚职务，并被视为能够影响国策执行的关键人物。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.p0.zhejiang_governor.claim.p0-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-03",
+          "statement": "改桑方案从一开始就伴随民田、粮食与地方失序风险，而非单纯增产问题。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.p0.zhejiang_governor.claim.p0-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-04",
+          "statement": "总督实际承担调粮、借贷与避免民变的责任压力。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.p0.zhejiang_governor.object.governor_command_seal",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.governor_command_seal",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：总督军政令印。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.p0.zhejiang_governor.system.p0-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-UNK-01",
+          "statement": "国策最终由哪一席承担主要代价尚未发生，Narrator 不得预写。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易高估一纸总督令在地方执行链中的即时效力。"
+      ],
+      "resources": [
+        "总督军令",
+        "军驿",
+        "跨省协调",
+        "奏报担保"
+      ],
+      "permissions": [
+        "调兵与分洪",
+        "总督担保",
+        "领衔奏疏",
+        "军饷划拨"
+      ],
+      "privatePressure": "皇帝信任是资源也是绳索，失败会同时被解释成误国或欺瞒。",
+      "keyLeverage": "解读急递并决定哪些总督资源必须预留",
+      "defaultPrepare": "阅读急递并保留军政余量",
+      "defaultCommit": "接受不可撤销的国策压力",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.p0.zhejiang_governor.01",
+          "text": "“这道急递只写要银要丝，却没写浙江的粮从哪里补。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.governor_command_seal"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.zhejiang_governor.02",
+          "text": "“先把能动的粮、兵和驿路列清，别用一句奉旨遮住后账。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.governor_command_seal"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.zhejiang_governor.03",
+          "text": "“我可以担催办，谁来担百姓改了桑以后明年的口粮？”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.governor_command_seal"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        }
+      ],
+      "privateOpening": "胡宗宪拆开急递时，案上只有财政缺口、丝绸任务和自己必须承担的地方后果。皇帝的信任让他能调度，也让任何失败都更像欺瞒。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.governor_office",
+          "afterNode": "N2",
+          "seatId": "seat.zhejiang_governor",
+          "fromActorId": "actor.hu_zongxian",
+          "toActorId": "actor.hu_zongxian",
+          "permissionChange": [
+            "失去浙江巡抚兼任的直接地方民政权限",
+            "保留浙直总督军务、跨省协调、军饷与奏报渠道"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "knownFactIds": [
+        "known.p0.zhejiang_governor.pressure",
+        "known.p0.zhejiang_governor.claim.p0-sf-01",
+        "known.p0.zhejiang_governor.claim.p0-sf-02",
+        "known.p0.zhejiang_governor.claim.p0-sf-03",
+        "known.p0.zhejiang_governor.claim.p0-sf-04",
+        "known.p0.zhejiang_governor.object.governor_command_seal"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.zhejiang_governor.system.p0-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.governor_command_seal"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.p0.zhejiang_administration",
+      "nodeId": "P0",
+      "seatId": "seat.zhejiang_administration",
+      "roleKey": "zhejiang_administration",
+      "currentActorId": "actor.zheng_michang",
+      "institutionalMission": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "knownFacts": [
+        {
+          "factRefId": "known.p0.zhejiang_administration.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "P0",
+          "statement": "国库、军饷与丝绸收入共同逼出改稻为桑；玩家不能让财政危机从未发生。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.p0.zhejiang_administration.claim.p0-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-03",
+          "statement": "改桑方案从一开始就伴随民田、粮食与地方失序风险，而非单纯增产问题。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.p0.zhejiang_administration.claim.p0-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-04",
+          "statement": "总督实际承担调粮、借贷与避免民变的责任压力。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.p0.zhejiang_administration.object.provincial_seal",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.provincial_seal",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：浙江省府印信。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.p0.zhejiang_administration.claim.p0-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-01",
+          "statement": "朝廷把增加桑田和蚕丝视为填补财政缺口的办法，并决定向胡宗宪下急递。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.p0.zhejiang_administration.claim.p0-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-02",
+          "statement": "胡宗宪兼有浙直总督与浙江巡抚职务，并被视为能够影响国策执行的关键人物。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.p0.zhejiang_administration.system.p0-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-UNK-01",
+          "statement": "国策最终由哪一席承担主要代价尚未发生，Narrator 不得预写。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把先形成的公文误认为最终会被朝廷接受的事实。"
+      ],
+      "resources": [
+        "省府印信",
+        "府县官吏",
+        "差役与押解",
+        "田契登记"
+      ],
+      "permissions": [
+        "签发地方命令",
+        "控制人犯与案卷",
+        "登记契约",
+        "查封商产"
+      ],
+      "privatePressure": "最早取得政绩的人可能取得解释权，也可能先留下责任。",
+      "keyLeverage": "把国策分解成地方执行清单",
+      "defaultPrepare": "拆解地方执行责任",
+      "defaultCommit": "接受省府将成为执行中枢",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.p0.zhejiang_administration.01",
+          "text": "“省里能把诏意拆成各府县限额，但缓一日就要有人具名。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.provincial_seal"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.zhejiang_administration.02",
+          "text": "“先让各县报可改之田，别让反对的人拿空数拖过时令。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.provincial_seal"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.zhejiang_administration.03",
+          "text": "“总督若要留余地，请把缓办范围写进回文，不要只口头吩咐。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.provincial_seal"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        }
+      ],
+      "privateOpening": "郑泌昌先看见的是限额、名册和各府县能否在时令前交差。谁最早把执行清单发下去，谁便先取得口径，也先留下经手。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.administration",
+          "afterNode": "N6",
+          "seatId": "seat.zhejiang_administration",
+          "fromActorId": "actor.zheng_michang",
+          "toActorId": "actor.zheng_michang",
+          "permissionChange": [
+            "进入在押状态后只能签供、翻供、拒签、交代旧令和使用获准通信",
+            "不得继续调动省府差役、粮市与查封权限"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "knownFactIds": [
+        "known.p0.zhejiang_administration.pressure",
+        "known.p0.zhejiang_administration.claim.p0-sf-03",
+        "known.p0.zhejiang_administration.claim.p0-sf-04",
+        "known.p0.zhejiang_administration.object.provincial_seal"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.zhejiang_administration.claim.p0-sf-01",
+        "unknown.p0.zhejiang_administration.claim.p0-sf-02",
+        "unknown.p0.zhejiang_administration.system.p0-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.provincial_seal"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.p0.qingliu_law",
+      "nodeId": "P0",
+      "seatId": "seat.qingliu_law",
+      "roleKey": "qingliu_law",
+      "currentActorId": "actor.tan_lun",
+      "institutionalMission": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "knownFacts": [
+        {
+          "factRefId": "known.p0.qingliu_law.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "P0",
+          "statement": "国库、军饷与丝绸收入共同逼出改稻为桑；玩家不能让财政危机从未发生。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun"
+        },
+        {
+          "factRefId": "known.p0.qingliu_law.claim.p0-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-02",
+          "statement": "胡宗宪兼有浙直总督与浙江巡抚职务，并被视为能够影响国策执行的关键人物。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun"
+        },
+        {
+          "factRefId": "known.p0.qingliu_law.claim.p0-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-03",
+          "statement": "改桑方案从一开始就伴随民田、粮食与地方失序风险，而非单纯增产问题。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun"
+        },
+        {
+          "factRefId": "known.p0.qingliu_law.object.law_review_channel",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.law_review_channel",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：法度审查与拒签渠道。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.p0.qingliu_law.claim.p0-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-01",
+          "statement": "朝廷把增加桑田和蚕丝视为填补财政缺口的办法，并决定向胡宗宪下急递。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.p0.qingliu_law.claim.p0-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-04",
+          "statement": "总督实际承担调粮、借贷与避免民变的责任压力。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.p0.qingliu_law.system.p0-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-UNK-01",
+          "statement": "国策最终由哪一席承担主要代价尚未发生，Narrator 不得预写。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.tan_lun",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信只要事实真实就会自然生效。"
+      ],
+      "resources": [
+        "调查权限",
+        "拒签权",
+        "证人保护",
+        "证据索引"
+      ],
+      "permissions": [
+        "审查案卷",
+        "拒绝签押",
+        "保护证人",
+        "制作封印与索引"
+      ],
+      "privatePressure": "越早知道上级意图，越要谨慎决定哪些内容进入正式档案。",
+      "keyLeverage": "确认清流立场的法度边界",
+      "defaultPrepare": "确定哪些事实必须进入正式记录",
+      "defaultCommit": "接受人物交接与知识隔离",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.p0.qingliu_law.01",
+          "text": "“国策已定，违法害民的手段却不能因此变成正当。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.law_review_channel"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.qingliu_law.02",
+          "text": "“县册、田契、粮簿若不先留底，后来再问只会剩口供。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.law_review_channel"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.qingliu_law.03",
+          "text": "“谭某愿听命，但不愿把尚未查明的猜测写成罪名。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.law_review_channel"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        }
+      ],
+      "privateOpening": "谭纶知道国策已经形成，真正还能争的是地方采用何种手段。若县册、田契和命令不先留底，后来只剩各说各话。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.qingliu",
+          "afterNode": "N2",
+          "seatId": "seat.qingliu_law",
+          "fromActorId": "actor.tan_lun",
+          "toActorId": "actor.hai_rui",
+          "inheritIf": [
+            "PUBLIC",
+            "SEAT_RECORD",
+            "TRANSFERRED_AND_RECEIVED"
+          ],
+          "neverAutoInherit": [
+            "私下猜测",
+            "未送达信件",
+            "玩家屏幕上见过但海瑞未获知的秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "knownFactIds": [
+        "known.p0.qingliu_law.pressure",
+        "known.p0.qingliu_law.claim.p0-sf-02",
+        "known.p0.qingliu_law.claim.p0-sf-03",
+        "known.p0.qingliu_law.object.law_review_channel"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.qingliu_law.claim.p0-sf-01",
+        "unknown.p0.qingliu_law.claim.p0-sf-04",
+        "unknown.p0.qingliu_law.system.p0-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.law_review_channel"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.p0.jiangnan_merchant",
+      "nodeId": "P0",
+      "seatId": "seat.jiangnan_merchant",
+      "roleKey": "jiangnan_merchant",
+      "currentActorId": "actor.shen_yishi",
+      "institutionalMission": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "knownFacts": [
+        {
+          "factRefId": "known.p0.jiangnan_merchant.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "P0",
+          "statement": "国库、军饷与丝绸收入共同逼出改稻为桑；玩家不能让财政危机从未发生。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi"
+        },
+        {
+          "factRefId": "known.p0.jiangnan_merchant.claim.p0-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-03",
+          "statement": "改桑方案从一开始就伴随民田、粮食与地方失序风险，而非单纯增产问题。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi"
+        },
+        {
+          "factRefId": "known.p0.jiangnan_merchant.claim.p0-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-04",
+          "statement": "总督实际承担调粮、借贷与避免民变的责任压力。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi"
+        },
+        {
+          "factRefId": "known.p0.jiangnan_merchant.object.merchant_grain_pool",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.merchant_grain_pool",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：商会粮仓。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.p0.jiangnan_merchant.claim.p0-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-01",
+          "statement": "朝廷把增加桑田和蚕丝视为填补财政缺口的办法，并决定向胡宗宪下急递。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.p0.jiangnan_merchant.claim.p0-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-02",
+          "statement": "胡宗宪兼有浙直总督与浙江巡抚职务，并被视为能够影响国策执行的关键人物。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.p0.jiangnan_merchant.system.p0-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-UNK-01",
+          "statement": "国策最终由哪一席承担主要代价尚未发生，Narrator 不得预写。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信实际贡献能自动换来政治保护。"
+      ],
+      "resources": [
+        "粮仓",
+        "银票与信用",
+        "商船",
+        "契约与账目"
+      ],
+      "permissions": [
+        "分配商粮",
+        "签借据与买田合同",
+        "转运",
+        "留下遗命"
+      ],
+      "privatePressure": "粮与银能救急，却会把商会写进朝廷的责任清单。",
+      "keyLeverage": "锁定粮仓、船和信用的可用规模",
+      "defaultPrepare": "核清粮、银、船和信用",
+      "defaultCommit": "接受商会会被国策调用",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.p0.jiangnan_merchant.01",
+          "text": "“官府要的是现粮，商会先要知道这笔粮是借、卖，还是买田。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.merchant_grain_pool"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.jiangnan_merchant.02",
+          "text": "“船能调，账期也能让，只怕今日垫出去，明日便成抄家的数目。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.merchant_grain_pool"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.jiangnan_merchant.03",
+          "text": "“谁肯在契上写清归还与收讫，商会就同谁谈。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.merchant_grain_pool"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        }
+      ],
+      "privateOpening": "沈一石清点粮、银、船和账期，知道官府很快会来借用商会。每一笔救急都可能成为未来查封时最清楚的一行。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.merchant",
+          "afterNode": "N6",
+          "seatId": "seat.jiangnan_merchant",
+          "fromActorId": "actor.shen_yishi",
+          "toActorId": "actor.merchant_legacy_executor",
+          "inheritIf": [
+            "N6 冻结前形成的遗命",
+            "已登记债权",
+            "已启动递送",
+            "商会正式档案"
+          ],
+          "neverAutoInherit": [
+            "死后新计划",
+            "未留下的口头秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "knownFactIds": [
+        "known.p0.jiangnan_merchant.pressure",
+        "known.p0.jiangnan_merchant.claim.p0-sf-03",
+        "known.p0.jiangnan_merchant.claim.p0-sf-04",
+        "known.p0.jiangnan_merchant.object.merchant_grain_pool"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.jiangnan_merchant.claim.p0-sf-01",
+        "unknown.p0.jiangnan_merchant.claim.p0-sf-02",
+        "unknown.p0.jiangnan_merchant.system.p0-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.merchant_grain_pool"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.p0.sili_weaving",
+      "nodeId": "P0",
+      "seatId": "seat.sili_weaving",
+      "roleKey": "sili_weaving",
+      "currentActorId": "actor.yang_jinshui",
+      "institutionalMission": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "knownFacts": [
+        {
+          "factRefId": "known.p0.sili_weaving.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "P0",
+          "statement": "国库、军饷与丝绸收入共同逼出改稻为桑；玩家不能让财政危机从未发生。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.p0.sili_weaving.claim.p0-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-01",
+          "statement": "朝廷把增加桑田和蚕丝视为填补财政缺口的办法，并决定向胡宗宪下急递。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.p0.sili_weaving.claim.p0-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-03",
+          "statement": "改桑方案从一开始就伴随民田、粮食与地方失序风险，而非单纯增产问题。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.p0.sili_weaving.object.weaving_bureau_banner",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.weaving_bureau_banner",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：织造局公开名义。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.p0.sili_weaving.claim.p0-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-02",
+          "statement": "胡宗宪兼有浙直总督与浙江巡抚职务，并被视为能够影响国策执行的关键人物。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.p0.sili_weaving.claim.p0-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-04",
+          "statement": "总督实际承担调粮、借贷与避免民变的责任压力。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.p0.sili_weaving.system.p0-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-UNK-01",
+          "statement": "国策最终由哪一席承担主要代价尚未发生，Narrator 不得预写。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易以为内廷渠道足以压过所有地方见证。"
+      ],
+      "resources": [
+        "织造局名义",
+        "密奏",
+        "锦衣卫递送",
+        "供货记录"
+      ],
+      "permissions": [
+        "使用或撤回织造名义",
+        "密奏",
+        "内廷递送",
+        "核验织造记录"
+      ],
+      "privatePressure": "宫廷名义可保护行动，也可能把皇帝直接卷入。",
+      "keyLeverage": "判断内廷名义可以公开到什么程度",
+      "defaultPrepare": "确认内廷名义与织造任务",
+      "defaultCommit": "接受宫廷名义有双刃代价",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.p0.sili_weaving.01",
+          "text": "“丝绸数是宫里要的，怎么催田却是浙江诸公要担的。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.weaving_bureau_banner"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.sili_weaving.02",
+          "text": "“织造局的名义可以护一程，不能替任何衙门洗去经手。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.weaving_bureau_banner"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.sili_weaving.03",
+          "text": "“急递若要进内廷，先把哪些话能见御前说清。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.weaving_bureau_banner"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        }
+      ],
+      "privateOpening": "杨金水面对的是宫里要的丝与浙江将怎样取得桑田。织造局名义可替行动挡风，也可能把风一路引到内廷。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.weaving",
+          "afterNode": "N6",
+          "seatId": "seat.sili_weaving",
+          "fromActorId": "actor.yang_jinshui",
+          "toActorId": "actor.weaving_retainer",
+          "inheritIf": [
+            "织造局正式档案",
+            "已签发命令",
+            "已启动的锦衣卫交接"
+          ],
+          "unknownInvariant": "杨金水真实精神状态保持 UNKNOWN。"
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "knownFactIds": [
+        "known.p0.sili_weaving.pressure",
+        "known.p0.sili_weaving.claim.p0-sf-01",
+        "known.p0.sili_weaving.claim.p0-sf-03",
+        "known.p0.sili_weaving.object.weaving_bureau_banner"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.sili_weaving.claim.p0-sf-02",
+        "unknown.p0.sili_weaving.claim.p0-sf-04",
+        "unknown.p0.sili_weaving.system.p0-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.weaving_bureau_banner"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.p0.cabinet_finance",
+      "nodeId": "P0",
+      "seatId": "seat.cabinet_finance",
+      "roleKey": "cabinet_finance",
+      "currentActorId": "actor.yan_shifan",
+      "institutionalMission": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "knownFacts": [
+        {
+          "factRefId": "known.p0.cabinet_finance.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "P0",
+          "statement": "国库、军饷与丝绸收入共同逼出改稻为桑；玩家不能让财政危机从未发生。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.p0.cabinet_finance.claim.p0-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-01",
+          "statement": "朝廷把增加桑田和蚕丝视为填补财政缺口的办法，并决定向胡宗宪下急递。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.p0.cabinet_finance.claim.p0-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-02",
+          "statement": "胡宗宪兼有浙直总督与浙江巡抚职务，并被视为能够影响国策执行的关键人物。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.p0.cabinet_finance.claim.p0-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-03",
+          "statement": "改桑方案从一开始就伴随民田、粮食与地方失序风险，而非单纯增产问题。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.p0.cabinet_finance.object.fiscal_target_register",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.fiscal_target_register",
+          "objectVersionSelector": "INITIAL_OR_NODE_OPENING",
+          "statement": "当前人物可以依法调用或核验：财政与丝绸目标簿。",
+          "availableFrom": "P0",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.p0.cabinet_finance.claim.p0-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-SF-04",
+          "statement": "总督实际承担调粮、借贷与避免民变的责任压力。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.p0.cabinet_finance.system.p0-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "P0-UNK-01",
+          "statement": "国策最终由哪一席承担主要代价尚未发生，Narrator 不得预写。",
+          "availableFrom": "P0",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把地方资源当作可随时征用的财政余额。"
+      ],
+      "resources": [
+        "急递与廷寄",
+        "财政目标",
+        "中央收件",
+        "抄没归属"
+      ],
+      "permissions": [
+        "设定期限",
+        "调整财政认定",
+        "指定收件路径",
+        "决定抄没归属"
+      ],
+      "privatePressure": "财政缺口必须被某个层级承担，拖延只会扩大缺口。",
+      "keyLeverage": "确定财政期限和最低丝绸目标",
+      "defaultPrepare": "锁定财政与军饷底线",
+      "defaultCommit": "接受中央期限不会等待地方",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.p0.cabinet_finance.01",
+          "text": "“户部的缺口不会等浙江慢慢商量，前线的饷也不会。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.fiscal_target_register"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.cabinet_finance.02",
+          "text": "“可以分年办，但每少一分丝，都要写出从哪里补银。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.fiscal_target_register"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.p0.cabinet_finance.03",
+          "text": "“内阁只认送到案前的数字与署名，地方心里的难处不算回报。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.sangtian_edict",
+            "obj.fiscal_gap",
+            "obj.fiscal_target_register"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        }
+      ],
+      "privateOpening": "严世蕃看到的是国库和军饷的空缺。地方每要求一分宽限，内阁就必须另找一分银粮，责任也会随之改写。",
+      "handoffRules": [],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.p0.pressure_lock",
+        "adapt.p0.two_beats",
+        "adapt.p0.object_contest"
+      ],
+      "knownFactIds": [
+        "known.p0.cabinet_finance.pressure",
+        "known.p0.cabinet_finance.claim.p0-sf-01",
+        "known.p0.cabinet_finance.claim.p0-sf-02",
+        "known.p0.cabinet_finance.claim.p0-sf-03",
+        "known.p0.cabinet_finance.object.fiscal_target_register"
+      ],
+      "unknownFactIds": [
+        "unknown.p0.cabinet_finance.claim.p0-sf-04",
+        "unknown.p0.cabinet_finance.system.p0-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.fiscal_target_register"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    }
+  ]
+}

@@ -1,0 +1,711 @@
+{
+  "schemaVersion": "sangtian_node_settlement_v1_1",
+  "nodeId": "N6",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "snapshotRule": "所有 COMMIT 基于同一节点快照；先后提交不产生天然优势。",
+  "conflictComparator": {
+    "hardRulesFirst": true,
+    "priorityOrder": [
+      "节点开始时实际保管权",
+      "独立合法处置权",
+      "武装或行政控制",
+      "封印与见证完整度",
+      "确定性哈希破同分"
+    ],
+    "tieBreak": {
+      "method": "STABLE_HASH",
+      "input": "runSeed|nodeId|objectId|seatId",
+      "aiInvolved": false
+    },
+    "objectRules": [
+      {
+        "objectId": "obj.shen_yishi_person_and_assets",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      },
+      {
+        "objectId": "obj.local_four_boxes",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      },
+      {
+        "objectId": "obj.inner_court_four_boxes",
+        "winnerRule": "Apply authority/knowledge/custody/resource hard guards, then priorityOrder, then stable hash.",
+        "newlyAcquiredDestroyBan": true
+      }
+    ]
+  },
+  "hardRules": [
+    "权限、知识、保管、资源与截止时间先于 comparator。",
+    "同一可分资源不得双花；不可分对象同一时刻只有一个实际保管者。",
+    "SIGN 只能由本人或有明确代理权者完成。",
+    "本节点刚取得的对象不得在同一动作或同节点条件应变中立即销毁。",
+    "已冻结事实不能被后续自由文本撤销。"
+  ],
+  "defaultTrajectory": {
+    "policySynthesis": "省府查封商产并销毁其开始时已保管的本地四箱；商会遗命启动；织造局把内廷四箱经锦衣卫送京；总督划部分现银为军饷；内阁确认抄没。形成原作相近的分割证据状态。",
+    "defaultInputState": {
+      "verifiableLedgerSetCount": 1,
+      "localLedgerState": "DESTROYED_WITH_WITNESS",
+      "innerLedgerState": "DISPATCHED_INTACT",
+      "merchantExplanationChainPreserved": false,
+      "assetAuditGrade": "VALID",
+      "soleScapegoat": false
+    },
+    "defaultBranchId": "settlement.n6.mid",
+    "deterministic": true
+  },
+  "conditionalReaction": null,
+  "branches": [
+    {
+      "branchId": "settlement.n6.high",
+      "level": "HIGH",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n6.settlement.high",
+      "frozenWorldState": "沈一石或其遗命保住一条解释链，商产清册可审计，军饷按合法路径划出；至少一组四箱完整送达，另一组状态也有见证。",
+      "objectMutations": [
+        {
+          "objectId": "obj.shen_yishi_person_and_assets",
+          "resultVersionId": "obj.shen_yishi_person_and_assets@N6.HIGH.v1",
+          "status": "EXPLANATION_CHAIN_PRESERVED_AUDITED_SPLIT",
+          "custodyMode": "DISTRIBUTED_BY_AUDITED_ASSET_LEDGER"
+        },
+        {
+          "objectId": "obj.local_four_boxes",
+          "resultVersionId": "obj.local_four_boxes@N6.HIGH.v1",
+          "status": "SEALED_OR_VERIFIABLE_WITH_WITNESS",
+          "custodyMode": "STARTING_HOLDER_OR_VALID_TRANSFEREE"
+        },
+        {
+          "objectId": "obj.inner_court_four_boxes",
+          "resultVersionId": "obj.inner_court_four_boxes@N6.HIGH.v1",
+          "status": "DISPATCHED_OR_ARRIVED_INTACT",
+          "custodyMode": "INNER_COURT_ROUTE_RECIPIENT"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "沈一石个人结局",
+        "商产与军饷",
+        "本地四箱状态",
+        "内廷四箱状态",
+        "见证与摘要",
+        "责任替罪层级"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 15,
+        "track.mulberry_silk": 5,
+        "track.fiscal_military": 5,
+        "track.evidence_responsibility": 15,
+        "track.court_imperial_face": 5
+      },
+      "carryForward": [
+        "沈一石个人结局",
+        "商产与军饷",
+        "本地四箱状态",
+        "内廷四箱状态",
+        "见证与摘要",
+        "责任替罪层级",
+        "N7至少有一条可验证账目材料",
+        "人物代价进入席位结局"
+      ],
+      "transitionSceneId": "scene.n6.transition.high",
+      "predecessorIds": [
+        "scene.n6.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n6.transition.high"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTROLLED",
+        "frozenFacts": [
+          "至少一组四箱或一份经合法核验的摘要存续",
+          "商产、军饷和账册处分均有清册",
+          "沈一石状态与遗命得到确认"
+        ],
+        "objectState": "两组四箱各自保管、封印、接触和路线独立冻结；原副本关系仍UNKNOWN。",
+        "carry": [
+          "N7至少有一条可验证账目材料",
+          "人物代价进入席位结局"
+        ]
+      },
+      "frozenFacts": [
+        "至少一组四箱或一份经合法核验的摘要存续",
+        "商产、军饷和账册处分均有清册",
+        "沈一石状态与遗命得到确认"
+      ],
+      "frozenResultId": "frozen.N6.HIGH",
+      "branchSelector": {
+        "all": [
+          {
+            "key": "verifiableLedgerSetCount",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "key": "merchantExplanationChainPreserved",
+            "op": "==",
+            "value": true
+          },
+          {
+            "key": "assetAuditGrade",
+            "op": "IN",
+            "value": [
+              "VALID",
+              "CORROBORATED"
+            ]
+          },
+          {
+            "key": "soleScapegoat",
+            "op": "==",
+            "value": false
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N6.HIGH.fact.01",
+        "frozen.N6.HIGH.fact.02",
+        "frozen.N6.HIGH.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N6.HIGH.fact.01",
+          "statement": "至少一组四箱或一份经合法核验的摘要存续",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N6.HIGH.fact.02",
+          "statement": "商产、军饷和账册处分均有清册",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N6.HIGH.fact.03",
+          "statement": "沈一石状态与遗命得到确认",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.shen_yishi_person_and_assets",
+          "versionId": "obj.shen_yishi_person_and_assets@N6.HIGH.v1",
+          "status": "EXPLANATION_CHAIN_PRESERVED_AUDITED_SPLIT",
+          "custodyMode": "DISTRIBUTED_BY_AUDITED_ASSET_LEDGER",
+          "custodyRule": "人物状态、商产、现银和军饷分别记账；未入清册资产不能自动划拨。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N6.HIGH"
+        },
+        {
+          "objectId": "obj.local_four_boxes",
+          "versionId": "obj.local_four_boxes@N6.HIGH.v1",
+          "status": "SEALED_OR_VERIFIABLE_WITH_WITNESS",
+          "custodyMode": "STARTING_HOLDER_OR_VALID_TRANSFEREE",
+          "custodyRule": "由节点开始保管者或合法转交的收件人保管；若毁损，必须有独立见证和时间。",
+          "knownBy": [
+            "seat.zhejiang_administration",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.qingliu_law"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N6.HIGH"
+        },
+        {
+          "objectId": "obj.inner_court_four_boxes",
+          "versionId": "obj.inner_court_four_boxes@N6.HIGH.v1",
+          "status": "DISPATCHED_OR_ARRIVED_INTACT",
+          "custodyMode": "INNER_COURT_ROUTE_RECIPIENT",
+          "custodyRule": "只向司礼监织造及实际签收席位投影；不公开原副本关系。",
+          "knownBy": [
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N6.HIGH"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n6.mid",
+      "level": "MID",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n6.settlement.mid",
+      "frozenWorldState": "沈一石死亡或失能，商产大部被抄，本地四箱焚毁，内廷四箱秘密送京；军饷得到部分补充，真相被分割。",
+      "objectMutations": [
+        {
+          "objectId": "obj.shen_yishi_person_and_assets",
+          "resultVersionId": "obj.shen_yishi_person_and_assets@N6.MID.v1",
+          "status": "ACTOR_EXITED_ASSETS_MOSTLY_SEIZED",
+          "custodyMode": "PROVINCIAL_AND_FISCAL_SPLIT"
+        },
+        {
+          "objectId": "obj.local_four_boxes",
+          "resultVersionId": "obj.local_four_boxes@N6.MID.v1",
+          "status": "DESTROYED_WITH_WITNESS",
+          "custodyMode": "NO_CUSTODY_DESTROYED"
+        },
+        {
+          "objectId": "obj.inner_court_four_boxes",
+          "resultVersionId": "obj.inner_court_four_boxes@N6.MID.v1",
+          "status": "DISPATCHED_INTACT",
+          "custodyMode": "INNER_COURT_ROUTE"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "沈一石个人结局",
+        "商产与军饷",
+        "本地四箱状态",
+        "内廷四箱状态",
+        "见证与摘要",
+        "责任替罪层级"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": 0,
+        "track.mulberry_silk": 0,
+        "track.fiscal_military": 0,
+        "track.evidence_responsibility": 0,
+        "track.court_imperial_face": 0
+      },
+      "carryForward": [
+        "沈一石个人结局",
+        "商产与军饷",
+        "本地四箱状态",
+        "内廷四箱状态",
+        "见证与摘要",
+        "责任替罪层级",
+        "N7依赖送达材料和焚毁见证",
+        "商会与织造同时承担暴露"
+      ],
+      "transitionSceneId": "scene.n6.transition.mid",
+      "predecessorIds": [
+        "scene.n6.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n6.transition.mid"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CONTESTED",
+        "frozenFacts": [
+          "本地四箱焚毁但焚毁见证存在",
+          "内廷四箱按独立路线启程",
+          "商产多数被抄、部分划作军饷"
+        ],
+        "objectState": "一组毁损、一组在途；两组内容关系不得推定。",
+        "carry": [
+          "N7依赖送达材料和焚毁见证",
+          "商会与织造同时承担暴露"
+        ]
+      },
+      "frozenFacts": [
+        "本地四箱焚毁但焚毁见证存在",
+        "内廷四箱按独立路线启程",
+        "商产多数被抄、部分划作军饷"
+      ],
+      "frozenResultId": "frozen.N6.MID",
+      "branchSelector": {
+        "otherwise": true
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N6.MID.fact.01",
+        "frozen.N6.MID.fact.02",
+        "frozen.N6.MID.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N6.MID.fact.01",
+          "statement": "本地四箱焚毁但焚毁见证存在",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N6.MID.fact.02",
+          "statement": "内廷四箱按独立路线启程",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N6.MID.fact.03",
+          "statement": "商产多数被抄、部分划作军饷",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.shen_yishi_person_and_assets",
+          "versionId": "obj.shen_yishi_person_and_assets@N6.MID.v1",
+          "status": "ACTOR_EXITED_ASSETS_MOSTLY_SEIZED",
+          "custodyMode": "PROVINCIAL_AND_FISCAL_SPLIT",
+          "custodyRule": "人物死亡或失能后只执行已形成遗命；商产与军饷按清册分配。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N6.MID"
+        },
+        {
+          "objectId": "obj.local_four_boxes",
+          "versionId": "obj.local_four_boxes@N6.MID.v1",
+          "status": "DESTROYED_WITH_WITNESS",
+          "custodyMode": "NO_CUSTODY_DESTROYED",
+          "custodyRule": "焚毁只在开始时已有保管或独立处置权时成立；焚毁见证和摘要另成对象记录。",
+          "knownBy": [
+            "seat.zhejiang_administration",
+            "seat.sili_weaving",
+            "seat.qingliu_law"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N6.MID"
+        },
+        {
+          "objectId": "obj.inner_court_four_boxes",
+          "versionId": "obj.inner_court_four_boxes@N6.MID.v1",
+          "status": "DISPATCHED_INTACT",
+          "custodyMode": "INNER_COURT_ROUTE",
+          "custodyRule": "在途状态、封印与签收分别记录；其他席位不得自动得知。",
+          "knownBy": [
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N6.MID"
+        }
+      ]
+    },
+    {
+      "branchId": "settlement.n6.low",
+      "level": "LOW",
+      "condition": "See branchSelector; no impression score or Narrator judgement is permitted.",
+      "sceneId": "scene.n6.settlement.low",
+      "frozenWorldState": "商人被定为唯一替罪者，商产无序瓜分，两组账册均不可验证或被截；军饷仍不足，责任链封死在商会。",
+      "objectMutations": [
+        {
+          "objectId": "obj.shen_yishi_person_and_assets",
+          "resultVersionId": "obj.shen_yishi_person_and_assets@N6.LOW.v1",
+          "status": "SOLE_SCAPEGOAT_CHAOTIC_SEIZURE",
+          "custodyMode": "SEIZING_AUTHORITIES"
+        },
+        {
+          "objectId": "obj.local_four_boxes",
+          "resultVersionId": "obj.local_four_boxes@N6.LOW.v1",
+          "status": "DESTROYED_MISSING_OR_UNVERIFIABLE",
+          "custodyMode": "LAST_VERIFIED_HOLDER_OR_NONE"
+        },
+        {
+          "objectId": "obj.inner_court_four_boxes",
+          "resultVersionId": "obj.inner_court_four_boxes@N6.LOW.v1",
+          "status": "INTERCEPTED_DELAYED_OR_UNVERIFIABLE",
+          "custodyMode": "LAST_VERIFIED_INNER_COURT_HOLDER"
+        }
+      ],
+      "knowledgeDeltas": "仅向实际见证、收件、公开或合法投影的席位开放。",
+      "responsibilityAndEvidenceFreeze": [
+        "沈一石个人结局",
+        "商产与军饷",
+        "本地四箱状态",
+        "内廷四箱状态",
+        "见证与摘要",
+        "责任替罪层级"
+      ],
+      "trackDeltas": {
+        "track.civilian_land": -15,
+        "track.mulberry_silk": -5,
+        "track.fiscal_military": -5,
+        "track.evidence_responsibility": -15,
+        "track.court_imperial_face": -10
+      },
+      "carryForward": [
+        "沈一石个人结局",
+        "商产与军饷",
+        "本地四箱状态",
+        "内廷四箱状态",
+        "见证与摘要",
+        "责任替罪层级",
+        "N7采用上限降低",
+        "织造与商路连续性严重受损"
+      ],
+      "transitionSceneId": "scene.n6.transition.low",
+      "predecessorIds": [
+        "scene.n6.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n6.transition.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "NODE_SETTLING",
+      "visibility": "PUBLIC",
+      "custody": "DETERMINISTIC_OBJECT_OUTCOMES",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "nodeSpecificState": {
+        "result": "CAPTURED_BY_PRESSURE",
+        "frozenFacts": [
+          "沈一石成为主要公开替罪者",
+          "商产近乎全被吞并",
+          "两组四箱均未取得有效公开或程序效力"
+        ],
+        "objectState": "账册毁损、截留或被压下；底层内容不因结算而随机改变。",
+        "carry": [
+          "N7采用上限降低",
+          "织造与商路连续性严重受损"
+        ]
+      },
+      "frozenFacts": [
+        "沈一石成为主要公开替罪者",
+        "商产近乎全被吞并",
+        "两组四箱均未取得有效公开或程序效力"
+      ],
+      "frozenResultId": "frozen.N6.LOW",
+      "branchSelector": {
+        "any": [
+          {
+            "all": [
+              {
+                "key": "verifiableLedgerSetCount",
+                "op": "==",
+                "value": 0
+              },
+              {
+                "key": "soleScapegoat",
+                "op": "==",
+                "value": true
+              }
+            ]
+          },
+          {
+            "key": "assetAuditGrade",
+            "op": "==",
+            "value": "INVALID"
+          }
+        ]
+      },
+      "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+      "frozenFactIds": [
+        "frozen.N6.LOW.fact.01",
+        "frozen.N6.LOW.fact.02",
+        "frozen.N6.LOW.fact.03"
+      ],
+      "frozenFactsById": [
+        {
+          "frozenFactId": "frozen.N6.LOW.fact.01",
+          "statement": "沈一石成为主要公开替罪者",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N6.LOW.fact.02",
+          "statement": "商产近乎全被吞并",
+          "visibility": "PUBLIC"
+        },
+        {
+          "frozenFactId": "frozen.N6.LOW.fact.03",
+          "statement": "两组四箱均未取得有效公开或程序效力",
+          "visibility": "PUBLIC"
+        }
+      ],
+      "objectOutcomes": [
+        {
+          "objectId": "obj.shen_yishi_person_and_assets",
+          "versionId": "obj.shen_yishi_person_and_assets@N6.LOW.v1",
+          "status": "SOLE_SCAPEGOAT_CHAOTIC_SEIZURE",
+          "custodyMode": "SEIZING_AUTHORITIES",
+          "custodyRule": "只承认实际查封与收讫；无清册瓜分降低审计效力。",
+          "knownBy": [
+            "seat.zhejiang_governor",
+            "seat.zhejiang_administration",
+            "seat.qingliu_law",
+            "seat.jiangnan_merchant",
+            "seat.sili_weaving",
+            "seat.cabinet_finance"
+          ],
+          "visibility": "PUBLIC",
+          "availableFrom": "frozen.N6.LOW"
+        },
+        {
+          "objectId": "obj.local_four_boxes",
+          "versionId": "obj.local_four_boxes@N6.LOW.v1",
+          "status": "DESTROYED_MISSING_OR_UNVERIFIABLE",
+          "custodyMode": "LAST_VERIFIED_HOLDER_OR_NONE",
+          "custodyRule": "无法证明的去向保持未知，不生成完整账册内容。",
+          "knownBy": [
+            "seat.zhejiang_administration",
+            "seat.sili_weaving"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N6.LOW"
+        },
+        {
+          "objectId": "obj.inner_court_four_boxes",
+          "versionId": "obj.inner_court_four_boxes@N6.LOW.v1",
+          "status": "INTERCEPTED_DELAYED_OR_UNVERIFIABLE",
+          "custodyMode": "LAST_VERIFIED_INNER_COURT_HOLDER",
+          "custodyRule": "未签收前只向实际经手者投影；内容不得公开补造。",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "visibility": "LIMITED",
+          "availableFrom": "frozen.N6.LOW"
+        }
+      ]
+    }
+  ],
+  "frozenResultFields": [
+    "沈一石个人结局",
+    "商产与军饷",
+    "本地四箱状态",
+    "内廷四箱状态",
+    "见证与摘要",
+    "责任替罪层级"
+  ],
+  "nextNodeId": "N7",
+  "provenanceClass": "ADAPTATION_RULE",
+  "balanceSeedStatus": "UNVALIDATED_BALANCE_SEED",
+  "selectorInputs": [
+    {
+      "inputKey": "verifiableLedgerSetCount",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "localLedgerState",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "innerLedgerState",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "merchantExplanationChainPreserved",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "assetAuditGrade",
+      "source": "Frozen action/object/event state",
+      "required": true
+    },
+    {
+      "inputKey": "soleScapegoat",
+      "source": "Frozen action/object/event state",
+      "required": true
+    }
+  ],
+  "branchSelector": {
+    "evaluationOrder": [
+      "HIGH",
+      "LOW",
+      "MID"
+    ],
+    "selectors": {
+      "HIGH": {
+        "all": [
+          {
+            "key": "verifiableLedgerSetCount",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "key": "merchantExplanationChainPreserved",
+            "op": "==",
+            "value": true
+          },
+          {
+            "key": "assetAuditGrade",
+            "op": "IN",
+            "value": [
+              "VALID",
+              "CORROBORATED"
+            ]
+          },
+          {
+            "key": "soleScapegoat",
+            "op": "==",
+            "value": false
+          }
+        ]
+      },
+      "LOW": {
+        "any": [
+          {
+            "all": [
+              {
+                "key": "verifiableLedgerSetCount",
+                "op": "==",
+                "value": 0
+              },
+              {
+                "key": "soleScapegoat",
+                "op": "==",
+                "value": true
+              }
+            ]
+          },
+          {
+            "key": "assetAuditGrade",
+            "op": "==",
+            "value": "INVALID"
+          }
+        ]
+      },
+      "MID": {
+        "otherwise": true
+      }
+    },
+    "notes": "Thresholds are configuration seeds, not validated balance. HIGH is tested first, LOW second, MID is the only otherwise branch."
+  }
+}

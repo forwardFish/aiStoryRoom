@@ -1,0 +1,304 @@
+{
+  "schemaVersion": "sangtian_action_presentation_catalog_v1",
+  "catalogId": "sangtian_pressure_action_presentation_v1",
+  "catalogVersion": "sangtian-action-presentation-1.0.0",
+  "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+  "locale": "zh-CN",
+  "sourceBinding": {
+    "contentPackageVersion": "1.0.0",
+    "contentPackageSha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b",
+    "sourceCommitSha": "5badb6fa62a823de7019ce6a046efffbd74268d8"
+  },
+  "authorityBoundary": {
+    "presentationOnly": true,
+    "mayCompileWorkingIntent": false,
+    "maySupplySettlementFacts": false,
+    "mayReserveResources": false,
+    "customTextMayChangeActionType": false,
+    "providerMayCreateOptions": false
+  },
+  "defaultPassPresentation": {
+    "preferredEntry": "DEFER",
+    "label": "本轮不采取正式行动",
+    "description": "放弃本次正式行动机会；时间、其他席位的行动和既有压力仍会继续推进。"
+  },
+  "chapters": [
+    {
+      "chapterId": "N1",
+      "title": "九堰将决",
+      "decisions": [
+        {
+          "decisionPointKey": "N1.weir_crisis",
+          "purpose": "共同配置守堰、分洪、疏散兵力并封存命令链。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不采取正式行动", "description": "不追加守堰、疏散或证据行动，既有水患压力继续推进。" },
+            { "actionType": "EVACUATE_WEIRS", "preferredEntry": "PLAN", "label": "组织堰区疏散", "description": "提出调度堰区百姓与运输力量的疏散行动。" },
+            { "actionType": "SEAL_BREACH_RECORD", "preferredEntry": "INVESTIGATE", "label": "封存毁堤记录", "description": "提出封存毁堤命令、经手人与见证记录的行动。" },
+            { "actionType": "SUPPORT_WEIR", "preferredEntry": "TOKEN", "label": "增援关键堰口", "description": "提出调动可用人力与物资增援关键堰口的行动。" }
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N2",
+      "title": "第一道奏疏",
+      "decisions": [
+        {
+          "decisionPointKey": "N2.memorial_draft",
+          "purpose": "起草救济请求与原因说明。",
+          "actions": [
+            { "actionType": "ADD_CAUSE", "preferredEntry": "TALK", "label": "补入灾情原因", "description": "提出在奏疏正文中补入可核验的灾情原因。" },
+            { "actionType": "ADD_RELIEF_REQUEST", "preferredEntry": "TALK", "label": "补入救济请求", "description": "提出在奏疏正文中加入明确的救济请求。" },
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不修改草稿", "description": "不向当前奏疏草稿追加原因或救济请求。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N2.confession_custody",
+          "purpose": "决定马宁远供状的保管与附送。",
+          "actions": [
+            { "actionType": "ATTACH_CONFESSION", "preferredEntry": "INVESTIGATE", "label": "附送认证供状", "description": "提出把具有保管链的供状作为奏疏附件送出。" },
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不处置供状", "description": "不改变供状当前的保管与附送状态。" },
+            { "actionType": "SEAL_CONFESSION", "preferredEntry": "INVESTIGATE", "label": "单独封存供状", "description": "提出把供状单独封存并保留可核验保管链。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N2.signature_chain",
+          "purpose": "取得必要签押并确认正式送达路线。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不签押", "description": "不为当前奏疏版本追加签押或路线核验。" },
+            { "actionType": "SIGN_MEMORIAL", "preferredEntry": "PLAN", "label": "签押奏疏", "description": "提出以本席权限签押当前奏疏版本。" },
+            { "actionType": "VERIFY_ROUTE", "preferredEntry": "INVESTIGATE", "label": "核验送达路线", "description": "提出核验正式收件路线、时限与签收条件。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N2.dispatch",
+          "purpose": "在时限前发出第一道奏疏。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不发出奏疏", "description": "不启动当前奏疏的正式递送。" },
+            { "actionType": "DISPATCH_MEMORIAL", "preferredEntry": "PLAN", "label": "发出第一道奏疏", "description": "提出按已核验的正式路线发出奏疏并取得收件记录。" }
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N3",
+      "title": "三日断粮",
+      "decisions": [
+        {
+          "decisionPointKey": "N3.relief_offer",
+          "purpose": "提出官仓与商粮赈济方案。",
+          "actions": [
+            { "actionType": "ALLOCATE_GRAIN", "preferredEntry": "TOKEN", "label": "划拨赈济粮", "description": "提出把可用粮食划入赈济用途。" },
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不提出赈粮", "description": "不为当前赈济方案追加粮食或担保。" },
+            { "actionType": "PROPOSE_RELIEF", "preferredEntry": "TALK", "label": "提出赈济方案", "description": "提出官粮、商粮、运输与签收条件组成的赈济方案。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N3.deed_negotiation",
+          "purpose": "谈判田契保留、低价转让和改桑地域。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不参与田契谈判", "description": "不改变当前田契、田价与买田安排。" },
+            { "actionType": "PROTECT_DEEDS", "preferredEntry": "PLAN", "label": "保护灾民田契", "description": "提出阻止灾民田契被低价转让的措施。" },
+            { "actionType": "PURCHASE_LAND", "preferredEntry": "TOKEN", "label": "提出购入灾民田地", "description": "提出以当前粮价或资金条件购买灾民田地。" },
+            { "actionType": "SET_PRICE_FLOOR", "preferredEntry": "TALK", "label": "设定田价底线", "description": "提出为灾民田契设定最低成交价格与登记规则。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N3.credit_bridge",
+          "purpose": "在赈粮不足时协商信用与运输补位。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不提供信用", "description": "不为赈粮缺口追加信用、借据或偿付承诺。" },
+            { "actionType": "OFFER_CREDIT", "preferredEntry": "TOKEN", "label": "提供赈粮信用", "description": "提出以可核验信用支持赈粮采购或运输。" },
+            { "actionType": "PLEDGE_REPAYMENT", "preferredEntry": "TOKEN", "label": "承诺偿付赈粮借据", "description": "提出为已登记的赈粮借据承担偿付责任。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N3.price_floor_review",
+          "purpose": "根据已公开粮价反馈决定是否启动田价保护。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不复核田价", "description": "不追加田价保护复核或田契样本封存。" },
+            { "actionType": "REVIEW_PRICE_FLOOR", "preferredEntry": "INVESTIGATE", "label": "复核田价底线", "description": "提出依据公开粮价与田契样本复核田价底线。" },
+            { "actionType": "SEAL_DEED_SAMPLE", "preferredEntry": "INVESTIGATE", "label": "封存田契样本", "description": "提出封存可核验的田契成交样本。" }
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N4",
+      "title": "通倭死局",
+      "decisions": [
+        {
+          "decisionPointKey": "N4.prisoner_review",
+          "purpose": "决定人犯处置、证人保护与案卷审查。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不介入人犯处置", "description": "不追加证人保护、复核请求或执行签押。" },
+            { "actionType": "PROTECT_WITNESS", "preferredEntry": "PLAN", "label": "保护关键证人", "description": "提出把关键证人纳入可核验的保护与保管链。" },
+            { "actionType": "REQUEST_REVIEW", "preferredEntry": "TALK", "label": "请求联合复核", "description": "提出在处置人犯前对案卷、时序和签押进行复核。" },
+            { "actionType": "SIGN_EXECUTION", "preferredEntry": "PLAN", "label": "签押执行", "description": "提出以本席权限签押当前执行版本。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N4.case_file_seal",
+          "purpose": "封存拒签、复核或执行版本并确认唯一正式案卷。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不封存案卷", "description": "不确认新的正式案卷版本。" },
+            { "actionType": "SEAL_CASE_FILE", "preferredEntry": "INVESTIGATE", "label": "封存正式案卷", "description": "提出封存唯一可核验的拒签、复核或执行案卷版本。" }
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N5",
+      "title": "粮船到埠",
+      "decisions": [
+        {
+          "decisionPointKey": "N5.inspect_fleet",
+          "purpose": "核验粮船、契约和灯笼名义。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不核验粮船", "description": "不追加船单、契约、实物流向或公开名义核验。" },
+            { "actionType": "INSPECT_FLEET", "preferredEntry": "INVESTIGATE", "label": "核验粮船与契约", "description": "提出核对粮船、货物、契约、灯笼与公开名义。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.claim_grain",
+          "purpose": "各席提出赈济、军饷、织造或购地用途。",
+          "actions": [
+            { "actionType": "CLAIM_GRAIN", "preferredEntry": "TOKEN", "label": "申报粮食用途", "description": "以本席身份申报赈济、军饷、织造或购地用途；具体用途不得由自由文本补充。" },
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不申报粮食用途", "description": "不对本批粮食提出新的用途主张。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.public_frame",
+          "purpose": "确认对外公开的粮船名义。",
+          "actions": [
+            { "actionType": "DECLARE_PUBLIC_FRAME", "preferredEntry": "TALK", "label": "声明公开名义", "description": "提出一个必须由冻结规则选择的公开粮船名义；自由文本不产生正式名义。" },
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不声明公开名义", "description": "不为粮船追加新的公开名义。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.relief_allocation",
+          "purpose": "封存赈济粮比例。",
+          "actions": [
+            { "actionType": "ALLOCATE_RELIEF", "preferredEntry": "TOKEN", "label": "划定赈济比例", "description": "提出把冻结规则允许的粮食比例划入赈济用途。" },
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不划定赈济比例", "description": "不为赈济用途追加粮食比例。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.land_purchase_limit",
+          "purpose": "决定是否停止用粮购买灾民田契。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不限制购地", "description": "不追加停止或限制用粮购地的正式命令。" },
+            { "actionType": "LIMIT_LAND_PURCHASE", "preferredEntry": "PLAN", "label": "限制用粮购地", "description": "提出停止或限制以粮食购买灾民田契。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.contract_reconcile",
+          "purpose": "对照契约、货物和公开名义。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不核对契约", "description": "不追加契约、货物与公开名义的一致性核对。" },
+            { "actionType": "RECONCILE_CONTRACT", "preferredEntry": "INVESTIGATE", "label": "核对契约与实物", "description": "提出对照契约、实际货物去向与公开名义。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.final_manifest",
+          "purpose": "六席确认本章唯一粮船用途清单。",
+          "actions": [
+            { "actionType": "CONFIRM_MANIFEST", "preferredEntry": "PLAN", "label": "确认粮船用途清单", "description": "提出确认冻结规则形成的唯一粮船用途清单。" },
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不确认清单", "description": "不为当前粮船用途清单追加确认。" }
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N6",
+      "title": "以商乱政",
+      "decisions": [
+        {
+          "decisionPointKey": "N6.asset_audit",
+          "purpose": "盘点沈一石人身、商产与可划拨现银。",
+          "actions": [
+            { "actionType": "AUDIT_ASSETS", "preferredEntry": "INVESTIGATE", "label": "审计人物与商产", "description": "提出盘点沈一石人身状态、商产、现银与查封清册。" },
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不审计商产", "description": "不追加人物、商产、现银或查封清册核验。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N6.ledger_exchange",
+          "purpose": "决定本地四箱与内廷四箱的封存、递送和相互印证。",
+          "actions": [
+            { "actionType": "CONFIRM_LEDGER_SOURCE_WITH_EVIDENCE", "preferredEntry": "INVESTIGATE", "label": "以证据确认账册来源", "description": "仅对已经确认查看的可见疑点提交证据化来源确认。" },
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不处置账册", "description": "不追加账册封存、递送或签收行动。" },
+            { "actionType": "DELIVER_LEDGER", "preferredEntry": "PLAN", "label": "递送账册", "description": "提出沿有权限且可签收的路线递送账册。" },
+            { "actionType": "INVESTIGATE_LEDGER_SOURCE", "preferredEntry": "INVESTIGATE", "label": "调查账册来源", "description": "仅对已经确认查看的可见异常启动来源调查。" },
+            { "actionType": "SEAL_LEDGER", "preferredEntry": "INVESTIGATE", "label": "封存账册", "description": "提出封存账册、摘要或见证并记录保管链。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N6.responsibility_record",
+          "purpose": "记录商人说明链并决定是否形成唯一替罪者。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不补充责任记录", "description": "不追加商人说明链或拒绝唯一替罪的正式记录。" },
+            { "actionType": "RECORD_EXPLANATION", "preferredEntry": "TALK", "label": "记录商人说明链", "description": "提出记录既已存在且可核验的商人说明、摘要与见证。" },
+            { "actionType": "REFUSE_SCAPEGOAT", "preferredEntry": "TALK", "label": "拒绝唯一替罪", "description": "提出拒绝把全部责任固定到唯一商人替罪者。" }
+          ]
+        }
+      ]
+    },
+    {
+      "chapterId": "N7",
+      "title": "七日重审",
+      "decisions": [
+        {
+          "decisionPointKey": "N7.testimony_review",
+          "purpose": "核验原供、翻供、证言和问官签押。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不复核证言", "description": "不追加原供、翻供、证言或问官签押核验。" },
+            { "actionType": "REVIEW_TESTIMONY", "preferredEntry": "INVESTIGATE", "label": "交叉复核证言", "description": "提出交叉核验原供、翻供、证言来源与问官签押。" },
+            { "actionType": "SEAL_TESTIMONY", "preferredEntry": "INVESTIGATE", "label": "封存终审证言", "description": "提出封存来源可追溯的终审证言版本。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N7.route_selection",
+          "purpose": "选择一条或多条独立正式递送路线。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不开放递送路线", "description": "不追加新的正式递送路线或签收安排。" },
+            { "actionType": "OPEN_ROUTE", "preferredEntry": "PLAN", "label": "开放正式递送路线", "description": "提出开放一条有权限、时限与收件人的正式递送路线。" },
+            { "actionType": "SEAL_DISPATCH", "preferredEntry": "PLAN", "label": "封存递送安排", "description": "提出封存路线、时限、收件人与签收记录。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N7.funds_exposure",
+          "purpose": "确认军饷保障与御前暴露上限。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不调整上限", "description": "不追加军饷保障或御前暴露限制。" },
+            { "actionType": "LIMIT_EXPOSURE", "preferredEntry": "PLAN", "label": "限制御前暴露", "description": "提出按冻结规则限制材料进入御前采用范围。" },
+            { "actionType": "SECURE_FUNDS", "preferredEntry": "TOKEN", "label": "保障军饷", "description": "提出为已登记军饷提供可核验的保障安排。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N7.procedure_grade",
+          "purpose": "给证据内容与渠道程序形成结构化等级。",
+          "actions": [
+            { "actionType": "CORROBORATE_PACKET", "preferredEntry": "INVESTIGATE", "label": "相互印证证据包", "description": "提出用独立来源相互印证终审证据包。" },
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不追加程序核验", "description": "不追加证据印证或渠道程序核验。" },
+            { "actionType": "VALIDATE_PROCEDURE", "preferredEntry": "INVESTIGATE", "label": "核验递送程序", "description": "提出核验封印、签押、时限、路线与收件程序。" }
+          ]
+        },
+        {
+          "decisionPointKey": "N7.final_seal",
+          "purpose": "六席封存本章全部正式行动并请求唯一 ChapterSettlement。",
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不确认章末封存", "description": "不为当前章末正式行动清单追加确认。" },
+            { "actionType": "SEAL_CHAPTER", "preferredEntry": "PLAN", "label": "确认章末封存", "description": "提出确认完整正式行动清单并请求唯一章末结算。" }
+          ]
+        }
+      ]
+    }
+  ],
+  "completeness": {
+    "chapterCount": 7,
+    "decisionPointCount": 26,
+    "decisionActionPairCount": 72,
+    "coverageRule": "EXACT_ACCEPTED_CONTENT_DECISION_ACTION_PAIRS"
+  },
+  "catalogSha256": "ccd25e7addeb999982c563e20f4f5aa839d2673333b467ef1a82ed0e68a9b66c"
+}

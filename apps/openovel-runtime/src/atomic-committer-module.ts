@@ -1,6 +1,7 @@
 import {
   FileAtomicTurnRepository,
   type AtomicTurnCommitInput,
+  type AtomicTurnCommitResult,
 } from "./atomic-turn.js";
 import type { WorkspacePaths } from "./paths.js";
 import type { FileStoryWorkspace } from "./workspace.js";
@@ -18,7 +19,10 @@ export interface AtomicCommitSession {
 export interface AtomicCommitterModule {
   readonly moduleId: string;
   open(paths: WorkspacePaths): AtomicCommitSession;
-  commitAuthored(session: AtomicCommitSession, input: AtomicTurnCommitInput): Promise<void>;
+  commitAuthored(
+    session: AtomicCommitSession,
+    input: AtomicTurnCommitInput,
+  ): Promise<AtomicTurnCommitResult>;
   commitLegacy(input: {
     workspace: FileStoryWorkspace;
     runId: string;
@@ -37,8 +41,9 @@ export class FileAtomicCommitter implements AtomicCommitterModule {
   }
 
   async commitAuthored(session: AtomicCommitSession, input: AtomicTurnCommitInput) {
-    await session.commit(input);
+    const committed = await session.commit(input);
     await session.restoreMaterializedViews();
+    return committed;
   }
 
   async commitLegacy(input: {

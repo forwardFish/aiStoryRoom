@@ -10,7 +10,12 @@ import {
   writeJsonAtomic,
 } from "./io.js";
 import type { WorkspacePaths } from "./paths.js";
-import type { OpenNovelOption, TurnResult } from "./types.js";
+import type {
+  AuthoritativeCommitMetadata,
+  NarrativeStatus,
+  OpenNovelOption,
+  TurnResult,
+} from "./types.js";
 import { actionConflict } from "./runtime-errors.js";
 
 export const ATOMIC_HEAD_SCHEMA = "omw.atomic-head.v1" as const;
@@ -31,6 +36,7 @@ export type AtomicTurnProjection = {
 };
 
 export type AtomicNarrativeEvidence = {
+  status?: NarrativeStatus;
   originalText: string;
   narrativeOwner?: "COMPOSED" | "NARRATOR" | "FALLBACK" | "PROTECTED_RENDERER";
   renderPlan?: unknown;
@@ -60,6 +66,7 @@ export type AtomicTurnCommitInput = {
   modelLedger: unknown[];
   previousCanon: string;
   previousContextCanon?: string;
+  authoritativeCanonText?: string;
 };
 
 export type AtomicTurnHead = {
@@ -72,7 +79,15 @@ export type AtomicTurnHead = {
   artifactDirectory: string;
   artifacts: Record<string, string>;
   previousHeadHash: string | null;
+  authoritativeResultStatus?: "FINALIZED";
+  narrativeStatus?: NarrativeStatus;
   headHash: string;
+};
+
+export type AtomicTurnCommitResult = {
+  head: AtomicTurnHead;
+  result: TurnResult;
+  alreadyCommitted: boolean;
 };
 
 export class FileAtomicTurnRepository {
@@ -91,7 +106,7 @@ export class FileAtomicTurnRepository {
     return head;
   }
 
-  async commit(input: AtomicTurnCommitInput) {
+  async commit(input: AtomicTurnCommitInput): Promise<AtomicTurnCommitResult> {
     const current = await this.loadHead();
     if (current?.submissionId === input.submissionId) {
       const envelope = await this.readArtifactJson<{
@@ -108,7 +123,10 @@ export class FileAtomicTurnRepository {
       }
       return {
         head: current,
-        result: await this.readArtifactJson<TurnResult>(current, "result.json"),
+        result: withAuthoritativeCommit(
+          await this.readArtifactJson<TurnResult>(current, "result.json"),
+          current,
+        ),
         alreadyCommitted: true,
       };
     }
@@ -119,10 +137,13 @@ export class FileAtomicTurnRepository {
       throw new Error("ATOMIC_TURN_REVISION_CONFLICT");
     }
 
+    const authoritativeCanonText = String(
+      input.authoritativeCanonText ?? input.result.narration,
+    ).trim();
     const chapter = [
       `**读者选择**：${input.action}`,
       "",
-      input.result.narration.trim(),
+      authoritativeCanonText,
     ].join("\n");
     const fullCanon = `${input.previousCanon.trimEnd()}\n\n${chapter}\n`.trimStart();
     const contextNarration = String(
@@ -150,23 +171,12 @@ export class FileAtomicTurnRepository {
       selectedOption: input.selectedOption,
       causalDelta: input.result.causalDelta,
     };
-    const artifacts = new Map<string, string>([
+    const authorityArtifacts = new Map<string, string>([
       ["envelope.json", jsonText(envelope)],
       ["proposed-state.json", jsonText(input.projection.stateRevision)],
       ["causal-events.json", jsonText(input.projection.causalEvents)],
       ["delayed-events.json", jsonText(input.projection.delayedEvents)],
       ["beat-manifest.json", jsonText(input.beatManifest)],
-      ["scene-draft.json", jsonText(input.narrative.sceneDraft || null)],
-      ["scene-render-plan.json", jsonText(input.narrative.renderPlan || null)],
-      ["scene-audit.json", jsonText(input.narrative.sceneAudit || null)],
-      ["assembly-manifest.json", jsonText(input.narrative.assemblyManifest || null)],
-      ["narrative.original.md", `${input.narrative.originalText.trim()}\n`],
-      ["truth-review.original.json", jsonText(input.narrative.originalReview || null)],
-      ["narrative.final.md", `${input.result.narration.trim()}\n`],
-      ["published-prose.md", `${input.result.narration.trim()}\n`],
-      ["context-prose.md", `${contextNarration}\n`],
-      ["fact-projection.md", `${factNarration}\n`],
-      ["shadow-claims.json", jsonText(input.narrative.shadowClaims || [])],
       ["authoritative-canon.json", jsonText({
         source: "SETTLEMENT",
         stateRevision: input.projection.stateRevision,
@@ -174,13 +184,6 @@ export class FileAtomicTurnRepository {
         delayedEvents: input.projection.delayedEvents,
         beatManifest: input.beatManifest,
       })],
-      ["disposition.json", jsonText({
-        narrativeOwner: input.narrative.narrativeOwner || null,
-        disposition: input.narrative.disposition,
-        originalComparison: input.narrative.originalComparison || null,
-        fallbackReason: input.narrative.fallbackReason || null,
-      })],
-      ["model-calls.json", jsonText(input.modelLedger)],
       ["projection-summary.json", jsonText(input.projection.projectionSummary)],
       ["materialized-views.json", jsonText(views)],
       ["canon.md", `${fullCanon.trimEnd()}\n`],
@@ -188,6 +191,29 @@ export class FileAtomicTurnRepository {
       ["options.json", jsonText(input.result.options)],
       ["result.json", jsonText(input.result)],
     ]);
+    const artifacts = input.narrative.status === "PENDING"
+      ? authorityArtifacts
+      : new Map<string, string>([
+          ...authorityArtifacts,
+          ["scene-draft.json", jsonText(input.narrative.sceneDraft || null)],
+          ["scene-render-plan.json", jsonText(input.narrative.renderPlan || null)],
+          ["scene-audit.json", jsonText(input.narrative.sceneAudit || null)],
+          ["assembly-manifest.json", jsonText(input.narrative.assemblyManifest || null)],
+          ["narrative.original.md", `${input.narrative.originalText.trim()}\n`],
+          ["truth-review.original.json", jsonText(input.narrative.originalReview || null)],
+          ["narrative.final.md", `${input.result.narration.trim()}\n`],
+          ["published-prose.md", `${input.result.narration.trim()}\n`],
+          ["context-prose.md", `${contextNarration}\n`],
+          ["fact-projection.md", `${factNarration}\n`],
+          ["shadow-claims.json", jsonText(input.narrative.shadowClaims || [])],
+          ["disposition.json", jsonText({
+            narrativeOwner: input.narrative.narrativeOwner || null,
+            disposition: input.narrative.disposition,
+            originalComparison: input.narrative.originalComparison || null,
+            fallbackReason: input.narrative.fallbackReason || null,
+          })],
+          ["model-calls.json", jsonText(input.modelLedger)],
+        ]);
     const contentHash = sha256([...artifacts.entries()]
       .map(([name, content]) => `${name}\0${sha256(content)}`)
       .join("\n"));
@@ -212,6 +238,8 @@ export class FileAtomicTurnRepository {
       artifactDirectory,
       artifacts: hashes,
       previousHeadHash: current?.headHash || null,
+      authoritativeResultStatus: "FINALIZED" as const,
+      narrativeStatus: input.result.narrativeStatus || input.narrative.status || "PUBLISHED",
     };
     const head: AtomicTurnHead = {
       ...headWithoutHash,
@@ -226,7 +254,11 @@ export class FileAtomicTurnRepository {
     // This replacement is the only commit point. Everything above may leave
     // unreferenced artifacts, but none of them are Canon until Head advances.
     await writeJsonAtomic(this.paths.head, head);
-    return { head, result: input.result, alreadyCommitted: false };
+    return {
+      head,
+      result: withAuthoritativeCommit(input.result, head),
+      alreadyCommitted: false,
+    };
   }
 
   async resultBySubmission(submissionId: string, expectedAction?: string) {
@@ -243,7 +275,10 @@ export class FileAtomicTurnRepository {
         ) {
           throw actionConflict("IDEMPOTENCY_KEY_REUSED");
         }
-        return this.readArtifactJson<TurnResult>(head, "result.json");
+        return withAuthoritativeCommit(
+          await this.readArtifactJson<TurnResult>(head, "result.json"),
+          head,
+        );
       }
       head = await this.previousHead(head);
     }
@@ -252,7 +287,12 @@ export class FileAtomicTurnRepository {
 
   async latestResult() {
     const head = await this.loadHead();
-    return head ? this.readArtifactJson<TurnResult>(head, "result.json") : null;
+    return head
+      ? withAuthoritativeCommit(
+          await this.readArtifactJson<TurnResult>(head, "result.json"),
+          head,
+        )
+      : null;
   }
 
   async canonicalText() {
@@ -378,6 +418,29 @@ function parseJsonLines(value: string): unknown[] {
       return [];
     }
   });
+}
+
+function withAuthoritativeCommit(
+  result: TurnResult,
+  head: AtomicTurnHead,
+): TurnResult {
+  const authoritativeCommit: AuthoritativeCommitMetadata = {
+    schema: head.schema,
+    sourceCommitHash: head.headHash,
+    artifactDirectory: head.artifactDirectory,
+    previousSourceCommitHash: head.previousHeadHash,
+    committedAt: head.committedAt,
+    turnId: head.turnId,
+    turnNumber: head.turnNumber,
+  };
+  return {
+    ...result,
+    authoritativeResultStatus: "FINALIZED",
+    narrativeStatus: head.narrativeStatus || result.narrativeStatus || "PUBLISHED",
+    sourceCommitHash: head.headHash,
+    artifactDirectory: head.artifactDirectory,
+    authoritativeCommit,
+  };
 }
 
 function mergeAppendOnlyRecords(committed: unknown[], live: unknown[]) {

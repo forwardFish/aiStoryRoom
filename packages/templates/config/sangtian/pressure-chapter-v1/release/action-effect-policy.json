@@ -1,0 +1,578 @@
+{
+  "schemaVersion": "sangtian_action_effect_policy_v1",
+  "policyId": "sangtian_pressure_action_effect_v1",
+  "policyVersion": "sangtian-action-effect-1.0.0",
+  "compilerVersion": "sangtian-action-effect-compiler-1.0.0",
+  "aggregationVersion": "sangtian-selector-fact-reducer-1.0.0",
+  "compilerModule": {
+    "corePath": "action-effect-compiler.cjs",
+    "coreModuleFormat": "COMMONJS",
+    "coreSha256RawBytes": "70a47dcb3a3e28e3c8261865f45a4c0834c22b261629a592a1bc4a3f7ea95f63",
+    "esmWrapperPath": "action-effect-compiler.mjs",
+    "esmWrapperFormat": "ESM",
+    "esmWrapperSha256RawBytes": "335ca5e0c134aa6d48a896d3bbcf06ba5a0ca3b95997bafee25381aefd234405"
+  },
+  "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+  "route": {
+    "engineVersion": "pressure_chapter_v1",
+    "strategyVersion": "sangtian_pressure_chapter_v1_0",
+    "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+    "endgamePolicyVersion": "sangtian_content_finale_v1",
+    "resultSchemaVersion": "sangtian_pressure_result_v1"
+  },
+  "sourceBinding": {
+    "contentPackageVersion": "1.0.0",
+    "contentPackageSha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b",
+    "sourceCommitSha": "5badb6fa62a823de7019ce6a046efffbd74268d8",
+    "derivationClass": "VERSIONED_T3_ADAPTATION_FROM_ACCEPTED_ACTION_SEMANTICS_AND_SELECTOR_BOUNDARIES",
+    "sourceContainedExactActionEffectValues": false
+  },
+  "canonicalHashRule": {
+    "algorithm": "SHA-256_PRESSURE_CHAPTER_CANONICAL_JSON_V1",
+    "field": "policySha256",
+    "excludeOnlyField": "policySha256"
+  },
+  "bindingExpansion": {
+    "keyFields": ["chapterId", "decisionPointKey", "seatId", "actionType"],
+    "rule": "CARTESIAN_REQUIRED_SEATS_X_DECLARED_ACTIONS",
+    "expectedDecisionPointCount": 26,
+    "expectedDecisionActionPairCount": 72,
+    "expectedExpandedBindingCount": 288,
+    "unknownBinding": "SANGTIAN_ACTION_EFFECT_BINDING_NOT_FOUND",
+    "duplicateBinding": "SANGTIAN_ACTION_EFFECT_BINDING_DUPLICATE",
+    "contentDrift": "SANGTIAN_ACTION_EFFECT_CONTENT_DRIFT",
+    "missingSelectorFact": "SANGTIAN_ACTION_EFFECT_FACT_MISSING",
+    "invalidContribution": "SANGTIAN_ACTION_EFFECT_CONTRIBUTION_INVALID",
+    "failureMode": "FAIL_CLOSED_ZERO_WRITE"
+  },
+  "compilerContract": {
+    "acceptedInputs": ["SEALED_DECISION_ACTIONS", "ACCEPTED_CONTENT_DEFINITION"],
+    "ignoredForAuthority": ["customText", "providerOutput", "narrativeText", "arrivalOrder"],
+    "canonicalActionOrder": ["decisionPointOrdinal", "seatId", "actionOrdinal", "actionId"],
+    "workingIntentExpansion": {
+      "DEFAULT_PRIVATE": {
+        "visibility": "PRIVATE",
+        "targetSeatRule": "NONE",
+        "evidenceRefs": [],
+        "resourceReservations": [],
+        "commitmentMutations": [],
+        "knowledgeGrants": [],
+        "seatArcProgress": []
+      },
+      "PARTICIPANT_EFFECT": {
+        "visibility": "PARTICIPANTS",
+        "targetSeatRule": "DECISION_REQUIRED_SEATS",
+        "evidenceRefs": [],
+        "resourceReservations": [],
+        "commitmentMutations": [],
+        "knowledgeGrants": [],
+        "seatArcProgress": []
+      }
+    },
+    "factAggregation": {
+      "input": "ALL_SEALED_ACTION_CONTRIBUTIONS_FOR_CHAPTER",
+      "dedupeKey": "actionId",
+      "duplicateSameHash": "REPLAY_ORIGINAL",
+      "duplicateDifferentHash": "SANGTIAN_ACTION_EFFECT_ACTION_CONFLICT",
+      "reducerRequirement": "ASSOCIATIVE_COMMUTATIVE_WITH_DECLARED_IDENTITY",
+      "output": "ONE_COMPLETE_SETTLEMENT_FACT_OBJECT"
+    }
+  },
+  "resourcePolicy": {
+    "mode": "NONE",
+    "reason": "Accepted actions provide no resource identity, quantity or denominator; MVP freezes zero reservation instead of guessing amounts.",
+    "workingIntentResourceReservations": [],
+    "beatReservationMutations": [],
+    "chapterEndDisposition": {
+      "consume": "FORBIDDEN_WITHOUT_RESERVATION",
+      "release": "FORBIDDEN_WITHOUT_RESERVATION",
+      "expectedReservedAmount": 0,
+      "expectedConsumedAmount": 0,
+      "expectedReleasedAmount": 0
+    },
+    "invariants": [
+      "NO_RESOURCE_RESERVATION",
+      "NO_RESOURCE_CONSUMPTION",
+      "NO_RESOURCE_RELEASE",
+      "NO_NEGATIVE_BALANCE",
+      "NO_DOUBLE_SPEND"
+    ]
+  },
+  "chapterPolicies": [
+    {
+      "chapterId": "N1",
+      "settlementPolicyVersion": "sangtian.N1.settlement_v1",
+      "sourceRefs": [
+        "content.json#/chapters/N1",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/defaultTrajectory",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/seat-content.json#/seats"
+      ],
+      "factAggregators": [
+        { "factRef": "evacuationCoveragePct", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
+        { "factRef": "criticalWeirsSecuredCount", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
+        { "factRef": "verifiedBreachRecordCount", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
+        { "factRef": "disasterSeverity", "valueType": "NUMBER", "reducer": "MIN", "identity": 4 }
+      ],
+      "defaultTrajectory": {
+        "settlementFacts": { "evacuationCoveragePct": 50, "criticalWeirsSecuredCount": 1, "verifiedBreachRecordCount": 1, "disasterSeverity": 3 },
+        "expectedOutcomeBand": "MID",
+        "derivation": "EXACT_SOURCE_DEFAULT_INPUT_STATE"
+      },
+      "selectorWitnesses": {
+        "HIGH": { "evacuationCoveragePct": 70, "criticalWeirsSecuredCount": 2, "verifiedBreachRecordCount": 1, "disasterSeverity": 2 },
+        "MID": { "evacuationCoveragePct": 50, "criticalWeirsSecuredCount": 1, "verifiedBreachRecordCount": 1, "disasterSeverity": 3 },
+        "LOW": { "evacuationCoveragePct": 0, "criticalWeirsSecuredCount": 0, "verifiedBreachRecordCount": 0, "disasterSeverity": 4 }
+      },
+      "decisions": [
+        {
+          "decisionPointKey": "N1.weir_crisis",
+          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_NEW_FORMAL_EFFECT"] },
+            { "actionType": "EVACUATE_WEIRS", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "evacuationCoveragePct", "value": 70 }, { "factRef": "disasterSeverity", "value": 3 }], "derivationRefs": ["DECISION_PURPOSE_EVACUATION", "HIGH_SELECTOR_GTE_70", "SOURCE_DEFAULT_DISASTER_SEVERITY_3"] },
+            { "actionType": "SEAL_BREACH_RECORD", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "verifiedBreachRecordCount", "value": 1 }], "derivationRefs": ["ACTION_SEMANTICS_SEAL_RECORD", "HIGH_SELECTOR_GTE_1"] },
+            { "actionType": "SUPPORT_WEIR", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "criticalWeirsSecuredCount", "value": 2 }, { "factRef": "disasterSeverity", "value": 2 }], "derivationRefs": ["DECISION_PURPOSE_SUPPORT_WEIR", "HIGH_SELECTOR_GTE_2_AND_LTE_2"] }
+          ]
+        }
+      ],
+      "reachabilityCases": {
+        "HIGH": ["EVACUATE_WEIRS", "SEAL_BREACH_RECORD", "SUPPORT_WEIR"],
+        "MID": ["EVACUATE_WEIRS", "SEAL_BREACH_RECORD"],
+        "LOW": ["DEFAULT_PASS"]
+      },
+      "settlementOutputBinding": { "objectRefs": ["obj.breach_order_chain", "obj.nine_weirs"], "evidenceRefs": ["evidence.N1.breach_chain"], "trackDeltaAuthority": "ACCEPTED_CONTENT_SELECTED_BRANCH" }
+    },
+    {
+      "chapterId": "N2",
+      "settlementPolicyVersion": "sangtian.N2.settlement_v1",
+      "sourceRefs": [
+        "content.json#/chapters/N2",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N2/settlement.json#/defaultTrajectory",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N2/seat-content.json#/seats"
+      ],
+      "factAggregators": [
+        { "factRef": "dispatchOnTime", "valueType": "BOOLEAN", "reducer": "BOOLEAN_OR", "identity": false },
+        { "factRef": "memorialContainsReliefRequest", "valueType": "BOOLEAN", "reducer": "BOOLEAN_OR", "identity": false },
+        { "factRef": "causeSpecificityLevel", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
+        { "factRef": "necessarySignatureCount", "valueType": "NUMBER", "reducer": "COUNT_DISTINCT_SEATS", "identity": 0 },
+        { "factRef": "confessionEffectState", "valueType": "ENUM", "reducer": "ENUM_MAX", "identity": "INACCESSIBLE", "enumOrder": ["INACCESSIBLE", "RETAINED_VALID", "SEPARATE_VALID", "ATTACHED_VALID"] }
+      ],
+      "defaultTrajectory": {
+        "settlementFacts": { "dispatchOnTime": true, "memorialContainsReliefRequest": true, "causeSpecificityLevel": 1, "necessarySignatureCount": 2, "confessionEffectState": "RETAINED_VALID" },
+        "expectedOutcomeBand": "MID",
+        "derivation": "EXACT_SOURCE_DEFAULT_INPUT_STATE"
+      },
+      "selectorWitnesses": {
+        "HIGH": { "dispatchOnTime": true, "memorialContainsReliefRequest": true, "causeSpecificityLevel": 2, "necessarySignatureCount": 2, "confessionEffectState": "ATTACHED_VALID" },
+        "MID": { "dispatchOnTime": true, "memorialContainsReliefRequest": true, "causeSpecificityLevel": 1, "necessarySignatureCount": 2, "confessionEffectState": "RETAINED_VALID" },
+        "LOW": { "dispatchOnTime": false, "memorialContainsReliefRequest": false, "causeSpecificityLevel": 0, "necessarySignatureCount": 0, "confessionEffectState": "INACCESSIBLE" }
+      },
+      "decisions": [
+        {
+          "decisionPointKey": "N2.memorial_draft",
+          "requiredSeatIds": ["cabinet_finance", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "ADD_CAUSE", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "causeSpecificityLevel", "value": 2 }], "derivationRefs": ["DECISION_PURPOSE_CAUSE", "HIGH_SELECTOR_GTE_2"] },
+            { "actionType": "ADD_RELIEF_REQUEST", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "memorialContainsReliefRequest", "value": true }], "derivationRefs": ["ACTION_SEMANTICS_RELIEF_REQUEST", "HIGH_SELECTOR_TRUE"] },
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_DRAFT_CHANGE"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N2.confession_custody",
+          "requiredSeatIds": ["qingliu_law", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "ATTACH_CONFESSION", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "confessionEffectState", "value": "ATTACHED_VALID" }], "derivationRefs": ["ACTION_SEMANTICS_ATTACH", "HIGH_SELECTOR_ATTACHED_VALID"] },
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_CUSTODY_CHANGE"] },
+            { "actionType": "SEAL_CONFESSION", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "confessionEffectState", "value": "SEPARATE_VALID" }], "derivationRefs": ["ACTION_SEMANTICS_SEPARATE_SEAL", "HIGH_SELECTOR_SEPARATE_VALID"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N2.signature_chain",
+          "requiredSeatIds": ["cabinet_finance", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_SIGNATURE"] },
+            { "actionType": "SIGN_MEMORIAL", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "necessarySignatureCount", "value": 1 }], "derivationRefs": ["ACTION_SEMANTICS_SIGNATURE", "COUNT_DISTINCT_AUTHORIZED_SEATS"] },
+            { "actionType": "VERIFY_ROUTE", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [], "derivationRefs": ["ROUTE_VERIFICATION_DOES_NOT_EQUAL_DISPATCH"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N2.dispatch",
+          "requiredSeatIds": ["cabinet_finance", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_DISPATCH"] },
+            { "actionType": "DISPATCH_MEMORIAL", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "dispatchOnTime", "value": true }], "derivationRefs": ["DECISION_IS_OPEN_ONLY_BEFORE_FROZEN_DEADLINE", "HIGH_SELECTOR_TRUE"] }
+          ]
+        }
+      ],
+      "reachabilityCases": {
+        "HIGH": ["ADD_CAUSE", "ADD_RELIEF_REQUEST", "ATTACH_CONFESSION", "SIGN_MEMORIAL@cabinet_finance", "SIGN_MEMORIAL@qingliu_law", "DISPATCH_MEMORIAL"],
+        "MID": ["ADD_RELIEF_REQUEST", "DISPATCH_MEMORIAL"],
+        "LOW": ["DEFAULT_PASS"]
+      },
+      "settlementOutputBinding": { "objectRefs": ["obj.first_memorial", "obj.ma_confession"], "evidenceRefs": ["evidence.N2.memorial_chain"], "trackDeltaAuthority": "ACCEPTED_CONTENT_SELECTED_BRANCH" }
+    },
+    {
+      "chapterId": "N3",
+      "settlementPolicyVersion": "sangtian.N3.settlement_v1",
+      "sourceRefs": [
+        "content.json#/chapters/N3",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N3/settlement.json#/defaultTrajectory",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N3/seat-content.json#/seats"
+      ],
+      "factAggregators": [
+        { "factRef": "reliefGrainSharePct", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
+        { "factRef": "landRetentionPct", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
+        { "factRef": "lowPriceDeedTransferPct", "valueType": "NUMBER", "reducer": "MIN", "identity": 100 },
+        { "factRef": "priceFloorEffective", "valueType": "BOOLEAN", "reducer": "BOOLEAN_OR", "identity": false }
+      ],
+      "defaultTrajectory": {
+        "settlementFacts": { "reliefGrainSharePct": 65, "landRetentionPct": 70, "lowPriceDeedTransferPct": 15, "priceFloorEffective": true },
+        "expectedOutcomeBand": "HIGH",
+        "derivation": "EXACT_SOURCE_DEFAULT_INPUT_STATE"
+      },
+      "selectorWitnesses": {
+        "HIGH": { "reliefGrainSharePct": 60, "landRetentionPct": 65, "lowPriceDeedTransferPct": 20, "priceFloorEffective": true },
+        "MID": { "reliefGrainSharePct": 45, "landRetentionPct": 50, "lowPriceDeedTransferPct": 40, "priceFloorEffective": false },
+        "LOW": { "reliefGrainSharePct": 0, "landRetentionPct": 0, "lowPriceDeedTransferPct": 100, "priceFloorEffective": false }
+      },
+      "decisions": [
+        {
+          "decisionPointKey": "N3.relief_offer",
+          "requiredSeatIds": ["jiangnan_merchant", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "ALLOCATE_GRAIN", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "reliefGrainSharePct", "value": 60 }], "derivationRefs": ["ACTION_SEMANTICS_ACTUAL_ALLOCATION", "HIGH_SELECTOR_GTE_60"] },
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_ALLOCATION"] },
+            { "actionType": "PROPOSE_RELIEF", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [], "derivationRefs": ["PROPOSAL_DOES_NOT_EQUAL_ACTUAL_ALLOCATION"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N3.deed_negotiation",
+          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_DEED_CHANGE"] },
+            { "actionType": "PROTECT_DEEDS", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "landRetentionPct", "value": 65 }, { "factRef": "lowPriceDeedTransferPct", "value": 20 }], "derivationRefs": ["ACTION_SEMANTICS_PROTECT_DEEDS", "HIGH_SELECTOR_GTE_65_AND_LTE_20"] },
+            { "actionType": "PURCHASE_LAND", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "landRetentionPct", "value": 0 }, { "factRef": "lowPriceDeedTransferPct", "value": 100 }], "derivationRefs": ["ACTION_SEMANTICS_PURCHASE_DECREASES_RETENTION", "LOW_SELECTOR_BOUNDARY"] },
+            { "actionType": "SET_PRICE_FLOOR", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "priceFloorEffective", "value": true }], "derivationRefs": ["ACTION_SEMANTICS_PRICE_FLOOR", "HIGH_SELECTOR_TRUE"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N3.credit_bridge",
+          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_CREDIT"] },
+            { "actionType": "OFFER_CREDIT", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [], "derivationRefs": ["RESOURCE_POLICY_NONE_NO_GUESSED_CREDIT_AMOUNT"] },
+            { "actionType": "PLEDGE_REPAYMENT", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [], "derivationRefs": ["MVP_HAS_NO_AMOUNT_OR_CREDITOR_PAYLOAD"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N3.price_floor_review",
+          "requiredSeatIds": ["jiangnan_merchant", "qingliu_law", "zhejiang_administration"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_REVIEW"] },
+            { "actionType": "REVIEW_PRICE_FLOOR", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "priceFloorEffective", "value": true }], "derivationRefs": ["DECISION_PURPOSE_REVIEW_EFFECTIVE_FLOOR", "HIGH_SELECTOR_TRUE"] },
+            { "actionType": "SEAL_DEED_SAMPLE", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [], "derivationRefs": ["EVIDENCE_SEAL_DOES_NOT_CHANGE_TRANSFER_PERCENT"] }
+          ]
+        }
+      ],
+      "reachabilityCases": {
+        "HIGH": ["ALLOCATE_GRAIN", "PROTECT_DEEDS", "SET_PRICE_FLOOR"],
+        "MID": ["ALLOCATE_GRAIN", "PROTECT_DEEDS"],
+        "LOW": ["DEFAULT_PASS"]
+      },
+      "settlementOutputBinding": { "objectRefs": ["obj.land_deed_pool", "obj.relief_grain_pool"], "evidenceRefs": ["evidence.N3.deed_and_relief"], "trackDeltaAuthority": "ACCEPTED_CONTENT_SELECTED_BRANCH" }
+    },
+    {
+      "chapterId": "N4",
+      "settlementPolicyVersion": "sangtian.N4.settlement_v1",
+      "sourceRefs": [
+        "content.json#/chapters/N4",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N4/settlement.json#/defaultTrajectory",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N4/seat-content.json#/seats"
+      ],
+      "factAggregators": [
+        { "factRef": "wrongfulExecutionCount", "valueType": "NUMBER", "reducer": "MIN", "identity": 1 },
+        { "factRef": "keyWitnessAliveCount", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
+        { "factRef": "caseFileState", "valueType": "ENUM", "reducer": "ENUM_MAX", "identity": "OFFICIAL_EXECUTION_VERSION", "enumOrder": ["OFFICIAL_EXECUTION_VERSION", "CONTESTED_REVIEW", "VALID_REVIEW"] },
+        { "factRef": "refusalOrReviewRecordValid", "valueType": "BOOLEAN", "reducer": "BOOLEAN_OR", "identity": false }
+      ],
+      "defaultTrajectory": {
+        "settlementFacts": { "wrongfulExecutionCount": 0, "keyWitnessAliveCount": 2, "caseFileState": "CONTESTED_REVIEW", "refusalOrReviewRecordValid": true },
+        "expectedOutcomeBand": "HIGH",
+        "derivation": "EXACT_SOURCE_DEFAULT_INPUT_STATE"
+      },
+      "selectorWitnesses": {
+        "HIGH": { "wrongfulExecutionCount": 0, "keyWitnessAliveCount": 2, "caseFileState": "VALID_REVIEW", "refusalOrReviewRecordValid": true },
+        "MID": { "wrongfulExecutionCount": 0, "keyWitnessAliveCount": 1, "caseFileState": "CONTESTED_REVIEW", "refusalOrReviewRecordValid": true },
+        "LOW": { "wrongfulExecutionCount": 1, "keyWitnessAliveCount": 0, "caseFileState": "OFFICIAL_EXECUTION_VERSION", "refusalOrReviewRecordValid": false }
+      },
+      "decisions": [
+        {
+          "decisionPointKey": "N4.prisoner_review",
+          "requiredSeatIds": ["qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_REVIEW_OR_PROTECTION"] },
+            { "actionType": "PROTECT_WITNESS", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "wrongfulExecutionCount", "value": 0 }, { "factRef": "keyWitnessAliveCount", "value": 2 }], "derivationRefs": ["ACTION_SEMANTICS_WITNESS_PROTECTION", "HIGH_SELECTOR_ZERO_AND_GTE_2"] },
+            { "actionType": "REQUEST_REVIEW", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "wrongfulExecutionCount", "value": 0 }, { "factRef": "caseFileState", "value": "VALID_REVIEW" }, { "factRef": "refusalOrReviewRecordValid", "value": true }], "derivationRefs": ["ACTION_SEMANTICS_REVIEW", "HIGH_SELECTOR_VALID_REVIEW"] },
+            { "actionType": "SIGN_EXECUTION", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "wrongfulExecutionCount", "value": 1 }, { "factRef": "caseFileState", "value": "OFFICIAL_EXECUTION_VERSION" }], "derivationRefs": ["ACTION_SEMANTICS_EXECUTION", "LOW_SELECTOR_BOUNDARY"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N4.case_file_seal",
+          "requiredSeatIds": ["qingliu_law", "zhejiang_administration"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_SEAL"] },
+            { "actionType": "SEAL_CASE_FILE", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "wrongfulExecutionCount", "value": 0 }, { "factRef": "caseFileState", "value": "CONTESTED_REVIEW" }], "derivationRefs": ["DECISION_PURPOSE_SEAL_REVIEW_VERSION", "MID_SELECTOR_WITNESS"] }
+          ]
+        }
+      ],
+      "reachabilityCases": {
+        "HIGH": ["PROTECT_WITNESS", "REQUEST_REVIEW"],
+        "MID": ["PROTECT_WITNESS", "SEAL_CASE_FILE"],
+        "LOW": ["DEFAULT_PASS"]
+      },
+      "settlementOutputBinding": { "objectRefs": ["obj.tongwo_case_file", "obj.tongwo_prisoners"], "evidenceRefs": ["evidence.N4.case_review"], "trackDeltaAuthority": "ACCEPTED_CONTENT_SELECTED_BRANCH" }
+    },
+    {
+      "chapterId": "N5",
+      "settlementPolicyVersion": "sangtian.N5.settlement_v1",
+      "sourceRefs": [
+        "content.json#/chapters/N5",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/settlement.json#/defaultTrajectory",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N5/seat-content.json#/seats"
+      ],
+      "factAggregators": [
+        { "factRef": "reliefUsePct", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
+        { "factRef": "landPurchaseUsePct", "valueType": "NUMBER", "reducer": "MIN", "identity": 100 },
+        { "factRef": "contractConsistency", "valueType": "ENUM", "reducer": "ENUM_MAX", "identity": "UNRECONCILED", "enumOrder": ["UNRECONCILED", "CONSISTENT"] },
+        { "factRef": "landSaleStopped", "valueType": "BOOLEAN", "reducer": "BOOLEAN_OR", "identity": false },
+        { "factRef": "publicFrameFalse", "valueType": "BOOLEAN", "reducer": "BOOLEAN_AND", "identity": true }
+      ],
+      "defaultTrajectory": {
+        "sourceInputState": { "reliefUsePct": 75, "landPurchaseUsePct": 10, "contractConsistency": "CONSISTENT", "publicNameAuthorization": "LIMITED_VALID", "landSaleStopped": true },
+        "settlementFacts": { "reliefUsePct": 75, "landPurchaseUsePct": 10, "contractConsistency": "CONSISTENT", "landSaleStopped": true, "publicFrameFalse": false },
+        "expectedOutcomeBand": "HIGH",
+        "derivation": "SOURCE_DEFAULT_WITH_ACCEPTED_CONTENT_PUBLIC_FRAME_ALIAS"
+      },
+      "selectorWitnesses": {
+        "HIGH": { "reliefUsePct": 60, "landPurchaseUsePct": 20, "contractConsistency": "CONSISTENT", "landSaleStopped": true, "publicFrameFalse": false },
+        "MID": { "reliefUsePct": 45, "landPurchaseUsePct": 40, "contractConsistency": "UNRECONCILED", "landSaleStopped": false, "publicFrameFalse": false },
+        "LOW": { "reliefUsePct": 0, "landPurchaseUsePct": 100, "contractConsistency": "UNRECONCILED", "landSaleStopped": false, "publicFrameFalse": true }
+      },
+      "decisions": [
+        {
+          "decisionPointKey": "N5.inspect_fleet",
+          "requiredSeatIds": ["jiangnan_merchant", "sili_weaving", "zhejiang_administration"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_INSPECTION"] },
+            { "actionType": "INSPECT_FLEET", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "contractConsistency", "value": "CONSISTENT" }], "derivationRefs": ["DECISION_PURPOSE_CONTRACT_VERIFICATION", "HIGH_SELECTOR_CONSISTENT"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.claim_grain",
+          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "CLAIM_GRAIN", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [], "seatFactContributions": { "jiangnan_merchant": [{ "factRef": "reliefUsePct", "value": 60 }], "zhejiang_governor": [{ "factRef": "reliefUsePct", "value": 60 }], "zhejiang_administration": [{ "factRef": "landPurchaseUsePct", "value": 60 }], "cabinet_finance": [], "sili_weaving": [] }, "derivationRefs": ["DECISION_PURPOSE_SEAT_SPECIFIC_CLAIMS", "SOURCE_SEAT_DEFAULT_COMMIT_SEMANTICS", "RESOURCE_POLICY_NONE"] },
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_CLAIM"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.public_frame",
+          "requiredSeatIds": ["jiangnan_merchant", "sili_weaving"],
+          "actions": [
+            { "actionType": "DECLARE_PUBLIC_FRAME", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "publicFrameFalse", "value": false }], "derivationRefs": ["ACTION_SEMANTICS_DECLARED_FRAME", "LOW_SELECTOR_FALSE_AVOIDS_FALSE_FRAME"] },
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_PUBLIC_FRAME"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.relief_allocation",
+          "requiredSeatIds": ["jiangnan_merchant", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "ALLOCATE_RELIEF", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "reliefUsePct", "value": 60 }], "derivationRefs": ["ACTION_SEMANTICS_RELIEF_ALLOCATION", "HIGH_SELECTOR_GTE_60"] },
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_RELIEF_ALLOCATION"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.land_purchase_limit",
+          "requiredSeatIds": ["jiangnan_merchant", "qingliu_law", "zhejiang_administration"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_LAND_LIMIT"] },
+            { "actionType": "LIMIT_LAND_PURCHASE", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "landPurchaseUsePct", "value": 20 }, { "factRef": "landSaleStopped", "value": true }], "derivationRefs": ["ACTION_SEMANTICS_STOP_LAND_PURCHASE", "HIGH_SELECTOR_LTE_20_AND_TRUE"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.contract_reconcile",
+          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_RECONCILIATION"] },
+            { "actionType": "RECONCILE_CONTRACT", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "contractConsistency", "value": "CONSISTENT" }, { "factRef": "publicFrameFalse", "value": false }], "derivationRefs": ["DECISION_PURPOSE_RECONCILIATION", "HIGH_AND_LOW_SELECTORS"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N5.final_manifest",
+          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "CONFIRM_MANIFEST", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [], "derivationRefs": ["CLOSE_ACTION_DOES_NOT_DUPLICATE_FACT_CONTRIBUTIONS"] },
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_CONFIRMATION"] }
+          ]
+        }
+      ],
+      "reachabilityCases": {
+        "HIGH": ["ALLOCATE_RELIEF", "LIMIT_LAND_PURCHASE", "RECONCILE_CONTRACT"],
+        "MID": ["ALLOCATE_RELIEF", "LIMIT_LAND_PURCHASE", "DECLARE_PUBLIC_FRAME"],
+        "LOW": ["DEFAULT_PASS"]
+      },
+      "settlementOutputBinding": { "objectRefs": ["obj.fleet_contract_and_banners", "obj.grain_fleet"], "evidenceRefs": ["evidence.N5.fleet_manifest"], "trackDeltaAuthority": "ACCEPTED_CONTENT_SELECTED_BRANCH" }
+    },
+    {
+      "chapterId": "N6",
+      "settlementPolicyVersion": "sangtian.N6.settlement_v1",
+      "sourceRefs": [
+        "content.json#/chapters/N6",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N6/settlement.json#/defaultTrajectory",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N6/seat-content.json#/seats"
+      ],
+      "factAggregators": [
+        { "factRef": "ledgerCount", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
+        { "factRef": "merchantExplanationChainPreserved", "valueType": "BOOLEAN", "reducer": "BOOLEAN_OR", "identity": false },
+        { "factRef": "assetAuditGrade", "valueType": "ENUM", "reducer": "ENUM_MAX", "identity": "INVALID", "enumOrder": ["INVALID", "VALID", "CORROBORATED"] },
+        { "factRef": "soleScapegoat", "valueType": "BOOLEAN", "reducer": "BOOLEAN_AND", "identity": true }
+      ],
+      "defaultTrajectory": {
+        "sourceInputState": { "verifiableLedgerSetCount": 1, "localLedgerState": "DESTROYED_WITH_WITNESS", "innerLedgerState": "DISPATCHED_INTACT", "merchantExplanationChainPreserved": false, "assetAuditGrade": "VALID", "soleScapegoat": false },
+        "settlementFacts": { "ledgerCount": 1, "merchantExplanationChainPreserved": false, "assetAuditGrade": "VALID", "soleScapegoat": false },
+        "expectedOutcomeBand": "MID",
+        "derivation": "SOURCE_DEFAULT_WITH_ACCEPTED_CONTENT_LEDGER_COUNT_ALIAS"
+      },
+      "selectorWitnesses": {
+        "HIGH": { "ledgerCount": 1, "merchantExplanationChainPreserved": true, "assetAuditGrade": "VALID", "soleScapegoat": false },
+        "MID": { "ledgerCount": 1, "merchantExplanationChainPreserved": false, "assetAuditGrade": "VALID", "soleScapegoat": false },
+        "LOW": { "ledgerCount": 0, "merchantExplanationChainPreserved": false, "assetAuditGrade": "INVALID", "soleScapegoat": true }
+      },
+      "decisions": [
+        {
+          "decisionPointKey": "N6.asset_audit",
+          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "zhejiang_administration"],
+          "actions": [
+            { "actionType": "AUDIT_ASSETS", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "assetAuditGrade", "value": "VALID" }], "derivationRefs": ["ACTION_SEMANTICS_AUDIT", "HIGH_SELECTOR_VALID"] },
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_AUDIT"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N6.ledger_exchange",
+          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "CONFIRM_LEDGER_SOURCE_WITH_EVIDENCE", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [], "derivationRefs": ["A_EMOTION_POST_COMMIT_CONFIRMATION_ONLY", "SERVER_SEALED_VISIBLE_ACKNOWLEDGED_SOURCE", "NO_SETTLEMENT_FACT_CONTRIBUTION"] },
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_LEDGER_ACTION"] },
+            { "actionType": "DELIVER_LEDGER", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "ledgerCount", "value": 1 }], "derivationRefs": ["ACTION_SEMANTICS_DELIVER_LEDGER", "HIGH_SELECTOR_GTE_1"] },
+            { "actionType": "INVESTIGATE_LEDGER_SOURCE", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [], "derivationRefs": ["A_EMOTION_POST_COMMIT_INVESTIGATION_ONLY", "SERVER_SEALED_VISIBLE_ACKNOWLEDGED_SOURCE", "NO_SETTLEMENT_FACT_CONTRIBUTION"] },
+            { "actionType": "SEAL_LEDGER", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "ledgerCount", "value": 1 }], "derivationRefs": ["ACTION_SEMANTICS_SEAL_LEDGER", "HIGH_SELECTOR_GTE_1"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N6.responsibility_record",
+          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_RESPONSIBILITY_RECORD"] },
+            { "actionType": "RECORD_EXPLANATION", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "merchantExplanationChainPreserved", "value": true }], "derivationRefs": ["ACTION_SEMANTICS_RECORD_EXPLANATION", "HIGH_SELECTOR_TRUE"] },
+            { "actionType": "REFUSE_SCAPEGOAT", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "soleScapegoat", "value": false }], "derivationRefs": ["ACTION_SEMANTICS_REFUSE_SOLE_SCAPEGOAT", "HIGH_SELECTOR_FALSE"] }
+          ]
+        }
+      ],
+      "reachabilityCases": {
+        "HIGH": ["AUDIT_ASSETS", "DELIVER_LEDGER", "RECORD_EXPLANATION", "REFUSE_SCAPEGOAT"],
+        "MID": ["AUDIT_ASSETS", "DELIVER_LEDGER", "REFUSE_SCAPEGOAT"],
+        "LOW": ["DEFAULT_PASS"]
+      },
+      "settlementOutputBinding": { "objectRefs": ["obj.inner_court_four_boxes", "obj.local_four_boxes", "obj.shen_yishi_person_and_assets"], "evidenceRefs": ["evidence.N6.ledger_chain"], "trackDeltaAuthority": "ACCEPTED_CONTENT_SELECTED_BRANCH" }
+    },
+    {
+      "chapterId": "N7",
+      "settlementPolicyVersion": "sangtian.N7.settlement_v1",
+      "sourceRefs": [
+        "content.json#/chapters/N7",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/settlement.json#/defaultTrajectory",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N7/seat-content.json#/seats"
+      ],
+      "factAggregators": [
+        { "factRef": "channelProcedureCap", "valueType": "NUMBER", "reducer": "MAX", "identity": 1 },
+        { "factRef": "evidenceContentReach", "valueType": "NUMBER", "reducer": "MAX", "identity": 1 },
+        { "factRef": "imperialExposureCap", "valueType": "NUMBER", "reducer": "MAX", "identity": 1 },
+        { "factRef": "militaryFundsCap", "valueType": "NUMBER", "reducer": "MAX", "identity": 1 },
+        { "factRef": "onTimeOfficialRouteCount", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
+        { "factRef": "proceduralGrade", "valueType": "ENUM", "reducer": "ENUM_MAX", "identity": "INVALID", "enumOrder": ["INVALID", "CONTESTED", "VALID", "CORROBORATED"] }
+      ],
+      "defaultTrajectory": {
+        "settlementFacts": { "channelProcedureCap": 2, "evidenceContentReach": 4, "imperialExposureCap": 3, "militaryFundsCap": 3, "onTimeOfficialRouteCount": 1, "proceduralGrade": "CONTESTED" },
+        "expectedOutcomeBand": "MID",
+        "derivation": "EXACT_SOURCE_DEFAULT_INPUT_STATE"
+      },
+      "selectorWitnesses": {
+        "HIGH": { "channelProcedureCap": 4, "evidenceContentReach": 4, "imperialExposureCap": 4, "militaryFundsCap": 4, "onTimeOfficialRouteCount": 1, "proceduralGrade": "CORROBORATED" },
+        "MID": { "channelProcedureCap": 2, "evidenceContentReach": 2, "imperialExposureCap": 4, "militaryFundsCap": 4, "onTimeOfficialRouteCount": 1, "proceduralGrade": "CONTESTED" },
+        "LOW": { "channelProcedureCap": 1, "evidenceContentReach": 1, "imperialExposureCap": 1, "militaryFundsCap": 1, "onTimeOfficialRouteCount": 0, "proceduralGrade": "INVALID" }
+      },
+      "decisions": [
+        {
+          "decisionPointKey": "N7.testimony_review",
+          "requiredSeatIds": ["qingliu_law", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_TESTIMONY_REVIEW"] },
+            { "actionType": "REVIEW_TESTIMONY", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "evidenceContentReach", "value": 4 }], "derivationRefs": ["ACTION_SEMANTICS_REVIEW_CONTENT", "HIGH_SELECTOR_GTE_4"] },
+            { "actionType": "SEAL_TESTIMONY", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "evidenceContentReach", "value": 2 }, { "factRef": "proceduralGrade", "value": "CONTESTED" }], "derivationRefs": ["ACTION_SEMANTICS_SEAL_CONTESTED_TESTIMONY", "MID_SELECTOR_WITNESS"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N7.route_selection",
+          "requiredSeatIds": ["cabinet_finance", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_ROUTE"] },
+            { "actionType": "OPEN_ROUTE", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "channelProcedureCap", "value": 4 }, { "factRef": "onTimeOfficialRouteCount", "value": 1 }], "derivationRefs": ["ACTION_SEMANTICS_OPEN_FORMAL_ROUTE", "HIGH_SELECTOR_GTE_4_AND_GTE_1"] },
+            { "actionType": "SEAL_DISPATCH", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "channelProcedureCap", "value": 2 }, { "factRef": "onTimeOfficialRouteCount", "value": 1 }], "derivationRefs": ["ACTION_SEMANTICS_SEAL_DISPATCH", "MID_SELECTOR_WITNESS"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N7.funds_exposure",
+          "requiredSeatIds": ["cabinet_finance", "sili_weaving", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_CAP_CHANGE"] },
+            { "actionType": "LIMIT_EXPOSURE", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "imperialExposureCap", "value": 4 }], "derivationRefs": ["NEW_POLICY_DEFINES_SAFE_EXPOSURE_CAP_AS_HIGHER_USABLE_CAP", "HIGH_SELECTOR_GTE_4"] },
+            { "actionType": "SECURE_FUNDS", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "militaryFundsCap", "value": 4 }], "derivationRefs": ["ACTION_SEMANTICS_SECURE_FUNDS", "HIGH_SELECTOR_GTE_4", "RESOURCE_POLICY_NONE"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N7.procedure_grade",
+          "requiredSeatIds": ["cabinet_finance", "qingliu_law", "sili_weaving"],
+          "actions": [
+            { "actionType": "CORROBORATE_PACKET", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "evidenceContentReach", "value": 4 }, { "factRef": "proceduralGrade", "value": "CORROBORATED" }], "derivationRefs": ["ACTION_SEMANTICS_CORROBORATION", "HIGH_SELECTOR_CORROBORATED"] },
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_PROCEDURE_GRADE"] },
+            { "actionType": "VALIDATE_PROCEDURE", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "channelProcedureCap", "value": 4 }, { "factRef": "proceduralGrade", "value": "VALID" }], "derivationRefs": ["ACTION_SEMANTICS_VALIDATE_PROCEDURE", "HIGH_SELECTOR_VALID"] }
+          ]
+        },
+        {
+          "decisionPointKey": "N7.final_seal",
+          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "actions": [
+            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_FINAL_CONFIRMATION"] },
+            { "actionType": "SEAL_CHAPTER", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [], "derivationRefs": ["CLOSE_ACTION_DOES_NOT_DUPLICATE_FACT_CONTRIBUTIONS"] }
+          ]
+        }
+      ],
+      "reachabilityCases": {
+        "HIGH": ["CORROBORATE_PACKET", "OPEN_ROUTE", "LIMIT_EXPOSURE", "SECURE_FUNDS"],
+        "MID": ["SEAL_TESTIMONY", "SEAL_DISPATCH", "LIMIT_EXPOSURE", "SECURE_FUNDS"],
+        "LOW": ["DEFAULT_PASS"]
+      },
+      "settlementOutputBinding": { "objectRefs": ["obj.final_dispatch_routes", "obj.final_testimonies"], "evidenceRefs": ["evidence.N7.final_packet"], "trackDeltaAuthority": "ACCEPTED_CONTENT_SELECTED_BRANCH" }
+    }
+  ],
+  "publicationRequirements": {
+    "allAcceptedDecisionActionPairsCovered": true,
+    "allExpandedSeatBindingsCovered": true,
+    "allFactReducersAssociativeAndCommutative": true,
+    "allSelectorFactsHaveIdentity": true,
+    "allChaptersHaveHighMidLowActionPaths": true,
+    "allSourceDefaultTrajectoriesReproducible": true,
+    "resourceConservationMode": "ZERO_RESOURCE_MVP"
+  },
+  "policySha256": "48de051ceab4dcca72cd5b7c30954ad244c6387a90c608d5851e13b14d04d1a8"
+}

@@ -11,7 +11,12 @@
     "baseUrl": ".",
     "paths": {
       "@ai-story/shared": ["packages/shared/src/index.ts"],
-      "@ai-story/templates": ["packages/templates/src/index.ts"]
+      "@ai-story/shared/pressure-chapter/a-emotion": ["packages/shared/src/pressure-chapter/a-emotion/index.ts"],
+      "@ai-story/templates": ["packages/templates/src/index.ts"],
+      "@apps/openovel-runtime/pressure-narrative": ["apps/openovel-runtime/src/pressure-narrative/index.ts"],
+      "@apps/openovel-runtime/pressure-narrative/contracts": ["apps/openovel-runtime/src/pressure-narrative/contracts.ts"],
+      "@apps/openovel-runtime/pressure-narrative/errors": ["apps/openovel-runtime/src/pressure-narrative/errors.ts"],
+      "@apps/openovel-runtime/pressure-narrative/ports": ["apps/openovel-runtime/src/pressure-narrative/ports.ts"]
     }
   }
 }

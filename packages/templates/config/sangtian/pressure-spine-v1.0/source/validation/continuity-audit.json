@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "sangtian_continuity_audit_v1_1",
+  "verdict": "PASS",
+  "pressureOrder": [
+    "P0",
+    "N1",
+    "N2",
+    "N3",
+    "N4",
+    "N5",
+    "N6",
+    "N7",
+    "FINALE"
+  ],
+  "sceneCount": 145,
+  "graphEdgeCount": 219,
+  "reachableSceneCount": 145,
+  "unreachableSceneIds": [],
+  "bidirectionalEdgeViolations": [],
+  "reactionPathChecks": {
+    "N2": {
+      "directToSettlement": true,
+      "throughReaction": true
+    },
+    "N4": {
+      "directToSettlement": true,
+      "throughReaction": true
+    },
+    "N7": {
+      "directToSettlement": true,
+      "throughReaction": true
+    }
+  },
+  "openingProjectionVariantCount": 18,
+  "findings": [
+    "所有场景 successor/predecessor 双向互认。",
+    "从 P0 公共开场可达全部 145 个场景。",
+    "N2/N4/N7 可直接进入结果，也可经条件反应进入同一结果。",
+    "N2—N7 三档开场投影只引用前序 FrozenNodeResult。"
+  ],
+  "violations": []
+}

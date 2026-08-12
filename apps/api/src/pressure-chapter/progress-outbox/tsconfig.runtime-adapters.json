@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "../../../../.."
+  },
+  "include": [
+    "./runtime-adapters.ts",
+    "./prisma-authority.ts",
+    "./runtime-adapters.spec.ts"
+  ]
+}

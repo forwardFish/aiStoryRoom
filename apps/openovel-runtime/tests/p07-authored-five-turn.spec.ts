@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { OpenNovelRuntime } from "../src/runtime.js";
@@ -238,17 +238,21 @@ test("P07 authored G00-T20 commits one server beat and one atomic Head per turn"
         decisionMode: "AUTHORED_WHEN_AVAILABLE",
         authoredDecisionAdapter: sangtianDecisionAdapter,
         endingModule: sangtianEndingModule,
+        authorityFirstNarrativeProjection: true,
       },
     );
     const afterRestart = await restartedRuntime.getRun(runId);
     assert.deepEqual(afterRestart.ending, publicRun.ending);
     assert.deepEqual(afterRestart.options, []);
+    const completedReadOnlyMarker = '{"completedReplayMustRemainReadOnly":true}\n';
+    await writeFile(paths.partOneState, completedReadOnlyMarker, "utf8");
     const replayedFinalTurn = await restartedRuntime.processAction({
       runId,
       action: finalAction,
       submissionId: finalSubmissionId,
       boundOption: finalBoundOption,
     });
+    assert.equal(await readFile(paths.partOneState, "utf8"), completedReadOnlyMarker);
     assert.deepEqual(replayedFinalTurn.ending, publicRun.ending);
     assert.equal(restartedProvider.narratorAttempts, 0);
     assert.equal((await readdir(paths.headsDir)).length, 20);

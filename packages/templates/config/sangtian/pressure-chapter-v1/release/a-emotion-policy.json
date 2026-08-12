@@ -1,0 +1,214 @@
+{
+  "schemaVersion": "sangtian_a_emotion_policy_v1",
+  "policyVersion": "sangtian-a-emotion-1.0.0",
+  "compilerVersion": "sangtian-a-emotion-compiler-1.0.0",
+  "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+  "sourceBinding": {
+    "contentPackageVersion": "1.0.0",
+    "contentPackageSha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b"
+  },
+  "authorityBoundary": {
+    "allowedAuthoritySources": [
+      "BEAT_COMMITTED",
+      "FORMAL_COMMITMENT_COMMITTED",
+      "CHAPTER_SETTLEMENT_COMMITTED",
+      "FINALE_COMMITTED"
+    ],
+    "forbiddenInputClasses": [
+      "MUTABLE_UI_STATE",
+      "NARRATIVE_ARTIFACT",
+      "PROVIDER_OUTPUT"
+    ],
+    "mayInferSecrets": false,
+    "mayInventEvidence": false,
+    "mayInventPromise": false,
+    "missingActionBindingPolicy": "EMIT_ZERO_EVENTS"
+  },
+  "coverage": {
+    "chapterIds": ["N1", "N2", "N3", "N4", "N5", "N6", "N7"],
+    "chapterOutcomeBands": ["HIGH", "LOW", "MID"],
+    "finaleVerdicts": ["COSTLY_WIN", "LOSS", "WIN"]
+  },
+  "beat": {
+    "skipActionTypes": ["DEFAULT_PASS"],
+    "template": {
+      "eventCode": "SANGTIAN_BEAT_ACTION_COMMITTED",
+      "eventFamily": "SANGTIAN_BEAT_ACTION",
+      "kind": "PUBLIC_ACTION",
+      "severity": "MINOR",
+      "audienceMode": "ACTION_BINDING_TARGETS",
+      "disclosureMode": "CONFIRMED_WITH_AUTHORITY_EVIDENCE_ELSE_HIDDEN",
+      "impactMode": "SOURCE_ACTION_BOUND_WORKING_MUTATIONS",
+      "sharedObjectMode": "FIRST_BOUND_COMMITMENT_OR_NULL",
+      "factMode": "NONE",
+      "milestoneMode": "NONE",
+      "presentation": {
+        "recommendedPresentation": "FEED_ONLY",
+        "centerCardType": null,
+        "modalType": null,
+        "responseOptions": []
+      }
+    }
+  },
+  "chapter": {
+    "sourceActionSelection": "FIRST_CANONICAL_SEALED_ACTION_PER_AFFECTED_SEAT",
+    "templates": [
+      {
+        "outcomeBand": "HIGH",
+        "template": {
+          "eventCode": "SANGTIAN_CHAPTER_HIGH_COMMITTED",
+          "eventFamily": "SANGTIAN_CHAPTER_SETTLEMENT",
+          "kind": "DIRECT_IMPACT",
+          "severity": "MAJOR",
+          "audienceMode": "SOURCE_SEAT_ONLY",
+          "disclosureMode": "CONFIRMED_WITH_AUTHORITY_EVIDENCE_ELSE_HIDDEN",
+          "impactMode": "SOURCE_SEAT_CHAPTER_ARC",
+          "sharedObjectMode": "CHAPTER_OUTCOME",
+          "factMode": "CHAPTER_OUTCOME_PUBLIC",
+          "milestoneMode": "CHAPTER_OUTCOME",
+          "presentation": {
+            "recommendedPresentation": "CENTER_CARD",
+            "centerCardType": "STAGE_VICTORY",
+            "modalType": null,
+            "responseOptions": [
+              { "code": "VIEW_DETAILS", "preferredEntry": "INVESTIGATE", "consumesManeuverOnSubmit": false },
+              { "code": "CONTINUE_ADVANCE", "preferredEntry": "PLAN", "consumesManeuverOnSubmit": false },
+              { "code": "VIEW_LATER", "preferredEntry": "DEFER", "consumesManeuverOnSubmit": false }
+            ]
+          }
+        }
+      },
+      {
+        "outcomeBand": "LOW",
+        "template": {
+          "eventCode": "SANGTIAN_CHAPTER_LOW_COMMITTED",
+          "eventFamily": "SANGTIAN_CHAPTER_SETTLEMENT",
+          "kind": "DIRECT_IMPACT",
+          "severity": "CRITICAL",
+          "audienceMode": "SOURCE_SEAT_ONLY",
+          "disclosureMode": "CONFIRMED_WITH_AUTHORITY_EVIDENCE_ELSE_HIDDEN",
+          "impactMode": "SOURCE_SEAT_CHAPTER_ARC",
+          "sharedObjectMode": "CHAPTER_OUTCOME",
+          "factMode": "CHAPTER_OUTCOME_PUBLIC",
+          "milestoneMode": "NONE",
+          "presentation": {
+            "recommendedPresentation": "KEY_MODAL",
+            "centerCardType": "CRISIS",
+            "modalType": "CRISIS",
+            "responseOptions": [
+              { "code": "VIEW_DETAILS", "preferredEntry": "INVESTIGATE", "consumesManeuverOnSubmit": false },
+              { "code": "RESPOND_NOW", "preferredEntry": "PLAN", "consumesManeuverOnSubmit": false },
+              { "code": "HANDLE_LATER", "preferredEntry": "DEFER", "consumesManeuverOnSubmit": false }
+            ]
+          }
+        }
+      },
+      {
+        "outcomeBand": "MID",
+        "template": {
+          "eventCode": "SANGTIAN_CHAPTER_MID_COMMITTED",
+          "eventFamily": "SANGTIAN_CHAPTER_SETTLEMENT",
+          "kind": "DIRECT_IMPACT",
+          "severity": "MINOR",
+          "audienceMode": "SOURCE_SEAT_ONLY",
+          "disclosureMode": "CONFIRMED_WITH_AUTHORITY_EVIDENCE_ELSE_HIDDEN",
+          "impactMode": "SOURCE_SEAT_CHAPTER_ARC",
+          "sharedObjectMode": "CHAPTER_OUTCOME",
+          "factMode": "CHAPTER_OUTCOME_PUBLIC",
+          "milestoneMode": "NONE",
+          "presentation": {
+            "recommendedPresentation": "CENTER_CARD",
+            "centerCardType": "CROSS_IMPACT",
+            "modalType": null,
+            "responseOptions": [
+              { "code": "VIEW_DETAILS", "preferredEntry": "INVESTIGATE", "consumesManeuverOnSubmit": false },
+              { "code": "CONTINUE_ADVANCE", "preferredEntry": "PLAN", "consumesManeuverOnSubmit": false },
+              { "code": "VIEW_LATER", "preferredEntry": "DEFER", "consumesManeuverOnSubmit": false }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "finale": {
+    "sourceActionSelection": "LAST_CANONICAL_COMMITTED_ACTION_PER_OUTCOME_SEAT",
+    "templates": [
+      {
+        "verdict": "COSTLY_WIN",
+        "template": {
+          "eventCode": "SANGTIAN_FINALE_COSTLY_WIN_COMMITTED",
+          "eventFamily": "SANGTIAN_FINALE_SEAT_OUTCOME",
+          "kind": "DIRECT_IMPACT",
+          "severity": "MAJOR",
+          "audienceMode": "SOURCE_SEAT_ONLY",
+          "disclosureMode": "CONFIRMED_WITH_AUTHORITY_EVIDENCE_ELSE_HIDDEN",
+          "impactMode": "SOURCE_SEAT_FINALE_VERDICT",
+          "sharedObjectMode": "FINALE_VERDICT",
+          "factMode": "NONE",
+          "milestoneMode": "FINALE_VERDICT",
+          "presentation": {
+            "recommendedPresentation": "CENTER_CARD",
+            "centerCardType": "CROSS_IMPACT",
+            "modalType": null,
+            "responseOptions": [
+              { "code": "VIEW_DETAILS", "preferredEntry": "INVESTIGATE", "consumesManeuverOnSubmit": false },
+              { "code": "VIEW_LATER", "preferredEntry": "DEFER", "consumesManeuverOnSubmit": false },
+              { "code": "KEEP_LOW_PROFILE", "preferredEntry": "PLAN", "consumesManeuverOnSubmit": false }
+            ]
+          }
+        }
+      },
+      {
+        "verdict": "LOSS",
+        "template": {
+          "eventCode": "SANGTIAN_FINALE_LOSS_COMMITTED",
+          "eventFamily": "SANGTIAN_FINALE_SEAT_OUTCOME",
+          "kind": "DIRECT_IMPACT",
+          "severity": "CRITICAL",
+          "audienceMode": "SOURCE_SEAT_ONLY",
+          "disclosureMode": "CONFIRMED_WITH_AUTHORITY_EVIDENCE_ELSE_HIDDEN",
+          "impactMode": "SOURCE_SEAT_FINALE_VERDICT",
+          "sharedObjectMode": "FINALE_VERDICT",
+          "factMode": "NONE",
+          "milestoneMode": "NONE",
+          "presentation": {
+            "recommendedPresentation": "KEY_MODAL",
+            "centerCardType": "CRISIS",
+            "modalType": "CRISIS",
+            "responseOptions": [
+              { "code": "VIEW_DETAILS", "preferredEntry": "INVESTIGATE", "consumesManeuverOnSubmit": false },
+              { "code": "HANDLE_LATER", "preferredEntry": "DEFER", "consumesManeuverOnSubmit": false },
+              { "code": "KEEP_LOW_PROFILE", "preferredEntry": "PLAN", "consumesManeuverOnSubmit": false }
+            ]
+          }
+        }
+      },
+      {
+        "verdict": "WIN",
+        "template": {
+          "eventCode": "SANGTIAN_FINALE_WIN_COMMITTED",
+          "eventFamily": "SANGTIAN_FINALE_SEAT_OUTCOME",
+          "kind": "DIRECT_IMPACT",
+          "severity": "MAJOR",
+          "audienceMode": "SOURCE_SEAT_ONLY",
+          "disclosureMode": "CONFIRMED_WITH_AUTHORITY_EVIDENCE_ELSE_HIDDEN",
+          "impactMode": "SOURCE_SEAT_FINALE_VERDICT",
+          "sharedObjectMode": "FINALE_VERDICT",
+          "factMode": "NONE",
+          "milestoneMode": "FINALE_VERDICT",
+          "presentation": {
+            "recommendedPresentation": "KEY_MODAL",
+            "centerCardType": "STAGE_VICTORY",
+            "modalType": "STAGE_VICTORY",
+            "responseOptions": [
+              { "code": "VIEW_DETAILS", "preferredEntry": "INVESTIGATE", "consumesManeuverOnSubmit": false },
+              { "code": "VIEW_LATER", "preferredEntry": "DEFER", "consumesManeuverOnSubmit": false },
+              { "code": "CONTINUE_ADVANCE", "preferredEntry": "PLAN", "consumesManeuverOnSubmit": false }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "policySha256": "27c59619f0a93fef92a2da6b250e895a6e591994cdd51fa943b078f0034153a4"
+}

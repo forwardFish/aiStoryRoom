@@ -1,0 +1,1242 @@
+{
+  "schemaVersion": "sangtian_scene_flow_v1",
+  "nodeId": "N6",
+  "sourceSha256": "04D5E8D4533D86890A79058C25252D33E001668921A2BBD8FFDE401CDD2B6238",
+  "threeActRule": "P0 为序章；N1—N7 前台只呈现 Opening、After Prepare、Settlement/Transition 三幕，私有开场和差异变体作为同一幕的角色投影。",
+  "decisionBeats": [
+    {
+      "beatId": "beat.n6.prepare",
+      "phase": "PREPARE",
+      "currentSceneId": "scene.n6.opening.public",
+      "legalIntentSpace": [
+        "调查当前对象",
+        "与当前人物交谈或交换",
+        "分配本席位真实资源",
+        "REST/DELAY",
+        "沉默或闲聊但承担时间代价"
+      ],
+      "actionRealization": "输入编译为合法行动、失败尝试、休息或拖延；先结算再叙事。",
+      "timeAdvance": "配置初值：正常行动 +1 时段；REST/DELAY +半日；失败尝试或闲聊 +1 时段。",
+      "npcMove": "其他五席按知识、目标和默认 Prepare 同时行动；玩家未提交不阻塞。",
+      "pressureEscalation": "至少推进时间、NPC、压力、对象、证据责任或下一现场之一。",
+      "nextSceneIds": [
+        "scene.n6.after_prepare.common",
+        "scene.n6.after_prepare.controlled",
+        "scene.n6.after_prepare.contested",
+        "scene.n6.after_prepare.lost_initiative"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "currentScene": {
+        "sceneId": "scene.n6.opening.public"
+      },
+      "nextScene": {
+        "sceneIds": [
+          "scene.n6.after_prepare.common",
+          "scene.n6.after_prepare.controlled",
+          "scene.n6.after_prepare.contested",
+          "scene.n6.after_prepare.lost_initiative"
+        ]
+      }
+    },
+    {
+      "beatId": "beat.n6.commit",
+      "phase": "COMMIT",
+      "currentSceneId": "scene.n6.commit_confrontation",
+      "legalIntentSpace": [
+        "对本节点争夺物作出一次正式提交",
+        "使用已持有权限、资源、签押或渠道",
+        "设置与当前对象直接相关的条件和代价"
+      ],
+      "actionRealization": "六席基于同一冻结快照同步结算；超时注入席位 defaultCommit。",
+      "timeAdvance": "COMMIT 本身不追加自由对话；结算推进到节点截止。",
+      "npcMove": "AI 席位或超时席位按默认 Commit 锁定。",
+      "pressureEscalation": "节点压力转为不可逆结果并冻结。",
+      "nextSceneIds": [
+        "scene.n6.settlement.high",
+        "scene.n6.settlement.mid",
+        "scene.n6.settlement.low"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "currentScene": {
+        "sceneId": "scene.n6.commit_confrontation"
+      },
+      "nextScene": {
+        "sceneIds": [
+          "scene.n6.settlement.high",
+          "scene.n6.settlement.mid",
+          "scene.n6.settlement.low"
+        ]
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "sceneId": "scene.n6.opening.public",
+      "nodeId": "N6",
+      "sceneType": "OPENING",
+      "title": "以商乱政",
+      "text": "查封令已逼近商产与沈一石本人。官府公开能确认的，只有商产、现银和账册都可能成为追责与筹饷的对象；账册究竟有几路、此刻由谁保管、是否已经安排递送，都只向实际知情者显露。",
+      "predecessorIds": [
+        "scene.n5.transition.high",
+        "scene.n5.transition.mid",
+        "scene.n5.transition.low"
+      ],
+      "successorIds": [
+        "scene.n6.opening.private.zhejiang_governor",
+        "scene.n6.opening.private.zhejiang_administration",
+        "scene.n6.opening.private.qingliu_law",
+        "scene.n6.opening.private.jiangnan_merchant",
+        "scene.n6.opening.private.sili_weaving",
+        "scene.n6.opening.private.cabinet_finance"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "openingProjectionVariants": [
+        {
+          "openingProjectionId": "opening.N6.from.N5.HIGH",
+          "predecessorBranchId": "settlement.n5.high",
+          "predecessorFrozenResultId": "frozen.N5.HIGH",
+          "requiredFrozenFactIds": [
+            "frozen.N5.HIGH.fact.01",
+            "frozen.N5.HIGH.fact.02",
+            "frozen.N5.HIGH.fact.03"
+          ],
+          "requiredObjectVersionIds": [
+            "obj.grain_fleet@N5.HIGH.v1",
+            "obj.fleet_contract_and_banners@N5.HIGH.v1"
+          ],
+          "publicText": "主要粮食已经用于赈济，低价买田受阻。国策与军饷缺口重新出现，沈一石与商产成为新的筹款和追责目标。",
+          "publicReferencedObjectVersionIds": [
+            "obj.grain_fleet@N5.HIGH.v1",
+            "obj.fleet_contract_and_banners@N5.HIGH.v1"
+          ],
+          "seatPrivateProjections": [
+            {
+              "seatId": "seat.zhejiang_governor",
+              "grantedFrozenFactIds": [
+                "frozen.N5.HIGH.fact.01",
+                "frozen.N5.HIGH.fact.02",
+                "frozen.N5.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.HIGH.v1",
+                "obj.fleet_contract_and_banners@N5.HIGH.v1"
+              ],
+              "currentActorId": "actor.hu_zongxian"
+            },
+            {
+              "seatId": "seat.zhejiang_administration",
+              "grantedFrozenFactIds": [
+                "frozen.N5.HIGH.fact.01",
+                "frozen.N5.HIGH.fact.02",
+                "frozen.N5.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.HIGH.v1",
+                "obj.fleet_contract_and_banners@N5.HIGH.v1"
+              ],
+              "currentActorId": "actor.zheng_michang"
+            },
+            {
+              "seatId": "seat.qingliu_law",
+              "grantedFrozenFactIds": [
+                "frozen.N5.HIGH.fact.01",
+                "frozen.N5.HIGH.fact.02",
+                "frozen.N5.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.HIGH.v1",
+                "obj.fleet_contract_and_banners@N5.HIGH.v1"
+              ],
+              "currentActorId": "actor.hai_rui"
+            },
+            {
+              "seatId": "seat.jiangnan_merchant",
+              "grantedFrozenFactIds": [
+                "frozen.N5.HIGH.fact.01",
+                "frozen.N5.HIGH.fact.02",
+                "frozen.N5.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.HIGH.v1",
+                "obj.fleet_contract_and_banners@N5.HIGH.v1"
+              ],
+              "currentActorId": "actor.shen_yishi"
+            },
+            {
+              "seatId": "seat.sili_weaving",
+              "grantedFrozenFactIds": [
+                "frozen.N5.HIGH.fact.01",
+                "frozen.N5.HIGH.fact.02",
+                "frozen.N5.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.HIGH.v1",
+                "obj.fleet_contract_and_banners@N5.HIGH.v1"
+              ],
+              "currentActorId": "actor.yang_jinshui"
+            },
+            {
+              "seatId": "seat.cabinet_finance",
+              "grantedFrozenFactIds": [
+                "frozen.N5.HIGH.fact.01",
+                "frozen.N5.HIGH.fact.02",
+                "frozen.N5.HIGH.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.HIGH.v1",
+                "obj.fleet_contract_and_banners@N5.HIGH.v1"
+              ],
+              "currentActorId": "actor.yan_shifan"
+            }
+          ],
+          "absentMaterialRule": "Any object/version not listed in requiredObjectVersionIds or the seat grant is absent from that projection and must not appear in prose or dialogue."
+        },
+        {
+          "openingProjectionId": "opening.N6.from.N5.MID",
+          "predecessorBranchId": "settlement.n5.mid",
+          "predecessorFrozenResultId": "frozen.N5.MID",
+          "requiredFrozenFactIds": [
+            "frozen.N5.MID.fact.01",
+            "frozen.N5.MID.fact.02",
+            "frozen.N5.MID.fact.03"
+          ],
+          "requiredObjectVersionIds": [
+            "obj.grain_fleet@N5.MID.v1",
+            "obj.fleet_contract_and_banners@N5.MID.v1"
+          ],
+          "publicText": "粮食在赈济、借贷和买田之间分流，没有一方脱身。省府开始查封商产，账册是否存在、由谁知情仍各有边界。",
+          "publicReferencedObjectVersionIds": [
+            "obj.grain_fleet@N5.MID.v1",
+            "obj.fleet_contract_and_banners@N5.MID.v1"
+          ],
+          "seatPrivateProjections": [
+            {
+              "seatId": "seat.zhejiang_governor",
+              "grantedFrozenFactIds": [
+                "frozen.N5.MID.fact.01",
+                "frozen.N5.MID.fact.02",
+                "frozen.N5.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.MID.v1",
+                "obj.fleet_contract_and_banners@N5.MID.v1"
+              ],
+              "currentActorId": "actor.hu_zongxian"
+            },
+            {
+              "seatId": "seat.zhejiang_administration",
+              "grantedFrozenFactIds": [
+                "frozen.N5.MID.fact.01",
+                "frozen.N5.MID.fact.02",
+                "frozen.N5.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.MID.v1",
+                "obj.fleet_contract_and_banners@N5.MID.v1"
+              ],
+              "currentActorId": "actor.zheng_michang"
+            },
+            {
+              "seatId": "seat.qingliu_law",
+              "grantedFrozenFactIds": [
+                "frozen.N5.MID.fact.01",
+                "frozen.N5.MID.fact.02",
+                "frozen.N5.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.MID.v1",
+                "obj.fleet_contract_and_banners@N5.MID.v1"
+              ],
+              "currentActorId": "actor.hai_rui"
+            },
+            {
+              "seatId": "seat.jiangnan_merchant",
+              "grantedFrozenFactIds": [
+                "frozen.N5.MID.fact.01",
+                "frozen.N5.MID.fact.02",
+                "frozen.N5.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.MID.v1",
+                "obj.fleet_contract_and_banners@N5.MID.v1"
+              ],
+              "currentActorId": "actor.shen_yishi"
+            },
+            {
+              "seatId": "seat.sili_weaving",
+              "grantedFrozenFactIds": [
+                "frozen.N5.MID.fact.01",
+                "frozen.N5.MID.fact.02",
+                "frozen.N5.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.MID.v1",
+                "obj.fleet_contract_and_banners@N5.MID.v1"
+              ],
+              "currentActorId": "actor.yang_jinshui"
+            },
+            {
+              "seatId": "seat.cabinet_finance",
+              "grantedFrozenFactIds": [
+                "frozen.N5.MID.fact.01",
+                "frozen.N5.MID.fact.02",
+                "frozen.N5.MID.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.MID.v1",
+                "obj.fleet_contract_and_banners@N5.MID.v1"
+              ],
+              "currentActorId": "actor.yan_shifan"
+            }
+          ],
+          "absentMaterialRule": "Any object/version not listed in requiredObjectVersionIds or the seat grant is absent from that projection and must not appear in prose or dialogue."
+        },
+        {
+          "openingProjectionId": "opening.N6.from.N5.LOW",
+          "predecessorBranchId": "settlement.n5.low",
+          "predecessorFrozenResultId": "frozen.N5.LOW",
+          "requiredFrozenFactIds": [
+            "frozen.N5.LOW.fact.01",
+            "frozen.N5.LOW.fact.02",
+            "frozen.N5.LOW.fact.03"
+          ],
+          "requiredObjectVersionIds": [
+            "obj.grain_fleet@N5.LOW.v1",
+            "obj.fleet_contract_and_banners@N5.LOW.v1"
+          ],
+          "publicText": "买田取得较多进度，商会与宫廷名义被更深地写进责任。查封与筹饷命令同时压向沈一石。",
+          "publicReferencedObjectVersionIds": [
+            "obj.grain_fleet@N5.LOW.v1",
+            "obj.fleet_contract_and_banners@N5.LOW.v1"
+          ],
+          "seatPrivateProjections": [
+            {
+              "seatId": "seat.zhejiang_governor",
+              "grantedFrozenFactIds": [
+                "frozen.N5.LOW.fact.01",
+                "frozen.N5.LOW.fact.02",
+                "frozen.N5.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.LOW.v1",
+                "obj.fleet_contract_and_banners@N5.LOW.v1"
+              ],
+              "currentActorId": "actor.hu_zongxian"
+            },
+            {
+              "seatId": "seat.zhejiang_administration",
+              "grantedFrozenFactIds": [
+                "frozen.N5.LOW.fact.01",
+                "frozen.N5.LOW.fact.02",
+                "frozen.N5.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.LOW.v1",
+                "obj.fleet_contract_and_banners@N5.LOW.v1"
+              ],
+              "currentActorId": "actor.zheng_michang"
+            },
+            {
+              "seatId": "seat.qingliu_law",
+              "grantedFrozenFactIds": [
+                "frozen.N5.LOW.fact.01",
+                "frozen.N5.LOW.fact.02",
+                "frozen.N5.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.LOW.v1",
+                "obj.fleet_contract_and_banners@N5.LOW.v1"
+              ],
+              "currentActorId": "actor.hai_rui"
+            },
+            {
+              "seatId": "seat.jiangnan_merchant",
+              "grantedFrozenFactIds": [
+                "frozen.N5.LOW.fact.01",
+                "frozen.N5.LOW.fact.02",
+                "frozen.N5.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.LOW.v1",
+                "obj.fleet_contract_and_banners@N5.LOW.v1"
+              ],
+              "currentActorId": "actor.shen_yishi"
+            },
+            {
+              "seatId": "seat.sili_weaving",
+              "grantedFrozenFactIds": [
+                "frozen.N5.LOW.fact.01",
+                "frozen.N5.LOW.fact.02",
+                "frozen.N5.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.LOW.v1",
+                "obj.fleet_contract_and_banners@N5.LOW.v1"
+              ],
+              "currentActorId": "actor.yang_jinshui"
+            },
+            {
+              "seatId": "seat.cabinet_finance",
+              "grantedFrozenFactIds": [
+                "frozen.N5.LOW.fact.01",
+                "frozen.N5.LOW.fact.02",
+                "frozen.N5.LOW.fact.03"
+              ],
+              "grantedObjectVersionIds": [
+                "obj.grain_fleet@N5.LOW.v1",
+                "obj.fleet_contract_and_banners@N5.LOW.v1"
+              ],
+              "currentActorId": "actor.yan_shifan"
+            }
+          ],
+          "absentMaterialRule": "Any object/version not listed in requiredObjectVersionIds or the seat grant is absent from that projection and must not appear in prose or dialogue."
+        }
+      ]
+    },
+    {
+      "sceneId": "scene.n6.opening.private.zhejiang_governor",
+      "nodeId": "N6",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "总督案前",
+      "text": "胡宗宪公开只知道查封、军饷和商产同时逼近，不能据此宣称账册有几路。先取现银还是先保人证，会改变后续能证明到哪一步。",
+      "predecessorIds": [
+        "scene.n6.opening.public"
+      ],
+      "successorIds": [
+        "scene.n6.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n6.zhejiang_governor.pressure",
+        "known.n6.zhejiang_governor.object.military_dispatch_channel",
+        "known.n6.zhejiang_governor.handoff.N2.governor_office"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.zhejiang_governor.claim.n6-sf-01",
+        "unknown.n6.zhejiang_governor.claim.n6-sf-02",
+        "unknown.n6.zhejiang_governor.system.n6-unk-01"
+      ],
+      "ruleHintId": "rulehint.n6.zhejiang_governor"
+    },
+    {
+      "sceneId": "scene.n6.opening.private.zhejiang_administration",
+      "nodeId": "N6",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "省府所议",
+      "text": "郑泌昌实际知道地方查封现场将接触一组封存账册。烧、留、移交或让人抄录，都必须在开始保管权与经手见证下发生。",
+      "predecessorIds": [
+        "scene.n6.opening.public"
+      ],
+      "successorIds": [
+        "scene.n6.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.zhejiang_administration"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n6.zhejiang_administration.pressure",
+        "known.n6.zhejiang_administration.object.local_four_boxes"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.zhejiang_administration.claim.n6-sf-01",
+        "unknown.n6.zhejiang_administration.claim.n6-sf-04",
+        "unknown.n6.zhejiang_administration.system.n6-unk-01"
+      ],
+      "ruleHintId": "rulehint.n6.zhejiang_administration"
+    },
+    {
+      "sceneId": "scene.n6.opening.private.qingliu_law",
+      "nodeId": "N6",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "清流所见",
+      "text": "海瑞能确认的是查封与账册争夺已经出现，还不知道未送达材料的保管与路线。他必须先做清册、封条和见证，才能谈效力。",
+      "predecessorIds": [
+        "scene.n6.opening.public"
+      ],
+      "successorIds": [
+        "scene.n6.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.qingliu_law"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n6.qingliu_law.pressure",
+        "known.n6.qingliu_law.object.sealed_evidence_index",
+        "known.n6.qingliu_law.handoff.N2.qingliu"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.qingliu_law.claim.n6-sf-01",
+        "unknown.n6.qingliu_law.claim.n6-sf-02",
+        "unknown.n6.qingliu_law.system.n6-unk-01"
+      ],
+      "ruleHintId": "rulehint.n6.qingliu_law"
+    },
+    {
+      "sceneId": "scene.n6.opening.private.jiangnan_merchant",
+      "nodeId": "N6",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "商会账房",
+      "text": "沈一石知道地方查封将触及自己的账目与商产，却不因知道商会全账而自动知道内廷另有何种保管安排。遗命必须在失能前形成。",
+      "predecessorIds": [
+        "scene.n6.opening.public"
+      ],
+      "successorIds": [
+        "scene.n6.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.jiangnan_merchant"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n6.jiangnan_merchant.pressure",
+        "known.n6.jiangnan_merchant.object.shen_yishi_person_and_assets"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.jiangnan_merchant.claim.n6-sf-01",
+        "unknown.n6.jiangnan_merchant.claim.n6-sf-03",
+        "unknown.n6.jiangnan_merchant.system.n6-unk-01"
+      ],
+      "ruleHintId": "rulehint.n6.jiangnan_merchant"
+    },
+    {
+      "sceneId": "scene.n6.opening.private.sili_weaving",
+      "nodeId": "N6",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "织造局内",
+      "text": "杨金水私下知道另有四口木箱由内廷渠道控制，并已考虑不得查看、不得销毁的递送安排。这一信息不会自动进入公共场合。",
+      "predecessorIds": [
+        "scene.n6.opening.public"
+      ],
+      "successorIds": [
+        "scene.n6.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.sili_weaving"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N6-SF-01",
+        "N6-SF-04"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n6.sili_weaving.pressure",
+        "known.n6.sili_weaving.claim.n6-sf-01",
+        "known.n6.sili_weaving.claim.n6-sf-04",
+        "known.n6.sili_weaving.object.inner_court_four_boxes"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.sili_weaving.system.n6-unk-01"
+      ],
+      "ruleHintId": "rulehint.n6.sili_weaving"
+    },
+    {
+      "sceneId": "scene.n6.opening.private.cabinet_finance",
+      "nodeId": "N6",
+      "sceneType": "PRIVATE_OPENING",
+      "title": "京师值房",
+      "text": "内阁财政席已经知道“以商乱政”与筹军饷的要求，却只有在内廷递送真正到达并签收后，才会知道相应账册状态。",
+      "predecessorIds": [
+        "scene.n6.opening.public"
+      ],
+      "successorIds": [
+        "scene.n6.after_prepare.common"
+      ],
+      "knownBy": [
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PRIVATE",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [
+        "N6-SF-01"
+      ],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "knownFactIds": [
+        "known.n6.cabinet_finance.pressure",
+        "known.n6.cabinet_finance.claim.n6-sf-01",
+        "known.n6.cabinet_finance.object.cabinet_urgent_dispatch"
+      ],
+      "unknownFactIds": [
+        "unknown.n6.cabinet_finance.claim.n6-sf-02",
+        "unknown.n6.cabinet_finance.claim.n6-sf-03",
+        "unknown.n6.cabinet_finance.system.n6-unk-01"
+      ],
+      "ruleHintId": "rulehint.n6.cabinet_finance"
+    },
+    {
+      "sceneId": "scene.n6.after_prepare.common",
+      "nodeId": "N6",
+      "sceneType": "AFTER_PREPARE_COMMON",
+      "title": "查封令落地",
+      "text": "查封清册、封条、遗命和递送安排开始形成。公开现场只能确认商产与账册正在被处置；谁看过哪一份材料、谁只听说有账、哪条路线已经启动，仍按各自知情范围分别记录。",
+      "predecessorIds": [
+        "scene.n6.opening.private.zhejiang_governor",
+        "scene.n6.opening.private.zhejiang_administration",
+        "scene.n6.opening.private.qingliu_law",
+        "scene.n6.opening.private.jiangnan_merchant",
+        "scene.n6.opening.private.sili_weaving",
+        "scene.n6.opening.private.cabinet_finance"
+      ],
+      "successorIds": [
+        "scene.n6.after_prepare.controlled",
+        "scene.n6.after_prepare.contested",
+        "scene.n6.after_prepare.lost_initiative"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n6.after_prepare.controlled",
+      "nodeId": "N6",
+      "sceneType": "AFTER_PREPARE_VARIANT",
+      "title": "先手在握",
+      "text": "清册与见证齐全，军饷划拨不必以焚账为代价。",
+      "predecessorIds": [
+        "scene.n6.after_prepare.common"
+      ],
+      "successorIds": [
+        "scene.n6.npc_urgent"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "CONDITIONAL",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n6.after_prepare.contested",
+      "nodeId": "N6",
+      "sceneType": "AFTER_PREPARE_VARIANT",
+      "title": "各执一端",
+      "text": "本地官员准备烧账，内廷差使已等候启程。",
+      "predecessorIds": [
+        "scene.n6.after_prepare.common"
+      ],
+      "successorIds": [
+        "scene.n6.npc_urgent"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "CONDITIONAL",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n6.after_prepare.lost_initiative",
+      "nodeId": "N6",
+      "sceneType": "AFTER_PREPARE_VARIANT",
+      "title": "先手旁落",
+      "text": "本地四箱已在省府控制下，商会只能执行先前留下的遗命。",
+      "predecessorIds": [
+        "scene.n6.after_prepare.common"
+      ],
+      "successorIds": [
+        "scene.n6.npc_urgent"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "CONDITIONAL",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n6.npc_urgent",
+      "nodeId": "N6",
+      "sceneType": "NPC_URGENT",
+      "title": "查封人马已到",
+      "text": "查封令正式生效。省府差役已经接管商产外门，清流要求先列清册再动账册。此刻才夺到手的材料，来不及在同一刻又从经手记录里消失。",
+      "predecessorIds": [
+        "scene.n6.after_prepare.controlled",
+        "scene.n6.after_prepare.contested",
+        "scene.n6.after_prepare.lost_initiative"
+      ],
+      "successorIds": [
+        "scene.n6.commit_confrontation"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n6.commit_confrontation",
+      "nodeId": "N6",
+      "sceneType": "COMMIT_CONFRONTATION",
+      "title": "查封、军饷与账册",
+      "text": "总督、省府、清流、商会、织造局与内阁分别落笔：抓人、保护、抄没、划军饷、封存、焚毁或递送。账册底层内容不随选择改变，改变的是保管、见证、完整性、路线与可验证范围。",
+      "predecessorIds": [
+        "scene.n6.npc_urgent"
+      ],
+      "successorIds": [
+        "scene.n6.settlement.high",
+        "scene.n6.settlement.mid",
+        "scene.n6.settlement.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n6.settlement.high",
+      "nodeId": "N6",
+      "sceneType": "SETTLEMENT_RESULT",
+      "title": "商产与证据各有归处",
+      "text": "商产清册、军饷划拨与至少一条证据解释链都有可核验经手；账册的具体组数、保管和路线仍只向实际知情者开放。",
+      "predecessorIds": [
+        "scene.n6.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n6.transition.high"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "frozenResultId": "frozen.N6.HIGH",
+      "frozenFactIds": [
+        "frozen.N6.HIGH.fact.01",
+        "frozen.N6.HIGH.fact.02",
+        "frozen.N6.HIGH.fact.03"
+      ],
+      "publicObjectVersionIds": [
+        "obj.shen_yishi_person_and_assets@N6.HIGH.v1"
+      ]
+    },
+    {
+      "sceneId": "scene.n6.transition.high",
+      "nodeId": "N6",
+      "sceneType": "TRANSITION",
+      "title": "证据仍有多路可查",
+      "text": "重审将至，已经保住并合法送达的材料各有经手。审堂只能使用这些现存材料，不能把未公开的路线提前说给所有人听。",
+      "predecessorIds": [
+        "scene.n6.settlement.high"
+      ],
+      "successorIds": [
+        "scene.n7.opening.public"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n6.settlement.mid",
+      "nodeId": "N6",
+      "sceneType": "SETTLEMENT_RESULT",
+      "title": "真相被分路",
+      "text": "沈一石已经失去正常行动能力，商产大部被抄；一部分材料毁损，另有递送或保管动作留下见证，但公开场合不能把这些线索拼成完整总账。",
+      "predecessorIds": [
+        "scene.n6.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n6.transition.mid"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "frozenResultId": "frozen.N6.MID",
+      "frozenFactIds": [
+        "frozen.N6.MID.fact.01",
+        "frozen.N6.MID.fact.02",
+        "frozen.N6.MID.fact.03"
+      ],
+      "publicObjectVersionIds": [
+        "obj.shen_yishi_person_and_assets@N6.MID.v1"
+      ]
+    },
+    {
+      "sceneId": "scene.n6.transition.mid",
+      "nodeId": "N6",
+      "sceneType": "TRANSITION",
+      "title": "焚毁与递送各留痕迹",
+      "text": "商产处置与证据处置留下了不同痕迹。有人能证明焚毁，有人只知道另有材料已经离开；重审时各人只能使用自己依法获知的部分。",
+      "predecessorIds": [
+        "scene.n6.settlement.mid"
+      ],
+      "successorIds": [
+        "scene.n7.opening.public"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    },
+    {
+      "sceneId": "scene.n6.settlement.low",
+      "nodeId": "N6",
+      "sceneType": "SETTLEMENT_RESULT",
+      "title": "替罪口径坐实",
+      "text": "沈一石被定为主要责任者，商产处置混乱，能够公开验证的账目材料几乎没有留下；军饷和织造仍在催迫。",
+      "predecessorIds": [
+        "scene.n6.commit_confrontation"
+      ],
+      "successorIds": [
+        "scene.n6.transition.low"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。",
+      "frozenResultId": "frozen.N6.LOW",
+      "frozenFactIds": [
+        "frozen.N6.LOW.fact.01",
+        "frozen.N6.LOW.fact.02",
+        "frozen.N6.LOW.fact.03"
+      ],
+      "publicObjectVersionIds": [
+        "obj.shen_yishi_person_and_assets@N6.LOW.v1"
+      ]
+    },
+    {
+      "sceneId": "scene.n6.transition.low",
+      "nodeId": "N6",
+      "sceneType": "TRANSITION",
+      "title": "重审只剩口供与活人",
+      "text": "可验证账目几近失效，重审只剩已经形成的犯官供状与仍然活着的证人。廷寄要求七日内再报，任何缺失材料都不会因此重现。",
+      "predecessorIds": [
+        "scene.n6.settlement.low"
+      ],
+      "successorIds": [
+        "scene.n7.opening.public"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "availableFrom": "N6",
+      "visibility": "PUBLIC",
+      "applicableObjectIds": [
+        "obj.shen_yishi_person_and_assets",
+        "obj.local_four_boxes",
+        "obj.inner_court_four_boxes"
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "sourceClaimIds": [],
+      "adaptationDecisionIds": [
+        "adapt.n6.pressure_lock",
+        "adapt.n6.two_beats",
+        "adapt.n6.object_contest"
+      ],
+      "stopCondition": "停在当前行动人物尚未回应的具体压力上；不得替玩家追加下一道命令。"
+    }
+  ],
+  "inputRealizations": [
+    {
+      "inputId": "input.n6.normal",
+      "inputClass": "NORMAL_ACTION",
+      "playerTextExamples": [
+        "调动我实际能调动的人与物，先处理眼前最危险的一项。"
+      ],
+      "intentCompilation": "编译为针对沈一石、商产与两组四箱的合法 PREPARE 尝试，不预告 COMMIT 结果。",
+      "actionResult": {
+        "status": "SUCCESS_OR_PARTIAL",
+        "confirmed": "只确认权限、资源和现场能够兑现的步骤",
+        "notConfirmed": "不确认全部目标已经成功"
+      },
+      "timeDelta": "配置初值：+1 时段",
+      "npcMoves": "查封、军饷划拨与内廷递送按默认政策继续；账册底层内容不改变",
+      "pressureDelta": "0 或 +1，取决于是否真正压住最高压力",
+      "nextSceneId": "scene.n6.after_prepare.controlled",
+      "narratorAllowed": "写出行动实际完成的步骤、NPC可观察反应和新的停止点。",
+      "narratorForbidden": "不得扩大为全局成功，不得替玩家追加第二项命令。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n6.rest_delay",
+      "inputClass": "REST_DELAY",
+      "playerTextExamples": [
+        "我什么都不管，先睡半天。",
+        "先喝酒歇一阵，等消息自己来。"
+      ],
+      "intentCompilation": "REST/DELAY；休息或回避本身合法，不偷偷改写成政策选择。",
+      "actionResult": {
+        "status": "SUCCESS",
+        "confirmed": "当前人物休息、少量恢复精力、PREPARE机会消耗",
+        "notConfirmed": "没有任何关键对象自动改变"
+      },
+      "timeDelta": "配置初值：+半日",
+      "npcMoves": "查封、军饷划拨与内廷递送按默认政策继续；账册底层内容不改变；五个AI席位取得先手",
+      "pressureDelta": "+1",
+      "nextSceneId": "scene.n6.after_prepare.lost_initiative",
+      "narratorAllowed": "真实写出休息及被急报唤醒，并只引用结算后新增事实。",
+      "narratorForbidden": "不得写世界暂停，不得捏造某一对象已经落入玩家手中。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n6.fabricated_success",
+      "inputClass": "FABRICATED_SUCCESS",
+      "playerTextExamples": [
+        "我已经拿到那份命令。",
+        "皇帝已经同意了。",
+        "账册已经在我手里。"
+      ],
+      "intentCompilation": "把既成陈述降级为“尝试取得、核验、递送或争取同意”。",
+      "actionResult": {
+        "status": "FAILED_ATTEMPT_OR_PARTIAL",
+        "confirmed": "执行一次来源、权限或保管核验并留下回执",
+        "notConfirmed": "未提供来源的命令、同意、账册或兵力不存在"
+      },
+      "timeDelta": "配置初值：+1 时段",
+      "npcMoves": "查封、军饷划拨与内廷递送按默认政策继续；账册底层内容不改变；对象原保管者可加强控制",
+      "pressureDelta": "+1",
+      "nextSceneId": "scene.n6.after_prepare.contested",
+      "narratorAllowed": "写核验失败、保管者反应和由此形成的新压力。",
+      "narratorForbidden": "不得把玩家陈述升级成 Canon。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n6.silence_chatter",
+      "inputClass": "SILENCE_OR_SMALL_TALK",
+      "playerTextExamples": [
+        "继续闲聊。",
+        "不说话。",
+        "再喝一盏茶。"
+      ],
+      "intentCompilation": "第一次编译为 DELAY；同一拍继续闲聊则等待超时并执行默认政策。",
+      "actionResult": {
+        "status": "DELAY",
+        "confirmed": "场景/时间预算消耗，玩家失去本拍先手",
+        "notConfirmed": "不改变对象保管、签押或资源"
+      },
+      "timeDelta": "配置初值：+1 时段",
+      "npcMoves": "查封、军饷划拨与内廷递送按默认政策继续；账册底层内容不改变",
+      "pressureDelta": "+1",
+      "nextSceneId": "scene.n6.after_prepare.lost_initiative",
+      "narratorAllowed": "让NPC动作和急报进入现场，停在玩家尚未回应之处。",
+      "narratorForbidden": "不得无限聊天，不得无成本重复输入。",
+      "provenanceClass": "ADAPTATION_RULE"
+    },
+    {
+      "inputId": "input.n6.overreach",
+      "inputClass": "OVERREACH_OR_INSUFFICIENT_RESOURCE",
+      "playerTextExamples": [
+        "召来十万大军。",
+        "命所有人立刻服从。",
+        "不经交付就烧掉刚抢到的材料。"
+      ],
+      "intentCompilation": "保留目标，校验权限、资源与时序；越权效果被拒绝或改写请求返回玩家确认。",
+      "actionResult": {
+        "status": "REJECTED_EFFECT_OR_REWRITE_REQUIRED",
+        "confirmed": "只有确认后的失败尝试才消耗时段",
+        "notConfirmed": "不存在的资源、对他人意志的控制、抢夺与同拍销毁均不成立"
+      },
+      "timeDelta": "改写确认前为0；确认执行后的失败尝试为+1时段",
+      "npcMoves": "查封、军饷划拨与内廷递送按默认政策继续；账册底层内容不改变",
+      "pressureDelta": "0 或 +1",
+      "nextSceneId": "scene.n6.after_prepare.contested",
+      "narratorAllowed": "写越权请求被现实阻断及目标人物的可观察反应。",
+      "narratorForbidden": "不得替玩家选择另一政策，不得用“虽然越权但成功”绕过规则。",
+      "provenanceClass": "ADAPTATION_RULE"
+    }
+  ]
+}

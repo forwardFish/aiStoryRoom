@@ -1,0 +1,126 @@
+{
+  "schemaVersion": "pressure_chapter_test_matrix_v1",
+  "matrixId": "pressure_chapter_release_matrix_v1",
+  "matrixVersion": "pressure-test-matrix-1.0.0",
+  "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+  "rangeSemantics": "INCLUSIVE_NO_SAMPLING",
+  "contractTestEntrypoint": "packages/templates/tests/pressure-chapter-release-artifacts.test.ts",
+  "gates": [
+    {
+      "gateId": "RUN-ROUTE-001",
+      "testIdSelectors": ["CT-001", "CT-018..020", "RES-001..002", "LEG-005..006"]
+    },
+    {
+      "gateId": "PRESSURE-AUTH-001",
+      "testIdSelectors": ["TOP-001..004", "FLOW-011", "FIN-002"]
+    },
+    {
+      "gateId": "GENESIS-001",
+      "testIdSelectors": ["CT-017", "DB-001", "REC-013..014", "FLOW-001"]
+    },
+    {
+      "gateId": "CHAPTER-001",
+      "testIdSelectors": ["CT-002..013", "CT-021", "DB-003..005", "DB-017..018", "FLOW-002..005"]
+    },
+    {
+      "gateId": "SETTLEMENT-001",
+      "testIdSelectors": ["CT-014..015", "DB-006..011", "DB-016", "FLOW-006..008", "FLOW-014"]
+    },
+    {
+      "gateId": "B0-CORE-001",
+      "testIdSelectors": ["B0C-001..014", "DB-006..011", "REC-004..008", "FLOW-002..008", "FIN-004"]
+    },
+    {
+      "gateId": "TERMINAL-001",
+      "testIdSelectors": ["DB-012", "REC-009..010", "FLOW-009..010", "FIN-001", "FIN-004..005"]
+    },
+    {
+      "gateId": "AUTHORITY-FIRST-001",
+      "testIdSelectors": ["ATC-001..010", "DB-019", "REC-016..018", "FLOW-012", "RES-014..015"]
+    },
+    {
+      "gateId": "ADJUDICATOR-001",
+      "testIdSelectors": ["FIN-002", "FLOW-011", "LEG-001", "LEG-003..004"]
+    },
+    {
+      "gateId": "GENERIC-SHADOW-001",
+      "testIdSelectors": ["DB-015", "REC-012", "GEN-001..005", "PRIV-010"]
+    },
+    {
+      "gateId": "NARRATIVE-001",
+      "testIdSelectors": ["REC-007..008", "REC-011", "REC-015", "REC-018", "FLOW-012", "NAR-001..006", "ATC-005..010"]
+    },
+    {
+      "gateId": "PRIVACY-001",
+      "testIdSelectors": ["PRIV-001..010", "TOP-008", "ACC-008"]
+    },
+    {
+      "gateId": "RESULT-001",
+      "testIdSelectors": ["RES-001..015", "PRIV-009", "LEG-005..006", "ACC-011..012"]
+    },
+    {
+      "gateId": "RECOVERY-001",
+      "testIdSelectors": ["REC-001..018", "DB-006..012", "DB-019", "ACC-004", "ACC-010"]
+    },
+    {
+      "gateId": "LEGACY-001",
+      "testIdSelectors": ["LEG-001", "LEG-003..009", "LEG-010A", "LEG-010B", "LEG-011..012", "ATC-003..009", "ACC-012"]
+    },
+    {
+      "gateId": "REPLAY-001",
+      "testIdSelectors": ["REP-001..008", "LEG-007..008", "RES-012", "ACC-011"]
+    },
+    {
+      "gateId": "ROLLOUT-001",
+      "testIdSelectors": ["ROL-001..003", "GEN-005", "ACC-001", "ACC-013"]
+    }
+  ],
+  "releaseArtifactCases": [
+    {
+      "caseId": "PC-W0-FIVE-TUPLE",
+      "assertion": "Solo and Multiplayer resolve the exact registered Pressure route"
+    },
+    {
+      "caseId": "PC-W0-CANONICAL-HASHES",
+      "assertion": "Every artifact digest is recomputed from canonical JSON bytes"
+    },
+    {
+      "caseId": "PC-W0-LEGACY-FIXED-PHASE-REJECTED",
+      "assertion": "PREPARE/COMMIT/REACTION fixed-phase candidates fail closed"
+    },
+    {
+      "caseId": "PC-W0-SOURCE-REGRESSION",
+      "assertion": "Every audited source SHA and source file digest is independently read back"
+    },
+    {
+      "caseId": "PC-W0-RESULT-REGISTRY",
+      "assertion": "Four result mappings are unique and Pressure selects its own schema and renderer"
+    },
+    {
+      "caseId": "PC-W0-CONTROL-TOPOLOGY",
+      "assertion": "Solo is 1+5 and Multiplayer is 2-6 humans with AI fill over the same six seats"
+    },
+    {
+      "caseId": "PC-W0-ACTION-PRESENTATION",
+      "assertion": "Every accepted chapter, decision and action has an exact Chinese label and description"
+    },
+    {
+      "caseId": "PC-W0-ACTION-EFFECT-COVERAGE",
+      "assertion": "All 276 decision-seat-action bindings compile without client text or Provider authority"
+    },
+    {
+      "caseId": "PC-W0-ACTION-EFFECT-REACHABILITY",
+      "assertion": "Every chapter has deterministic HIGH, MID, LOW and source-default witnesses"
+    },
+    {
+      "caseId": "PC-W0-ACTION-EFFECT-CONSERVATION",
+      "assertion": "The zero-resource MVP emits no reserve, consume or release and cannot double-spend"
+    }
+  ],
+  "evidencePolicy": {
+    "artifactContractEvidenceIsProductPass": false,
+    "http200IsProductPass": false,
+    "modelSelfReportIsProductPass": false,
+    "externalAcceptanceRequiredForEnablement": true
+  }
+}

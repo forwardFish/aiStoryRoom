@@ -1,0 +1,1190 @@
+{
+  "schemaVersion": "sangtian_node_seat_content_v1",
+  "nodeId": "N3",
+  "seatCount": 6,
+  "seats": [
+    {
+      "seatContentId": "seatcontent.n3.zhejiang_governor",
+      "nodeId": "N3",
+      "seatId": "seat.zhejiang_governor",
+      "roleKey": "zhejiang_governor",
+      "currentActorId": "actor.hu_zongxian",
+      "institutionalMission": "在海防、军饷、赈济与朝廷追责之间维持可治理的浙江。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n3.zhejiang_governor.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N3",
+          "statement": "官仓只够三日，桑苗时节逼近；救灾价格将决定灾民明年是否仍有田。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n3.zhejiang_governor.claim.n3-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-01",
+          "statement": "胡宗宪提出受灾两县买田不得低于三十石，以防全部灾民失田。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n3.zhejiang_governor.claim.n3-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-03",
+          "statement": "省府公开称官仓赈粮只够三日，并以种桑期限迫使官员签议案。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian"
+        },
+        {
+          "factRefId": "known.n3.zhejiang_governor.object.governor_memorial_channel",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.governor_memorial_channel",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：总督奏报渠道。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        },
+        {
+          "factRefId": "known.n3.zhejiang_governor.handoff.N2.governor_office",
+          "sourceKind": "HANDOFF",
+          "handoffId": "handoff.N2.governor_office",
+          "handoffEventId": "event.handoff.N2.governor_office",
+          "statement": "当前人物只继承 handoff.N2.governor_office 中正式交接并可验证的记录。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "accessVia": "HANDOFF"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n3.zhejiang_governor.claim.n3-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-02",
+          "statement": "高翰文承认以改兼赈的初衷，却指出议案可能使百姓明年无以为生。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n3.zhejiang_governor.claim.n3-sf-04",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-04",
+          "statement": "王用汲把失田后的租佃与口粮后果具体化，说明田价决定长期生计。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n3.zhejiang_governor.system.n3-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-UNK-01",
+          "statement": "本局粮食精确总量和家庭数量是配置初值，不得伪装成原作统计。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.zhejiang_governor"
+          ],
+          "currentActorId": "actor.hu_zongxian",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易高估一纸总督令在地方执行链中的即时效力。"
+      ],
+      "resources": [
+        "总督军令",
+        "军驿",
+        "跨省协调",
+        "奏报担保"
+      ],
+      "permissions": [
+        "调兵与分洪",
+        "总督担保",
+        "领衔奏疏",
+        "军饷划拨"
+      ],
+      "privatePressure": "调外粮越多，军饷和信用越紧；不担保则三日后局势失控。",
+      "keyLeverage": "以总督担保调外粮并分散改桑压力",
+      "defaultPrepare": "联络外省粮并准备总督担保",
+      "defaultCommit": "把主要粮用于赈灾借贷并分散改桑地域",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n3.zhejiang_governor.01",
+          "text": "“外粮可以借来，先说谁担运费、谁担归还、谁担途中损耗。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.governor_memorial_channel"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.zhejiang_governor.02",
+          "text": "“田价底线若只写在总督令里，县里不登记便等于没有。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.governor_memorial_channel"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.zhejiang_governor.03",
+          "text": "“把改桑摊到未受灾县，可以缓一处的痛，却会添另一处的怨。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.governor_memorial_channel"
+          ],
+          "knownBy": [
+            "seat.zhejiang_governor"
+          ]
+        }
+      ],
+      "privateOpening": "胡宗宪可以用总督信用借外粮，却要同时照看军饷与海防。每多担一笔赈粮，别处便少一分可调余量。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.governor_office",
+          "afterNode": "N2",
+          "seatId": "seat.zhejiang_governor",
+          "fromActorId": "actor.hu_zongxian",
+          "toActorId": "actor.hu_zongxian",
+          "permissionChange": [
+            "失去浙江巡抚兼任的直接地方民政权限",
+            "保留浙直总督军务、跨省协调、军饷与奏报渠道"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n3.zhejiang_governor.pressure",
+        "known.n3.zhejiang_governor.claim.n3-sf-01",
+        "known.n3.zhejiang_governor.claim.n3-sf-03",
+        "known.n3.zhejiang_governor.object.governor_memorial_channel",
+        "known.n3.zhejiang_governor.handoff.N2.governor_office"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.zhejiang_governor.claim.n3-sf-02",
+        "unknown.n3.zhejiang_governor.claim.n3-sf-04",
+        "unknown.n3.zhejiang_governor.system.n3-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.governor_memorial_channel"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n3.zhejiang_administration",
+      "nodeId": "N3",
+      "seatId": "seat.zhejiang_administration",
+      "roleKey": "zhejiang_administration",
+      "currentActorId": "actor.zheng_michang",
+      "institutionalMission": "让地方行政机器继续运转，并把改桑、赈灾与责任安排写成可执行文书。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n3.zhejiang_administration.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N3",
+          "statement": "官仓只够三日，桑苗时节逼近；救灾价格将决定灾民明年是否仍有田。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n3.zhejiang_administration.claim.n3-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-01",
+          "statement": "胡宗宪提出受灾两县买田不得低于三十石，以防全部灾民失田。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n3.zhejiang_administration.claim.n3-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-02",
+          "statement": "高翰文承认以改兼赈的初衷，却指出议案可能使百姓明年无以为生。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n3.zhejiang_administration.claim.n3-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-03",
+          "statement": "省府公开称官仓赈粮只够三日，并以种桑期限迫使官员签议案。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang"
+        },
+        {
+          "factRefId": "known.n3.zhejiang_administration.object.land_deed_pool",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.land_deed_pool",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：灾民田契、田价与改桑地域。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n3.zhejiang_administration.system.n3-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-UNK-01",
+          "statement": "本局粮食精确总量和家庭数量是配置初值，不得伪装成原作统计。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.zhejiang_administration"
+          ],
+          "currentActorId": "actor.zheng_michang",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把先形成的公文误认为最终会被朝廷接受的事实。"
+      ],
+      "resources": [
+        "省府印信",
+        "府县官吏",
+        "差役与押解",
+        "田契登记"
+      ],
+      "permissions": [
+        "签发地方命令",
+        "控制人犯与案卷",
+        "登记契约",
+        "查封商产"
+      ],
+      "privatePressure": "田价底线保护百姓，却会让改桑进度和财政目标下降。",
+      "keyLeverage": "设定田价、登记田契和粮市行政规则",
+      "defaultPrepare": "拟定田价底线、登记和粮市规则",
+      "defaultCommit": "在保证部分改桑进度下执行中等底价",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n3.zhejiang_administration.01",
+          "text": "“官仓只够眼前，田契若不成交，桑苗时令便要过去。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.zhejiang_administration.02",
+          "text": "“底价可以立，但立得太高，谁补大户不肯出的那部分粮？”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.zhejiang_administration.03",
+          "text": "“各县登记必须用同一口径，不能一处叫借粮、一处叫买田。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool"
+          ],
+          "knownBy": [
+            "seat.zhejiang_administration"
+          ]
+        }
+      ],
+      "privateOpening": "郑泌昌必须在田价、改桑时令与官仓余粮之间形成一份能执行的议案。任何底价都意味着有人要补足差额。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.administration",
+          "afterNode": "N6",
+          "seatId": "seat.zhejiang_administration",
+          "fromActorId": "actor.zheng_michang",
+          "toActorId": "actor.zheng_michang",
+          "permissionChange": [
+            "进入在押状态后只能签供、翻供、拒签、交代旧令和使用获准通信",
+            "不得继续调动省府差役、粮市与查封权限"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n3.zhejiang_administration.pressure",
+        "known.n3.zhejiang_administration.claim.n3-sf-01",
+        "known.n3.zhejiang_administration.claim.n3-sf-02",
+        "known.n3.zhejiang_administration.claim.n3-sf-03",
+        "known.n3.zhejiang_administration.object.land_deed_pool"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.zhejiang_administration.system.n3-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.land_deed_pool"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n3.qingliu_law",
+      "nodeId": "N3",
+      "seatId": "seat.qingliu_law",
+      "roleKey": "qingliu_law",
+      "currentActorId": "actor.hai_rui",
+      "institutionalMission": "阻止无案卷杀人、保住证人和文书，使责任链取得程序效力。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n3.qingliu_law.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N3",
+          "statement": "官仓只够三日，桑苗时节逼近；救灾价格将决定灾民明年是否仍有田。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui"
+        },
+        {
+          "factRefId": "known.n3.qingliu_law.claim.n3-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-01",
+          "statement": "胡宗宪提出受灾两县买田不得低于三十石，以防全部灾民失田。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui"
+        },
+        {
+          "factRefId": "known.n3.qingliu_law.claim.n3-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-02",
+          "statement": "高翰文承认以改兼赈的初衷，却指出议案可能使百姓明年无以为生。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING_PRIVATE",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui"
+        },
+        {
+          "factRefId": "known.n3.qingliu_law.claim.n3-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-03",
+          "statement": "省府公开称官仓赈粮只够三日，并以种桑期限迫使官员签议案。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui"
+        },
+        {
+          "factRefId": "known.n3.qingliu_law.object.law_review_channel",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.law_review_channel",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：法度审查与拒签渠道。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        },
+        {
+          "factRefId": "known.n3.qingliu_law.handoff.N2.qingliu",
+          "sourceKind": "HANDOFF",
+          "handoffId": "handoff.N2.qingliu",
+          "handoffEventId": "event.handoff.N2.qingliu",
+          "statement": "当前人物只继承 handoff.N2.qingliu 中正式交接并可验证的记录。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "accessVia": "HANDOFF"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n3.qingliu_law.system.n3-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-UNK-01",
+          "statement": "本局粮食精确总量和家庭数量是配置初值，不得伪装成原作统计。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.qingliu_law"
+          ],
+          "currentActorId": "actor.hai_rui",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信只要事实真实就会自然生效。"
+      ],
+      "resources": [
+        "调查权限",
+        "拒签权",
+        "证人保护",
+        "证据索引"
+      ],
+      "permissions": [
+        "审查案卷",
+        "拒绝签押",
+        "保护证人",
+        "制作封印与索引"
+      ],
+      "privatePressure": "拒登低价契约可能被指抗旨，放行则法度席位失去核心使命。",
+      "keyLeverage": "拒绝登记低价田契并保护乡约借粮",
+      "defaultPrepare": "核验田契与灾民生计",
+      "defaultCommit": "拒绝登记极低价契约并保护乡约借粮",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n3.qingliu_law.01",
+          "text": "“灾民签田契前先问他领了多少粮、还剩多少选择。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.law_review_channel"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.qingliu_law.02",
+          "text": "“低于底价的契，我不盖印；要办我，先把这条写进案卷。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.law_review_channel"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.qingliu_law.03",
+          "text": "“乡约借粮要有名单和见证，免得明日被改成聚众通倭。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.law_review_channel"
+          ],
+          "knownBy": [
+            "seat.qingliu_law"
+          ]
+        }
+      ],
+      "privateOpening": "海瑞接过谭纶正式移交的公开记录与已送达材料，不继承未写下的猜测。他能守的是田契登记、借粮名单和灾民是否仍有选择。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N2.qingliu",
+          "afterNode": "N2",
+          "seatId": "seat.qingliu_law",
+          "fromActorId": "actor.tan_lun",
+          "toActorId": "actor.hai_rui",
+          "inheritIf": [
+            "PUBLIC",
+            "SEAT_RECORD",
+            "TRANSFERRED_AND_RECEIVED"
+          ],
+          "neverAutoInherit": [
+            "私下猜测",
+            "未送达信件",
+            "玩家屏幕上见过但海瑞未获知的秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n3.qingliu_law.pressure",
+        "known.n3.qingliu_law.claim.n3-sf-01",
+        "known.n3.qingliu_law.claim.n3-sf-02",
+        "known.n3.qingliu_law.claim.n3-sf-03",
+        "known.n3.qingliu_law.object.law_review_channel",
+        "known.n3.qingliu_law.handoff.N2.qingliu"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.qingliu_law.system.n3-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.law_review_channel"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n3.jiangnan_merchant",
+      "nodeId": "N3",
+      "seatId": "seat.jiangnan_merchant",
+      "roleKey": "jiangnan_merchant",
+      "currentActorId": "actor.shen_yishi",
+      "institutionalMission": "用粮、银、船和信用换取可持续的商路，同时避免成为唯一替罪者。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n3.jiangnan_merchant.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N3",
+          "statement": "官仓只够三日，桑苗时节逼近；救灾价格将决定灾民明年是否仍有田。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi"
+        },
+        {
+          "factRefId": "known.n3.jiangnan_merchant.claim.n3-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-03",
+          "statement": "省府公开称官仓赈粮只够三日，并以种桑期限迫使官员签议案。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi"
+        },
+        {
+          "factRefId": "known.n3.jiangnan_merchant.object.relief_grain_pool",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.relief_grain_pool",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：官仓与商粮可用粮池。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n3.jiangnan_merchant.claim.n3-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-01",
+          "statement": "胡宗宪提出受灾两县买田不得低于三十石，以防全部灾民失田。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n3.jiangnan_merchant.claim.n3-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-02",
+          "statement": "高翰文承认以改兼赈的初衷，却指出议案可能使百姓明年无以为生。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n3.jiangnan_merchant.system.n3-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-UNK-01",
+          "statement": "本局粮食精确总量和家庭数量是配置初值，不得伪装成原作统计。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.jiangnan_merchant"
+          ],
+          "currentActorId": "actor.shen_yishi",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易相信实际贡献能自动换来政治保护。"
+      ],
+      "resources": [
+        "粮仓",
+        "银票与信用",
+        "商船",
+        "契约与账目"
+      ],
+      "permissions": [
+        "分配商粮",
+        "签借据与买田合同",
+        "转运",
+        "留下遗命"
+      ],
+      "privatePressure": "赈粮越多，买田和丝绸收益越少；买田越多，商会替罪风险越高。",
+      "keyLeverage": "在赈灾、买田、军需和商路之间唯一分配粮食",
+      "defaultPrepare": "清点粮仓与信用",
+      "defaultCommit": "把多数粮转为有借据赈灾，保留少量商路和军需",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n3.jiangnan_merchant.01",
+          "text": "“这批粮只能走一条账：赈、借、买田，三项不能同时记。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.jiangnan_merchant.02",
+          "text": "“若要三十石的底价，官府须给商会更长账期或别的丝单。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.jiangnan_merchant.03",
+          "text": "“我肯让灾民先领粮，但每张借据都要有人认领责任。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool"
+          ],
+          "knownBy": [
+            "seat.jiangnan_merchant"
+          ]
+        }
+      ],
+      "privateOpening": "沈一石手里的粮可以赈、可以借、可以买田，却不能在三本账上同时出现。选择哪一种用途，也是在选择未来谁来追债。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.merchant",
+          "afterNode": "N6",
+          "seatId": "seat.jiangnan_merchant",
+          "fromActorId": "actor.shen_yishi",
+          "toActorId": "actor.merchant_legacy_executor",
+          "inheritIf": [
+            "N6 冻结前形成的遗命",
+            "已登记债权",
+            "已启动递送",
+            "商会正式档案"
+          ],
+          "neverAutoInherit": [
+            "死后新计划",
+            "未留下的口头秘密"
+          ]
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n3.jiangnan_merchant.pressure",
+        "known.n3.jiangnan_merchant.claim.n3-sf-03",
+        "known.n3.jiangnan_merchant.object.relief_grain_pool"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.jiangnan_merchant.claim.n3-sf-01",
+        "unknown.n3.jiangnan_merchant.claim.n3-sf-02",
+        "unknown.n3.jiangnan_merchant.system.n3-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.relief_grain_pool"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n3.sili_weaving",
+      "nodeId": "N3",
+      "seatId": "seat.sili_weaving",
+      "roleKey": "sili_weaving",
+      "currentActorId": "actor.yang_jinshui",
+      "institutionalMission": "完成织造与内廷交办，保护皇权名义，并控制材料进入宫中的方式。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n3.sili_weaving.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N3",
+          "statement": "官仓只够三日，桑苗时节逼近；救灾价格将决定灾民明年是否仍有田。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.n3.sili_weaving.claim.n3-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-03",
+          "statement": "省府公开称官仓赈粮只够三日，并以种桑期限迫使官员签议案。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui"
+        },
+        {
+          "factRefId": "known.n3.sili_weaving.object.silk_quota",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.silk_quota",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：丝绸任务与织造产能。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n3.sili_weaving.claim.n3-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-01",
+          "statement": "胡宗宪提出受灾两县买田不得低于三十石，以防全部灾民失田。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n3.sili_weaving.claim.n3-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-02",
+          "statement": "高翰文承认以改兼赈的初衷，却指出议案可能使百姓明年无以为生。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n3.sili_weaving.system.n3-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-UNK-01",
+          "statement": "本局粮食精确总量和家庭数量是配置初值，不得伪装成原作统计。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.sili_weaving"
+          ],
+          "currentActorId": "actor.yang_jinshui",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易以为内廷渠道足以压过所有地方见证。"
+      ],
+      "resources": [
+        "织造局名义",
+        "密奏",
+        "锦衣卫递送",
+        "供货记录"
+      ],
+      "permissions": [
+        "使用或撤回织造名义",
+        "密奏",
+        "内廷递送",
+        "核验织造记录"
+      ],
+      "privatePressure": "未来订单可以换粮，却会把织造局绑进债务与兼并。",
+      "keyLeverage": "以未来丝绸订单为粮食提供信用或施压",
+      "defaultPrepare": "提出未来丝绸订单担保",
+      "defaultCommit": "以订单换粮但不直接强迫灾民卖田",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n3.sili_weaving.01",
+          "text": "“未来丝单可以作信用，不等于宫里替地方田价兜底。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.silk_quota"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.sili_weaving.02",
+          "text": "“桑田若分散到别县，织造局要先知道明年丝从哪里收。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.silk_quota"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.sili_weaving.03",
+          "text": "“别把灯笼当银票；内廷名义只护得住有实物、有签收的粮。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.silk_quota"
+          ],
+          "knownBy": [
+            "seat.sili_weaving"
+          ]
+        }
+      ],
+      "privateOpening": "杨金水可以用未来丝单为粮食增信，却不能让宫里替地方田价兜底。桑田若分散，织造收丝路径也必须重排。",
+      "handoffRules": [
+        {
+          "handoffId": "handoff.N6.weaving",
+          "afterNode": "N6",
+          "seatId": "seat.sili_weaving",
+          "fromActorId": "actor.yang_jinshui",
+          "toActorId": "actor.weaving_retainer",
+          "inheritIf": [
+            "织造局正式档案",
+            "已签发命令",
+            "已启动的锦衣卫交接"
+          ],
+          "unknownInvariant": "杨金水真实精神状态保持 UNKNOWN。"
+        }
+      ],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n3.sili_weaving.pressure",
+        "known.n3.sili_weaving.claim.n3-sf-03",
+        "known.n3.sili_weaving.object.silk_quota"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.sili_weaving.claim.n3-sf-01",
+        "unknown.n3.sili_weaving.claim.n3-sf-02",
+        "unknown.n3.sili_weaving.system.n3-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.silk_quota"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    },
+    {
+      "seatContentId": "seatcontent.n3.cabinet_finance",
+      "nodeId": "N3",
+      "seatId": "seat.cabinet_finance",
+      "roleKey": "cabinet_finance",
+      "currentActorId": "actor.yan_shifan",
+      "institutionalMission": "填补财政与军饷缺口，让中央政令继续运转，并控制责任向上扩散的范围。",
+      "knownFacts": [
+        {
+          "factRefId": "known.n3.cabinet_finance.pressure",
+          "sourceKind": "NODE_PRESSURE",
+          "nodeId": "N3",
+          "statement": "官仓只够三日，桑苗时节逼近；救灾价格将决定灾民明年是否仍有田。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n3.cabinet_finance.claim.n3-sf-03",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-03",
+          "statement": "省府公开称官仓赈粮只够三日，并以种桑期限迫使官员签议案。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING_PUBLIC",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan"
+        },
+        {
+          "factRefId": "known.n3.cabinet_finance.object.fiscal_target_register",
+          "sourceKind": "OBJECT_STATE",
+          "objectId": "obj.fiscal_target_register",
+          "objectVersionSelector": "OPENING_FROM_PREDECESSOR",
+          "statement": "当前人物可以依法调用或核验：财政与丝绸目标簿。",
+          "availableFrom": "N3",
+          "availableAtPhase": "OPENING",
+          "knownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "accessVia": "SEAT_AUTHORITY_OR_ACTUAL_CUSTODY"
+        }
+      ],
+      "unknownFacts": [
+        {
+          "factRefId": "unknown.n3.cabinet_finance.claim.n3-sf-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-01",
+          "statement": "胡宗宪提出受灾两县买田不得低于三十石，以防全部灾民失田。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n3.cabinet_finance.claim.n3-sf-02",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-SF-02",
+          "statement": "高翰文承认以改兼赈的初衷，却指出议案可能使百姓明年无以为生。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [
+            "ACTUAL_TRANSFER_AND_RECEIPT",
+            "PUBLIC_DISCLOSURE",
+            "VALID_HANDOFF"
+          ],
+          "narratorRule": "DO_NOT_PROJECT_AS_KNOWN"
+        },
+        {
+          "factRefId": "unknown.n3.cabinet_finance.system.n3-unk-01",
+          "sourceKind": "CLAIM",
+          "claimId": "N3-UNK-01",
+          "statement": "本局粮食精确总量和家庭数量是配置初值，不得伪装成原作统计。",
+          "availableFrom": "N3",
+          "notKnownBy": [
+            "seat.cabinet_finance"
+          ],
+          "currentActorId": "actor.yan_shifan",
+          "revealConditions": [],
+          "narratorRule": "FORBIDDEN_AS_FACT"
+        }
+      ],
+      "misbeliefs": [
+        "容易把地方资源当作可随时征用的财政余额。"
+      ],
+      "resources": [
+        "急递与廷寄",
+        "财政目标",
+        "中央收件",
+        "抄没归属"
+      ],
+      "permissions": [
+        "设定期限",
+        "调整财政认定",
+        "指定收件路径",
+        "决定抄没归属"
+      ],
+      "privatePressure": "指标容忍度每松一分，都要在国库和前线找到替代。",
+      "keyLeverage": "调整指标容忍度与财政认定，但不能凭空增加粮食",
+      "defaultPrepare": "维持最低丝绸与财政目标",
+      "defaultCommit": "允许有限缓办，但要求军饷替代来源",
+      "dialogueSeeds": [
+        {
+          "dialogueSeedId": "dialogue.n3.cabinet_finance.01",
+          "text": "“每缓一亩改桑，都要在财政簿上找到替代，不许只写民情艰难。”",
+          "purpose": "PROBE_OR_FRAME",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.fiscal_target_register"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.cabinet_finance.02",
+          "text": "“军饷缺口先于商会债权到期，地方担保不能空着期限。”",
+          "purpose": "BARGAIN_OR_THREAT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.fiscal_target_register"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n3.cabinet_finance.03",
+          "text": "“可以容一时赈粮，不能让改桑进度从账上消失。”",
+          "purpose": "HANDOFF_OR_COMMITMENT",
+          "signatureLine": false,
+          "applicableObjectIds": [
+            "obj.relief_grain_pool",
+            "obj.land_deed_pool",
+            "obj.fiscal_target_register"
+          ],
+          "knownBy": [
+            "seat.cabinet_finance"
+          ]
+        }
+      ],
+      "privateOpening": "内阁能容忍有限缓办，却必须从别处补上丝绸与军饷。地方提出的每一项民生保护，都要在财政簿上留下对应代价。",
+      "handoffRules": [],
+      "provenanceClass": "ADAPTATION_RULE",
+      "adaptationDecisionIds": [
+        "adapt.n3.pressure_lock",
+        "adapt.n3.two_beats",
+        "adapt.n3.object_contest"
+      ],
+      "knownFactIds": [
+        "known.n3.cabinet_finance.pressure",
+        "known.n3.cabinet_finance.claim.n3-sf-03",
+        "known.n3.cabinet_finance.object.fiscal_target_register"
+      ],
+      "unknownFactIds": [
+        "unknown.n3.cabinet_finance.claim.n3-sf-01",
+        "unknown.n3.cabinet_finance.claim.n3-sf-02",
+        "unknown.n3.cabinet_finance.system.n3-unk-01"
+      ],
+      "keyLeverageObjectIds": [
+        "obj.fiscal_target_register"
+      ],
+      "ruleHint": "休息、沉默或闲谈可以发生，但会消耗当前机会并让时间、其他角色和压力继续前进。"
+    }
+  ]
+}

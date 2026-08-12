@@ -92,6 +92,7 @@ const runtime = new OpenNovelRuntime(
     decisionMode: "AUTHORED_WHEN_AVAILABLE",
     worldModules,
     scenePipelineModules: scenePipelineModulesFromEnv(provider),
+    authorityFirstNarrativeProjection: true,
   },
 );
 
