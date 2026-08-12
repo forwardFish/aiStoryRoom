@@ -1,6 +1,6 @@
 name: Apply and Test Exact Settled Reaction Product Sources
 
-# Retry only after Git-blob verification of all three exact patch chunks.
+# Exact source patch; no source-text marker replacement.
 on:
   push:
     branches: [codex/chatgpt-pro-dynamic-kernel-lite]
@@ -50,12 +50,16 @@ jobs:
             .github/transport/settled-reaction-wiring.py \
             .github/transport/settled-reaction-tests.py \
             | tr -d '[:space:]' \
-            | base64 --decode \
-            > "${RUNNER_TEMP}/product.patch.xz"
+            | base64 --decode > "${RUNNER_TEMP}/product.patch.xz"
           echo "${PATCH_SHA256}  ${RUNNER_TEMP}/product.patch.xz" | sha256sum --check
           xz -dc "${RUNNER_TEMP}/product.patch.xz" > "${RUNNER_TEMP}/product.patch"
           git apply --check "${RUNNER_TEMP}/product.patch"
           git apply "${RUNNER_TEMP}/product.patch"
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('packages/templates/tests/unbound-action-narrative-source.test.ts')
+          path.write_text(path.read_text(encoding='utf-8').rstrip() + '\n', encoding='utf-8')
+          PY
           cat > "${RUNNER_TEMP}/expected-12.txt" <<'EOF'
           apps/api/src/solo-story-engine/context-compiler.ts
           packages/templates/package.json
@@ -70,7 +74,10 @@ jobs:
           packages/templates/tests/unbound-action-narrative-source.test.ts
           scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
           EOF
-          git diff --name-only -- packages apps scripts | sort > "${RUNNER_TEMP}/actual-12.txt"
+          {
+            git diff --name-only -- packages apps scripts
+            git ls-files --others --exclude-standard -- packages apps scripts
+          } | sort -u > "${RUNNER_TEMP}/actual-12.txt"
           diff -u "${RUNNER_TEMP}/expected-12.txt" "${RUNNER_TEMP}/actual-12.txt"
           git diff --check
           if grep -E -i 'sangtian|zhejiang|qingliu|巡抚|县册|回文' \
@@ -104,7 +111,10 @@ jobs:
           packages/templates/tests/unbound-action-narrative-source.test.ts
           scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
           EOF
-          git diff --name-only -- packages apps scripts | sort > "${RUNNER_TEMP}/actual-13.txt"
+          {
+            git diff --name-only -- packages apps scripts
+            git ls-files --others --exclude-standard -- packages apps scripts
+          } | sort -u > "${RUNNER_TEMP}/actual-13.txt"
           diff -u "${RUNNER_TEMP}/expected-13.txt" "${RUNNER_TEMP}/actual-13.txt"
           git diff --check
 
