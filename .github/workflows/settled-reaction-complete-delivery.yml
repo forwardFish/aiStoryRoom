@@ -1,4 +1,4 @@
-name: Export Exact Settled Reaction Product Baseline
+name: Export Exact Settled Reaction Target Sources
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  export-baseline:
+  export-targets:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -21,23 +21,40 @@ jobs:
           ref: 8fba8ef1e0305a6651b2b2cd7eb737815da07ab8
           fetch-depth: 0
 
-      - name: Archive exact baseline repository
+      - name: Archive exact target files
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "8fba8ef1e0305a6651b2b2cd7eb737815da07ab8"
-          git archive \
-            --format=zip \
-            --output=/tmp/aiStoryRoom-8fba8ef1.zip \
-            8fba8ef1e0305a6651b2b2cd7eb737815da07ab8
-          sha256sum /tmp/aiStoryRoom-8fba8ef1.zip \
-            > /tmp/aiStoryRoom-8fba8ef1.zip.sha256
+          mkdir -p /tmp/target-source
+          files=(
+            packages/templates/src/story-package/part-one-runtime-types.ts
+            packages/templates/src/story-package/part-one-runtime-engine.ts
+            packages/templates/src/story-package/index.ts
+            packages/templates/src/runtime-facade.ts
+            packages/templates/package.json
+            packages/templates/config/sangtian/story-package/part-one-runtime.json
+            packages/templates/tests/part-one-dynamic-kernel-lite.test.ts
+            apps/api/src/solo-story-engine/context-compiler.ts
+            scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
+            .github/transport/settled-reaction-contract-product.py
+            .github/transport/settled-reaction-wiring.py
+            .github/transport/settled-reaction-tests.py
+          )
+          for file in "${files[@]}"; do
+            test -f "$file"
+            mkdir -p "/tmp/target-source/$(dirname "$file")"
+            cp "$file" "/tmp/target-source/$file"
+          done
+          tar -C /tmp/target-source -czf /tmp/aiStoryRoom-target-source-8fba8ef1.tar.gz .
+          sha256sum /tmp/aiStoryRoom-target-source-8fba8ef1.tar.gz \
+            > /tmp/aiStoryRoom-target-source-8fba8ef1.tar.gz.sha256
 
       - uses: actions/upload-artifact@v4
         with:
-          name: aiStoryRoom-exact-baseline-8fba8ef1
+          name: aiStoryRoom-target-source-8fba8ef1
           path: |
-            /tmp/aiStoryRoom-8fba8ef1.zip
-            /tmp/aiStoryRoom-8fba8ef1.zip.sha256
+            /tmp/aiStoryRoom-target-source-8fba8ef1.tar.gz
+            /tmp/aiStoryRoom-target-source-8fba8ef1.tar.gz.sha256
           if-no-files-found: error
           retention-days: 2
