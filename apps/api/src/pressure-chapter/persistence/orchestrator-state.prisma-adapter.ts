@@ -45,9 +45,14 @@ interface OrchestratorRuntimeRow {
   lockVersion: number;
 }
 
-interface OrchestratorStateTransaction {
+interface OrchestratorStateReadTransaction {
   storyEvent: {
     findMany(input: Record<string, unknown>): Promise<OrchestratorEventRow[]>;
+  };
+}
+
+interface OrchestratorStateTransaction {
+  storyEvent: OrchestratorStateReadTransaction["storyEvent"] & {
     create(input: { data: Record<string, unknown> }): Promise<OrchestratorEventRow>;
   };
   pressureChapterRuntime: {
@@ -142,7 +147,7 @@ implements ChapterOrchestratorStatePort {
 }
 
 export async function readCurrentOrchestratorState(
-  tx: Pick<OrchestratorStateTransaction, "storyEvent">,
+  tx: OrchestratorStateReadTransaction,
   runId: string,
 ): Promise<ChapterOrchestratorStateV1 | null> {
   const rows = await tx.storyEvent.findMany({

@@ -4,6 +4,7 @@ import {
   isSha256,
   validateDecisionActionV1,
   validateRunRouteSnapshotV1,
+  validateSeatIdV1,
   type SeatIdV1,
 } from "@ai-story/shared";
 import type {
@@ -19,6 +20,7 @@ import type {
   PreparedAutomationActionStaleReasonV1,
   PreparedAutomationActionSubmissionPortV1,
 } from "../decision-automation/contracts";
+import type { ChapterOrchestratorStateV1 } from "../orchestrator/contracts";
 import { validateOrchestratorStateV1 } from "../orchestrator/validation";
 import type { SeatControlSnapshotV1 } from "../seat-control/types";
 import { decodeSeatEnvelope } from "../seat-control-persistence/envelope";
@@ -145,6 +147,8 @@ implements PreparedAutomationActionSubmissionPortV1 {
     raw: AppendPreparedAutomationActionCommandV1,
   ): Promise<AppendPreparedAutomationActionResultV1> {
     const route = validateRunRouteSnapshotV1(raw.command.routeSnapshot);
+    const routeSeatIds = route.seatIds.map((seatId, index) =>
+      validateSeatIdV1(seatId, `routeSnapshot.seatIds[${index}]`));
     const action = validateDecisionActionV1(raw.command.action);
     const intent = structuredClone(raw.command.intent);
     validateFormalInteractionIntentV1(intent);
@@ -328,7 +332,7 @@ implements PreparedAutomationActionSubmissionPortV1 {
         ) return stale(action.actionId, currentHead, "AI_POLICY");
 
         const access = buildPreparedAccess(
-          route.seatIds,
+          routeSeatIds,
           runtime,
           decisionState,
           seatSnapshot,
@@ -488,16 +492,28 @@ function validateStoredOrchestratorEvent(
   row: PreparedEventRowV1,
   runId: string,
   revision: number,
-) {
-  const state = validateOrchestratorStateV1(row.payloadJson);
-  if (
-    row.runId !== runId
-    || row.type !== ORCHESTRATOR_EVENT_TYPE
-    || row.dedupeKey !== orchestratorDedupeKey(runId, revision)
-    || state.runId !== runId
-    || state.revision !== revision
-  ) throw invalid("Stored Orchestrator row binding is invalid", row.id);
-  return state;
+): ChapterOrchestratorStateV1 {
+  try {
+    if (!row.payloadJson || typeof row.payloadJson !== "object" || Array.isArray(row.payloadJson)) {
+      throw new Error("ORCHESTRATOR_PAYLOAD_OBJECT_REQUIRED");
+    }
+    const state = validateOrchestratorStateV1(
+      structuredClone(row.payloadJson) as ChapterOrchestratorStateV1,
+    );
+    if (
+      row.runId !== runId
+      || row.type !== ORCHESTRATOR_EVENT_TYPE
+      || row.dedupeKey !== orchestratorDedupeKey(runId, revision)
+      || state.runId !== runId
+      || state.revision !== revision
+    ) throw new Error("ORCHESTRATOR_ROW_BINDING_MISMATCH");
+    return state;
+  } catch (cause) {
+    throw invalid(
+      "Stored Orchestrator row binding is invalid",
+      `${row.id}:${cause instanceof Error ? cause.message : String(cause)}`,
+    );
+  }
 }
 
 function orchestratorDedupeKey(runId: string, revision: number): string {

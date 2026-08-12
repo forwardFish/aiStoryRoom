@@ -191,12 +191,16 @@ class Harness {
       snapshots: {
         capture: async () => {
           this.snapshotReads += 1;
-          const active = this.chapter.activeDecision;
-          if (active) active.deadlineAtMs = this.deadlineAtMs;
+          const { orchestratorHash: _ignored, ...chapterBody } =
+            structuredClone(this.chapter);
+          if (chapterBody.activeDecision) {
+            chapterBody.activeDecision.deadlineAtMs = this.deadlineAtMs;
+          }
+          const chapter = withOrchestratorHashV1(chapterBody);
           return withDecisionConvergenceSnapshotHashV1({
             schemaVersion: "pressure_decision_convergence_authority_snapshot_v1",
             routeSnapshot: structuredClone(this.route),
-            chapter: structuredClone(this.chapter),
+            chapter,
             projection: cloneProjection(this.projection),
             seatAuthority: structuredClone(this.seatAuthority),
             aiPolicyArtifactHash: POLICY_HASH,
