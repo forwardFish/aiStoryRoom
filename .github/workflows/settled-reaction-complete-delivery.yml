@@ -1,6 +1,6 @@
 name: Apply and Test Exact Settled Reaction Product Sources
 
-# Exact source patch v4; no source-text marker replacement.
+# Exact git patches only; no source-text marker replacement.
 on:
   push:
     branches: [codex/chatgpt-pro-dynamic-kernel-lite]
@@ -17,7 +17,8 @@ concurrency:
 env:
   TARGET_BRANCH: codex/chatgpt-pro-dynamic-kernel-lite
   PRODUCT_BASE: 8fba8ef1e0305a6651b2b2cd7eb737815da07ab8
-  PATCH_SHA256: 869a0dc55485bed4b77e93c271cfdd33ae0d6bda55e9d00477ae82e080886d09
+  BASE_PATCH_SHA256: 9b2b53d95f9acf7462e479e8b5b85a7b30aa0e9e57bc8b4550627315b8751106
+  CORRECTION_PATCH_SHA256: ef8c68b888dd103b5f41ccb2d8d4b5f3c46f0a8a3804ff3e1e9664ced522748a
 
 jobs:
   apply-test-commit-clean:
@@ -37,7 +38,7 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Apply exact product patch
+      - name: Apply exact product patches
         shell: bash
         run: |
           set -euo pipefail
@@ -45,13 +46,28 @@ jobs:
           git merge-base --is-ancestor "${PRODUCT_BASE}" HEAD
           git diff --quiet "${PRODUCT_BASE}"..HEAD -- packages apps scripts
           test -z "$(git status --porcelain)"
-          tr -d '[:space:]' \
-            < .github/transport/settled-reaction-contract-product.py \
-            | base64 --decode > "${RUNNER_TEMP}/product.patch.xz"
-          echo "${PATCH_SHA256}  ${RUNNER_TEMP}/product.patch.xz" | sha256sum --check
-          xz -dc "${RUNNER_TEMP}/product.patch.xz" > "${RUNNER_TEMP}/product.patch"
-          git apply --check "${RUNNER_TEMP}/product.patch"
-          git apply "${RUNNER_TEMP}/product.patch"
+
+          cat \
+            .github/transport/settled-reaction-contract-product.py \
+            .github/transport/settled-reaction-wiring.py \
+            .github/transport/settled-reaction-tests.py \
+            | tr -d '[:space:]' \
+            | base64 --decode > "${RUNNER_TEMP}/base.patch.xz"
+          echo "${BASE_PATCH_SHA256}  ${RUNNER_TEMP}/base.patch.xz" | sha256sum --check
+          xz -dc "${RUNNER_TEMP}/base.patch.xz" > "${RUNNER_TEMP}/base.patch"
+          git apply --check "${RUNNER_TEMP}/base.patch"
+          git apply "${RUNNER_TEMP}/base.patch"
+
+          cat > "${RUNNER_TEMP}/correction.patch.xz.b64" <<'EOF'
+          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
+          EOF
+          tr -d '[:space:]' < "${RUNNER_TEMP}/correction.patch.xz.b64" \
+            | base64 --decode > "${RUNNER_TEMP}/correction.patch.xz"
+          echo "${CORRECTION_PATCH_SHA256}  ${RUNNER_TEMP}/correction.patch.xz" | sha256sum --check
+          xz -dc "${RUNNER_TEMP}/correction.patch.xz" > "${RUNNER_TEMP}/correction.patch"
+          git apply --check "${RUNNER_TEMP}/correction.patch"
+          git apply "${RUNNER_TEMP}/correction.patch"
+
           python - <<'PY'
           from pathlib import Path
           path = Path('packages/templates/tests/unbound-action-narrative-source.test.ts')
