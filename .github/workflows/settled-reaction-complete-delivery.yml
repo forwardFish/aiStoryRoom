@@ -1,39 +1,28 @@
-name: Validate Direct Settled Reaction Product Sources
+name: Apply and Test Exact Settled Reaction Product Sources
 
 on:
   push:
     branches:
       - codex/chatgpt-pro-dynamic-kernel-lite
     paths:
-      - packages/templates/src/story-package/part-one-runtime-types.ts
-      - packages/templates/src/story-package/settled-reaction-contract.ts
-      - packages/templates/src/story-package/part-one-runtime-engine.ts
-      - packages/templates/src/story-package/index.ts
-      - packages/templates/src/runtime-facade.ts
-      - packages/templates/package.json
-      - packages/templates/tests/fixtures/neutral-unbound-world.ts
-      - packages/templates/tests/settled-reaction-contract.test.ts
-      - packages/templates/tests/unbound-action-narrative-source.test.ts
-      - packages/templates/tests/part-one-dynamic-kernel-lite.test.ts
-      - apps/api/src/solo-story-engine/context-compiler.ts
-      - scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
+      - .github/workflows/settled-reaction-complete-delivery.yml
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: settled-reaction-direct-product
+  group: settled-reaction-exact-product
   cancel-in-progress: false
 
 jobs:
-  validate-and-land:
+  apply-test-commit-clean:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
       TARGET_BRANCH: codex/chatgpt-pro-dynamic-kernel-lite
       PRODUCT_BASE: 8fba8ef1e0305a6651b2b2cd7eb737815da07ab8
-      EVIDENCE_ROOT: /tmp/settled-reaction-direct-product
+      PATCH_SHA256: 0da77945555f94be87d262f309bd54798833f9cc2c2b2b83bb7c02b5e3e906b4
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,114 +39,132 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Compile runtime package and run deterministic gates
+      - name: Apply exact source patch
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "${EVIDENCE_ROOT}/logs"
           test "$(git branch --show-current)" = "${TARGET_BRANCH}"
           git merge-base --is-ancestor "${PRODUCT_BASE}" HEAD
-          git status --short | tee "${EVIDENCE_ROOT}/logs/00-status-before.log"
+          git diff --quiet "${PRODUCT_BASE}"..HEAD -- packages apps scripts
           test -z "$(git status --porcelain)"
 
-          pnpm install --frozen-lockfile 2>&1 \
-            | tee "${EVIDENCE_ROOT}/logs/01-install.log"
+          cat \
+            .github/transport/settled-reaction-contract-product.py \
+            .github/transport/settled-reaction-wiring.py \
+            .github/transport/settled-reaction-tests.py \
+            | tr -d '[:space:]' \
+            | base64 --decode \
+            > "${RUNNER_TEMP}/settled-reaction-source.patch.xz"
+          echo "${PATCH_SHA256}  ${RUNNER_TEMP}/settled-reaction-source.patch.xz" \
+            | sha256sum --check
+          xz --decompress --stdout \
+            "${RUNNER_TEMP}/settled-reaction-source.patch.xz" \
+            > "${RUNNER_TEMP}/settled-reaction-source.patch"
+          git apply --check "${RUNNER_TEMP}/settled-reaction-source.patch"
+          git apply "${RUNNER_TEMP}/settled-reaction-source.patch"
 
+          cat > "${RUNNER_TEMP}/expected-before-compile.txt" <<'EOF'
+          apps/api/src/solo-story-engine/context-compiler.ts
+          packages/templates/package.json
+          packages/templates/src/runtime-facade.ts
+          packages/templates/src/story-package/index.ts
+          packages/templates/src/story-package/part-one-runtime-engine.ts
+          packages/templates/src/story-package/part-one-runtime-types.ts
+          packages/templates/src/story-package/settled-reaction-contract.ts
+          packages/templates/tests/fixtures/neutral-unbound-world.ts
+          packages/templates/tests/part-one-dynamic-kernel-lite.test.ts
+          packages/templates/tests/settled-reaction-contract.test.ts
+          packages/templates/tests/unbound-action-narrative-source.test.ts
+          scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
+          EOF
+          git diff --name-only -- packages apps scripts \
+            | sort > "${RUNNER_TEMP}/actual-before-compile.txt"
+          diff -u \
+            "${RUNNER_TEMP}/expected-before-compile.txt" \
+            "${RUNNER_TEMP}/actual-before-compile.txt"
+          git diff --check
+          test -f packages/templates/src/story-package/settled-reaction-contract.ts
+          test -f packages/templates/tests/fixtures/neutral-unbound-world.ts
+          test -f packages/templates/tests/settled-reaction-contract.test.ts
+          test -f packages/templates/tests/unbound-action-narrative-source.test.ts
+          if grep -E -i 'sangtian|zhejiang|qingliu|巡抚|县册|回文' \
+            packages/templates/src/story-package/settled-reaction-contract.ts; then
+            echo "STORY_SPECIFIC_TERM_IN_GENERIC_CONTRACT" >&2
+            exit 1
+          fi
+
+      - name: Install workspace
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Compile Sangtian runtime package
+        shell: bash
+        run: |
+          set -euo pipefail
           SANGTIAN_SKIP_SOURCE_WRITES=1 \
           SANGTIAN_AUTHORING_OUTPUT_ROOT="${RUNNER_TEMP}/sangtian-authoring-output" \
           SANGTIAN_RUNTIME_PACKAGE_PATH="${GITHUB_WORKSPACE}/packages/templates/config/sangtian/story-package/part-one-runtime.json" \
-            node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs \
-            2>&1 | tee "${EVIDENCE_ROOT}/logs/02-compile-package.log"
+            node scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
 
+          cat > "${RUNNER_TEMP}/expected-final-product.txt" <<'EOF'
+          apps/api/src/solo-story-engine/context-compiler.ts
+          packages/templates/config/sangtian/story-package/part-one-runtime.json
+          packages/templates/package.json
+          packages/templates/src/runtime-facade.ts
+          packages/templates/src/story-package/index.ts
+          packages/templates/src/story-package/part-one-runtime-engine.ts
+          packages/templates/src/story-package/part-one-runtime-types.ts
+          packages/templates/src/story-package/settled-reaction-contract.ts
+          packages/templates/tests/fixtures/neutral-unbound-world.ts
+          packages/templates/tests/part-one-dynamic-kernel-lite.test.ts
+          packages/templates/tests/settled-reaction-contract.test.ts
+          packages/templates/tests/unbound-action-narrative-source.test.ts
+          scripts/story-decomposition/compile-sangtian-part-one-authoring.mjs
+          EOF
+          git diff --name-only -- packages apps scripts \
+            | sort > "${RUNNER_TEMP}/actual-final-product.txt"
+          diff -u \
+            "${RUNNER_TEMP}/expected-final-product.txt" \
+            "${RUNNER_TEMP}/actual-final-product.txt"
           git diff --check
-          git diff --name-status \
-            | tee "${EVIDENCE_ROOT}/config-diff-before-tests.txt"
-          test "$(git diff --name-only | tr -d '\r')" = \
-            "packages/templates/config/sangtian/story-package/part-one-runtime.json"
 
-          results="${EVIDENCE_ROOT}/results.tsv"
-          : > "${results}"
-          failed=0
-          run_gate() {
-            local label="$1"; shift
-            local log="${EVIDENCE_ROOT}/logs/${label}.log"
-            set +e
-            "$@" 2>&1 | tee "${log}"
-            local code=${PIPESTATUS[0]}
-            set -e
-            printf '%s\t%s\t%s\n' "${label}" "${code}" "${log}" >> "${results}"
-            if [ "${code}" -ne 0 ]; then failed=1; fi
-          }
+      - name: Run focused deterministic tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @ai-story/templates typecheck
+          pnpm --filter @ai-story/templates test:settled-reaction-contract
+          pnpm --filter @ai-story/templates test:story-package
+          pnpm --filter @ai-story/templates build
+          pnpm --filter @apps/openovel-runtime typecheck
+          pnpm --filter @apps/openovel-runtime exec node --import tsx --test \
+            tests/intent-capability-routing.spec.ts
+          pnpm --filter @apps/openovel-runtime test
+          pnpm --filter @apps/api test:solo-story-engine
+          pnpm test:story:v4
 
-          run_gate 03-templates-typecheck \
-            pnpm --filter @ai-story/templates typecheck
-          run_gate 04-settled-reaction-contract \
-            pnpm --filter @ai-story/templates test:settled-reaction-contract
-          run_gate 05-templates-story-package \
-            pnpm --filter @ai-story/templates test:story-package
-          run_gate 06-templates-build \
-            pnpm --filter @ai-story/templates build
-          run_gate 07-openovel-typecheck \
-            pnpm --filter @apps/openovel-runtime typecheck
-          run_gate 08-openovel-capability-routing \
-            pnpm --filter @apps/openovel-runtime exec node --import tsx --test \
-              tests/intent-capability-routing.spec.ts
-          run_gate 09-openovel-test \
-            pnpm --filter @apps/openovel-runtime test
-          run_gate 10-api-solo \
-            pnpm --filter @apps/api test:solo-story-engine
-          run_gate 11-story-v4 \
-            pnpm test:story:v4
-
-          python - <<'PY'
-          import json
-          import re
-          from pathlib import Path
-          root = Path('/tmp/settled-reaction-direct-product')
-          rows = []
-          failed = False
-          for line in (root / 'results.tsv').read_text(encoding='utf-8').splitlines():
-              label, code, log_path = line.split('\t', 2)
-              text = Path(log_path).read_text(encoding='utf-8', errors='replace')
-              def last(pattern):
-                  values = re.findall(pattern, text, flags=re.MULTILINE)
-                  return int(values[-1]) if values else None
-              row = {
-                  'label': label,
-                  'exitCode': int(code),
-                  'tests': last(r'^# tests\s+(\d+)\s*$'),
-                  'pass': last(r'^# pass\s+(\d+)\s*$'),
-                  'fail': last(r'^# fail\s+(\d+)\s*$'),
-                  'skip': last(r'^# skipped\s+(\d+)\s*$'),
-                  'todo': last(r'^# todo\s+(\d+)\s*$'),
-                  'logPath': log_path,
-              }
-              rows.append(row)
-              failed = failed or int(code) != 0 or (row['fail'] or 0) > 0
-          (root / 'results.json').write_text(
-              json.dumps(rows, ensure_ascii=False, indent=2) + '\n',
-              encoding='utf-8',
-          )
-          if failed:
-              raise SystemExit(1)
-          PY
-
-      - name: Commit compiled product and remove temporary transport
+      - name: Commit and push tested product
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add -- packages/templates/config/sangtian/story-package/part-one-runtime.json
+          mapfile -t PRODUCT_FILES < "${RUNNER_TEMP}/expected-final-product.txt"
+          git add -- "${PRODUCT_FILES[@]}"
           git diff --cached --check
-          test "$(git diff --cached --name-only | tr -d '\r')" = \
-            "packages/templates/config/sangtian/story-package/part-one-runtime.json"
-          git commit -m "feat(kernel-lite): compile complete settled reaction contracts"
-          git rev-parse HEAD > "${EVIDENCE_ROOT}/product-commit-sha.txt"
-          git rev-parse HEAD^{tree} > "${EVIDENCE_ROOT}/product-commit-tree.txt"
+          git diff --cached --name-only \
+            | sort > "${RUNNER_TEMP}/actual-staged-product.txt"
+          diff -u \
+            "${RUNNER_TEMP}/expected-final-product.txt" \
+            "${RUNNER_TEMP}/actual-staged-product.txt"
+          git commit -m "feat(kernel-lite): complete settled reaction and unbound narrative contracts"
+          git rev-parse HEAD > "${RUNNER_TEMP}/product-commit-sha.txt"
           git push origin HEAD:"${TARGET_BRANCH}"
 
+      - name: Remove temporary transport after product push
+        shell: bash
+        run: |
+          set -euo pipefail
           git rm -f \
             .github/transport/settled-reaction-contract-product.py \
             .github/transport/settled-reaction-wiring.py \
@@ -169,18 +176,8 @@ jobs:
 
           git fetch origin "${TARGET_BRANCH}"
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/${TARGET_BRANCH})"
-          git rev-parse HEAD > "${EVIDENCE_ROOT}/final-remote-sha.txt"
-          git rev-parse HEAD^{tree} > "${EVIDENCE_ROOT}/final-remote-tree.txt"
+          echo "PRODUCT_COMMIT_SHA=$(cat "${RUNNER_TEMP}/product-commit-sha.txt")"
+          echo "FINAL_REMOTE_SHA=$(git rev-parse HEAD)"
+          echo "FINAL_REMOTE_TREE=$(git rev-parse HEAD^{tree})"
           git diff --name-status \
-            "${PRODUCT_BASE}"..HEAD -- packages apps scripts \
-            | tee "${EVIDENCE_ROOT}/final-product-diff.txt"
-          test -s "${EVIDENCE_ROOT}/final-product-diff.txt"
-
-      - name: Upload deterministic test evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: settled-reaction-direct-product-${{ github.sha }}
-          path: /tmp/settled-reaction-direct-product/
-          if-no-files-found: error
-          retention-days: 7
+            "${PRODUCT_BASE}"..HEAD -- packages apps scripts
