@@ -1,6 +1,6 @@
 name: Apply and Test Exact Settled Reaction Product Sources
 
-# Exact source patch; no source-text marker replacement.
+# Exact source patch v3; no source-text marker replacement.
 on:
   push:
     branches: [codex/chatgpt-pro-dynamic-kernel-lite]
@@ -17,7 +17,7 @@ concurrency:
 env:
   TARGET_BRANCH: codex/chatgpt-pro-dynamic-kernel-lite
   PRODUCT_BASE: 8fba8ef1e0305a6651b2b2cd7eb737815da07ab8
-  PATCH_SHA256: 169c9c51f108e039c470511655b025eece9f5cd53e638413d21c3185872a30f1
+  PATCH_SHA256: 9b2b53d95f9acf7462e479e8b5b85a7b30aa0e9e57bc8b4550627315b8751106
 
 jobs:
   apply-test-commit-clean:
