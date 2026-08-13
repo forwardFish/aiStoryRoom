@@ -3,6 +3,8 @@ import test from "node:test";
 import type { AEmotionAuthoritySignalV1 } from "./contracts";
 import {
   deriveCrossImpactPresentationV1,
+  deriveFinalePresentationV1,
+  derivePromiseBrokenPresentationV1,
   deriveStateTransitionPresentationV1,
   isFirstDangerCrossingV1,
   isFirstMilestoneAchievementV1,
@@ -35,6 +37,21 @@ test("CROSS_IMPACT sends minor effects to Feed and major effects to a center car
     sourceSeatId: "zhejiang_governor",
     signal: self,
   }), self);
+
+  const chapterMid = modalCandidate("CRISIS");
+  chapterMid.severity = "MINOR";
+  chapterMid.presentation = {
+    recommendedPresentation: "CENTER_CARD",
+    centerCardType: "CROSS_IMPACT",
+    responseOptions: [],
+    modalTrigger: null,
+  };
+  const normalizedMid = deriveCrossImpactPresentationV1({
+    sourceSeatId: "zhejiang_governor",
+    signal: chapterMid,
+  });
+  assert.equal(normalizedMid.presentation.recommendedPresentation, "FEED_ONLY");
+  assert.equal(normalizedMid.presentation.centerCardType, null);
 });
 
 test("CRISIS fires only on the first non-DANGER to DANGER crossing", () => {
@@ -66,6 +83,7 @@ test("CRISIS fires only on the first non-DANGER to DANGER crossing", () => {
     },
   });
   assert.equal(first.metricTransitionId, "emperor-trust:danger-entry");
+  assert.equal(first.eventCode, "SANGTIAN_BEAT_ACTION_DANGER_ENTERED");
   assert.deepEqual(first.presentation.modalTrigger, {
     type: "CRISIS",
     triggerId: "emperor-trust:danger-entry",
@@ -82,7 +100,9 @@ test("CRISIS fires only on the first non-DANGER to DANGER crossing", () => {
     },
   });
   assert.equal(continuing.metricTransitionId, null);
-  assert.equal(continuing.presentation.recommendedPresentation, "CENTER_CARD");
+  assert.equal(continuing.eventCode, "SANGTIAN_BEAT_ACTION_COMMITTED");
+  assert.equal(continuing.presentation.recommendedPresentation, "FEED_ONLY");
+  assert.equal(continuing.presentation.centerCardType, null);
   assert.equal(continuing.presentation.modalTrigger, null);
 });
 
@@ -132,11 +152,40 @@ test("trigger derivation is deterministic under duplicate calculation", () => {
 test("deterministic trigger capability has no Provider, LLM, network, or authority writer dependency", () => {
   const graph = [
     deriveCrossImpactPresentationV1,
+    deriveFinalePresentationV1,
+    derivePromiseBrokenPresentationV1,
     deriveStateTransitionPresentationV1,
     isFirstDangerCrossingV1,
     isFirstMilestoneAchievementV1,
   ].map((capability) => capability.toString()).join("\n");
-  assert.doesNotMatch(graph, /provider|\bllm\b|fetch\s*\(|worldSequence|settlement|finale/iu);
+  assert.doesNotMatch(graph, /provider|\bllm\b|fetch\s*\(|worldSequence|settlement/iu);
+});
+
+test("Finale cannot manufacture CRISIS or STAGE_VICTORY presentation", () => {
+  for (const type of ["CRISIS", "STAGE_VICTORY"] as const) {
+    const finale = deriveFinalePresentationV1({ signal: modalCandidate(type) });
+    assert.equal(finale.presentation.recommendedPresentation, "FEED_ONLY");
+    assert.equal(finale.presentation.centerCardType, null);
+    assert.equal(finale.presentation.modalTrigger, null);
+  }
+});
+
+test("PROMISE_BROKEN belongs only to an authorized CONFIRMED reveal", () => {
+  const candidate = modalCandidate("CRISIS");
+  candidate.presentation.centerCardType = "PROMISE_BROKEN";
+  for (const authorizedEvidence of [false, true]) {
+    const result = derivePromiseBrokenPresentationV1({
+      signal: candidate,
+      stateVersion: 6,
+      transition: {
+        promiseId: "promise-1",
+        beforeDisclosure: "SUSPECTED",
+        afterDisclosure: "CONFIRMED",
+        authorizedEvidence,
+      },
+    });
+    assert.equal(result.presentation.modalTrigger?.type ?? null, authorizedEvidence ? "PROMISE_BROKEN" : null);
+  }
 });
 
 function signal(input: {

@@ -186,7 +186,7 @@ export class FrozenAEmotionPresentationCatalogV1 implements AEmotionPresentation
         card: card(input, "局势在代价中推进", summary, { title: "个人影响", lines: impacts }, { title: "公开结果", lines: facts }, cardActions),
       };
     }
-    if (input.eventCode === "SANGTIAN_CHAPTER_LOW_COMMITTED") {
+    if (["SANGTIAN_CHAPTER_LOW_COMMITTED", "SANGTIAN_CHAPTER_LOW_DANGER_ENTERED"].includes(input.eventCode)) {
       const summary = "本章结算已经确认，你的个人目标遭遇了重大阻碍。";
       return {
         title: "本章危机已经确认",

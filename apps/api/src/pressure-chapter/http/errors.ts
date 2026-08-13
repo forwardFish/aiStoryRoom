@@ -166,6 +166,7 @@ function mapPressureDependencyError(error: unknown): PressureChapterHttpExceptio
     code.startsWith("SEAT_CONTROL_") ||
     code.startsWith("CHAPTER_ORCHESTRATOR_") ||
     code.startsWith("PRESSURE_DECISION_COMPILER_") ||
+    code.startsWith("PRESSURE_DELIVERY_") ||
     code === "INTEGRATION_DECISION_COMMAND_MISMATCH"
   ) {
     return new PressureChapterHttpException(

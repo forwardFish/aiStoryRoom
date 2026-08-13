@@ -1,5 +1,6 @@
 export * from "./chapter-settlement.adapter";
 export * from "./a-emotion-response-authority.adapter";
+export * from "./a-emotion-delivery.adapter";
 export * from "./content.adapters";
 export * from "./decision-command.compiler";
 export * from "./deterministic-default.adapter";

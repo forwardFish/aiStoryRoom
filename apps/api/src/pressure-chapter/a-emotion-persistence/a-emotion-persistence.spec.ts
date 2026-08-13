@@ -78,6 +78,23 @@ test("feed repository commits once, replays by idempotency, and rehydrates deliv
     operation: "RESOLVED",
     occurredAt: "2026-08-11T01:00:06.000Z",
   });
+  const idempotentMark = {
+    eventId: commit.delivery.eventId,
+    projectionVersion: commit.delivery.projectionVersion,
+    roomId: commit.delivery.roomId,
+    runId: commit.delivery.runId,
+    viewerSeatId: commit.delivery.viewerSeatId,
+    operation: "MODAL_SHOWN" as const,
+    occurredAt: "2026-08-11T01:00:07.000Z",
+    idempotencyKey: "http-delivery-1",
+  };
+  await repository.updateDelivery(idempotentMark);
+  await repository.updateDelivery(structuredClone(idempotentMark));
+  await assert.rejects(
+    repository.updateDelivery({ ...idempotentMark, operation: "SEEN" }),
+    (error: unknown) => error instanceof AEmotionPersistenceError
+      && error.code === "A_EMOTION_PERSISTENCE_FINGERPRINT_MISMATCH",
+  );
 
   const delivery = await repository.readDelivery({
     eventId: commit.delivery.eventId,
@@ -91,7 +108,7 @@ test("feed repository commits once, replays by idempotency, and rehydrates deliv
   assert.equal(fake.eventDeliveries.length, 1);
   assert.equal(
     fake.storyEvents.filter((item) => item.type === "PRESSURE_A_EMOTION_DELIVERY_MARK_V1").length,
-    2,
+    3,
   );
 });
 

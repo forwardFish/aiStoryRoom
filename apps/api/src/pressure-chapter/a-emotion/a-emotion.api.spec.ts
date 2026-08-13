@@ -184,10 +184,14 @@ function reveal(input: {
   });
 }
 
-function modalEvent(type: "CRISIS" | "STAGE_VICTORY", sequence: number): AEmotionInteractionEventV1 {
+function modalEvent(
+  type: "CRISIS" | "STAGE_VICTORY",
+  sequence: number,
+  stateVersion = 1,
+): AEmotionInteractionEventV1 {
   const crisis = type === "CRISIS";
   return event({
-    eventId: crisis ? "event-crisis" : "event-victory",
+    eventId: `${crisis ? "event-crisis" : "event-victory"}${stateVersion === 1 ? "" : `-v${stateVersion}`}`,
     sourceActionId: crisis ? "action-risk" : "action-control-ledger",
     eventCode: crisis ? "EMPEROR_TRUST_DANGER_ENTERED" : "ORIGINAL_LEDGER_CONTROL_GAINED",
     eventFamily: crisis ? "EMPEROR_TRUST" : "STAGE_CONTROL",
@@ -214,12 +218,12 @@ function modalEvent(type: "CRISIS" | "STAGE_VICTORY", sequence: number): AEmotio
       modalTrigger: {
         type,
         triggerId: crisis ? "metric-transition-1" : "milestone-control-ledger",
-        stateVersion: 1,
+        stateVersion,
       },
     },
     eventSequence: sequence,
-    stateVersion: 1,
-    idempotencyKey: `modal-${type.toLowerCase()}`,
+    stateVersion,
+    idempotencyKey: `modal-${type.toLowerCase()}-v${stateVersion}`,
   });
 }
 
@@ -506,6 +510,71 @@ test("modal delivery is one-shot while its central card survives seen, ack, retr
   assert.equal(refreshed.items[0]?.keyModal, null);
   assert.equal(refreshed.items[0]?.recommendedPresentation, "CENTER_CARD");
   assert.equal(refreshed.items[0]?.centerCard?.type, "CRISIS");
+});
+
+test("projector preserves N2, N3, and N7 trigger stateVersion without a version-1 domain rule", async () => {
+  for (const stateVersion of [2, 3, 7]) {
+    for (const type of ["CRISIS", "STAGE_VICTORY"] as const) {
+      const projected = await project(modalEvent(type, stateVersion * 100, stateVersion));
+      assert.equal(projected.projection.keyModal?.stateVersion, stateVersion);
+      assert.equal(projected.projection.keyModal?.serverSequence, stateVersion * 100);
+      assert.equal(projected.projection.keyModal?.sourceEventId, projected.projection.eventId);
+    }
+  }
+});
+
+test("25-item cursor traversal has no loss or duplication and unreadCount remains viewer-global", async () => {
+  const repository = new InMemoryAEmotionFeedRepositoryV1();
+  const feed = new AEmotionFeedServiceV1(repository);
+  for (let sequence = 1; sequence <= 25; sequence += 1) {
+    const projection = await project(event({
+      eventId: `event-page-${String(sequence).padStart(2, "0")}`,
+      eventSequence: sequence,
+      idempotencyKey: `page-${sequence}`,
+    }));
+    await feed.ingest(projection, NOW);
+  }
+
+  const received: string[] = [];
+  let cursor: string | null = null;
+  do {
+    const page = await feed.list({
+      roomId: "room-ae-1",
+      runId: "run-ae-1",
+      viewerSeatId: VIEWER,
+      cursor,
+      limit: 10,
+    });
+    assert.equal(page.unreadCount, 25, "unreadCount is global, not the current page length");
+    received.push(...page.items.map((item) => item.eventId));
+    cursor = page.nextCursor;
+  } while (cursor !== null);
+
+  assert.equal(received.length, 25);
+  assert.equal(new Set(received).size, 25);
+  assert.deepEqual(
+    [...received].sort(),
+    Array.from({ length: 25 }, (_, index) => `event-page-${String(index + 1).padStart(2, "0")}`),
+  );
+
+  for (const eventId of received.slice(0, 3)) {
+    await feed.mark({
+      eventId,
+      projectionVersion: 1,
+      roomId: "room-ae-1",
+      runId: "run-ae-1",
+      viewerSeatId: VIEWER,
+      operation: "SEEN",
+      occurredAt: NOW,
+    });
+  }
+  const afterMarks = await feed.list({
+    roomId: "room-ae-1",
+    runId: "run-ae-1",
+    viewerSeatId: VIEWER,
+    limit: 1,
+  });
+  assert.equal(afterMarks.unreadCount, 22);
 });
 
 test("central state and modal queues enforce the frozen five-state priority", async () => {

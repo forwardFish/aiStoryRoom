@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import type { SeatIdV1 } from "@ai-story/shared";
+import { sha256Canonical, type SeatIdV1 } from "@ai-story/shared";
 import type {
   AEmotionDeliveryRecordV1,
   AEmotionFeedRepositoryPortV1,
@@ -451,6 +451,7 @@ export class PrismaAEmotionFeedRepositoryV1 implements AEmotionFeedRepositoryPor
     viewerSeatId: SeatIdV1;
     operation: "SEEN" | "ACKNOWLEDGED" | "RESOLVED" | "MODAL_SHOWN";
     occurredAt: string;
+    idempotencyKey?: string;
   }) {
     assertAEmotionProjectionVersionV1(input.projectionVersion, "updateDelivery.projectionVersion");
     const current = await this.readDelivery(input);
@@ -492,6 +493,27 @@ export class PrismaAEmotionFeedRepositoryV1 implements AEmotionFeedRepositoryPor
       });
     } catch (error) {
       if (!isUniqueConflict(error)) throw error;
+      if (input.idempotencyKey) {
+        const replay = await pressureSerializableTransaction(this.prisma, async (tx) => (
+          tx.storyEvent.findUnique({ where: { dedupeKey: markDedupeKey(input) } })
+        ));
+        if (!replay) throw error;
+        const prior = decodeDeliveryMark(replay.payloadJson);
+        if (
+          prior.roomId !== input.roomId
+          || prior.runId !== input.runId
+          || prior.viewerSeatId !== input.viewerSeatId
+          || prior.eventId !== input.eventId
+          || prior.projectionVersion !== input.projectionVersion
+          || prior.operation !== input.operation
+        ) {
+          failAEmotionPersistence(
+            ERROR.FINGERPRINT_MISMATCH,
+            "Delivery mark idempotency key was reused with different input",
+            { idempotencyKey: input.idempotencyKey },
+          );
+        }
+      }
     }
     const replayed = await this.readDelivery(input);
     return replayed;
@@ -625,11 +647,22 @@ function aggregateDedupeKey(aggregationKey: string, projectionVersion: number): 
 }
 
 function markDedupeKey(input: {
+  roomId: string;
+  runId: string;
   viewerSeatId: SeatIdV1;
   eventId: string;
   projectionVersion: number;
   operation: "SEEN" | "ACKNOWLEDGED" | "RESOLVED" | "MODAL_SHOWN";
+  idempotencyKey?: string;
 }): string {
+  if (input.idempotencyKey) {
+    return `pressure:a-emotion:delivery-command:${sha256Canonical({
+      roomId: input.roomId,
+      runId: input.runId,
+      viewerSeatId: input.viewerSeatId,
+      idempotencyKey: input.idempotencyKey,
+    })}`;
+  }
   return `pressure:a-emotion:mark:${input.viewerSeatId}:${input.eventId}:${input.projectionVersion}:${input.operation}`;
 }
 

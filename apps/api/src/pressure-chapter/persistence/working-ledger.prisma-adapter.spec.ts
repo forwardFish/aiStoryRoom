@@ -25,6 +25,12 @@ import {
   FormalPressureInteractionService,
   computeFormalInteractionInputFingerprint,
 } from "../interaction/formal-interaction.service";
+import {
+  aEmotionAggregationKey,
+  aEmotionProjectionIdempotencyKey,
+  computeAEmotionProjectionHashV1,
+} from "../a-emotion/identity";
+import { encodeAggregateEnvelope, encodeDeliveryMark } from "../a-emotion-persistence/codec";
 import type {
   PressureChatMessageV1,
   PressureInteractionAccessPort,
@@ -135,6 +141,108 @@ test("OPEN and ACTION do not advance working revision; BEAT CAS alone advances i
   assert(fake.calls.lastIndexOf("event.create:PRESSURE_WORKING_LEDGER_EVENT") < fake.calls.lastIndexOf("runtime.cas"));
   assert(fake.calls.lastIndexOf("runtime.cas") < fake.calls.lastIndexOf("tx.commit"));
   assert(fake.storyEvents.every((row) => row.sequence === null));
+});
+
+test("response action, ledger event and ACK commit atomically; lost response replays without duplicate ACK", async () => {
+  const route = routeFixture();
+  const initial = createChapterWorkingState({ runId: route.runId, chapterId: "N1" });
+  const fake = new WorkingLedgerFake({
+    id: "runtime-n1",
+    runId: route.runId,
+    chapterId: "N1",
+    routeHash: route.routeHash,
+    workingRevision: 0,
+    workingStateJson: initial,
+    workingStateHash: sha256Canonical(initial),
+    lockVersion: 0,
+  }, route);
+  const repository = new PrismaWorkingLedgerRepository(fake.client);
+  await new WorkingLedgerService(repository).open({
+    routeSnapshot: route,
+    chapterRuntimeId: "runtime-n1",
+    chapterDefinition: chapterFixture(),
+    initialState: initial,
+  });
+  fake.seedResponseAggregate("response-event-1", ACTOR, "DECIDE");
+  const projection = projectWorkingLedger(await repository.read({
+    runId: route.runId,
+    chapterRuntimeId: "runtime-n1",
+  }));
+  const action = responseActionFixture(route, projection.state.revision, "response-event-1");
+  const intent = intentFixture();
+  const base = { routeSnapshot: route, action, intent };
+  const service = new FormalPressureInteractionService(
+    new StaticAccess(accessFixture(route, projection)),
+    repository,
+  );
+  const command = {
+    ...base,
+    subjectId: "user-a",
+    inputFingerprint: computeFormalInteractionInputFingerprint(base),
+  };
+  assert.equal((await service.submit(command)).status, "ACCEPTED");
+  assert.equal(fake.actions.length, 1);
+  assert.equal(fake.deliveryMarks().length, 1);
+  assert.equal((await service.submit(command)).status, "REPLAYED");
+  assert.equal(fake.actions.length, 1, "lost-response replay must not duplicate action");
+  assert.equal(fake.deliveryMarks().length, 1, "lost-response replay must not duplicate ACK");
+  const actionWrite = fake.calls.lastIndexOf("action.create");
+  const ackWrite = fake.calls.lastIndexOf("event.create:PRESSURE_A_EMOTION_DELIVERY_MARK_V1");
+  const ledgerWrite = fake.calls.lastIndexOf("event.create:PRESSURE_WORKING_LEDGER_EVENT");
+  const cas = fake.calls.lastIndexOf("runtime.cas");
+  const commit = fake.calls.lastIndexOf("tx.commit");
+  assert(actionWrite < ackWrite && ackWrite < ledgerWrite && ledgerWrite < cas && cas < commit);
+});
+
+test("response ACK rolls back on Working Ledger CAS failure and dedupe collision is rejected", async () => {
+  const route = routeFixture();
+  const initial = createChapterWorkingState({ runId: route.runId, chapterId: "N1" });
+  const fake = new WorkingLedgerFake({
+    id: "runtime-n1",
+    runId: route.runId,
+    chapterId: "N1",
+    routeHash: route.routeHash,
+    workingRevision: 0,
+    workingStateJson: initial,
+    workingStateHash: sha256Canonical(initial),
+    lockVersion: 0,
+  }, route);
+  const repository = new PrismaWorkingLedgerRepository(fake.client);
+  await new WorkingLedgerService(repository).open({
+    routeSnapshot: route,
+    chapterRuntimeId: "runtime-n1",
+    chapterDefinition: chapterFixture(),
+    initialState: initial,
+  });
+  fake.seedResponseAggregate("response-event-2", ACTOR, "DECIDE");
+  const projection = projectWorkingLedger(await repository.read({
+    runId: route.runId,
+    chapterRuntimeId: "runtime-n1",
+  }));
+  const action = responseActionFixture(route, projection.state.revision, "response-event-2");
+  const intent = intentFixture();
+  const base = { routeSnapshot: route, action, intent };
+  const service = new FormalPressureInteractionService(
+    new StaticAccess(accessFixture(route, projection)),
+    repository,
+  );
+  fake.failNextCas = true;
+  await assert.rejects(() => service.submit({
+    ...base,
+    subjectId: "user-a",
+    inputFingerprint: computeFormalInteractionInputFingerprint(base),
+  }), /APPEND_CONFLICT/);
+  assert.equal(fake.actions.length, 0, "CAS failure must roll back action");
+  assert.equal(fake.deliveryMarks().length, 0, "CAS failure must roll back ACK");
+
+  fake.seedAckCollision("response-event-2", ACTOR, 1);
+  await assert.rejects(() => service.submit({
+    ...base,
+    subjectId: "user-a",
+    inputFingerprint: computeFormalInteractionInputFingerprint(base),
+  }), /dedupe collision/i);
+  assert.equal(fake.actions.length, 0, "collision must roll back action");
+  assert.equal(fake.deliveryMarks().length, 1, "collision row must not be overwritten");
 });
 
 test("first OPEN atomically creates the missing ChapterRuntime from frozen authority", async () => {
@@ -485,6 +593,8 @@ class WorkingLedgerFake {
   readonly projections: Array<Record<string, any>> = [];
   readonly outbox: Array<Record<string, any>> = [];
   worldWriteCalls = 0;
+  failNextCas = false;
+  private nextStorySequence = 1;
   readonly point = {
     id: "point-db-id",
     decisionPointKey: "dp-investigate",
@@ -502,6 +612,11 @@ class WorkingLedgerFake {
       findMany: async (_input: any): Promise<any[]> => [],
       findUnique: async (_input: any): Promise<any> => null,
       create: async (_input: any): Promise<any> => ({}),
+    },
+    storyEventCursor: {
+      findUnique: async (_input: any): Promise<any> => null,
+      create: async (_input: any): Promise<any> => ({}),
+      update: async (_input: any): Promise<any> => ({ nextSequence: 1 }),
     },
     pressureChapterRuntime: {
       findUnique: async (_input: any): Promise<any> => null,
@@ -532,14 +647,35 @@ class WorkingLedgerFake {
     $transaction: async <T>(operation: (tx: any) => Promise<T>): Promise<T> => {
       this.installDelegates();
       this.calls.push("tx.begin");
-      const result = await operation(this.tx);
-      this.calls.push("tx.commit");
-      return result;
+      const before = {
+        runtime: structuredClone(this.runtime),
+        storyEvents: structuredClone(this.storyEvents),
+        actions: structuredClone(this.actions),
+        nextStorySequence: this.nextStorySequence,
+      };
+      try {
+        const result = await operation(this.tx);
+        this.calls.push("tx.commit");
+        return result;
+      } catch (error) {
+        for (const key of Object.keys(this.runtime)) delete this.runtime[key];
+        Object.assign(this.runtime, before.runtime);
+        this.storyEvents.splice(0, this.storyEvents.length, ...before.storyEvents);
+        this.actions.splice(0, this.actions.length, ...before.actions);
+        this.nextStorySequence = before.nextStorySequence;
+        this.calls.push("tx.rollback");
+        throw error;
+      }
     },
   };
 
   private installDelegates(): void {
-    this.tx.storyEvent.findMany = async () => structuredClone(this.storyEvents);
+    this.tx.storyEvent.findMany = async (input: any) => structuredClone(
+      this.storyEvents.filter((row) => (
+        (input?.where?.runId === undefined || row.runId === input.where.runId)
+        && (input?.where?.type === undefined || row.type === input.where.type)
+      )),
+    );
     this.tx.storyEvent.findUnique = async (input: any) => structuredClone(
       this.storyEvents.find((row) => row.dedupeKey === input.where.dedupeKey) ?? null,
     );
@@ -553,6 +689,10 @@ class WorkingLedgerFake {
     this.tx.pressureChapterRuntime.create = async ({ data }: any) => structuredClone(data);
     this.tx.pressureChapterRuntime.updateMany = async ({ where, data }: any) => {
       this.calls.push("runtime.cas");
+      if (this.failNextCas) {
+        this.failNextCas = false;
+        return { count: 0 };
+      }
       if (
         where.id !== this.runtime.id
         || where.lockVersion !== this.runtime.lockVersion
@@ -620,6 +760,134 @@ class WorkingLedgerFake {
       return data;
     };
     this.tx.pressureResourceReservation.updateMany = async () => ({ count: 1 });
+    this.tx.storyEventCursor.findUnique = async () => ({
+      runId: this.runtime.runId,
+      nextSequence: this.nextStorySequence,
+      version: 1,
+    });
+    this.tx.storyEventCursor.create = async () => ({});
+    this.tx.storyEventCursor.update = async () => ({
+      nextSequence: ++this.nextStorySequence,
+    });
+  }
+
+  seedResponseAggregate(eventId: string, viewerSeatId: SeatIdV1, actionCode: string): void {
+    const projectionWithoutHash = {
+      schemaVersion: "a_emotion_viewer_projection_v1" as const,
+      eventId,
+      projectionVersion: 1,
+      roomId: this.runtime.runId,
+      runId: this.runtime.runId,
+      viewerSeatId,
+      category: "RELATED" as const,
+      disclosure: "HIDDEN" as const,
+      severity: "MAJOR" as const,
+      title: "Response source",
+      safeSummary: "Viewer-safe source",
+      statusLabel: "Pending",
+      visibleImpacts: [],
+      knownFactRefs: [],
+      responseOptions: [{
+        code: actionCode,
+        label: "Respond",
+        preferredEntry: "INVESTIGATE" as const,
+        consumesManeuverOnSubmit: true,
+      }],
+      recommendedPresentation: "CENTER_CARD" as const,
+      centerCard: null,
+      keyModal: null,
+      eventSequence: 10,
+      occurredAt: "2026-08-13T00:00:00.000Z",
+      projectionHash: "",
+    };
+    const projection = {
+      ...projectionWithoutHash,
+      projectionHash: computeAEmotionProjectionHashV1(projectionWithoutHash),
+    };
+    const aggregationKey = aEmotionAggregationKey({
+      roomId: this.runtime.runId,
+      runId: this.runtime.runId,
+      viewerSeatId,
+      eventId,
+    });
+    const aggregate = {
+      aggregationKey,
+      roomId: this.runtime.runId,
+      runId: this.runtime.runId,
+      viewerSeatId,
+      stageId: this.runtime.chapterId,
+      sharedObjectId: "original-grain-ledger",
+      eventFamily: "LEDGER_SOURCE",
+      latestEventId: eventId,
+      projectionVersion: 1,
+      projection,
+      createdAt: "2026-08-13T00:00:00.000Z",
+      updatedAt: "2026-08-13T00:00:00.000Z",
+    };
+    const commit = {
+      idempotencyKey: aEmotionProjectionIdempotencyKey({ eventId, viewerSeatId }),
+      inputFingerprint: `fingerprint:${eventId}`,
+      expectedAggregateVersion: 0,
+      aggregate,
+      delivery: {
+        eventId,
+        projectionVersion: 1,
+        roomId: this.runtime.runId,
+        runId: this.runtime.runId,
+        viewerSeatId,
+        deliveredAt: "2026-08-13T00:00:00.000Z",
+        seenAt: null,
+        acknowledgedAt: null,
+        resolvedAt: null,
+        keyModalShownAt: null,
+      },
+    };
+    this.storyEvents.push({
+      id: `aggregate-${eventId}`,
+      runId: this.runtime.runId,
+      day: 1,
+      type: "PRESSURE_A_EMOTION_AGGREGATE_V1",
+      payloadJson: encodeAggregateEnvelope({
+        idempotencyKey: commit.idempotencyKey,
+        inputFingerprint: commit.inputFingerprint,
+        expectedAggregateVersion: 0,
+        storyDay: 1,
+        commit,
+      }),
+      sequence: 10,
+      dedupeKey: `aggregate:${eventId}`,
+      createdAt: new Date("2026-08-13T00:00:00.000Z"),
+    });
+    this.nextStorySequence = 11;
+  }
+
+  seedAckCollision(eventId: string, viewerSeatId: SeatIdV1, projectionVersion: number): void {
+    const dedupeKey = `pressure:a-emotion:mark:${viewerSeatId}:${eventId}:${projectionVersion}:ACKNOWLEDGED`;
+    this.storyEvents.push({
+      id: `evt_${dedupeKey}`,
+      runId: this.runtime.runId,
+      day: 1,
+      type: "PRESSURE_A_EMOTION_DELIVERY_MARK_V1",
+      payloadJson: encodeDeliveryMark({
+        storyDay: 1,
+        roomId: "wrong-room",
+        runId: this.runtime.runId,
+        viewerSeatId,
+        eventId,
+        projectionVersion,
+        operation: "ACKNOWLEDGED",
+        occurredAt: "2026-08-13T00:00:01.000Z",
+      }),
+      sequence: 12,
+      dedupeKey,
+      createdAt: new Date("2026-08-13T00:00:01.000Z"),
+    });
+  }
+
+  deliveryMarks(): Array<Record<string, any>> {
+    return this.storyEvents.filter(
+      (row) => row.type === "PRESSURE_A_EMOTION_DELIVERY_MARK_V1",
+    );
   }
 }
 
@@ -1064,6 +1332,62 @@ function actionFixture(route: RunRouteSnapshotV1, revision: number): DecisionAct
     requestFingerprint: computeDecisionActionRequestFingerprint(body),
   };
   return { ...withRequest, sealedHash: sha256Canonical(withRequest) };
+}
+
+function responseActionFixture(
+  route: RunRouteSnapshotV1,
+  revision: number,
+  sourceEventId: string,
+): DecisionActionV1 {
+  const payload = {
+    optionId: "inspect-ledger",
+    responseToEventId: sourceEventId,
+    responseActionCode: "DECIDE",
+  };
+  const body = {
+    schemaVersion: "sangtian_decision_action_v1" as const,
+    actionId: `action-response-${sourceEventId}`,
+    runId: route.runId,
+    chapterRuntimeId: "runtime-n1",
+    chapterId: "N1" as const,
+    decisionPointId: "dp-investigate",
+    seatId: ACTOR,
+    actionOrdinal: 1,
+    actionRevision: 1,
+    controlEpoch: 4,
+    expectedWorkingRevision: revision,
+    status: "SEALED" as const,
+    actionType: "DECIDE",
+    payload,
+    payloadHash: sha256Canonical(payload),
+    idempotencyKey: `idem-response-${sourceEventId}`,
+  };
+  const withRequest = {
+    ...body,
+    requestFingerprint: computeDecisionActionRequestFingerprint(body),
+  };
+  return { ...withRequest, sealedHash: sha256Canonical(withRequest) };
+}
+
+function accessFixture(
+  route: RunRouteSnapshotV1,
+  projection: ReturnType<typeof projectWorkingLedger>,
+): PressureInteractionAccessV1 {
+  return {
+    routeHash: route.routeHash,
+    runId: route.runId,
+    chapterRuntimeId: "runtime-n1",
+    chapterId: "N1",
+    workingRevision: projection.state.revision,
+    workingStateHash: projection.stateHash,
+    activeDecisionPointId: "dp-investigate",
+    controlledSeatIds: [ACTOR],
+    controlEpochBySeat: { [ACTOR]: 4 },
+    allowedActionTypes: ["DECIDE"],
+    interactableSeatIds: [TARGET],
+    visibleEvidenceRefs: ["evidence-ledger"],
+    resourceAvailability: [{ resourceId: "grain", availableAmount: 10 }],
+  };
 }
 
 function intentFixture(): WorkingActionIntentV1 {

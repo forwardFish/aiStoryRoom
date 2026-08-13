@@ -55,6 +55,7 @@ import {
   SangtianAEmotionContentSourceCompilerV1,
   type AEmotionFinaleChapterAuthorityV1,
 } from "./content-source";
+import { deriveStateTransitionPresentationV1 } from "./trigger-derivation";
 
 const RUN_ID = "run-a-emotion-content-source";
 const ROOM_ID = "room-a-emotion-content-source";
@@ -196,10 +197,10 @@ test("real Sangtian N1 ChapterSettlement emits six viewer-safe seat outcomes", (
   );
   for (const emission of emissions) {
     assert.equal(emission.source.signal.eventCode, "SANGTIAN_CHAPTER_HIGH_COMMITTED");
-    assert.equal(emission.source.signal.milestoneId, "chapter:N1:HIGH");
+    assert.equal(emission.source.signal.milestoneId, `run:${RUN_ID}:chapter-outcome-victory`);
     assert.deepEqual(emission.source.signal.presentation.modalTrigger, {
       type: "STAGE_VICTORY",
-      triggerId: "chapter:N1:HIGH",
+      triggerId: `run:${RUN_ID}:chapter-outcome-victory`,
       stateVersion: 1,
     });
     assert.deepEqual(emission.source.signal.publicFactRefs, ["chapter.N1.outcome_band"]);
@@ -229,9 +230,51 @@ test("N1-N7 frozen ledgers plus committed terminal record emit one true-action f
     assert.equal(emission.source.signal.disclosure, "HIDDEN");
     assert.deepEqual(emission.source.signal.evidenceRefs, []);
     assert.equal(emission.source.signal.promiseId, null);
+    assert.equal(emission.source.signal.presentation.modalTrigger, null);
+    assert.notEqual(emission.source.signal.presentation.centerCardType, "CRISIS");
+    assert.notEqual(emission.source.signal.presentation.centerCardType, "STAGE_VICTORY");
     assert.equal(emission.source.sourceActionId, `action-N7-${seatId}`);
     new CanonicalAEmotionAuthorityEventCompilerV1().compile(emission.job, emission.source);
   }
+});
+
+test("first LOW transition uses an explicit DANGER_ENTERED code while trigger stateVersion is preserved", () => {
+  const derived = deriveStateTransitionPresentationV1({
+    signal: {
+      signalId: "chapter-low-N7",
+      kind: "DIRECT_IMPACT",
+      eventCode: "SANGTIAN_CHAPTER_LOW_COMMITTED",
+      eventFamily: "SANGTIAN_CHAPTER_SETTLEMENT",
+      severity: "CRITICAL",
+      sharedObjectId: "chapter:N7:outcome:LOW",
+      factRefs: ["chapter.N7.outcome_band"],
+      publicFactRefs: ["chapter.N7.outcome_band"],
+      impacts: [],
+      audienceSpec: { type: "AFFECTED_SEATS", seatIds: [PRESSURE_CHAPTER_SEAT_IDS_V1[0]!] },
+      disclosure: "CONFIRMED",
+      suspectedSeatIds: [],
+      suspicionBasisRefs: [],
+      evidenceRefs: [digest("evidence-low-N7")],
+      revealOfEventId: null,
+      promiseId: null,
+      milestoneId: null,
+      metricTransitionId: null,
+      presentation: {
+        recommendedPresentation: "KEY_MODAL",
+        centerCardType: "CRISIS",
+        responseOptions: [],
+        modalTrigger: { type: "CRISIS", triggerId: "legacy-template", stateVersion: 1 },
+      },
+    },
+    stateVersion: 7,
+    metric: {
+      metricTransitionId: `run:${RUN_ID}:chapter-outcome-health`,
+      beforeTone: "WARN",
+      afterTone: "DANGER",
+    },
+  });
+  assert.equal(derived.eventCode, "SANGTIAN_CHAPTER_LOW_DANGER_ENTERED");
+  assert.equal(derived.presentation.modalTrigger?.stateVersion, 7);
 });
 
 test("frozen presentation catalog renders every released Sangtian event code", () => {

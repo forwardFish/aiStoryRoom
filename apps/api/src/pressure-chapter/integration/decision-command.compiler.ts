@@ -432,7 +432,6 @@ async function compileResponseBinding(input: Readonly<{
     || source.runId !== input.game.runId
     || source.viewerSeatId !== input.game.viewer.seatId
     || source.sourceEventId !== input.publicCommand.sourceEventId
-    || !source.acknowledged
     || source.resolved
     || !responseOption
     || responseOption.preferredEntry === "DEFER"

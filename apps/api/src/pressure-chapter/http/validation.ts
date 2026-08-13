@@ -1,6 +1,7 @@
 import {
   PRESSURE_CHAPTER_GAME_COMMAND_SCHEMA_V1,
   PRESSURE_CHAPTER_SEAT_IDS_V1,
+  type PressureChapterDeliveryMarkCommandV1,
   type PressureChapterSubmitDecisionCommandV1,
   type SeatIdV1,
 } from "@ai-story/shared";
@@ -33,6 +34,14 @@ const SUBMIT_DECISION_KEYS = [
   "customText",
   "sourceEventId",
   "responseActionCode",
+] as const;
+const MARK_FEED_DELIVERY_KEYS = [
+  "schemaVersion",
+  "commandType",
+  "eventId",
+  "projectionVersion",
+  "operation",
+  "idempotencyKey",
 ] as const;
 const CHAT_KEYS = [
   "schemaVersion",
@@ -148,6 +157,33 @@ export function parseSubmitDecisionCommand(
     customText,
     sourceEventId,
     responseActionCode,
+  };
+}
+
+export function parseMarkFeedDeliveryCommand(
+  value: unknown,
+): PressureChapterDeliveryMarkCommandV1 {
+  const body = record(value, "body");
+  exact(body, MARK_FEED_DELIVERY_KEYS, "body");
+  literal(body.schemaVersion, PRESSURE_CHAPTER_GAME_COMMAND_SCHEMA_V1, "body.schemaVersion");
+  literal(body.commandType, "DELIVERY_MARK", "body.commandType");
+  const eventId = boundedString(body.eventId, "body.eventId", 200);
+  const projectionVersion = requiredInteger(
+    body.projectionVersion,
+    "body.projectionVersion",
+    1,
+  );
+  if (body.operation !== "SEEN" && body.operation !== "MODAL_SHOWN") {
+    failPressureChapterHttp(ERROR.INPUT_INVALID, "body.operation");
+  }
+  const idempotencyKey = boundedString(body.idempotencyKey, "body.idempotencyKey", 200);
+  return {
+    schemaVersion: PRESSURE_CHAPTER_GAME_COMMAND_SCHEMA_V1,
+    commandType: "DELIVERY_MARK",
+    eventId,
+    projectionVersion,
+    operation: body.operation,
+    idempotencyKey,
   };
 }
 

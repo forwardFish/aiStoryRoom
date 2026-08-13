@@ -25,6 +25,11 @@ import {
 import {
   compileCommittedInvestigationLifecycleEmissionsV1,
 } from "../a-emotion-production/investigation-lifecycle.prisma-bridge";
+import {
+  decodeAggregateEnvelope,
+  decodeDeliveryMark,
+  encodeDeliveryMark,
+} from "../a-emotion-persistence/codec";
 import type {
   ExtendedAuthoritativeNarrativeSnapshotCompilerPortV1,
 } from "../narrative-authority/contracts";
@@ -58,6 +63,8 @@ import {
 
 const LEDGER_EVENT_TYPE = "PRESSURE_WORKING_LEDGER_EVENT";
 const CHAT_EVENT_PREFIX = "PRESSURE_CHAT";
+const A_EMOTION_AGGREGATE_EVENT_TYPE = "PRESSURE_A_EMOTION_AGGREGATE_V1";
+const A_EMOTION_DELIVERY_MARK_EVENT_TYPE = "PRESSURE_A_EMOTION_DELIVERY_MARK_V1";
 
 interface StoryEventRow {
   id: string;
@@ -103,6 +110,18 @@ interface WorkingLedgerTransaction {
     findMany(input: Record<string, unknown>): Promise<StoryEventRow[]>;
     findUnique(input: Record<string, unknown>): Promise<StoryEventRow | null>;
     create(input: { data: Record<string, unknown> }): Promise<StoryEventRow>;
+  };
+  storyEventCursor: {
+    findUnique(input: Record<string, unknown>): Promise<{
+      runId: string;
+      nextSequence: number;
+      version: number;
+    } | null>;
+    create(input: { data: Record<string, unknown> }): Promise<unknown>;
+    update(input: {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    }): Promise<{ nextSequence: number }>;
   };
   pressureChapterRuntime: {
     findUnique(input: Record<string, unknown>): Promise<ChapterRuntimeRow | null>;
@@ -967,6 +986,206 @@ async function persistFormalAction(
       sealedAt: new Date(),
     },
   });
+  await persistAtomicResponseAcknowledgement(tx, event);
+}
+
+/**
+ * A response acknowledgement is a receipt of an accepted formal action, not
+ * a prerequisite for compiling that action. Persist it beside the action and
+ * Working Ledger event so a failed ledger CAS rolls all three writes back.
+ */
+async function persistAtomicResponseAcknowledgement(
+  tx: WorkingLedgerTransaction,
+  event: WorkingLedgerEventV1,
+): Promise<void> {
+  if (event.payload.eventType !== "FORMAL_ACTION_ACCEPTED") return;
+  const action = event.payload.action;
+  const binding = responseBinding(action.payload, action.actionType);
+  if (!binding) return;
+
+  const aggregateRows = await tx.storyEvent.findMany({
+    where: { runId: action.runId, type: A_EMOTION_AGGREGATE_EVENT_TYPE },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+  });
+  const matches = aggregateRows
+    .map((row) => decodeAggregateEnvelope(row.payloadJson))
+    .filter(({ commit }) => {
+      const aggregate = commit.aggregate;
+      return aggregate.roomId === action.runId
+        && aggregate.runId === action.runId
+        && aggregate.viewerSeatId === action.seatId
+        && aggregate.latestEventId === binding.sourceEventId
+        && aggregate.projection.eventId === binding.sourceEventId
+        && aggregate.projection.responseOptions.some(
+          (option) => option.code === binding.responseActionCode,
+        );
+    })
+    .sort((left, right) => right.commit.aggregate.projectionVersion
+      - left.commit.aggregate.projectionVersion);
+  const selected = matches[0];
+  if (!selected) {
+    throw invalid("Response action is not bound to a current visible A-Emotion delivery", {
+      runId: action.runId,
+      seatId: action.seatId,
+      sourceEventId: binding.sourceEventId,
+    });
+  }
+  const aggregate = selected.commit.aggregate;
+  if (
+    binding.sourceProjectionVersion !== null
+    && binding.sourceProjectionVersion !== aggregate.projectionVersion
+  ) {
+    throw invalid("Response action selected a different A-Emotion projection version", {
+      sourceEventId: binding.sourceEventId,
+      sealedProjectionVersion: binding.sourceProjectionVersion,
+      committedProjectionVersion: aggregate.projectionVersion,
+    });
+  }
+  const delivery = selected.commit.delivery;
+  if (
+    delivery.eventId !== binding.sourceEventId
+    || delivery.projectionVersion !== aggregate.projectionVersion
+    || delivery.roomId !== action.runId
+    || delivery.runId !== action.runId
+    || delivery.viewerSeatId !== action.seatId
+  ) {
+    throw invalid("Response action is not bound to a committed viewer delivery", {
+      sourceEventId: binding.sourceEventId,
+    });
+  }
+  const latestVersion = aggregateRows
+    .map((row) => decodeAggregateEnvelope(row.payloadJson).commit.aggregate)
+    .filter((candidate) => candidate.aggregationKey === aggregate.aggregationKey)
+    .reduce((maximum, candidate) => Math.max(maximum, candidate.projectionVersion), 0);
+  if (aggregate.projectionVersion !== latestVersion) {
+    throw invalid("Response action selected a stale A-Emotion aggregate", {
+      sourceEventId: binding.sourceEventId,
+      projectionVersion: aggregate.projectionVersion,
+      latestVersion,
+    });
+  }
+
+  const marks = (await tx.storyEvent.findMany({
+    where: {
+      runId: action.runId,
+      type: A_EMOTION_DELIVERY_MARK_EVENT_TYPE,
+    },
+  })).map((row) => decodeDeliveryMark(row.payloadJson));
+  const matchingMarks = marks.filter((mark) => (
+    mark.roomId === action.runId
+    && mark.runId === action.runId
+    && mark.viewerSeatId === action.seatId
+    && mark.eventId === binding.sourceEventId
+    && mark.projectionVersion === aggregate.projectionVersion
+  ));
+  if (matchingMarks.some((mark) => mark.operation === "RESOLVED")) {
+    throw invalid("Response action selected a resolved A-Emotion delivery", {
+      sourceEventId: binding.sourceEventId,
+    });
+  }
+  if (matchingMarks.some((mark) => mark.operation === "ACKNOWLEDGED")) return;
+
+  const markInput = {
+    storyDay: selected.storyDay,
+    roomId: action.runId,
+    runId: action.runId,
+    viewerSeatId: action.seatId,
+    eventId: binding.sourceEventId,
+    projectionVersion: aggregate.projectionVersion,
+    operation: "ACKNOWLEDGED" as const,
+    // The source projection is sealed authority and therefore makes retry
+    // payloads byte-stable; wall-clock time must not enter an atomic receipt.
+    occurredAt: aggregate.projection.occurredAt,
+  };
+  const dedupeKey = responseAcknowledgementDedupeKey(markInput);
+  const existing = await tx.storyEvent.findUnique({ where: { dedupeKey } });
+  if (existing) {
+    const mark = decodeDeliveryMark(existing.payloadJson);
+    if (
+      mark.runId !== markInput.runId
+      || mark.roomId !== markInput.roomId
+      || mark.viewerSeatId !== markInput.viewerSeatId
+      || mark.eventId !== markInput.eventId
+      || mark.projectionVersion !== markInput.projectionVersion
+      || mark.operation !== markInput.operation
+    ) throw invalid("A-Emotion acknowledgement dedupe collision", { dedupeKey });
+    return;
+  }
+  const sequence = await claimAEmotionStorySequence(tx, action.runId);
+  await tx.storyEvent.create({
+    data: {
+      id: `evt_${dedupeKey}`,
+      runId: action.runId,
+      day: selected.storyDay,
+      type: A_EMOTION_DELIVERY_MARK_EVENT_TYPE,
+      messageType: "system",
+      roleKey: action.seatId,
+      visibility: "private",
+      payloadJson: json(encodeDeliveryMark(markInput)),
+      sequence,
+      dedupeKey,
+      audienceType: "A_EMOTION_VIEWER",
+    },
+  });
+}
+
+function responseBinding(
+  payload: unknown,
+  actionType: string,
+): {
+  sourceEventId: string;
+  responseActionCode: string;
+  sourceProjectionVersion: number | null;
+} | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const record = payload as Record<string, unknown>;
+  if (typeof record.responseToEventId !== "string" || !record.responseToEventId.trim()) {
+    return null;
+  }
+  const responseActionCode = typeof record.responseActionCode === "string"
+    ? record.responseActionCode
+    : typeof record.investigationCode === "string"
+      ? record.investigationCode
+      : actionType;
+  if (!responseActionCode.trim() || responseActionCode !== actionType) {
+    throw invalid("Response action code does not match the sealed action type");
+  }
+  const sourceProjectionVersion = record.sourceProjectionVersion === undefined
+    ? null
+    : Number.isSafeInteger(record.sourceProjectionVersion)
+        && Number(record.sourceProjectionVersion) >= 1
+      ? Number(record.sourceProjectionVersion)
+      : (() => {
+          throw invalid("Response projection version is not a positive integer");
+        })();
+  return {
+    sourceEventId: record.responseToEventId,
+    responseActionCode,
+    sourceProjectionVersion,
+  };
+}
+
+async function claimAEmotionStorySequence(
+  tx: WorkingLedgerTransaction,
+  runId: string,
+): Promise<number> {
+  const existing = await tx.storyEventCursor.findUnique({ where: { runId } });
+  if (!existing) {
+    await tx.storyEventCursor.create({ data: { runId, nextSequence: 1 } });
+  }
+  const cursor = await tx.storyEventCursor.update({
+    where: { runId },
+    data: { nextSequence: { increment: 1 }, version: { increment: 1 } },
+  });
+  return cursor.nextSequence - 1;
+}
+
+function responseAcknowledgementDedupeKey(input: {
+  viewerSeatId: SeatIdV1;
+  eventId: string;
+  projectionVersion: number;
+}): string {
+  return `pressure:a-emotion:mark:${input.viewerSeatId}:${input.eventId}:${input.projectionVersion}:ACKNOWLEDGED`;
 }
 
 async function persistBeat(

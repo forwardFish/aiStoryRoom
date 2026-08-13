@@ -269,5 +269,6 @@ export interface AEmotionFeedRepositoryPortV1 {
     viewerSeatId: SeatIdV1;
     operation: "SEEN" | "ACKNOWLEDGED" | "RESOLVED" | "MODAL_SHOWN";
     occurredAt: string;
+    idempotencyKey?: string;
   }): Promise<AEmotionDeliveryRecordV1 | null>;
 }

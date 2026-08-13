@@ -49,6 +49,7 @@ import {
 } from "./errors";
 import {
   deriveCrossImpactPresentationV1,
+  deriveFinalePresentationV1,
   deriveStateTransitionPresentationV1,
 } from "./trigger-derivation";
 
@@ -386,12 +387,16 @@ export class SangtianAEmotionContentSourceCompilerV1 {
           signal: compiledSignal,
           stateVersion: record.frozenChapterBundle.committedWorldSequence,
           milestone: {
-            milestoneId,
-            beforeState: "INACTIVE",
+            milestoneId: `run:${record.runId}:chapter-outcome-victory`,
+            beforeState: priorChapterMilestoneState(record),
             afterState: "ACHIEVED",
           },
         });
       }
+      compiledSignal = deriveCrossImpactPresentationV1({
+        sourceSeatId: seatId,
+        signal: compiledSignal,
+      });
       emissions.push(this.emit({
         sourceKind: "CHAPTER_SETTLEMENT_COMMITTED",
         sourceId: record.receipt.settlementId,
@@ -448,7 +453,7 @@ export class SangtianAEmotionContentSourceCompilerV1 {
         eventSequence: 80_000_000 + index + 1,
         stateVersion: 8,
         storyDay: 8,
-        signal: signal(template, {
+        signal: deriveFinalePresentationV1({ signal: signal(template, {
           signalId,
           sharedObjectId: `finale:${record.decision.worldOutcome.outcomeId}:seat:${seatId}`,
           factRefs: [],
@@ -471,7 +476,7 @@ export class SangtianAEmotionContentSourceCompilerV1 {
             ? null
             : `finale:${record.decision.worldOutcome.outcomeId}:${seatId}:${seatOutcome.verdict}`,
           stateVersion: 8,
-        }),
+        }) }),
       }));
     });
     return freezeEmissions(emissions);
@@ -711,6 +716,22 @@ function priorChapterOutcomeTone(
     invalid("input.record.frozenChapterBundle.frozenWorldState", "PRIOR_OUTCOME_MISSING");
   }
   return priorBand === "LOW" ? "DANGER" : "DEFAULT";
+}
+
+function priorChapterMilestoneState(
+  record: AtomicChapterCommitRecordV1,
+): "INACTIVE" | "ACHIEVED" {
+  const sequence = chapterSequence(record.chapterId);
+  for (let priorSequence = 1; priorSequence < sequence; priorSequence += 1) {
+    const priorBand = record.frozenChapterBundle.frozenWorldState.factValues[
+      `chapter.N${priorSequence}.outcome_band`
+    ];
+    if (!["HIGH", "MID", "LOW"].includes(String(priorBand))) {
+      invalid("input.record.frozenChapterBundle.frozenWorldState", "PRIOR_OUTCOME_MISSING");
+    }
+    if (priorBand === "HIGH") return "ACHIEVED";
+  }
+  return "INACTIVE";
 }
 
 function beatInput(value: unknown): CompileAEmotionBeatAuthorityInputV1 {

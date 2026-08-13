@@ -40,6 +40,9 @@ export class PressureChapterHttpControllerMethods {
     roomId: string,
     body: unknown,
   ) {
+    if (isDeliveryMarkCommand(body)) {
+      return this.pressure.markFeedDelivery(toPrincipal(user), roomId, body);
+    }
     return this.pressure.submitDecision(toPrincipal(user), roomId, body);
   }
 
@@ -76,6 +79,13 @@ export class PressureChapterHttpControllerMethods {
       endpoint,
     );
   }
+}
+
+function isDeliveryMarkCommand(value: unknown): boolean {
+  return !!value
+    && typeof value === "object"
+    && !Array.isArray(value)
+    && (value as { commandType?: unknown }).commandType === "DELIVERY_MARK";
 }
 
 export function toPressureChapterHttpPrincipal(

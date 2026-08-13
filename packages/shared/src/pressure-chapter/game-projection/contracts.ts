@@ -198,6 +198,21 @@ export interface PressureChapterOpenWorkbenchCommandV1
   sourceEventId: string | null;
 }
 
+/**
+ * Viewer delivery state mutation submitted through the existing game/action
+ * endpoint. Room, run and viewer seat are deliberately absent: the server
+ * derives all three from the authenticated room membership.
+ */
+export interface PressureChapterDeliveryMarkCommandV1 {
+  schemaVersion: typeof PRESSURE_CHAPTER_GAME_COMMAND_SCHEMA_V1;
+  commandType: "DELIVERY_MARK";
+  eventId: string;
+  projectionVersion: number;
+  operation: "SEEN" | "MODAL_SHOWN";
+  idempotencyKey: string;
+}
+
 export type PressureChapterGameCommandV1 =
   | PressureChapterSubmitDecisionCommandV1
-  | PressureChapterOpenWorkbenchCommandV1;
+  | PressureChapterOpenWorkbenchCommandV1
+  | PressureChapterDeliveryMarkCommandV1;

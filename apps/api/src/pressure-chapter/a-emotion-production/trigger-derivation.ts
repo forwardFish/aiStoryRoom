@@ -20,6 +20,13 @@ export interface AEmotionMilestoneTransitionV1 {
   afterState: AEmotionMilestoneStateV1;
 }
 
+export interface AEmotionPromiseDisclosureTransitionV1 {
+  promiseId: string;
+  beforeDisclosure: "HIDDEN" | "SUSPECTED";
+  afterDisclosure: "SUSPECTED" | "CONFIRMED";
+  authorizedEvidence: boolean;
+}
+
 const CROSS_IMPACT_ACTIONS = Object.freeze([
   { code: "VIEW_DETAILS", preferredEntry: "INVESTIGATE", consumesManeuverOnSubmit: false },
   { code: "RESPOND_NOW", preferredEntry: "PLAN", consumesManeuverOnSubmit: false },
@@ -40,7 +47,8 @@ export function deriveCrossImpactPresentationV1(input: Readonly<{
   const hasCrossSeatImpact = signal.impacts.some(
     (impact) => impact.targetSeatId !== input.sourceSeatId,
   );
-  if (!hasCrossSeatImpact || signal.presentation.modalTrigger !== null) return signal;
+  const declaresCrossImpact = signal.presentation.centerCardType === "CROSS_IMPACT";
+  if ((!hasCrossSeatImpact && !declaresCrossImpact) || signal.presentation.modalTrigger !== null) return signal;
 
   signal.kind = "DIRECT_IMPACT";
   signal.presentation = signal.severity === "MINOR"
@@ -77,8 +85,9 @@ export function isFirstMilestoneAchievementV1(
 
 /**
  * Applies one committed state transition to an already compiled signal.  A
- * non-edge (including DANGER -> DANGER and ACHIEVED -> ACHIEVED) strips a
- * template-suggested modal and leaves an ordinary center-card signal.
+ * non-edge (including DANGER -> DANGER and ACHIEVED -> ACHIEVED) strips every
+ * template-suggested modal/card. Continued states are ordinary Feed updates;
+ * the content template is not allowed to manufacture a second trigger.
  */
 export function deriveStateTransitionPresentationV1(input: Readonly<{
   signal: AEmotionAuthoritySignalV1;
@@ -104,6 +113,11 @@ export function deriveStateTransitionPresentationV1(input: Readonly<{
   signal.metricTransitionId = trigger?.type === "CRISIS" ? trigger.triggerId : null;
   signal.milestoneId = trigger?.type === "STAGE_VICTORY" ? trigger.triggerId : null;
   if (trigger) {
+    if (trigger.type === "CRISIS" && !signal.eventCode.endsWith("_DANGER_ENTERED")) {
+      signal.eventCode = signal.eventCode.endsWith("_COMMITTED")
+        ? `${signal.eventCode.slice(0, -"_COMMITTED".length)}_DANGER_ENTERED`
+        : `${signal.eventCode}_DANGER_ENTERED`;
+    }
     signal.presentation = {
       ...signal.presentation,
       recommendedPresentation: "KEY_MODAL",
@@ -117,12 +131,70 @@ export function deriveStateTransitionPresentationV1(input: Readonly<{
   } else {
     signal.presentation = {
       ...signal.presentation,
-      recommendedPresentation: signal.presentation.centerCardType === null
-        ? "FEED_ONLY"
-        : "CENTER_CARD",
+      recommendedPresentation: "FEED_ONLY",
+      centerCardType: null,
+      responseOptions: [],
       modalTrigger: null,
     };
   }
+  return signal;
+}
+
+/**
+ * Finale is terminal settlement authority, not a state-transition trigger.
+ * Released content may still contain legacy CRISIS/STAGE_VICTORY presentation
+ * hints; they are deterministically reduced to a Feed event here.
+ */
+export function deriveFinalePresentationV1(
+  input: Readonly<{ signal: AEmotionAuthoritySignalV1 }>,
+): AEmotionAuthoritySignalV1 {
+  const signal = structuredClone(input.signal);
+  if (
+    signal.presentation.modalTrigger?.type === "CRISIS"
+    || signal.presentation.modalTrigger?.type === "STAGE_VICTORY"
+    || signal.presentation.centerCardType === "CRISIS"
+    || signal.presentation.centerCardType === "STAGE_VICTORY"
+  ) {
+    signal.metricTransitionId = null;
+    signal.milestoneId = null;
+    signal.presentation = {
+      recommendedPresentation: "FEED_ONLY",
+      centerCardType: null,
+      responseOptions: [],
+      modalTrigger: null,
+    };
+  }
+  return signal;
+}
+
+/** Promise BREAK is non-modal; only an authorized reveal to CONFIRMED fires. */
+export function derivePromiseBrokenPresentationV1(input: Readonly<{
+  signal: AEmotionAuthoritySignalV1;
+  stateVersion: number;
+  transition: AEmotionPromiseDisclosureTransitionV1;
+}>): AEmotionAuthoritySignalV1 {
+  if (!Number.isSafeInteger(input.stateVersion) || input.stateVersion < 1) {
+    return failAEmotionProduction(ERROR.AUTHORITY_SOURCE_INVALID, "trigger.stateVersion", "POSITIVE_INTEGER");
+  }
+  nonEmpty(input.transition.promiseId, "trigger.promiseId");
+  const signal = structuredClone(input.signal);
+  signal.promiseId = input.transition.promiseId;
+  const confirmed = input.transition.afterDisclosure === "CONFIRMED"
+    && input.transition.authorizedEvidence;
+  signal.presentation = confirmed ? {
+    ...signal.presentation,
+    recommendedPresentation: "KEY_MODAL",
+    centerCardType: "PROMISE_BROKEN",
+    modalTrigger: {
+      type: "PROMISE_BROKEN",
+      triggerId: input.transition.promiseId,
+      stateVersion: input.stateVersion,
+    },
+  } : {
+    ...signal.presentation,
+    recommendedPresentation: signal.presentation.centerCardType === null ? "FEED_ONLY" : "CENTER_CARD",
+    modalTrigger: null,
+  };
   return signal;
 }
 

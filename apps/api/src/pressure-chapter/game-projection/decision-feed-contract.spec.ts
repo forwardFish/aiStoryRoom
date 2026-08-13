@@ -38,10 +38,15 @@ test("viewer-safe feed keeps the exact response authority and decision compiler 
   assert.match(adapter, /delivery\.acknowledgedAt\b/u);
   assert.match(adapter, /delivery\.resolvedAt\b/u);
   for (const field of [
-    "sourceEventId", "disclosure", "responseOptions", "acknowledged", "resolved", "projectionHash",
+    "sourceEventId", "disclosure", "responseOptions", "resolved", "projectionHash",
   ] as const) {
     assert.match(compiler, new RegExp(`source\\?*\\.${field}\\b`, "u"));
   }
+  assert.doesNotMatch(
+    compiler,
+    /!source\.acknowledged\b/u,
+    "ACK is an accepted-action receipt, never a compile prerequisite",
+  );
   assert.deepEqual(COMPILER_FIELDS, [
     "eventId", "disclosure", "responseOptions", "isAcknowledged", "isResolved", "projectionHash",
   ]);

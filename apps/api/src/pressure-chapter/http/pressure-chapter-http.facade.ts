@@ -33,6 +33,7 @@ import {
   type PressureChapterHttpChatPort,
   type PressureChapterHttpClockPort,
   type PressureChapterHttpDecisionCompilerPort,
+  type PressureChapterHttpDeliveryPort,
   type PressureChapterHttpGamePort,
   type PressureChapterHttpPrincipalV1,
   type PressureChapterHttpReplayPort,
@@ -40,6 +41,7 @@ import {
   type PressureChapterHttpResultPort,
   type PressureChapterHttpRoutePort,
   type PressureChapterSubmitDecisionHttpResponseV1,
+  type PressureChapterMarkFeedDeliveryHttpResponseV1,
 } from "./contracts";
 import {
   parseAccess,
@@ -48,6 +50,7 @@ import {
   parseLegacyEndpoint,
   parsePrincipal,
   parseSubmitDecisionCommand,
+  parseMarkFeedDeliveryCommand,
   requiredInteger,
   requiredString,
 } from "./validation";
@@ -82,6 +85,8 @@ export class PressureChapterHttpFacade {
     @Inject(TOKEN.CLOCK)
     private readonly clock: PressureChapterHttpClockPort,
     private readonly convergence: PressureDecisionConvergencePortV1 | undefined = undefined,
+    @Inject(TOKEN.DELIVERY)
+    private readonly delivery: PressureChapterHttpDeliveryPort | undefined = undefined,
   ) {}
 
   getGame(
@@ -99,6 +104,48 @@ export class PressureChapterHttpFacade {
         subjectId: context.access.subjectId,
         ...query,
       });
+    });
+  }
+
+  markFeedDelivery(
+    principalValue: PressureChapterHttpPrincipalV1,
+    roomIdValue: string,
+    bodyValue: unknown,
+  ): Promise<PressureChapterMarkFeedDeliveryHttpResponseV1> {
+    return pressureHttpBoundary(async () => {
+      const principal = parsePrincipal(principalValue);
+      const roomId = requiredString(roomIdValue, "roomId");
+      const context = await this.resolveContext(principal, roomId, "ACTION");
+      const command = parseMarkFeedDeliveryCommand(bodyValue);
+      if (!this.delivery) {
+        failPressureChapterHttp(ERROR.DEPENDENCY_FAILURE, "delivery");
+      }
+      const current = await this.game.read({
+        runId: context.access.runId,
+        subjectId: context.access.subjectId,
+      });
+      if (
+        current.roomId !== context.access.roomId
+        || current.runId !== context.access.runId
+        || current.viewer.seatId.length === 0
+      ) {
+        failPressureChapterHttp(ERROR.ROUTE_MISMATCH, "body.eventId");
+      }
+      await this.delivery.mark({
+        roomId: context.access.roomId,
+        runId: context.access.runId,
+        viewerSeatId: current.viewer.seatId,
+        command,
+        occurredAt: new Date(requiredInteger(this.clock.nowMs(), "clock.nowMs", 0)).toISOString(),
+      });
+      return {
+        schemaVersion: "pressure_chapter_delivery_mark_http_response_v1",
+        idempotencyKey: command.idempotencyKey,
+        projection: await this.game.read({
+          runId: context.access.runId,
+          subjectId: context.access.subjectId,
+        }),
+      };
     });
   }
 
@@ -130,27 +177,6 @@ export class PressureChapterHttpFacade {
       const command = parseSubmitDecisionCommand(bodyValue);
       assertPublicDecisionScope(command, context.access, context.stored);
       const nowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
-      if (command.sourceEventId !== null && command.responseActionCode !== null) {
-        const responseProjection = await this.game.read({
-          runId: context.access.runId,
-          subjectId: context.access.subjectId,
-        });
-        if (
-          responseProjection.roomId !== context.access.roomId
-          || responseProjection.runId !== context.access.runId
-          || responseProjection.viewer.seatId !== command.seatId
-        ) {
-          failPressureChapterHttp(ERROR.ROUTE_MISMATCH, "body.sourceEventId");
-        }
-        await this.responseAcknowledger.acknowledgeCurrent({
-          roomId: responseProjection.roomId,
-          runId: responseProjection.runId,
-          viewerSeatId: responseProjection.viewer.seatId,
-          sourceEventId: command.sourceEventId,
-          responseActionCode: command.responseActionCode,
-          occurredAt: new Date(nowMs).toISOString(),
-        });
-      }
       const compiled = validateCompiledDecisionCommand(
         await this.decisionCompiler.compile({
           access: structuredClone(context.access),
@@ -167,6 +193,25 @@ export class PressureChapterHttpFacade {
       await this.actions.submitAction(compiled);
       const humanSubmitMs = elapsed(humanSubmitStartedAt);
       const postSubmitNowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
+      // The Working Ledger adapter writes the response ACK in the same
+      // Serializable transaction as a newly accepted action. This post-success
+      // idempotent receipt is intentionally retained as recovery for historical
+      // rows or an already-applied action whose earlier HTTP response was lost.
+      // It must never run before submitAction: every rejected/rolled-back action
+      // therefore leaves delivery ACK state untouched.
+      if (command.sourceEventId !== null && command.responseActionCode !== null) {
+        const acknowledged = await this.responseAcknowledger.acknowledgeCurrent({
+          roomId: context.access.roomId,
+          runId: context.access.runId,
+          viewerSeatId: compiled.action.seatId,
+          sourceEventId: command.sourceEventId,
+          responseActionCode: command.responseActionCode,
+          occurredAt: new Date(postSubmitNowMs).toISOString(),
+        });
+        if (!acknowledged) {
+          failPressureChapterHttp(ERROR.ROUTE_MISMATCH, "body.sourceEventId");
+        }
+      }
       const convergence = this.convergence
         ? await this.convergence.converge({
             trigger: "HTTP_POST_SUBMIT",

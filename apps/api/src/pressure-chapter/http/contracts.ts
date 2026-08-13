@@ -1,5 +1,6 @@
 import type {
   ChapterIdV1,
+  PressureChapterDeliveryMarkCommandV1,
   PressureChapterSubmitDecisionCommandV1,
   ReplayCreationReceiptV1,
   SangtianPressureResultEnvelopeV1,
@@ -28,6 +29,7 @@ export const PRESSURE_CHAPTER_HTTP_TOKENS = Object.freeze({
   RESULT: Symbol.for("PressureChapterHttp.Result"),
   REPLAY: Symbol.for("PressureChapterHttp.Replay"),
   CLOCK: Symbol.for("PressureChapterHttp.Clock"),
+  DELIVERY: Symbol.for("PressureChapterHttp.Delivery"),
 });
 
 /** Authentication is supplied by the existing AuthGuard, never by request JSON. */
@@ -116,6 +118,16 @@ export interface PressureChapterHttpResponseAcknowledgerPort {
   }): Promise<boolean>;
 }
 
+export interface PressureChapterHttpDeliveryPort {
+  mark(input: {
+    roomId: string;
+    runId: string;
+    viewerSeatId: SeatIdV1;
+    command: PressureChapterDeliveryMarkCommandV1;
+    occurredAt: string;
+  }): Promise<void>;
+}
+
 /** Command surface implemented by PressureChapterChatService. */
 export interface PressureChapterHttpChatPort {
   submit(command: SubmitPressureChatCommandV1): Promise<{
@@ -148,6 +160,12 @@ export interface PressureChapterGameHttpQueryV1 {
 
 export interface PressureChapterSubmitDecisionHttpResponseV1 {
   schemaVersion: "pressure_chapter_submit_decision_http_response_v1";
+  idempotencyKey: string;
+  projection: PressureChapterGameProjectionV1;
+}
+
+export interface PressureChapterMarkFeedDeliveryHttpResponseV1 {
+  schemaVersion: "pressure_chapter_delivery_mark_http_response_v1";
   idempotencyKey: string;
   projection: PressureChapterGameProjectionV1;
 }

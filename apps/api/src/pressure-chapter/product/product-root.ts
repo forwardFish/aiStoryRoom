@@ -32,6 +32,7 @@ import {
   type PressureChapterHttpChatPort,
   type PressureChapterHttpClockPort,
   type PressureChapterHttpDecisionCompilerPort,
+  type PressureChapterHttpDeliveryPort,
   type PressureChapterHttpGamePort,
   type PressureChapterHttpReplayPort,
   type PressureChapterHttpResponseAcknowledgerPort,
@@ -45,6 +46,7 @@ import {
 import {
   ExistingN7FinaleOutboxConfirmationAdapterV1,
   AEmotionResponseEventAcknowledgerAdapterV1,
+  AEmotionHttpDeliveryAdapterV1,
   AEmotionResponseEventAuthorityAdapterV1,
   PressureDecisionCommandCompilerV1,
   RequiredSeatsDecisionCloseAdapterV1,
@@ -191,6 +193,7 @@ export interface PressureChapterProductRootV1 {
     result: PressureChapterHttpResultPort;
     replay: PressureChapterHttpReplayPort;
     clock: PressureChapterHttpClockPort;
+    delivery: PressureChapterHttpDeliveryPort;
   }>;
   gameProjection: PressureChapterGameProjectionService;
   seatTransport: PressureSeatTransportFacadeV1;
@@ -485,6 +488,10 @@ export async function createPressureChapterProductRootV1(input: {
     responseAuthority,
     aEmotion.feed,
   );
+  const delivery = new AEmotionHttpDeliveryAdapterV1(
+    aEmotion.repository,
+    aEmotion.feed,
+  );
   const decisionCompiler = new PressureDecisionCommandCompilerV1(
     gameProjection,
     projections,
@@ -600,6 +607,7 @@ export async function createPressureChapterProductRootV1(input: {
     result: runtimeFacets.result,
     replay: runtimeFacets.replay,
     clock: httpProduction.clock,
+    delivery,
   });
   const httpFacade = new PressureChapterHttpFacade(
     httpPorts.access,
@@ -613,6 +621,7 @@ export async function createPressureChapterProductRootV1(input: {
     httpPorts.replay,
     httpPorts.clock,
     decisionAutomation.service,
+    httpPorts.delivery,
   );
   const roomsGateway = new PressureChapterRoomsGatewayV1(production.bridge);
   return Object.freeze({

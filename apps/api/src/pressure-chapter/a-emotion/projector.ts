@@ -66,63 +66,27 @@ function assertSurfaceSemantics(
     }
     return;
   }
-  if (cardType === "CROSS_IMPACT") {
-    const expected = event.severity === "MINOR" ? "FEED_ONLY" : "CENTER_CARD";
+  if (trigger === null) {
     if (
-      (event.kind !== "DIRECT_IMPACT" && event.kind !== "REVEAL")
-      || recommendation !== expected
-      || trigger !== null
+      recommendation !== "CENTER_CARD"
+      && !(recommendation === "FEED_ONLY" && cardType === "CROSS_IMPACT")
     ) {
-      failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:CROSS_IMPACT_SURFACE`);
+      failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:CENTER_CARD_SHAPE`);
     }
     return;
   }
-  if (cardType === "PROMISE_BROKEN") {
-    if (!event.promiseId) {
-      failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:PROMISE_ID`);
-    }
-    if (trigger === null) {
-      if (recommendation !== "CENTER_CARD") {
-        failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:BROKEN_NOT_MODAL`);
-      }
-      return;
-    }
-    if (
-      recommendation !== "KEY_MODAL"
-      || trigger.type !== "PROMISE_BROKEN"
-      || trigger.triggerId !== event.promiseId
-      || trigger.stateVersion !== event.stateVersion
-      || event.kind !== "REVEAL"
-      || event.disclosure !== "CONFIRMED"
-    ) {
-      failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:PROMISE_NOT_REVEALED`);
-    }
-    return;
-  }
-  if (cardType === "CRISIS") {
-    if (
-      recommendation !== "KEY_MODAL"
-      || trigger?.type !== "CRISIS"
-      || trigger.triggerId !== event.metricTransitionId
-      || trigger.stateVersion !== 1
-      || event.stateVersion !== 1
-      || event.kind !== "DIRECT_IMPACT"
-      || event.disclosure !== "CONFIRMED"
-      || !event.eventCode.endsWith("_DANGER_ENTERED")
-    ) {
-      failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:CRISIS_TRANSITION`);
-    }
-    return;
-  }
+  const triggerBinding = trigger.type === "PROMISE_BROKEN"
+    ? event.promiseId
+    : trigger.type === "CRISIS"
+      ? event.metricTransitionId
+      : event.milestoneId;
   if (
     recommendation !== "KEY_MODAL"
-    || trigger?.type !== "STAGE_VICTORY"
-    || trigger.triggerId !== event.milestoneId
-    || trigger.stateVersion !== 1
-    || event.stateVersion !== 1
-    || event.disclosure !== "CONFIRMED"
+    || trigger.type !== cardType
+    || trigger.triggerId !== triggerBinding
+    || trigger.stateVersion !== event.stateVersion
   ) {
-    failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:STAGE_VICTORY_TRANSITION`);
+    failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:MODAL_TRIGGER_SHAPE`);
   }
 }
 

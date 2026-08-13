@@ -22,6 +22,7 @@ import {
   A_EMOTION_PRODUCTION_ERROR_CODES as ERROR,
   failAEmotionProduction,
 } from "./errors";
+import { derivePromiseBrokenPresentationV1 } from "./trigger-derivation";
 
 export interface CompilePressureAEmotionLifecycleUpgradeInputV1 {
   roomId: string;
@@ -99,7 +100,31 @@ export function compilePressureAEmotionLifecycleUpgradeV1(
       eventCode = promise.patch.eventCode;
       promiseId = promise.patch.promiseId;
       brokenByActionId = promise.patch.brokenByActionId;
-      presentation = promise.patch.presentation;
+      presentation = derivePromiseBrokenPresentationV1({
+        signal: {
+          signalId: "promise-presentation-derivation",
+          kind: "REVEAL",
+          eventCode,
+          eventFamily: current.eventFamily,
+          severity: "CRITICAL",
+          sharedObjectId: current.sharedObjectId,
+          factRefs: [], publicFactRefs: [], impacts: [],
+          audienceSpec: { type: "EXPLICIT", seatIds: canonicalSeats(input.audienceSeatIds) },
+          disclosure: derived.patch.disclosure,
+          suspectedSeatIds: [], suspicionBasisRefs: [],
+          evidenceRefs: [...derived.patch.evidenceRefs],
+          revealOfEventId: current.eventId,
+          promiseId, milestoneId: null, metricTransitionId: null,
+          presentation: promise.patch.presentation,
+        },
+        stateVersion: input.stateVersion,
+        transition: {
+          promiseId,
+          beforeDisclosure: current.disclosure as "HIDDEN" | "SUSPECTED",
+          afterDisclosure: derived.patch.disclosure,
+          authorizedEvidence: derived.patch.evidenceRefs.length > 0,
+        },
+      }).presentation;
     }
   }
   const signalId = [

@@ -345,14 +345,15 @@ test("N6 investigation commands consume one visible ACKed aggregate and server-s
     })}`,
   ]);
 
-  await assert.rejects(
-    () => compile("CONFIRM_LEDGER_SOURCE_WITH_EVIDENCE", "SUSPECTED", false),
-    (error: unknown) => (
-      error instanceof PressureChapterIntegrationError
-      && error.code === "INTEGRATION_DECISION_COMMAND_MISMATCH"
-      && error.path === "decision.responseBinding"
-      && error.detail === "NOT_CURRENT_VISIBLE_ACKNOWLEDGED_OR_ALLOWED"
-    ),
+  const unacknowledged = await compile(
+    "CONFIRM_LEDGER_SOURCE_WITH_EVIDENCE",
+    "SUSPECTED",
+    false,
+  );
+  assert.equal(
+    unacknowledged.compiled.action.payload.responseToEventId,
+    "event-suspected",
+    "ACK is the receipt of this accepted action, never a compile prerequisite",
   );
   await assert.rejects(
     () => compile("CONFIRM_LEDGER_SOURCE_WITH_EVIDENCE", "HIDDEN"),
@@ -432,7 +433,6 @@ test("response commands revalidate current viewer authority and bind only a sign
     { ...authority, runId: "foreign-run" },
     { ...authority, viewerSeatId: "jiangnan_merchant" as const },
     { ...authority, sourceEventId: "stale-event-version" },
-    { ...authority, acknowledged: false },
     { ...authority, resolved: true },
     { ...authority, responseOptions: [] },
     { ...authority, responseOptions: [{ ...authority.responseOptions[0]!, preferredEntry: "TALK" as const }] },

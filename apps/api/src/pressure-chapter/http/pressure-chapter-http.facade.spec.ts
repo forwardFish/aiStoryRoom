@@ -34,6 +34,7 @@ import type {
   PressureChapterHttpActionPort,
   PressureChapterHttpChatPort,
   PressureChapterHttpDecisionCompilerPort,
+  PressureChapterHttpDeliveryPort,
   PressureChapterHttpGamePort,
   PressureChapterHttpReplayPort,
   PressureChapterHttpResponseAcknowledgerPort,
@@ -45,6 +46,66 @@ const RUN_ID = "run-pressure-http-1";
 const ROOM_ID = "room-pressure-http-1";
 const USER_ID = "user-pressure-http-1";
 const SEAT_ID = "cabinet_finance" as const;
+
+test("delivery command uses authenticated membership scope and returns server readback", async () => {
+  const harness = createHarness();
+  const response = await harness.facade.markFeedDelivery(
+    harness.principal,
+    ROOM_ID,
+    {
+      schemaVersion: "pressure_chapter_game_command_v1",
+      commandType: "DELIVERY_MARK",
+      eventId: "modal-event-1",
+      projectionVersion: 7,
+      operation: "MODAL_SHOWN",
+      idempotencyKey: "modal-shown-1",
+    },
+  );
+  assert.equal(response.idempotencyKey, "modal-shown-1");
+  assert.equal(response.projection.runId, RUN_ID);
+  assert.deepEqual(harness.deliveryInputs, [{
+    roomId: ROOM_ID,
+    runId: RUN_ID,
+    viewerSeatId: SEAT_ID,
+    command: {
+      schemaVersion: "pressure_chapter_game_command_v1",
+      commandType: "DELIVERY_MARK",
+      eventId: "modal-event-1",
+      projectionVersion: 7,
+      operation: "MODAL_SHOWN",
+      idempotencyKey: "modal-shown-1",
+    },
+    occurredAt: "2023-11-14T22:13:20.000Z",
+  }]);
+  assert.equal(harness.gameReads, 2, "eligibility read plus persisted readback");
+});
+
+test("delivery command rejects client scope, unsupported operations and unknown fields", async () => {
+  for (const extra of [
+    { roomId: ROOM_ID },
+    { runId: RUN_ID },
+    { viewerSeatId: SEAT_ID },
+    { operation: "ACKNOWLEDGED" },
+    { operation: "RESOLVED" },
+    { projectionVersion: 0 },
+  ]) {
+    const harness = createHarness();
+    await expectHttpCode(
+      () => harness.facade.markFeedDelivery(harness.principal, ROOM_ID, {
+        schemaVersion: "pressure_chapter_game_command_v1",
+        commandType: "DELIVERY_MARK",
+        eventId: "modal-event-1",
+        projectionVersion: 7,
+        operation: "MODAL_SHOWN",
+        idempotencyKey: "modal-shown-1",
+        ...extra,
+      }),
+      PRESSURE_CHAPTER_HTTP_ERROR_CODES.INPUT_INVALID,
+      400,
+    );
+    assert.equal(harness.deliveryInputs.length, 0);
+  }
+});
 
 test("GET game and result authorize first, honor frozen route and perform zero command writes", async () => {
   const harness = createHarness();
@@ -218,8 +279,8 @@ test("response binding is transported through the existing endpoint with replay 
     occurredAt: "2023-11-14T22:13:20.000Z",
   });
   assert.ok(
-    harness.calls.indexOf("response-acknowledge") < harness.calls.indexOf("decision-compile"),
-    "delivery acknowledgement precedes canonical response compilation",
+    harness.calls.indexOf("response-acknowledge") > harness.calls.indexOf("action-write"),
+    "delivery acknowledgement is a post-success recovery receipt",
   );
   assert.equal(harness.compilerInputs[0]?.command.sourceEventId, "safe-projected-event-1");
   assert.equal(harness.compilerInputs[0]?.command.responseActionCode, "SIGNED_RESPONSE_A");
@@ -233,6 +294,36 @@ test("response binding is transported through the existing endpoint with replay 
     409,
   );
   assert.equal(harness.actionWrites, 1);
+});
+
+test("post-success ACK fallback recovers on same-key replay and failed actions write zero ACK", async () => {
+  const routeHash = storedRoute().snapshot.routeHash;
+  const body = {
+    ...decisionCommand(routeHash),
+    idempotencyKey: "response-http-recovery-1",
+    sourceEventId: "safe-projected-event-recovery",
+    responseActionCode: "SIGNED_RESPONSE_A",
+  };
+  const recoverable = createHarness({ acknowledgementFailures: 1 });
+  await expectHttpCode(
+    () => recoverable.facade.submitDecision(recoverable.principal, ROOM_ID, body),
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.DEPENDENCY_FAILURE,
+    500,
+  );
+  assert.equal(recoverable.actionWrites, 1, "authority action committed before fallback outage");
+  assert.equal(recoverable.acknowledgementInputs.length, 1);
+  await recoverable.facade.submitDecision(recoverable.principal, ROOM_ID, structuredClone(body));
+  assert.equal(recoverable.actionWrites, 1, "same-key recovery replays authority exactly once");
+  assert.equal(recoverable.acknowledgementInputs.length, 2, "replay retries the idempotent ACK receipt");
+
+  const rejected = createHarness({ actionErrorCode: "PRESSURE_INTERACTION_APPEND_CONFLICT" });
+  await expectHttpCode(
+    () => rejected.facade.submitDecision(rejected.principal, ROOM_ID, body),
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.COMMAND_REJECTED,
+    422,
+  );
+  assert.equal(rejected.actionWrites, 0);
+  assert.equal(rejected.acknowledgementInputs.length, 0, "failed authority writes must emit zero ACK");
 });
 
 test("run route chapter and compiler seat scope mismatches fail closed", async () => {
@@ -417,6 +508,8 @@ function createHarness(options: {
   dispatchRouteHash?: string;
   compilerSeatId?: typeof SEAT_ID | "qingliu_law";
   compilerErrorCode?: string;
+  actionErrorCode?: string;
+  acknowledgementFailures?: number;
 } = {}) {
   const calls: string[] = [];
   const stored = storedRoute();
@@ -425,9 +518,11 @@ function createHarness(options: {
   let replayWrites = 0;
   let gameReads = 0;
   let resultReads = 0;
+  let acknowledgementFailures = options.acknowledgementFailures ?? 0;
   const actionCommands: SubmitOrchestratedActionCommandV1[] = [];
   const compilerInputs: Parameters<PressureChapterHttpDecisionCompilerPort["compile"]>[0][] = [];
   const acknowledgementInputs: Parameters<PressureChapterHttpResponseAcknowledgerPort["acknowledgeCurrent"]>[0][] = [];
+  const deliveryInputs: Parameters<PressureChapterHttpDeliveryPort["mark"]>[0][] = [];
   const chatCommands: SubmitPressureChatCommandV1[] = [];
   const replayCommands: unknown[] = [];
   const replayViewerIds: string[] = [];
@@ -488,8 +583,15 @@ function createHarness(options: {
     async acknowledgeCurrent(input) {
       calls.push("response-acknowledge");
       acknowledgementInputs.push(structuredClone(input));
+      if (acknowledgementFailures > 0) {
+        acknowledgementFailures -= 1;
+        throw new Error("SIMULATED_ACK_OUTAGE");
+      }
       return true;
     },
+  };
+  const delivery: PressureChapterHttpDeliveryPort = {
+    async mark(input) { deliveryInputs.push(structuredClone(input)); },
   };
   const decisionCompiler: PressureChapterHttpDecisionCompilerPort = {
     async compile(input) {
@@ -511,6 +613,9 @@ function createHarness(options: {
     async submitAction(command) {
       calls.push("action-write");
       actionCommands.push(structuredClone(command));
+      if (options.actionErrorCode) {
+        throw { code: options.actionErrorCode };
+      }
       const prior = actionByKey.get(command.action.idempotencyKey);
       if (prior === undefined) {
         actionByKey.set(command.action.idempotencyKey, command.inputFingerprint);
@@ -573,6 +678,8 @@ function createHarness(options: {
     result,
     replay,
     { nowMs: () => 1_700_000_000_000 },
+    undefined,
+    delivery,
   );
   return {
     facade,
@@ -581,6 +688,7 @@ function createHarness(options: {
     calls,
     compilerInputs,
     acknowledgementInputs,
+    deliveryInputs,
     actionCommands,
     chatCommands,
     replayCommands,

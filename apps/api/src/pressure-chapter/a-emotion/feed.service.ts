@@ -403,6 +403,7 @@ export class AEmotionFeedServiceV1 {
     viewerSeatId: SeatIdV1;
     operation: "SEEN" | "ACKNOWLEDGED" | "RESOLVED" | "MODAL_SHOWN";
     occurredAt: string;
+    idempotencyKey?: string;
   }): Promise<AEmotionDeliveryRecordV1> {
     if (!Number.isSafeInteger(input.projectionVersion) || input.projectionVersion < A_EMOTION_PROJECTION_VERSION_V1) {
       failAEmotionProjection(ERROR.PROJECTION_VERSION_UNSUPPORTED, deliveryKey(input));
