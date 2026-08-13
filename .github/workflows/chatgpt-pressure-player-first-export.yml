@@ -11,35 +11,42 @@ permissions:
 jobs:
   export:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout exact main commit
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Archive only the buildable Pressure/API source set
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install exact workspace dependencies
         run: |
           set -euo pipefail
-          tar -czf /tmp/aiStoryRoom-source.tar.gz \
-            AGENTS.md \
-            package.json \
-            pnpm-lock.yaml \
-            pnpm-workspace.yaml \
-            tsconfig.base.json \
-            prisma/schema.prisma \
-            apps/api \
-            apps/openovel-runtime \
-            packages/shared \
-            packages/templates
-          git rev-parse HEAD > /tmp/source-head.txt
-          git rev-parse HEAD^{tree} > /tmp/source-tree.txt
-      - name: Upload source archive
+          CI=true pnpm install --frozen-lockfile
+          pnpm db:generate
+      - name: Archive dependency tree
+        run: |
+          set -euo pipefail
+          tar --zstd -cf /tmp/aiStoryRoom-node-modules.tar.zst \
+            node_modules \
+            apps/api/node_modules \
+            apps/openovel-runtime/node_modules \
+            packages/shared/node_modules \
+            packages/templates/node_modules
+          git rev-parse HEAD > /tmp/deps-head.txt
+      - name: Upload dependency archive
         uses: actions/upload-artifact@v4
         with:
-          name: aiStoryRoom-main-source-small
+          name: aiStoryRoom-main-dependencies
           path: |
-            /tmp/aiStoryRoom-source.tar.gz
-            /tmp/source-head.txt
-            /tmp/source-tree.txt
+            /tmp/aiStoryRoom-node-modules.tar.zst
+            /tmp/deps-head.txt
           if-no-files-found: error
           retention-days: 1
