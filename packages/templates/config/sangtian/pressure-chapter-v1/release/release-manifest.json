@@ -170,7 +170,7 @@
       "artifactId": "source_regression_manifest",
       "path": "source-regression-manifest.json",
       "version": "pressure-source-regression-1.0.0",
-      "sha256": "d3764c96d04ca2938b34d1413c04a04b19e2afb9ce2241a002d06da1a89980c1",
+      "sha256": "53e63f5d042526f6342e0df1a9a1ef6e8ccd97125e2cbe03525b52fc5ef51347",
       "hashMode": "CANONICAL_JSON"
     },
     {
