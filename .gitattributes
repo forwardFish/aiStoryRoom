@@ -1,3 +1,5 @@
 # Strategy content is hash-addressed byte-for-byte. Keep its line endings
 # stable across Windows and Unix checkouts so registry hashes remain valid.
 packages/templates/config/**/*.json text eol=lf
+packages/templates/config/sangtian/pressure-chapter-v1/release/action-effect-compiler.cjs text eol=lf
+packages/templates/config/sangtian/pressure-chapter-v1/release/action-effect-compiler.mjs text eol=lf
