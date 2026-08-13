@@ -68,6 +68,9 @@ jobs:
       - name: Generate Prisma client without migration
         run: pnpm db:generate
 
+      - name: Build shared package for source tests
+        run: pnpm --filter @ai-story/shared build
+
       - name: Run release-artifacts gate
         run: |
           set -o pipefail
