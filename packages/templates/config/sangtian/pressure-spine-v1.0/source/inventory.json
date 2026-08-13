@@ -70,12 +70,12 @@
     {
       "path": "inventory.json",
       "byteSize": 15589,
-      "sha256": "5DE74C36E36B22953106CB01DF09C2D8D3E947E9D7B757436665F2D52EDC89AC"
+      "sha256": "FFD6CD9EB4342A609703C0A2125AEC8BFE6B447E4FFDF6F41B440280DD3C7D72"
     },
     {
       "path": "manifest.json",
       "byteSize": 11117,
-      "sha256": "44D92E4083FFC8E92B94DF47219A4BA3472D161A88977947143BE6BDB144F046"
+      "sha256": "B3D6B29C2C4638B0AC44BE833C0AC2AE0FE26C5FF5F986AC8EDDBE8ED46CCB9F"
     },
     {
       "path": "nodes/N1/adaptations.json",
@@ -99,13 +99,13 @@
     },
     {
       "path": "nodes/N1/scene-flow.json",
-      "byteSize": 34360,
-      "sha256": "59606F6DAC4BBC573848FEA8A2AF6AB66C6EC9D378246956485962A6F831530C"
+      "byteSize": 36848,
+      "sha256": "F4721194E8A03C252C27B3B65CFF5F37FC8118D5F61ADCDC7A82BB79AD443F2C"
     },
     {
       "path": "nodes/N1/seat-content.json",
-      "byteSize": 42386,
-      "sha256": "9A6EAB5893BC12045DB6244B8D6C2D5CD8F8B07FF7DFA3770EBAC89BE518E514"
+      "byteSize": 49910,
+      "sha256": "4171E015BC0F10803DE26DB6DC5894CB3659229D69A2ED4038892B21DD23D837"
     },
     {
       "path": "nodes/N1/settlement.json",
@@ -450,7 +450,7 @@
     {
       "path": "validation/coverage-report.json",
       "byteSize": 6786,
-      "sha256": "159999034B4153C9E37CF780A8FD419DBF36F4A26E56327F608FE618267B0FAB"
+      "sha256": "E5220CB1B158F0356A0E272A51864EF1C552F9813B658091202533DDE3C3F824"
     },
     {
       "path": "validation/knowledge-boundary-audit.json",

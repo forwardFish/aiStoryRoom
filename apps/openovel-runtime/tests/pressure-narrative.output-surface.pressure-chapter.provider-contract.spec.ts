@@ -60,6 +60,25 @@ test("TruthGuard records surface rejection before artifact construction", () => 
   assert.ok(report.issueCodes.includes(SURFACE.INTERNAL_PROTOCOL));
 });
 
+test("BEAT TruthGuard accepts semantic claim coverage without forcing authority copy into prose", () => {
+  const context = contextFixture();
+  context.facts = [{ factId: "fact-1", text: "两处设施已经得到增援。", temporalStatus: "COMMITTED_WORKING" }];
+  context.allowedClaims = [{
+    kind: "FACT",
+    refId: "fact-1",
+    statement: "两处设施已经得到增援。",
+    required: true,
+  }];
+  const report = new NarrativeTruthGuardV1().validate(context, {
+    text: "幕僚松开地图：“派去的人和物资，已经接上两处最吃紧的地方。”",
+    usedFactRefs: ["fact-1"],
+    claims: [{ kind: "FACT", refId: "fact-1", statement: "两处设施已经得到增援。" }],
+  }, "pressure_truth_guard_v1");
+
+  assert.equal(report.accepted, true);
+  assert.doesNotMatch("幕僚松开地图：“派去的人和物资，已经接上两处最吃紧的地方。”", /两处设施已经得到增援/u);
+});
+
 test("Publisher rejects unsafe candidates and poisoned pending artifacts before port IO", async () => {
   const port = new CountingPublisherPort();
   const publisher = new NarrativePublisherV1(port);

@@ -90,12 +90,19 @@ export interface CommittedBeatNarrativeAuthorityV1 {
   sealedActionIds: string[];
   sealedActionsHash: string;
   sealedActions: unknown[];
+  sealedActionAudiences: Array<{
+    actionId: string;
+    audienceSeatIds: SeatIdV1[];
+  }>;
   resolverVersion: string;
   workingDelta: unknown;
   workingDeltaHash: string;
+  stateAfter: unknown;
+  stateAfterHash: string;
   reservationMutations: unknown;
   reactionContextRef: { sourceHash: string } | null;
   nextDecisionContextRef: { sourceHash: string } | null;
+  nextDecisionPin: unknown | null;
   resolutionHash: string;
   contentPackageSha256: string;
 }

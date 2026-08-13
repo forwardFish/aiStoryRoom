@@ -3,5 +3,7 @@ export * from "./errors";
 export * from "./fs";
 export * from "./indexer";
 export * from "./loader";
+export * from "./pressure-decision-scene";
+export * from "./pressure-story-source";
 export * from "./types";
 export * from "./validator";

@@ -1,6 +1,7 @@
 export * from "./chapter-settlement.adapter";
 export * from "./content.adapters";
 export * from "./decision-command.compiler";
+export * from "./custom-action.guard";
 export * from "./deterministic-default.adapter";
 export * from "./errors";
 export * from "./content-policy.adapter";

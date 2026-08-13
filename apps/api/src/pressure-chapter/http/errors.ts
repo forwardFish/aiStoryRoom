@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus } from "@nestjs/common";
+import { withPressureDbRequestMetricsV1 } from "../observability/pressure-db-metrics";
 
 export const PRESSURE_CHAPTER_HTTP_ERROR_CODES = Object.freeze({
   INPUT_INVALID: "PRESSURE_HTTP_INPUT_INVALID",
@@ -45,7 +46,8 @@ export function failPressureChapterHttp(
 export async function pressureHttpBoundary<T>(
   operation: () => Promise<T>,
 ): Promise<T> {
-  try {
+  return withPressureDbRequestMetricsV1(async () => {
+    try {
     return await operation();
   } catch (error) {
     if (error instanceof PressureChapterHttpException) throw error;
@@ -102,7 +104,11 @@ export async function pressureHttpBoundary<T>(
       );
     }
     throw mapPressureDependencyError(error);
-  }
+    }
+  }, (metrics) => {
+    if (process.env.PRESSURE_CHAPTER_DIAGNOSTIC_ERRORS !== "1") return;
+    console.error("Pressure request DB metrics", metrics);
+  });
 }
 
 function mapPressureDependencyError(error: unknown): PressureChapterHttpException {

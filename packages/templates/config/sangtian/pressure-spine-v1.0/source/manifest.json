@@ -139,7 +139,7 @@
     "uniqueDialogueSeedCount": 144,
     "crossSeatDialogueDuplicateCount": 0,
     "crossNodeDialogueDuplicateCount": 0,
-    "authoredHanCharacters": 82508
+    "authoredHanCharacters": 83184
   },
   "validationCommand": "python tools/validate_package.py",
   "expectedVerdict": "PASS",

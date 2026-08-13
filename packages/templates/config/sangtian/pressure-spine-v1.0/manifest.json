@@ -1,11 +1,11 @@
 {
   "contentVersion": "sangtian_pressure_v1_0",
   "manifestLockPath": "manifest.lock.json",
-  "manifestLockSha256": "3BD558B569601F437EFE5329868602C6DB87E967080FBCD85B9C3D224FFC6405",
+  "manifestLockSha256": "20815E925B34FB8F7733B34CCB28DA1C4A575A5C46BBCF32B3631C070C24B580",
   "packageId": "sangtian_complete_story_content_package_v1_1",
   "packageVersion": "1.1.0-repair-final",
   "runtimeIndexPath": "runtime-index.json",
-  "runtimeIndexSha256": "313D6F8B1057C4D44CE86C7AE34B6FBC12A47B19211CF3CA0EA0ADCC615196B3",
+  "runtimeIndexSha256": "87E8163017A7E412193A7F4C3CC937A288E66112C2D45ECBB49A905BA3F44005",
   "runtimeProfile": "SANGTIAN_PRESSURE_SPINE_V1",
   "schemaVersion": "pressure_spine_registration_manifest_v1",
   "sourceDirectory": "source",

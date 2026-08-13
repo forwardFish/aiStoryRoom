@@ -123,7 +123,7 @@
     "uniqueDialogueSeedCount": 144,
     "crossSeatDialogueDuplicateCount": 0,
     "crossNodeDialogueDuplicateCount": 0,
-    "authoredHanCharacters": 82508
+    "authoredHanCharacters": 83184
   },
   "hanCharacterCounting": {
     "algorithm": "Unicode property regex \\p{Script=Han}",

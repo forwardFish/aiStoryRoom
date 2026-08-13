@@ -400,6 +400,23 @@ function beatAuthority(runId: string): CommittedBeatNarrativeAuthorityV1 {
     knowledgeMutations: [],
     seatArcWorkingMutations: [],
   };
+  const stateAfter = {
+    schemaVersion: "pressure_chapter_working_state_v1" as const,
+    runId,
+    chapterId: "N1" as const,
+    revision: 1,
+    facts: {
+      evacuationCoveragePct: 70,
+      criticalWeirsSecuredCount: 0,
+      verifiedBreachRecordCount: 1,
+      disasterSeverity: 4,
+    },
+    counters: {},
+    satisfiedRequirementIds: [],
+    completedDecisionPointIds: [],
+    settledReactions: [],
+    lastBeatId: null,
+  };
   const body = {
     schemaVersion: "sangtian_beat_resolution_v1" as const,
     runId,
@@ -429,12 +446,21 @@ function beatAuthority(runId: string): CommittedBeatNarrativeAuthorityV1 {
     sealedActionIds: body.sealedActionIds,
     sealedActionsHash: body.sealedActionsHash,
     sealedActions: actions,
+    sealedActionAudiences: actions.map((action) => ({
+      actionId: action.actionId,
+      audienceSeatIds: action.seatId === "zhejiang_governor"
+        ? ["zhejiang_governor"]
+        : [...PRESSURE_CHAPTER_SEAT_IDS_V1],
+    })),
     resolverVersion: body.resolverVersion,
     workingDelta,
     workingDeltaHash: sha256Canonical(workingDelta),
+    stateAfter,
+    stateAfterHash: sha256Canonical(stateAfter),
     reservationMutations: [],
     reactionContextRef: null,
     nextDecisionContextRef: null,
+    nextDecisionPin: null,
     resolutionHash: sha256Canonical(body),
     contentPackageSha256: TARGET.contentPackageSha256,
   };

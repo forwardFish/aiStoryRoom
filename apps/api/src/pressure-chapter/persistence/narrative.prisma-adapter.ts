@@ -655,6 +655,11 @@ async function readCommittedBeatAuthority(
     if (!action) throw invalid("Committed Beat is missing a sealed action", { actionId });
     return structuredClone(action);
   }).sort((left, right) => left.actionId.localeCompare(right.actionId));
+  const sealedActionAudiences = beat.sealedActionIds.map((actionId) => {
+    const accepted = projection.acceptedActions.get(actionId);
+    if (!accepted) throw invalid("Committed Beat is missing an accepted action audience", { actionId });
+    return { actionId, audienceSeatIds: [...accepted.audienceSeatIds].sort() };
+  }).sort((left, right) => left.actionId.localeCompare(right.actionId));
   return {
     schemaVersion: "pressure_committed_beat_narrative_authority_v1",
     runId: target.runId,
@@ -668,12 +673,16 @@ async function readCommittedBeatAuthority(
     sealedActionIds: [...beat.sealedActionIds].sort(),
     sealedActionsHash: beat.sealedActionsHash,
     sealedActions,
+    sealedActionAudiences,
     resolverVersion: beat.resolverVersion,
     workingDelta: structuredClone(beat.workingDelta),
     workingDeltaHash: sha256Canonical(beat.workingDelta),
+    stateAfter: structuredClone(target.payload.stateAfter),
+    stateAfterHash: target.payload.stateAfterHash,
     reservationMutations: structuredClone(beat.reservationMutations),
     reactionContextRef: structuredClone(beat.reactionContextRef),
     nextDecisionContextRef: structuredClone(beat.nextDecisionContextRef),
+    nextDecisionPin: structuredClone(target.payload.nextDecisionPin),
     resolutionHash: beat.resolutionHash,
     contentPackageSha256: route.contentPackageSha256,
   };

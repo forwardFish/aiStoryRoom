@@ -147,6 +147,7 @@ export async function runSoloN1Smoke({ apiBase, cookie, identity, userId, timeou
     idempotencyKey: `pc-action:${identity.marker}`,
     optionCode: option.code,
     customText: null,
+    sourceEventId: null,
   };
   const submitted = await apiRequest(apiBase, `/v4/rooms/${encodeURIComponent(runId)}/game/action`, {
     method: 'POST',

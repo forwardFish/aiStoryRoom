@@ -6,7 +6,9 @@ import {
   type OpenNovelNarrativeArtifactV1,
   type SeatIdV1,
 } from "@ai-story/shared";
+import { loadStoryPackage } from "@ai-story/templates";
 import type { PrismaService } from "../../prisma.service";
+import { loadFixedStoryOpening } from "../../solo-story-engine/fixed-opening";
 import type {
   PressureGameNarrativeReaderPort,
   PressureGameNarrativeSourceV1,
@@ -34,6 +36,11 @@ const NARRATIVE_STATUSES = Object.freeze([
 type NarrativeStatus = (typeof NARRATIVE_STATUSES)[number];
 type ProjectionKind = "GENESIS_NARRATIVE" | "BEAT_NARRATIVE" | "CHAPTER_NARRATIVE";
 type SourceAuthority = "GENESIS_FROZEN" | "CHAPTER_WORKING" | "CHAPTER_FROZEN";
+
+const SANGTIAN_FIXED_OPENING = loadFixedStoryOpening(
+  "sangtian",
+  loadStoryPackage("sangtian"),
+).opening;
 
 interface NarrativeRuntimeRowV1 {
   id: string;
@@ -240,7 +247,14 @@ implements PressureGameNarrativeReaderPort {
           artifactContentHash: true,
         },
       });
-      if (rows.length === 0) return null;
+      if (rows.length === 0) {
+        // Keep the durable PROJECT_GENESIS_NARRATIVE pipeline intact for a
+        // later published replacement, while making the first playable N1
+        // projection independent from worker timing.
+        return source.authoredFallbackText
+          ? authoredGenesisFallback(input, source)
+          : null;
+      }
       if (rows.length !== 1) {
         return failLiveAdapter(
           ERROR.AUTHORITY_AMBIGUOUS,
@@ -248,7 +262,12 @@ implements PressureGameNarrativeReaderPort {
           "MULTIPLE_PROJECTOR_VERSIONS",
         );
       }
-      return decodeNarrativeProjection(rows[0]!, input, route.narrativeProfileVersion, source);
+      const projection = decodeNarrativeProjection(rows[0]!, input, route.narrativeProfileVersion, source);
+      // A pending/retryable Genesis projection is an internal delivery state,
+      // not a reason to hide the authored opening and first chapter setup.
+      return projection.text === null && source.authoredFallbackText
+        ? authoredGenesisFallback(input, source)
+        : projection;
     });
   }
 }
@@ -262,6 +281,7 @@ function resolveCurrentNarrativeSource(
   sourceAuthority: SourceAuthority;
   sourceId: string;
   expectedSourceCommitHash?: string;
+  authoredFallbackText?: string;
 } | null {
   if (runtime.state === "CHAPTER_FROZEN") {
     const committed = settlement
@@ -313,6 +333,7 @@ function resolveCommittedGenesisNarrativeSource(
   sourceAuthority: "GENESIS_FROZEN";
   sourceId: string;
   expectedSourceCommitHash: string;
+  authoredFallbackText: string;
 } | null {
   if (!row) return null;
   const committed = row.commitManifestJson === undefined
@@ -337,6 +358,57 @@ function resolveCommittedGenesisNarrativeSource(
     sourceAuthority: "GENESIS_FROZEN",
     sourceId: row.genesisHash,
     expectedSourceCommitHash: row.commitHash,
+    authoredFallbackText: firstPlayableNarrativeText(),
+  };
+}
+
+function firstPlayableNarrativeText(): string {
+  const text = SANGTIAN_FIXED_OPENING.prologueNarrative.trim();
+  if (!text) {
+    return failLiveAdapter(ERROR.CONFIGURATION_REQUIRED, "FixedStoryOpening.prologueNarrative", "MISSING");
+  }
+  return text;
+}
+
+function authoredGenesisFallback(
+  scope: {
+    runId: string;
+    routeHash: string;
+    viewerSeatId: SeatIdV1;
+    chapterRuntimeId: string;
+  },
+  source: {
+    projectionKind: ProjectionKind;
+    sourceAuthority: SourceAuthority;
+    sourceId: string;
+    expectedSourceCommitHash?: string;
+    authoredFallbackText?: string;
+  },
+): PressureGameNarrativeSourceV1 {
+  if (
+    source.projectionKind !== "GENESIS_NARRATIVE"
+    || source.sourceAuthority !== "GENESIS_FROZEN"
+    || !source.expectedSourceCommitHash
+    || !source.authoredFallbackText
+  ) {
+    return failLiveAdapter(ERROR.RECORD_INVALID, "GenesisNarrativeFallback", "SOURCE");
+  }
+  return {
+    runId: scope.runId,
+    routeHash: scope.routeHash,
+    viewerSeatId: scope.viewerSeatId,
+    chapterRuntimeId: scope.chapterRuntimeId,
+    status: "FALLBACK_PUBLISHED",
+    projectionKind: "GENESIS_NARRATIVE",
+    sourceAuthority: "GENESIS_FROZEN",
+    sourceId: source.sourceId,
+    sourceCommitHash: source.expectedSourceCommitHash,
+    text: source.authoredFallbackText,
+    contentHash: computeNarrativeArtifactContentHash({
+      text: source.authoredFallbackText,
+      usedFactRefs: [],
+    }),
+    renderMode: "AUTHORED_FALLBACK",
   };
 }
 
@@ -384,6 +456,7 @@ function decodeNarrativeProjection(
     sourceAuthority: SourceAuthority;
     sourceId: string;
     expectedSourceCommitHash?: string;
+    authoredFallbackText?: string;
   },
 ): PressureGameNarrativeSourceV1 {
   if (

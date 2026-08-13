@@ -208,6 +208,44 @@ export interface AppendPreparedAutomationActionCommandV1 {
   authority: PreparedAutomationActionAuthorityV1;
 }
 
+/**
+ * A deterministic, route-ordered batch of prepared AI actions. The batch is
+ * compiled entirely in memory and is the only unit allowed to cross the W5
+ * persistence boundary for one convergence pass.
+ */
+export interface PreparedAutomationActionBatchV1 {
+  schemaVersion: "pressure_prepared_automation_action_batch_v1";
+  batchId: string;
+  snapshotHash: string;
+  runId: string;
+  routeHash: string;
+  chapterRuntimeId: string;
+  chapterId: ChapterIdV1;
+  decisionPointId: string;
+  expectedOrchestratorRevision: number;
+  expectedOrchestratorHash: string;
+  expectedWorkingRevision: number;
+  expectedWorkingStateHash: string;
+  expectedLedgerHeadHash: string;
+  expectedSeatAuthorityStateHash: string;
+  actions: AppendPreparedAutomationActionCommandV1[];
+  batchHash: string;
+}
+
+export type PreparedAutomationActionBatchConflictReasonV1 =
+  | "HEAD_CONFLICT"
+  | PreparedAutomationActionStaleReasonV1;
+
+export interface PreparedAutomationActionBatchResultV1 {
+  status: "COMMITTED" | "REPLAYED" | "CONFLICT";
+  batchId: string;
+  actionIds: string[];
+  replayedActionIds: string[];
+  eventHashes: string[];
+  ledgerHeadHash: string;
+  conflictReason: PreparedAutomationActionBatchConflictReasonV1 | null;
+}
+
 export interface AppendPreparedAutomationActionResultV1 {
   status: "APPENDED" | "REPLAYED" | "HEAD_CONFLICT" | "STALE";
   actionId: string;
@@ -221,6 +259,9 @@ export interface PreparedAutomationActionSubmissionPortV1 {
   submitPrepared(
     command: AppendPreparedAutomationActionCommandV1,
   ): Promise<AppendPreparedAutomationActionResultV1>;
+  submitPreparedBatch?(
+    batch: PreparedAutomationActionBatchV1,
+  ): Promise<PreparedAutomationActionBatchResultV1>;
 }
 
 /** Existing runtime surface retained for the legacy recovery source. */

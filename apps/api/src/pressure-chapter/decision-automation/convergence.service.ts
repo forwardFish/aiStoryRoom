@@ -45,6 +45,7 @@ import type {
   DecisionConvergenceStageTimingsV1,
   PreparedAutomationActionStaleReasonV1,
 } from "./contracts";
+import { createPreparedAutomationActionBatchV1 } from "./prepared-action-batch";
 
 const DEFAULT_CONFIG: DecisionAutomationConfigV1 = Object.freeze({
   retryMs: 1_000,
@@ -355,38 +356,84 @@ export class PressureDecisionConvergenceServiceV1 {
     }
     metrics.timings.compileAllMs = elapsed(compileStartedAt);
 
-    let expectedHead = snapshot.projection.headHash;
     let complete = true;
+    let batchConflict = false;
     const appendStartedAt = performance.now();
-    for (const item of prepared) {
-      const callStartedAt = performance.now();
-      metrics.appendTxCount += 1;
-      item.authority.expectedLedgerHeadHash = expectedHead;
-      const result = await this.ports.preparedActions.submitPrepared(item);
-      metrics.timings.ledgerAppendEachMs.push(elapsed(callStartedAt));
-      if (result.actionId !== item.command.action.actionId || !isSha256(result.ledgerHeadHash)) {
-        mismatch(ERROR.PORT_RESULT_INVALID, "preparedAppend.result", "INVALID_BINDING");
+    if (this.ports.preparedActions.submitPreparedBatch) {
+      const batch = createPreparedAutomationActionBatchV1({
+        batchId: metrics.batchId,
+        snapshotHash: snapshot.snapshotHash,
+        routeSnapshot: snapshot.routeSnapshot,
+        chapterRuntimeId: chapter.chapterRuntimeId,
+        chapterId: chapter.currentChapterId,
+        decisionPointId: active.decisionPointId,
+        expectedOrchestratorRevision: chapter.revision,
+        expectedOrchestratorHash: chapter.orchestratorHash,
+        expectedWorkingRevision: snapshot.projection.state.revision,
+        expectedWorkingStateHash: snapshot.projection.stateHash,
+        expectedLedgerHeadHash: snapshot.projection.headHash,
+        expectedSeatAuthorityStateHash: snapshot.seatAuthority.stateHash,
+        actions: prepared,
+      });
+      metrics.appendTxCount = 1;
+      const result = await this.ports.preparedActions.submitPreparedBatch(batch);
+      if (
+        result.batchId !== batch.batchId
+        || !isSha256(result.ledgerHeadHash)
+        || result.actionIds.some((actionId) => !prepared.some((item) => item.command.action.actionId === actionId))
+      ) mismatch(ERROR.PORT_RESULT_INVALID, "preparedBatch.result", "INVALID_BINDING");
+      actionIds.push(...result.actionIds);
+      metrics.replayCount += result.replayedActionIds.length;
+      if (result.status === "CONFLICT") {
+        complete = false;
+        batchConflict = true;
+        if (result.conflictReason === "HEAD_CONFLICT") metrics.headConflictCount += 1;
       }
-      if (result.status === "APPENDED") {
-        actionIds.push(result.actionId);
-        expectedHead = result.ledgerHeadHash;
-        continue;
+    } else {
+      // Compatibility fallback for isolated legacy test doubles only. The
+      // production Prisma adapter implements submitPreparedBatch.
+      let expectedHead = snapshot.projection.headHash;
+      for (const item of prepared) {
+        const callStartedAt = performance.now();
+        metrics.appendTxCount += 1;
+        item.authority.expectedLedgerHeadHash = expectedHead;
+        const result = await this.ports.preparedActions.submitPrepared(item);
+        metrics.timings.ledgerAppendEachMs.push(elapsed(callStartedAt));
+        if (result.actionId !== item.command.action.actionId || !isSha256(result.ledgerHeadHash)) {
+          mismatch(ERROR.PORT_RESULT_INVALID, "preparedAppend.result", "INVALID_BINDING");
+        }
+        if (result.status === "APPENDED") {
+          actionIds.push(result.actionId);
+          expectedHead = result.ledgerHeadHash;
+          continue;
+        }
+        if (result.status === "REPLAYED") {
+          actionIds.push(result.actionId);
+          metrics.replayCount += 1;
+          expectedHead = result.ledgerHeadHash;
+          continue;
+        }
+        complete = false;
+        if (result.status === "HEAD_CONFLICT") {
+          metrics.headConflictCount += 1;
+        } else {
+          countStale(metrics, result.staleReason);
+        }
+        break;
       }
-      if (result.status === "REPLAYED") {
-        actionIds.push(result.actionId);
-        metrics.replayCount += 1;
-        expectedHead = result.ledgerHeadHash;
-        continue;
-      }
-      complete = false;
-      if (result.status === "HEAD_CONFLICT") {
-        metrics.headConflictCount += 1;
-      } else {
-        countStale(metrics, result.staleReason);
-      }
-      break;
     }
     metrics.timings.ledgerAppendTotalMs = elapsed(appendStartedAt);
+
+    if (batchConflict) {
+      return this.finish(
+        command,
+        metrics,
+        "STALE_SKIPPED",
+        [],
+        chapter,
+        endToEndStartedAt,
+      );
+    }
 
     const resumed = await this.resumeOnce(snapshot, metrics, command.nowMs);
     const outcome: DecisionAutomationOutcomeKindV1 = complete

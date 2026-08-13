@@ -22,7 +22,11 @@ import {
   N7FrozenFinaleInputAssemblerV1,
   PressureFinaleApplicationServiceV1,
 } from "../finale";
-import { PressureChapterGameProjectionService } from "../game-projection";
+import {
+  PressureChapterGameProjectionService,
+  PressureDecisionPresentationServiceV1,
+  type PressureDecisionPresentationProviderPortV1,
+} from "../game-projection";
 import { PressureChapterGenesisService } from "../genesis";
 import {
   PressureChapterHttpControllerMethods,
@@ -219,6 +223,7 @@ export async function createPressureChapterProductRootV1(input: {
   prisma: PrismaService;
   options?: Partial<PressureChapterProductOptionsV1>;
   narrativeProviderReadiness?: PressureNarrativeProviderReadinessV1;
+  decisionPresentationProvider?: PressureDecisionPresentationProviderPortV1 | null;
 }): Promise<PressureChapterProductRootV1> {
   const options = normalizeOptions(input.options);
   const httpProduction = createPressureChapterHttpProductionAdaptersV1(
@@ -457,20 +462,24 @@ export async function createPressureChapterProductRootV1(input: {
   const actionPresentations = new SangtianReleaseActionPresentationCatalogAdapterV1(
     release,
   );
+  const gameChapterReader = createViewerScopedPressureGameChapterReaderV1({
+    routes,
+    states: orchestratorStates,
+    working: projections,
+    content,
+    mapper: new SangtianPressureGameContentMapperV1(actionPresentations),
+  });
   const gameProjection = new PressureChapterGameProjectionService(
     routes,
-    createViewerScopedPressureGameChapterReaderV1({
-      routes,
-      states: orchestratorStates,
-      working: projections,
-      content,
-      mapper: new SangtianPressureGameContentMapperV1(actionPresentations),
-    }),
+    gameChapterReader,
     seatViewer,
     createPrismaPressureGameWorldReaderV1(input.prisma),
     new PrismaPressureGameNarrativeReaderV1(input.prisma),
     createPressureGameFeedReaderV1(aEmotion.feed),
     internal.gameCapabilities,
+    new PressureDecisionPresentationServiceV1(
+      input.decisionPresentationProvider ?? null,
+    ),
   );
   const runtimeFacets = pressureHttpRuntimeFacetsV1(runtime);
   const httpRoutes = pressureHttpRouteReadPortV1(routes);
@@ -479,6 +488,11 @@ export async function createPressureChapterProductRootV1(input: {
     projections,
     content,
     new SangtianServerDecisionWorkingIntentCompilerV1(release),
+    {
+      chapter: gameChapterReader,
+      viewer: seatViewer,
+      capabilities: internal.gameCapabilities,
+    },
   );
   const chat = new PressureChapterChatService(
     interactionAccess,

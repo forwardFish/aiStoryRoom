@@ -167,6 +167,7 @@ export function pressureProjectionToMainGameViewV1(projectionValue) {
       accentSoft: "#f3f0ff",
     },
     openingNarrative: projection.narrative.text || projection.decision?.summary || projection.chapter.title,
+    decisionNarrative: projection.decision?.summary || "",
     messages: [],
     activeDecision: canSubmit ? {
       messageId: decision.decisionPointId,

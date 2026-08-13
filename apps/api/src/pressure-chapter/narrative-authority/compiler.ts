@@ -243,6 +243,7 @@ function compileBeat(
     raw.contentPackageSha256 !== TARGET.contentPackageSha256
     || raw.workingDeltaHash !== sha256Canonical(beat.workingDelta)
     || raw.sealedActionsHash !== computeSealedActionsHash(actions)
+    || raw.stateAfterHash !== sha256Canonical(raw.stateAfter)
   ) mismatch("rawBeatAuthority", "COMMITTED_BEAT_HASH_OR_CONTENT_BINDING");
 
   const chapter = loaded.content.chapters.find((item) => item.chapterId === raw.chapterId);
@@ -278,6 +279,10 @@ function compileBeat(
   });
   const actionSeats = canonicalSeats(actions.map((action) => action.seatId));
   const participantAcl = authorizedAcl(actionSeats);
+  const actionAudiences = new Map(raw.sealedActionAudiences.map((item) => [
+    item.actionId,
+    authorizedAcl(item.audienceSeatIds),
+  ]));
   for (const action of actions) {
     let presentation;
     try {
@@ -296,17 +301,54 @@ function compileBeat(
     }
     const seat = loaded.content.genesis.seats.find((item) => item.seatId === action.seatId);
     if (!seat) presentationMissing(`content.genesis.seats.${action.seatId}`);
+    const audience = actionAudiences.get(action.actionId);
+    if (!audience) mismatch(`rawBeatAuthority.sealedActionAudiences.${action.actionId}`);
+    const customText = customPlayerActionText(action);
     facts.push({
       factId: `action.${action.actionId}`,
-      text: `${seat.displayName}提交“${presentation.label}”：${presentation.description}`,
+      text: customText
+        ? `${seat.displayName}表达了自己的行动：“${customText}”；规则效果绑定为“${presentation.label}”。`
+        : `${seat.displayName}已下令“${presentation.label}”：${presentation.description}`,
+      temporalStatus: "COMMITTED_WORKING",
+      ...audience,
+    });
+    facts.push({
+      factId: `story.player_action.${action.seatId}`,
+      text: customText
+        ? `${seat.displayName}选择先“${shortPlayerAction(customText)}”。`
+        : `${seat.displayName}选择了“${presentation.label}”。`,
       temporalStatus: "COMMITTED_WORKING",
       ...authorizedAcl([action.seatId]),
+    });
+    if (customText) {
+      facts.push({
+        factId: `story.player_input.${action.seatId}`,
+        text: customText,
+        temporalStatus: "COMMITTED_WORKING",
+        ...authorizedAcl([action.seatId]),
+      });
+    }
+    facts.push({
+      factId: `story.visible_action.${action.seatId}`,
+      text: `${seat.displayName}已下令“${presentation.label}”。`,
+      temporalStatus: "COMMITTED_WORKING",
+      ...audience,
     });
   }
   for (const mutation of beat.workingDelta.workingFactMutations) {
     facts.push({
       factId: `working.${mutation.factRef}`,
       text: `${mutation.factRef}: ${scalarText(mutation.before)} -> ${scalarText(mutation.after)}`,
+      temporalStatus: "COMMITTED_WORKING",
+      ...participantAcl,
+    });
+  }
+  if (raw.chapterId === "N1") {
+    facts.push(...n1StoryResultFacts(raw.stateAfter, participantAcl));
+    facts.push(...n1UnresolvedPressureFacts(raw.stateAfter, participantAcl));
+    facts.push({
+      factId: "story.next_direction",
+      text: nextDirectionText(raw.nextDecisionPin, chapter, release),
       temporalStatus: "COMMITTED_WORKING",
       ...participantAcl,
     });
@@ -355,8 +397,8 @@ function compileBeat(
   const claims = standardClaims(facts, objects, knowledge, [{
     kind: "TEMPORAL",
     refId: `beat.${beat.resolutionHash}`,
-    statement: `${chapter.title}的“${point.purpose}”已提交章内反馈；尚未形成章末冻结世界。`,
-    required: true,
+    statement: `${chapter.title}的“${point.purpose}”已形成章内反馈，但尚未成为章末冻结结果。`,
+    required: raw.chapterId !== "N1",
     ...publicAcl(),
   }]);
   const variant: NonFinaleNarrativeVariantV1 = {
@@ -366,6 +408,20 @@ function compileBeat(
     temporalBoundary: "WORKING_NOT_FROZEN",
   };
   return sourceSnapshot(job, facts, objects, knowledge, claims, variant);
+}
+
+function customPlayerActionText(action: DecisionActionV1): string | null {
+  const value = action.payload.customText;
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  if (!text) return null;
+  if ([...text].length > 200) invalid("rawBeatAuthority.sealedActions.payload.customText", "MAX_200");
+  return text;
+}
+
+function shortPlayerAction(value: string): string {
+  const chars = [...value];
+  return chars.length <= 16 ? value : `${chars.slice(0, 15).join("")}…`;
 }
 
 function compileChapter(
@@ -494,7 +550,9 @@ function standardClaims(
       kind: "FACT" as const,
       refId: item.factId,
       statement: item.text,
-      required: false,
+      required: item.factId === "story.result.evacuation"
+        || item.factId === "story.result.weirs"
+        || item.factId.startsWith("story.unresolved_pressure."),
       visibility: item.visibility,
       authorizedSeatIds: [...item.authorizedSeatIds],
     })),
@@ -516,6 +574,119 @@ function standardClaims(
     })),
     ...additional,
   ];
+}
+
+function n1StoryResultFacts(
+  stateValue: unknown,
+  acl: NarrativeAuthorityAclV1,
+): AuthoritativeNarrativeFactV1[] {
+  const state = record(stateValue, "rawBeatAuthority.stateAfter");
+  const values = record(state.facts, "rawBeatAuthority.stateAfter.facts");
+  const evacuation = finiteNumber(values.evacuationCoveragePct, "stateAfter.facts.evacuationCoveragePct");
+  const secured = finiteNumber(values.criticalWeirsSecuredCount, "stateAfter.facts.criticalWeirsSecuredCount");
+  const records = finiteNumber(values.verifiedBreachRecordCount, "stateAfter.facts.verifiedBreachRecordCount");
+  const severity = finiteNumber(values.disasterSeverity, "stateAfter.facts.disasterSeverity");
+  return [
+    {
+      factId: "story.result.evacuation",
+      text: evacuation >= 70
+        ? "堰区多数百姓已经撤离。"
+        : evacuation > 0
+          ? "堰区疏散已经展开。"
+          : "堰区疏散尚未展开。",
+      temporalStatus: "COMMITTED_WORKING",
+      ...cloneAcl(acl),
+    },
+    {
+      factId: "story.result.weirs",
+      text: secured >= 2
+        ? "关键堰口已有足够增援。"
+        : secured > 0
+          ? "已有堰口得到增援。"
+          : "关键堰口尚未得到增援。",
+      temporalStatus: "COMMITTED_WORKING",
+      ...cloneAcl(acl),
+    },
+    {
+      factId: "story.result.records",
+      text: records >= 1
+        ? "毁堤命令已留下可核验记录。"
+        : "毁堤命令尚缺可核验记录。",
+      temporalStatus: "COMMITTED_WORKING",
+      ...cloneAcl(acl),
+    },
+    {
+      factId: "story.result.severity",
+      text: severity <= 2 ? "九堰水势已经缓和。" : "九堰水势尚未受控。",
+      temporalStatus: "COMMITTED_WORKING",
+      ...cloneAcl(acl),
+    },
+  ];
+}
+
+function n1UnresolvedPressureFacts(
+  stateValue: unknown,
+  acl: NarrativeAuthorityAclV1,
+): AuthoritativeNarrativeFactV1[] {
+  const state = record(stateValue, "rawBeatAuthority.stateAfter");
+  const values = record(state.facts, "rawBeatAuthority.stateAfter.facts");
+  const candidates = [
+    {
+      priority: 400,
+      active: finiteNumber(values.disasterSeverity, "stateAfter.facts.disasterSeverity") > 2,
+      text: "九堰的水势尚未受控。",
+    },
+    {
+      priority: 300,
+      active: finiteNumber(values.evacuationCoveragePct, "stateAfter.facts.evacuationCoveragePct") < 70,
+      text: "堰下仍有百姓尚未撤出。",
+    },
+    {
+      priority: 200,
+      active: finiteNumber(values.criticalWeirsSecuredCount, "stateAfter.facts.criticalWeirsSecuredCount") < 2,
+      text: "关键堰口仍然缺少人手。",
+    },
+    {
+      priority: 100,
+      active: finiteNumber(values.verifiedBreachRecordCount, "stateAfter.facts.verifiedBreachRecordCount") < 1,
+      text: "毁堤命令仍缺可核验记录。",
+    },
+  ];
+  return candidates
+    .filter((item) => item.active)
+    .sort((left, right) => right.priority - left.priority)
+    .slice(0, 2)
+    .map((item, index) => ({
+      factId: `story.unresolved_pressure.${String(index + 1).padStart(2, "0")}`,
+      text: item.text,
+      temporalStatus: "COMMITTED_WORKING" as const,
+      ...cloneAcl(acl),
+    }));
+}
+
+function nextDirectionText(
+  pinValue: unknown,
+  chapter: LoadedSangtianPressureChapterPackageV1["content"]["chapters"][number],
+  release: PublishedSangtianActionReleaseV1,
+): string {
+  if (pinValue == null) {
+    return "本轮之后将进入N1章末结算；下一章压力必须以冻结结果为准。";
+  }
+  const pin = record(pinValue, "rawBeatAuthority.nextDecisionPin");
+  nonEmpty(pin.decisionPointId, "rawBeatAuthority.nextDecisionPin.decisionPointId");
+  const point = chapter.decisionPoints.find((item) => item.decisionPointKey === pin.decisionPointId);
+  if (!point) presentationMissing(`rawBeatAuthority.nextDecisionPin.${pin.decisionPointId}`);
+  const catalogChapter = release.catalog.chapters.find((item) => item.chapterId === chapter.chapterId);
+  const catalogDecision = catalogChapter?.decisions.find(
+    (item) => item.decisionPointKey === pin.decisionPointId,
+  );
+  if (!catalogDecision) presentationMissing(`actionCatalog.${pin.decisionPointId}`);
+  return `下一道真实决策是“${point.purpose}”，可行动方向为：${catalogDecision.actions.map((item) => item.label).join("、")}。`;
+}
+
+function finiteNumber(value: unknown, path: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) invalid(path, "FINITE_NUMBER");
+  return value;
 }
 
 function trackFacts(
@@ -820,12 +991,16 @@ function committedBeat(value: unknown): CommittedBeatNarrativeAuthorityV1 {
     "sealedActionIds",
     "sealedActionsHash",
     "sealedActions",
+    "sealedActionAudiences",
     "resolverVersion",
     "workingDelta",
     "workingDeltaHash",
+    "stateAfter",
+    "stateAfterHash",
     "reservationMutations",
     "reactionContextRef",
     "nextDecisionContextRef",
+    "nextDecisionPin",
     "resolutionHash",
     "contentPackageSha256",
   ], "rawBeatAuthority");
@@ -834,11 +1009,23 @@ function committedBeat(value: unknown): CommittedBeatNarrativeAuthorityV1 {
   ] as const) nonEmpty(row[field], `rawBeatAuthority.${field}`);
   if (!CHAPTER_IDS_V1.includes(row.chapterId as never)) invalid("rawBeatAuthority.chapterId");
   for (const field of [
-    "inputWorkingStateHash", "sealedActionsHash", "workingDeltaHash",
+    "inputWorkingStateHash", "sealedActionsHash", "workingDeltaHash", "stateAfterHash",
     "resolutionHash", "contentPackageSha256",
   ] as const) hash(row[field], `rawBeatAuthority.${field}`);
   if (!Array.isArray(row.sealedActions) || !Array.isArray(row.sealedActionIds)) {
     invalid("rawBeatAuthority.sealedActions", "ARRAY");
+  }
+  if (!Array.isArray(row.sealedActionAudiences)) {
+    invalid("rawBeatAuthority.sealedActionAudiences", "ARRAY");
+  }
+  for (const [index, value] of row.sealedActionAudiences.entries()) {
+    const audience = record(value, `rawBeatAuthority.sealedActionAudiences.${index}`);
+    exact(audience, ["actionId", "audienceSeatIds"], `rawBeatAuthority.sealedActionAudiences.${index}`);
+    nonEmpty(audience.actionId, `rawBeatAuthority.sealedActionAudiences.${index}.actionId`);
+    if (!Array.isArray(audience.audienceSeatIds)
+      || audience.audienceSeatIds.some((seatId) => !PRESSURE_CHAPTER_SEAT_IDS_V1.includes(seatId as never))) {
+      invalid(`rawBeatAuthority.sealedActionAudiences.${index}.audienceSeatIds`);
+    }
   }
   return structuredClone(row) as unknown as CommittedBeatNarrativeAuthorityV1;
 }

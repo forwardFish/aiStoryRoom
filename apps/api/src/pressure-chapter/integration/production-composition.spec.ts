@@ -46,6 +46,7 @@ import { SangtianDeterministicDefaultActionAdapterV1 } from "./deterministic-def
 import { SangtianContentOwnedChapterPolicyAdapterV1 } from "./content-policy.adapter";
 import {
   SangtianAuthoredChapterContentAdapterV1,
+  SangtianChapterWorkingSeedAdapterV1,
   SangtianGenesisContentAdapterV1,
   SangtianPressureGameContentMapperV1,
   SangtianReleaseActionPresentationCatalogAdapterV1,
@@ -132,6 +133,40 @@ test("accepted content composes P0 and all N1-N7 dynamic authored runtimes", asy
   });
   assert.equal(p0.worldSequence, 0);
   assert.equal("settlement" in p0, false);
+});
+
+test("N1 WorkingState seeds the published action reducer identities", async () => {
+  const stored = await storedRoute();
+  const content = new SangtianAuthoredChapterContentAdapterV1();
+  const chapter = await content.load({ routeSnapshot: stored.snapshot, chapterId: "N1" });
+  const worldState = await new SangtianGenesisContentAdapterV1().loadP0({
+    route: stored.snapshot,
+    controlTopology: stored.controlTopology,
+  });
+  const previousFrozenHash = digest("genesis-frozen");
+  const seed = await new SangtianChapterWorkingSeedAdapterV1({
+    async readAuthorityBase() {
+      return {
+        routeHash: stored.snapshot.routeHash,
+        sourceFrozenHash: previousFrozenHash,
+        worldState,
+      };
+    },
+  }).load({
+    routeSnapshot: stored.snapshot,
+    chapter,
+    authorityBase: {
+      baseWorldSequence: 0,
+      baseWorldStateHash: worldState.stateHash,
+      previousFrozenHash,
+    },
+  });
+
+  assert.equal(seed.facts.evacuationCoveragePct, 0);
+  assert.equal(seed.facts.criticalWeirsSecuredCount, 0);
+  assert.equal(seed.facts.verifiedBreachRecordCount, 0);
+  assert.equal(seed.facts.disasterSeverity, 4);
+  assert.equal(seed.facts["fact.P0.edict_issued"], true);
 });
 
 test("server decision compiler derives authority fields and rejects controlEpoch zero", async () => {

@@ -17,6 +17,8 @@ import {
 import type {
   AppendPreparedAutomationActionCommandV1,
   AppendPreparedAutomationActionResultV1,
+  PreparedAutomationActionBatchResultV1,
+  PreparedAutomationActionBatchV1,
   PreparedAutomationActionStaleReasonV1,
   PreparedAutomationActionSubmissionPortV1,
 } from "../decision-automation/contracts";
@@ -92,6 +94,7 @@ interface PreparedAutomationTransactionV1 {
     findMany(input: Record<string, unknown>): Promise<PreparedEventRowV1[]>;
     findUnique(input: Record<string, unknown>): Promise<PreparedEventRowV1 | null>;
     create(input: { data: Record<string, unknown> }): Promise<PreparedEventRowV1>;
+    createMany?(input: { data: Record<string, unknown>[] }): Promise<{ count: number }>;
   };
   pressureChapterRuntime: {
     findUnique(input: Record<string, unknown>): Promise<PreparedRuntimeRowV1 | null>;
@@ -102,6 +105,7 @@ interface PreparedAutomationTransactionV1 {
   };
   pressureDecisionAction: {
     create(input: { data: Record<string, unknown> }): Promise<unknown>;
+    createMany?(input: { data: Record<string, unknown>[] }): Promise<{ count: number }>;
   };
   pressureRunRouteSnapshot: {
     findUnique(input: Record<string, unknown>): Promise<PreparedRouteRowV1 | null>;
@@ -142,6 +146,277 @@ function pressureFastSerializableTransaction<TResult>(
 export class PrismaPreparedAutomationActionSubmissionV1
 implements PreparedAutomationActionSubmissionPortV1 {
   constructor(private readonly prisma: PreparedAutomationPrismaClientV1) {}
+
+  async submitPreparedBatch(
+    batch: PreparedAutomationActionBatchV1,
+  ): Promise<PreparedAutomationActionBatchResultV1> {
+    const first = batch.actions[0];
+    if (!first) throw invalid("Prepared automation batch is empty", batch.batchId);
+    const route = validateRunRouteSnapshotV1(first.command.routeSnapshot);
+    const routeSeatIds = route.seatIds.map((seatId, index) =>
+      validateSeatIdV1(seatId, `routeSnapshot.seatIds[${index}]`));
+    if (
+      batch.schemaVersion !== "pressure_prepared_automation_action_batch_v1"
+      || batch.runId !== route.runId
+      || batch.routeHash !== route.routeHash
+      || batch.actions.some((item) => (
+        item.command.routeSnapshot.routeHash !== batch.routeHash
+        || item.command.action.runId !== batch.runId
+        || item.command.action.chapterRuntimeId !== batch.chapterRuntimeId
+        || item.command.action.chapterId !== batch.chapterId
+        || item.command.action.decisionPointId !== batch.decisionPointId
+        || item.authority.snapshotHash !== batch.snapshotHash
+        || item.authority.expectedWorkingRevision !== batch.expectedWorkingRevision
+        || item.authority.expectedWorkingStateHash !== batch.expectedWorkingStateHash
+        || item.authority.expectedLedgerHeadHash !== batch.expectedLedgerHeadHash
+      ))
+    ) throw invalid("Prepared automation batch binding is invalid", batch.batchId);
+    for (const item of batch.actions) {
+      validatePreparedAuthorityFence(item, item.command.action.actionId);
+      const action = validateDecisionActionV1(item.command.action);
+      validateFormalInteractionIntentV1(item.command.intent);
+      if (
+        computeFormalInteractionInputFingerprint({
+          routeSnapshot: item.command.routeSnapshot,
+          action,
+          intent: item.command.intent,
+        }) !== item.command.inputFingerprint
+      ) throw invalid("Prepared automation command fingerprint is invalid", action.actionId);
+    }
+
+    try {
+      return await pressureFastSerializableTransaction(this.prisma, async (tx) => {
+        const [runtime, routeRow, seatRow, run, orchestratorRow] = await Promise.all([
+          tx.pressureChapterRuntime.findUnique({
+            where: { id: batch.chapterRuntimeId },
+            select: {
+              id: true,
+              runId: true,
+              chapterId: true,
+              routeHash: true,
+              workingRevision: true,
+              workingStateJson: true,
+              workingStateHash: true,
+              lockVersion: true,
+              decisionStateJson: true,
+            },
+          }),
+          tx.pressureRunRouteSnapshot.findUnique({
+            where: { runId: batch.runId },
+            select: {
+              runId: true,
+              routeHash: true,
+              contentPackageVersion: true,
+              contentPackageSha256: true,
+            },
+          }),
+          tx.pressureSeatControlSnapshot.findUnique({
+            where: { runId: batch.runId },
+            select: {
+              runId: true,
+              stateRevision: true,
+              snapshotJson: true,
+              stateHash: true,
+              version: true,
+            },
+          }),
+          tx.storyRun.findUnique({
+            where: { id: batch.runId },
+            select: { id: true, stateJson: true },
+          }),
+          tx.storyEvent.findUnique({
+            where: { dedupeKey: orchestratorDedupeKey(batch.runId, batch.expectedOrchestratorRevision) },
+            select: { id: true, runId: true, type: true, payloadJson: true, dedupeKey: true },
+          }),
+        ]);
+        if (!runtime || !routeRow || !seatRow || !run || !orchestratorRow) {
+          return batchConflict(batch, "CHAPTER_OR_DECISION");
+        }
+        if (
+          routeRow.runId !== batch.runId
+          || routeRow.routeHash !== batch.routeHash
+          || runtime.routeHash !== batch.routeHash
+          || runtime.runId !== batch.runId
+          || runtime.chapterId !== batch.chapterId
+        ) return batchConflict(batch, "ROUTE");
+        const chapter = validateStoredOrchestratorEvent(
+          orchestratorRow,
+          batch.runId,
+          batch.expectedOrchestratorRevision,
+        );
+        const decisionState = decodePressureMvpDecisionStateV1(runtime.decisionStateJson);
+        if (
+          chapter.revision !== batch.expectedOrchestratorRevision
+          || chapter.orchestratorHash !== batch.expectedOrchestratorHash
+          || decisionState.orchestratorHash !== batch.expectedOrchestratorHash
+          || decisionState.policyHash !== batch.actions[0]!.authority.expectedDecisionPolicyHash
+          || chapter.chapterRuntimeId !== batch.chapterRuntimeId
+          || chapter.currentChapterId !== batch.chapterId
+          || chapter.activeDecision?.decisionPointId !== batch.decisionPointId
+          || chapter.phase !== "ACTIVE"
+        ) return batchConflict(batch, "ORCHESTRATOR_REVISION");
+        const active = chapter.activeDecision;
+        if (active?.deadlineAtMs !== null && active && batch.actions[0]!.command.nowMs >= active.deadlineAtMs) {
+          return batchConflict(batch, "DEADLINE");
+        }
+
+        const current = await readLedgerEvents(tx, {
+          runId: batch.runId,
+          chapterRuntimeId: batch.chapterRuntimeId,
+          chapterId: batch.chapterId,
+        });
+        const projection = projectWorkingLedger(current);
+        const currentHead = requireHead(projection);
+        if (
+          currentHead !== batch.expectedLedgerHeadHash
+          || runtime.workingRevision !== batch.expectedWorkingRevision
+          || projection.state.revision !== batch.expectedWorkingRevision
+          || runtime.workingStateHash !== batch.expectedWorkingStateHash
+          || projection.stateHash !== batch.expectedWorkingStateHash
+        ) return batchConflict(batch, currentHead === batch.expectedLedgerHeadHash ? "WORKING_REVISION" : "HEAD_CONFLICT", currentHead);
+
+        const seatSnapshot = decodeSeatEnvelope(seatRow).snapshot;
+        if (
+          seatSnapshot.runId !== batch.runId
+          || seatSnapshot.routeHash !== batch.routeHash
+          || seatSnapshot.stateHash !== seatRow.stateHash
+          || seatSnapshot.stateHash !== batch.expectedSeatAuthorityStateHash
+        ) return batchConflict(batch, "SEAT_AUTHORITY", currentHead);
+
+        const newCommands: Array<{
+          item: AppendPreparedAutomationActionCommandV1;
+          command: SubmitFormalInteractionCommandV1;
+          payload: FormalActionAcceptedPayloadV1;
+        }> = [];
+        const replayedActionIds: string[] = [];
+        for (const item of batch.actions) {
+          const action = validateDecisionActionV1(item.command.action);
+          const seat = active?.seats.find((candidate) => candidate.seatId === action.seatId);
+          const authority = seatSnapshot.seatControls.find((candidate) => candidate.seatId === action.seatId);
+          if (
+            !seat || !authority
+            || seat.requirement !== "REQUIRED"
+            || seat.completion !== "PENDING"
+            || seat.actionCount !== 0
+            || seat.actionIds.length !== 0
+            || action.actionOrdinal !== 1
+            || authority.controlEpoch !== item.authority.expectedControlEpoch
+            || authority.submissionFenceToken !== item.authority.expectedSubmissionFenceToken
+            || authority.mode !== "AI_ACTIVE"
+            || authority.activeControllerId !== item.authority.expectedControllerId
+            || authority.activeControllerId !== authority.designatedAiControllerId
+            || item.command.subjectId !== authority.activeControllerId
+            || action.controlEpoch !== item.authority.expectedControlEpoch
+          ) return batchConflict(batch, "SEAT_AUTHORITY", currentHead);
+          if (
+            action.payload.source !== "CONTENT_OWNED_AI_POLICY"
+            || action.payload.policyHash !== item.authority.expectedAiPolicyHash
+            || !isSha256(String(action.payload.selectionHash ?? ""))
+          ) return batchConflict(batch, "AI_POLICY", currentHead);
+
+          const access = buildPreparedAccess(
+            routeSeatIds,
+            runtime,
+            decisionState,
+            seatSnapshot,
+            action.seatId,
+            run.stateJson,
+          );
+          const command: SubmitFormalInteractionCommandV1 = {
+            routeSnapshot: route,
+            subjectId: item.command.subjectId,
+            action,
+            intent: structuredClone(item.command.intent),
+            inputFingerprint: item.command.inputFingerprint,
+          };
+          assertFormalInteractionProjectionBindingsV1(command, projection);
+          const replay = findFormalInteractionReplayV1(command, projection, current);
+          if (replay) {
+            assertFormalInteractionReplayAccessV1(command, access);
+            replayedActionIds.push(action.actionId);
+            continue;
+          }
+          assertFormalInteractionAccessV1(command, projection, access);
+          assertFormalInteractionIntentAccessV1(action.seatId, command.intent, projection, access);
+          newCommands.push({
+            item,
+            command,
+            payload: {
+              eventType: "FORMAL_ACTION_ACCEPTED",
+              routeHash: route.routeHash,
+              inputFingerprint: command.inputFingerprint,
+              action,
+              intent: command.intent,
+              audienceSeatIds: computeFormalInteractionAudienceV1(action.seatId, command.intent),
+            },
+          });
+        }
+        if (!newCommands.length) {
+          return {
+            status: "REPLAYED",
+            batchId: batch.batchId,
+            actionIds: batch.actions.map((item) => item.command.action.actionId),
+            replayedActionIds,
+            eventHashes: replayedActionIds.map((actionId) => {
+              const accepted = projection.acceptedActions.get(actionId);
+              return accepted?.eventHash ?? "";
+            }).filter(Boolean),
+            ledgerHeadHash: currentHead,
+            conflictReason: null,
+          };
+        }
+        const events = buildWorkingLedgerEvents({
+          key: projection.key,
+          chapterId: batch.chapterId,
+          previousEvents: current,
+          payloads: newCommands.map((entry) => entry.payload),
+        });
+        if (events.length !== newCommands.length) throw invalid("Prepared batch event count mismatch", batch.batchId);
+        const nextProjection = projectWorkingLedger([...current, ...events]);
+        const actionRows = newCommands.map((entry, index) => formalActionData(events[index]!, entry.command.action));
+        const eventRows = events.map(ledgerEventData);
+        if (tx.pressureDecisionAction.createMany && tx.storyEvent.createMany) {
+          await tx.pressureDecisionAction.createMany({ data: actionRows });
+          await tx.storyEvent.createMany({ data: eventRows });
+        } else {
+          for (const row of actionRows) await tx.pressureDecisionAction.create({ data: row });
+          for (const row of eventRows) await tx.storyEvent.create({ data: row });
+        }
+        const locked = await tx.pressureChapterRuntime.updateMany({
+          where: {
+            id: runtime.id,
+            runId: runtime.runId,
+            lockVersion: runtime.lockVersion,
+            workingRevision: batch.expectedWorkingRevision,
+            workingStateHash: batch.expectedWorkingStateHash,
+          },
+          data: {
+            lockVersion: { increment: 1 },
+            decisionStateJson: json(decisionStateFromProjection(
+              nextProjection,
+              decisionState.requiredSeatIds,
+              decisionState.policyHash,
+              decisionState.orchestratorHash,
+            )),
+            ledgerProjectionJson: json(serializeLedgerProjection(nextProjection)),
+          },
+        });
+        if (locked.count !== 1) throw new PreparedLedgerRace();
+        return {
+          status: "COMMITTED",
+          batchId: batch.batchId,
+          actionIds: batch.actions.map((item) => item.command.action.actionId),
+          replayedActionIds,
+          eventHashes: events.map((event) => event.eventHash),
+          ledgerHeadHash: events.at(-1)!.eventHash,
+          conflictReason: null,
+        };
+      });
+    } catch (error) {
+      if (!(error instanceof PreparedLedgerRace) && !isUniqueConflict(error)) throw error;
+      return batchConflict(batch, "HEAD_CONFLICT");
+    }
+  }
 
   async submitPrepared(
     raw: AppendPreparedAutomationActionCommandV1,
@@ -589,52 +864,58 @@ async function persistFormalAction(
   event: WorkingLedgerEventV1,
 ): Promise<void> {
   if (event.payload.eventType !== "FORMAL_ACTION_ACCEPTED") return;
-  const action = event.payload.action;
-  await tx.pressureDecisionAction.create({
-    data: {
-      id: action.actionId,
-      runId: action.runId,
-      chapterRuntimeId: action.chapterRuntimeId,
-      decisionPointId: action.decisionPointId,
-      seatId: action.seatId,
-      actionOrdinal: action.actionOrdinal,
-      actionType: action.actionType,
-      status: action.status,
-      controlEpoch: action.controlEpoch,
-      expectedWorkingRevision: action.expectedWorkingRevision,
-      currentRevision: action.actionRevision,
-      idempotencyKey: action.idempotencyKey,
-      requestFingerprint: action.requestFingerprint,
-      payloadJson: json(action.payload),
-      payloadHash: action.payloadHash,
-      sealedHash: action.sealedHash,
-      authorityEventHash: event.eventHash,
-      confirmedAt: new Date(),
-      sealedAt: new Date(),
-    },
-  });
+  await tx.pressureDecisionAction.create({ data: formalActionData(event, event.payload.action) });
 }
 
 async function persistLedgerEvent(
   tx: PreparedAutomationTransactionV1,
   event: WorkingLedgerEventV1,
 ): Promise<void> {
-  await tx.storyEvent.create({
-    data: {
-      id: `pressure_ledger_${event.eventHash.slice(0, 32)}`,
-      runId: event.runId,
-      day: chapterNumber(event.chapterId),
-      type: LEDGER_EVENT_TYPE,
-      messageType: "system",
-      roleKey: event.payload.eventType === "FORMAL_ACTION_ACCEPTED"
-        ? event.payload.action.seatId
-        : null,
-      visibility: "system",
-      payloadJson: json(event),
-      sequence: null,
-      dedupeKey: ledgerDedupeKey(event),
-    },
-  });
+  await tx.storyEvent.create({ data: ledgerEventData(event) });
+}
+
+function formalActionData(
+  event: WorkingLedgerEventV1,
+  action: ReturnType<typeof validateDecisionActionV1>,
+): Record<string, unknown> {
+  return {
+    id: action.actionId,
+    runId: action.runId,
+    chapterRuntimeId: action.chapterRuntimeId,
+    decisionPointId: action.decisionPointId,
+    seatId: action.seatId,
+    actionOrdinal: action.actionOrdinal,
+    actionType: action.actionType,
+    status: action.status,
+    controlEpoch: action.controlEpoch,
+    expectedWorkingRevision: action.expectedWorkingRevision,
+    currentRevision: action.actionRevision,
+    idempotencyKey: action.idempotencyKey,
+    requestFingerprint: action.requestFingerprint,
+    payloadJson: json(action.payload),
+    payloadHash: action.payloadHash,
+    sealedHash: action.sealedHash,
+    authorityEventHash: event.eventHash,
+    confirmedAt: new Date(),
+    sealedAt: new Date(),
+  };
+}
+
+function ledgerEventData(event: WorkingLedgerEventV1): Record<string, unknown> {
+  return {
+    id: `pressure_ledger_${event.eventHash.slice(0, 32)}`,
+    runId: event.runId,
+    day: chapterNumber(event.chapterId),
+    type: LEDGER_EVENT_TYPE,
+    messageType: "system",
+    roleKey: event.payload.eventType === "FORMAL_ACTION_ACCEPTED"
+      ? event.payload.action.seatId
+      : null,
+    visibility: "system",
+    payloadJson: json(event),
+    sequence: null,
+    dedupeKey: ledgerDedupeKey(event),
+  };
 }
 
 function serializeLedgerProjection(
@@ -703,6 +984,24 @@ function stale(
     eventHash: null,
     ledgerHeadHash: head,
     staleReason,
+  };
+}
+
+function batchConflict(
+  batch: PreparedAutomationActionBatchV1,
+  reason: PreparedAutomationActionBatchResultV1["conflictReason"] extends infer T
+    ? Exclude<T, null>
+    : never,
+  head = batch.expectedLedgerHeadHash,
+): PreparedAutomationActionBatchResultV1 {
+  return {
+    status: "CONFLICT",
+    batchId: batch.batchId,
+    actionIds: [],
+    replayedActionIds: [],
+    eventHashes: [],
+    ledgerHeadHash: head,
+    conflictReason: reason,
   };
 }
 

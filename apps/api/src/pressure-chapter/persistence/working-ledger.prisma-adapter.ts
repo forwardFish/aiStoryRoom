@@ -1004,6 +1004,16 @@ async function persistBeat(
     if (!accepted) throw invalid("Beat downstream plan is missing a sealed action", { actionId });
     return accepted.action;
   });
+  const sealedActionAudiences = beat.sealedActionIds.map((actionId) => {
+    const accepted = projection.acceptedActions.get(actionId);
+    if (!accepted) {
+      throw invalid("Beat downstream plan is missing a sealed action audience", { actionId });
+    }
+    return {
+      actionId,
+      audienceSeatIds: [...accepted.audienceSeatIds].sort(),
+    };
+  });
   const workingDeltaHash = sha256Canonical(beat.workingDelta);
   const rawAuthority = {
     schemaVersion: "pressure_committed_beat_narrative_authority_v1" as const,
@@ -1018,12 +1028,16 @@ async function persistBeat(
     sealedActionIds: [...beat.sealedActionIds],
     sealedActionsHash: beat.sealedActionsHash,
     sealedActions,
+    sealedActionAudiences,
     resolverVersion: beat.resolverVersion,
     workingDelta: beat.workingDelta,
     workingDeltaHash,
+    stateAfter: event.payload.stateAfter,
+    stateAfterHash: event.payload.stateAfterHash,
     reservationMutations: beat.reservationMutations,
     reactionContextRef: beat.reactionContextRef,
     nextDecisionContextRef: beat.nextDecisionContextRef,
+    nextDecisionPin: event.payload.nextDecisionPin,
     resolutionHash: beat.resolutionHash,
     contentPackageSha256: route.contentPackageSha256,
   };

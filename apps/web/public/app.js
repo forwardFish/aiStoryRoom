@@ -921,7 +921,10 @@ function renderOpeningNarrative(view, state = {}) {
 }
 
 function renderOpeningStart(view) {
-  return `<section class="opening-start" data-testid="decision-zone"><span>${isEnglish(view) ? "The scene is set · Enter your first key decision" : "前情介绍完毕 · 点击进入今日主线决策"}</span><button id="beginStoryBtn" type="button">${isEnglish(view) ? "Enter the Scene" : "进入局势"}</button></section>`;
+  const prompt = isEnglish(view)
+    ? "The prologue is complete · Enter the first scene"
+    : "前情介绍完毕 · 点击进入第一段剧情";
+  return `<section class="opening-start" data-testid="decision-zone"><span>${prompt}</span><button id="beginStoryBtn" type="button">${isEnglish(view) ? "Enter the Scene" : "进入局势"}</button></section>`;
 }
 
 function openingNarrativeText(view) {
@@ -930,8 +933,11 @@ function openingNarrativeText(view) {
   return "杭州粮价已经连续上涨三日。城中米行陆续闭门，百姓开始聚集在粮铺之外。巡抚的奏疏在午前送到总督府，奏疏中将粮价失控归因于江南商会囤积居奇。但你知道，事情远没有这么简单。昨夜送来的密报里，出现了司礼监的名字。粮价、商会、巡抚、京中势力，所有线索都指向同一个问题：杭州，恐怕已不再只是地方粮局之乱。现在，你必须在这盘棋局落定之前，找到第一步该落子的方向。";
 }
 
-function renderDecisionNarrative() {
-  return `<section class="decision-narrative"><div class="decision-copy"><p>巡抚的奏疏已经摆在案前。</p><p>奏疏中并未否认杭州粮价失控，却将责任全部指向江南商会。</p><p>若这份奏疏送入京师，皇帝将先看到巡抚的一面之词。</p><p>现在，你必须作出决定。</p></div></section>`;
+function renderDecisionNarrative(view) {
+  const narrative = String(view?.decisionNarrative || "").trim();
+  return narrative
+    ? `<section class="decision-narrative" data-testid="decision-narrative"><div class="decision-copy"><p>${lineBreaks(narrative)}</p></div></section>`
+    : "";
 }
 
 function renderSimulation(view, state) {
@@ -1143,14 +1149,14 @@ function renderDecisionZone(view, state) {
     const customLabel = nextOptionLabel(options);
     const openingDecision = isOpeningDecisionState(view);
     const storyDecision = openingDecision || array(view.decisionHistory).length > 0 || prompt?.promptKind === "critical_response";
-    return renderDecisionComposer({ view, state, prompt, decision, options, selected, customLabel, progress, openingDecision, storyDecision });
+    return `${renderDecisionNarrative(view)}${renderDecisionComposer({ view, state, prompt, decision, options, selected, customLabel, progress, openingDecision, storyDecision })}`;
   }
 
   return "";
 }
 
 function renderOptionV12(option, checked) {
-  return `<label class="option-card key-${esc(option.key)}"><input type="radio" name="decision" value="${esc(option.key)}" ${checked ? "checked" : ""}/><span class="option-key">${esc(option.key)}</span><span class="option-copy"><b>${esc(option.title)}</b></span></label>`;
+  return `<label class="option-card key-${esc(option.key)}"><input type="radio" name="decision" value="${esc(option.key)}" ${checked ? "checked" : ""}/><span class="option-key">${esc(option.key)}</span><span class="option-copy"><b>${esc(option.title)}</b>${option.body ? `<span>${esc(option.body)}</span>` : ""}</span></label>`;
 }
 
 // 共通决策提交组件：主线决策、关键事件响应和后续新增决策都复用这一套结构。
@@ -1364,7 +1370,11 @@ function activePromptForView(view) {
     eventId: decision.messageId,
     promptKind: "main_decision",
     prompt: decision.title,
-    options: array(decision.options).map((option) => ({ optionKey: option.key, title: option.title })),
+    options: array(decision.options).map((option) => ({
+      optionKey: option.key,
+      title: option.title,
+      body: option.body,
+    })),
     maxLength: 200,
     submitLabel: "提交决策"
   };

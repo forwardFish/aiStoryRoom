@@ -14,7 +14,12 @@ import {
   loadPublishedSangtianActionReleaseV1,
   type PublishedSangtianActionReleaseV1,
 } from "@ai-story/templates";
-import type { PressureChapterGameProjectionV1 } from "../game-projection/contracts";
+import type {
+  PressureChapterGameProjectionV1,
+  PressureGameCapabilitiesV1,
+  PressureGameChapterReaderPort,
+  PressureGameViewerReaderPort,
+} from "../game-projection/contracts";
 import type {
   PressureChapterHttpAccessV1,
   PressureChapterHttpDecisionCompilerPort,
@@ -33,6 +38,7 @@ import { assertStoredRunRouteRecord } from "../run-router";
 import type { StoredRunRouteRecordV1 } from "../run-router/types";
 import type { WorkingActionIntentV1 } from "../working-ledger/contracts";
 import { failPressureChapterIntegration } from "./errors";
+import { PressureCatalogCustomActionGuardV1 } from "./custom-action.guard";
 
 export interface ServerDecisionWorkingIntentCompilerPortV1 {
   compile(input: Readonly<{
@@ -43,6 +49,25 @@ export interface ServerDecisionWorkingIntentCompilerPortV1 {
     seatId: SeatIdV1;
     actionType: string;
   }>): WorkingActionIntentV1;
+}
+
+export interface PressureDecisionAuthorityReaderV1 {
+  chapter: Pick<PressureGameChapterReaderPort, "readCurrent">;
+  viewer: Pick<PressureGameViewerReaderPort, "readViewer">;
+  capabilities: {
+    readCapabilities(input: Parameters<PressureGameCapabilitiesReaderV1["readCapabilities"]>[0]): ReturnType<PressureGameCapabilitiesReaderV1["readCapabilities"]>;
+  };
+}
+
+interface PressureGameCapabilitiesReaderV1 {
+  readCapabilities(input: {
+    runId: string;
+    routeHash: string;
+    subjectId: string;
+    viewerSeatId: SeatIdV1;
+    chapterRuntimeId: string;
+    decisionPointId: string | null;
+  }): Promise<PressureGameCapabilitiesV1>;
 }
 
 const INVESTIGATION_ACTION_TYPES = Object.freeze([
@@ -111,6 +136,8 @@ implements PressureChapterHttpDecisionCompilerPort {
     private readonly working: WorkingProjectionReaderPort,
     private readonly content: AuthoredChapterContentPort,
     private readonly intents: ServerDecisionWorkingIntentCompilerPortV1,
+    private readonly authority?: PressureDecisionAuthorityReaderV1,
+    private readonly customActions = new PressureCatalogCustomActionGuardV1(),
   ) {}
 
   async compile(input: Readonly<{
@@ -138,19 +165,16 @@ implements PressureChapterHttpDecisionCompilerPort {
     ) {
       mismatch("decision.route", "STORED_ROUTE_BINDING_MISMATCH");
     }
-    const game = await this.games.read({
-      runId: route.runId,
-      subjectId: access.subjectId,
-    });
-    validateViewerProjection(game, publicCommand, access);
-    const decision = requireViewerDecision(game);
-    if (
-      !game.capabilities.canSubmitDecision
-      || !game.viewer.control.canSubmit
-      || game.viewer.control.submissionFenceToken !== publicCommand.submissionFenceToken
-    ) {
-      mismatch("decision.submissionFence", "NOT_ACTIVE_OR_STALE");
-    }
+    const authority = this.authority
+      ? await this.readDecisionAuthority(route, access, publicCommand)
+      : null;
+    const game = authority
+      ? null
+      : await this.games.read({
+          runId: route.runId,
+          subjectId: access.subjectId,
+        });
+    const decision = authority?.decision ?? requireViewerDecision(game!);
     const projection = await this.working.load({
       runId: route.runId,
       chapterRuntimeId: publicCommand.chapterRuntimeId,
@@ -178,10 +202,20 @@ implements PressureChapterHttpDecisionCompilerPort {
     const option = publicCommand.optionCode === null
       ? null
       : decision.options.find((candidate) => candidate.code === publicCommand.optionCode);
+    let customActionType: string | null = null;
     if (publicCommand.customText !== null) {
       if (!decision.customActionAllowed || !publicCommand.customText.trim()) {
         mismatch("decision.customText", "NOT_ALLOWED");
       }
+      const guarded = this.customActions.bind({
+        customText: publicCommand.customText,
+        visibleOptions: decision.options,
+        allowedActionTypes: authored.execution.allowedActionTypes,
+      });
+      if (!guarded.accepted) {
+        mismatch("decision.customText", guarded.code);
+      }
+      customActionType = guarded.actionType;
     }
     if (!option && publicCommand.optionCode !== null) {
       mismatch("decision.optionCode", "UNKNOWN_OPTION");
@@ -189,7 +223,7 @@ implements PressureChapterHttpDecisionCompilerPort {
     if (!option && publicCommand.customText === null) {
       mismatch("decision.optionCode", "OPTION_OR_CUSTOM_REQUIRED");
     }
-    const actionType = option?.actionType ?? "CUSTOM_TEXT";
+    const actionType = option?.actionType ?? customActionType ?? "DEFAULT_PASS";
     if (!authored.execution.allowedActionTypes.includes(actionType)) {
       mismatch("decision.actionType", "NOT_AUTHORED");
     }
@@ -201,12 +235,17 @@ implements PressureChapterHttpDecisionCompilerPort {
       seatId: publicCommand.seatId,
       actionType,
     }));
-    const investigation = compileInvestigationBinding({
-      game,
-      publicCommand,
-      actionType,
-      releasedIntent,
-    });
+    const investigation = INVESTIGATION_ACTION_TYPES.includes(actionType as InvestigationActionTypeV1)
+      ? compileInvestigationBinding({
+          game: await this.games.read({ runId: route.runId, subjectId: access.subjectId }),
+          publicCommand,
+          actionType,
+          releasedIntent,
+        })
+      : null;
+    if (!investigation && publicCommand.sourceEventId !== null) {
+      mismatch("decision.sourceEventId", "NON_INVESTIGATION_MUST_BE_NULL");
+    }
     const payload: CanonicalJsonObject = investigation?.payload ?? {
       optionCode: publicCommand.optionCode,
       customText: publicCommand.customText,
@@ -298,6 +337,56 @@ implements PressureChapterHttpDecisionCompilerPort {
         nowMs: input.nowMs,
       },
     });
+  }
+
+  private async readDecisionAuthority(
+    route: ReturnType<typeof validateRunRouteSnapshotV1>,
+    access: PressureChapterHttpAccessV1,
+    command: PressureChapterSubmitDecisionCommandV1,
+  ): Promise<{
+    decision: NonNullable<Awaited<ReturnType<PressureGameChapterReaderPort["readCurrent"]>>>["decision"];
+  }> {
+    const [chapter, viewer] = await Promise.all([
+      this.authority!.chapter.readCurrent({
+        runId: route.runId,
+        routeHash: route.routeHash,
+        viewerSeatId: command.seatId,
+      }),
+      this.authority!.viewer.readViewer({
+        runId: route.runId,
+        subjectId: access.subjectId,
+      }),
+    ]);
+    if (!chapter || !viewer) mismatch("decision.authority", "NOT_FOUND");
+    if (
+      chapter.runId !== command.runId
+      || chapter.routeHash !== command.routeHash
+      || chapter.viewerSeatId !== command.seatId
+      || chapter.chapter.chapterRuntimeId !== command.chapterRuntimeId
+      || chapter.chapter.chapterId !== command.chapterId
+      || chapter.chapter.workingRevision !== command.expectedWorkingRevision
+      || viewer.runId !== command.runId
+      || viewer.roomId !== access.roomId
+      || viewer.routeHash !== command.routeHash
+      || viewer.subjectId !== access.subjectId
+      || viewer.viewer.seatId !== command.seatId
+      || viewer.viewer.control.controlEpoch !== command.controlEpoch
+      || viewer.viewer.control.submissionFenceToken !== command.submissionFenceToken
+      || !viewer.viewer.control.canSubmit
+      || !chapter.decision
+      || chapter.decision.decisionPointId !== command.decisionPointId
+      || chapter.decision.expectedWorkingRevision !== command.expectedWorkingRevision
+    ) mismatch("decision.authority", "STALE_OR_NOT_AUTHORIZED");
+    const capabilities = await this.authority!.capabilities.readCapabilities({
+      runId: command.runId,
+      routeHash: command.routeHash,
+      subjectId: access.subjectId,
+      viewerSeatId: command.seatId,
+      chapterRuntimeId: command.chapterRuntimeId,
+      decisionPointId: command.decisionPointId,
+    });
+    if (!capabilities.canSubmitDecision) mismatch("decision.capabilities", "NOT_ALLOWED");
+    return { decision: chapter.decision };
   }
 }
 

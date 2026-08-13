@@ -58,6 +58,7 @@ export class PressureChapterModule {
           const configuredOptions = options.productOptions ?? {};
           return await createPressureChapterProductRootV1({
             prisma,
+            decisionPresentationProvider: narrative.decisionPresentationProvider,
             options: {
               ...configuredOptions,
               internalAdapters: {

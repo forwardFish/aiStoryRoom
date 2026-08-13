@@ -31,6 +31,7 @@ import {
   PRESSURE_GAME_PROJECTION_ERROR_CODES as ERROR,
   failPressureGameProjection,
 } from "./errors";
+import type { PressureDecisionPresentationServiceV1 } from "./decision-presentation";
 
 const NON_EMPTY = /\S/u;
 const CHAPTER_IDS = Object.freeze(["P0", "N1", "N2", "N3", "N4", "N5", "N6", "N7"] as const);
@@ -54,6 +55,7 @@ export class PressureChapterGameProjectionService {
     private readonly narratives: PressureGameNarrativeReaderPort,
     private readonly feed: PressureGameAEmotionFeedPort,
     private readonly capabilities: PressureGameCapabilityReaderPort,
+    private readonly decisionPresentations: PressureDecisionPresentationServiceV1 | null = null,
   ) {}
 
   async read(
@@ -133,7 +135,21 @@ export class PressureChapterGameProjectionService {
     const metrics = sanitizeMetrics(world.metrics);
     const resources = sanitizeResources(viewer.resources);
     const tokens = sanitizeTokens(viewer.tokens);
-    const decision = sanitizeDecision(chapter.decision, chapter.chapter.workingRevision);
+    const fallbackDecision = sanitizeDecision(
+      chapter.decision,
+      chapter.chapter.workingRevision,
+    );
+    const decision = fallbackDecision && this.decisionPresentations
+      ? await this.decisionPresentations.present({
+          chapter: structuredClone(chapter.chapter),
+          viewer: structuredClone(viewer.viewer),
+          situation: structuredClone(viewer.situation),
+          metrics: structuredClone(metrics),
+          resources: structuredClone(resources),
+          narrative: structuredClone(narrative),
+          decision: structuredClone(fallbackDecision),
+        })
+      : fallbackDecision;
 
     const resolvedCapabilities = sanitizeCapabilities(
       await this.capabilities.readCapabilities({

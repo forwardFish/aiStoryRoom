@@ -5,7 +5,7 @@ import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { assertPressureSpinePackage, assertPressureSpineSchemaProfile, buildPressureSpineRuntimeIndex, loadPressureSpinePackage, readPressureSpineDirectory, sha256Bytes, validatePressureSpinePackage, type PressureSpineFileMap } from "../src/pressure-spine/index";
+import { assertPressureSpinePackage, assertPressureSpineSchemaProfile, buildPressureSpineRuntimeIndex, loadPressureSpinePackage, loadSangtianPressureStorySourceV1, readPressureSpineDirectory, sha256Bytes, validatePressureSpinePackage, type PressureSpineFileMap } from "../src/pressure-spine/index";
 
 const packageRoot=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const configRoot=resolve(packageRoot,"config/sangtian"),artifactRoot=resolve(configRoot,"pressure-spine-v1.0"),contentRoot=resolve(artifactRoot,"source"),registryPath=resolve(configRoot,"strategy-registry.json"),importer=resolve(packageRoot,"scripts/import-sangtian-pressure-spine.mjs"),archive=resolve(artifactRoot,"source-package/sangtian_complete_story_content_package_v1_1.zip");
@@ -54,6 +54,22 @@ test("bad source hash rejected",()=>expectCode(mutateJson(accepted(),"manifest.j
 test("bad opening projection rejected",()=>expectCode(mutateJson(accepted(),"nodes/N7/scene-flow.json",v=>v.scenes[0].openingProjectionVariants[0].requiredObjectVersionIds.push("obj.missing@N6.HIGH.v1")),"CONTENT_OPENING_PROJECTION_INVALID"));
 test("IMP-009 exact institutional seats",()=>{const i=JSON.parse(readFileSync(resolve(artifactRoot,"runtime-index.json"),"utf8"));assert.deepEqual(i.seatIds,["seat.zhejiang_governor","seat.zhejiang_administration","seat.qingliu_law","seat.jiangnan_merchant","seat.sili_weaving","seat.cabinet_finance"]);});
 test("IMP-010 legacy hashes/default unchanged and pressure version loads",()=>{for(const [v,h] of Object.entries(legacy)){const p=resolve(configRoot,v==="sangtian_v1_1"?"continuous-strategy-v1.1/manifest.json":"continuous-strategy-v1.2/manifest.json");assert.equal(sha256Bytes(readFileSync(p)),h);}const registry=JSON.parse(readFileSync(registryPath,"utf8"));assert.equal(registry.defaultStrategyVersion,"sangtian_v1_2");assert.deepEqual(Object.keys(registry.strategies),["sangtian_v1_1","sangtian_v1_2","sangtian_pressure_v1_0"]);assert.equal(loadPressureSpinePackage(registryPath,"sangtian_pressure_v1_0").runtimeIndex.sceneIds.length,145);});
+test("generic decision scene compiler joins N1 public, current-seat private, and urgent authored story",()=>{
+  const seats=["zhejiang_governor","zhejiang_administration","qingliu_law","jiangnan_merchant","sili_weaving","cabinet_finance"] as const;
+  const scenes=seats.map(seatId=>loadSangtianPressureStorySourceV1("N1",seatId).currentScene);
+  for(const scene of scenes){
+    assert.equal(scene.schemaVersion,"sangtian_pressure_decision_scene_v1");
+    assert.equal(scene.chapterId,"N1");
+    assert.equal(scene.paragraphs.length,3);
+    assert.equal(scene.sceneIds[0],"scene.n1.opening.public");
+    assert.equal(scene.sceneIds[2],"scene.n1.npc_urgent");
+    assert.equal(scene.text,scene.paragraphs.join("\n\n"));
+  }
+  assert.match(scenes[0].paragraphs[0],/驿卒刚跨进总督府内厅/);
+  assert.match(scenes[0].paragraphs[1],/胡宗宪按住河图：“谁调的兵？”/);
+  assert.match(scenes[0].paragraphs[2],/第一道令先下给谁/);
+  assert.equal(new Set(scenes.map(scene=>scene.sceneIds[1])).size,6);
+});
 test("IMP-011 two imports are byte-identical",()=>{const root=mkdtempSync(resolve(tmpdir(),"pressure-import-"));try{const outs=[];for(const n of [1,2]){const dir=resolve(root,`r${n}`),out=resolve(dir,"pressure-spine-v1.0"),reg=resolve(dir,"strategy-registry.json");mkdirSync(dir,{recursive:true});writeFileSync(reg,readFileSync(registryPath));runImporter(out,reg);outs.push({out,reg});}for(const p of ["manifest.json","runtime-index.json","manifest.lock.json","source-package/sangtian_complete_story_content_package_v1_1.zip"])assert.equal(sha256Bytes(readFileSync(resolve(outs[0].out,p))),sha256Bytes(readFileSync(resolve(outs[1].out,p))));assert.equal(sha256Bytes(readFileSync(outs[0].reg)),sha256Bytes(readFileSync(outs[1].reg)));}finally{rmSync(root,{recursive:true,force:true});}});
 test("IMP-012 UNKNOWN claims are never Frozen facts",()=>{const unknown=new Set<string>();for(const n of ["P0","N1","N2","N3","N4","N5","N6","N7"]){for(const line of readFileSync(resolve(contentRoot,`nodes/${n}/source-evidence.jsonl`),"utf8").split(/\r?\n/).filter(Boolean)){const c=JSON.parse(line);if(c.provenanceClass==="UNKNOWN")unknown.add(c.claimId);}const s=JSON.parse(readFileSync(resolve(contentRoot,`nodes/${n}/settlement.json`),"utf8"));for(const b of s.branches)for(const id of b.frozenFactIds)assert.equal(unknown.has(id),false);}});
 test("IMP-013 eighteen predecessor projections indexed",()=>{const i=JSON.parse(readFileSync(resolve(artifactRoot,"runtime-index.json"),"utf8"));assert.equal(i.openingProjectionIds.length,18);});

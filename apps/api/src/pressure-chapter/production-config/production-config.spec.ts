@@ -82,6 +82,7 @@ test("API and worker can share the Supabase binding with an explicit pool limit"
 test("narrative provider is explicit and deterministic fallback is visible", async () => {
   const fallback = createPressureNarrativeProviderFromEnvV1({});
   assert.equal(fallback.provider, null);
+  assert.equal(fallback.decisionPresentationProvider, null);
   assert.deepEqual(fallback.readiness, {
     ready: true,
     mode: "DETERMINISTIC_FALLBACK_ONLY",
@@ -106,6 +107,7 @@ test("narrative provider is explicit and deterministic fallback is visible", asy
     }), { status: 200, headers: { "content-type": "application/json" } });
   });
   assert.equal(external.readiness.mode, "EXTERNAL_PROVIDER");
+  assert.ok(external.decisionPresentationProvider);
   assert.doesNotMatch(JSON.stringify(external.readiness), /secret-provider-key/);
   const result = await external.provider!.render(contextFixture());
   assert.deepEqual(result, { text: "A safe line.", usedFactRefs: [], claims: [] });

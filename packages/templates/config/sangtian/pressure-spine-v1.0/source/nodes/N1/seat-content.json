@@ -143,6 +143,30 @@
           "knownBy": [
             "seat.zhejiang_governor"
           ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_governor.04",
+          "text": "“先把能做的三件事摆在案上。哪一件最迟不得过今夜，你们逐件说。”",
+          "purpose": "CONSULTATION",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.weir_troop_deployment"],
+          "knownBy": ["seat.zhejiang_governor"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_governor.05",
+          "text": "“谁再拿传闻当军报，先去把来路和经手人查清，再回我这句话。”",
+          "purpose": "ANGER_WITH_RESTRAINT",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.weir_troop_deployment"],
+          "knownBy": ["seat.zhejiang_governor"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_governor.06",
+          "text": "“诸位替我把难处都说完了，倒省得我睡。现在说说，谁肯领一件回去办。”",
+          "purpose": "WIT_OR_FATIGUE",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.weir_troop_deployment"],
+          "knownBy": ["seat.zhejiang_governor"]
         }
       ],
       "privateOpening": "胡宗宪把河图推到案边。调兵守堰能救人，也会抽空海防；不调兵，堰口与责任都会先落到别人手里。",
@@ -333,6 +357,30 @@
           "knownBy": [
             "seat.zhejiang_administration"
           ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_administration.04",
+          "text": "“先别争是谁的过。府县还能叫得动多少人，把实数给我。”",
+          "purpose": "CONSULTATION",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain"],
+          "knownBy": ["seat.zhejiang_administration"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_administration.05",
+          "text": "“省府的印不是给你们互相推责的。再有一道含混回报，连经手的一并留下。”",
+          "purpose": "ANGER_WITH_RESTRAINT",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain"],
+          "knownBy": ["seat.zhejiang_administration"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.zhejiang_administration.06",
+          "text": "“人人都说自己奉了上命，看来这浙江的上命，比雨点还密。”",
+          "purpose": "WIT_OR_FATIGUE",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain"],
+          "knownBy": ["seat.zhejiang_administration"]
         }
       ],
       "privateOpening": "郑泌昌掌握府县行政链，却不能公开承认其中是否有人传过异常命令。守堰、疏散与继续催办，任何一项都会留下省府印记。",
@@ -510,6 +558,30 @@
           "knownBy": [
             "seat.qingliu_law"
           ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.qingliu_law.04",
+          "text": "“先分三样：亲眼所见、听人转述、尚待查证。混在一起，谁也救不了。”",
+          "purpose": "CONSULTATION",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.sealed_evidence_index"],
+          "knownBy": ["seat.qingliu_law"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.qingliu_law.05",
+          "text": "“人命未保，证言未存，便急着定案；这不是断案，是灭口。”",
+          "purpose": "ANGER_WITH_RESTRAINT",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.sealed_evidence_index"],
+          "knownBy": ["seat.qingliu_law"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.qingliu_law.06",
+          "text": "“案子还没开审，推罪的状纸倒先写齐了，诸位真是省事。”",
+          "purpose": "WIT_OR_FATIGUE",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.sealed_evidence_index"],
+          "knownBy": ["seat.qingliu_law"]
         }
       ],
       "privateOpening": "谭纶掌握的是预警、见证和可能存在的命令痕迹，还不足以指认最高层。若不先把材料送进安全渠道，水退后便只剩口头说法。",
@@ -697,6 +769,30 @@
           "knownBy": [
             "seat.jiangnan_merchant"
           ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.jiangnan_merchant.04",
+          "text": "“船、粮、人手都能挪，唯独时辰挪不得。先说哪一趟最急。”",
+          "purpose": "CONSULTATION",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.merchant_fleet"],
+          "knownBy": ["seat.jiangnan_merchant"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.jiangnan_merchant.05",
+          "text": "“要船我给船，要人我给人；谁敢事后说商会未曾出力，我就请他来对清单。”",
+          "purpose": "ANGER_WITH_RESTRAINT",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.merchant_fleet"],
+          "knownBy": ["seat.jiangnan_merchant"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.jiangnan_merchant.06",
+          "text": "“平日都嫌商人的账细，真到用船用粮，倒盼着这账再细些。”",
+          "purpose": "WIT_OR_FATIGUE",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.merchant_fleet"],
+          "knownBy": ["seat.jiangnan_merchant"]
         }
       ],
       "privateOpening": "沈一石的船可以救堤，也必须为后面的粮路留出运力。救人越多，商路越弱；保船越多，见死不救的罪名越近。",
@@ -896,6 +992,30 @@
           "knownBy": [
             "seat.sili_weaving"
           ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.sili_weaving.04",
+          "text": "“外头要交代，里头要体面。先想清楚，哪一句能写，哪一句只能当面说。”",
+          "purpose": "CONSULTATION",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.weaving_records"],
+          "knownBy": ["seat.sili_weaving"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.sili_weaving.05",
+          "text": "“拿内廷的名头吓人容易，真要落笔，先把是谁传的话说明白。”",
+          "purpose": "ANGER_WITH_RESTRAINT",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.weaving_records"],
+          "knownBy": ["seat.sili_weaving"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.sili_weaving.06",
+          "text": "“平日一个个都说只听宫里的，出了事，倒都认得省府的门。”",
+          "purpose": "WIT_OR_FATIGUE",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.weaving_records"],
+          "knownBy": ["seat.sili_weaving"]
         }
       ],
       "privateOpening": "杨金水知道河道监管簿可能牵出织造人员，却不能让这层担忧出现在公共回令里。封簿与追查都必须沿内廷可控的手走。",
@@ -1092,6 +1212,30 @@
           "knownBy": [
             "seat.cabinet_finance"
           ]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.cabinet_finance.04",
+          "text": "“地方的急处我听见了。现在把延期以后缺的银子，也摆到同一张纸上。”",
+          "purpose": "CONSULTATION",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.cabinet_urgent_dispatch"],
+          "knownBy": ["seat.cabinet_finance"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.cabinet_finance.05",
+          "text": "“要朝廷担责可以。谁主张、谁核数、谁补缺，一并具名。”",
+          "purpose": "ANGER_WITH_RESTRAINT",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.cabinet_urgent_dispatch"],
+          "knownBy": ["seat.cabinet_finance"]
+        },
+        {
+          "dialogueSeedId": "dialogue.n1.cabinet_finance.06",
+          "text": "“银子还没见影，免责的奏疏倒跑得比急递快。”",
+          "purpose": "WIT_OR_FATIGUE",
+          "signatureLine": false,
+          "applicableObjectIds": ["obj.nine_weirs", "obj.breach_order_chain", "obj.cabinet_urgent_dispatch"],
+          "knownBy": ["seat.cabinet_finance"]
         }
       ],
       "privateOpening": "京师只收到水患急报和地方求缓的可能。期限若不松，地方会用更激烈手段；期限若公开松动，财政威信先受损。",

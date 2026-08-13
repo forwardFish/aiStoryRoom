@@ -29,6 +29,7 @@ import type {
   AppendPreparedAutomationActionCommandV1,
   DecisionAutomationTaskV1,
   DecisionConvergenceDependenciesV1,
+  PreparedAutomationActionBatchV1,
 } from "./contracts";
 import {
   PressureDecisionConvergenceServiceV1,
@@ -80,6 +81,32 @@ test("the recovery worker groups all seat discoveries into one decision batch", 
   assert.equal(harness.snapshotReads, 1);
   assert.equal(harness.scans, 1);
   assert.equal(harness.resumeCalls, 1);
+  assert.equal(harness.appendedSeatIds.length, 5);
+});
+
+test("production batch port reduces five prepared AI appends to one submission", async () => {
+  const harness = await Harness.create(1, false);
+  const legacy = harness.dependencies.preparedActions.submitPrepared;
+  harness.dependencies.preparedActions.submitPreparedBatch = async (
+    batch: PreparedAutomationActionBatchV1,
+  ) => {
+    const results = [];
+    for (const item of batch.actions) results.push(await legacy(item));
+    return {
+      status: "COMMITTED" as const,
+      batchId: batch.batchId,
+      actionIds: results.map((item) => item.actionId),
+      replayedActionIds: results.filter((item) => item.status === "REPLAYED").map((item) => item.actionId),
+      eventHashes: results.flatMap((item) => item.eventHash ?? []),
+      ledgerHeadHash: results.at(-1)!.ledgerHeadHash,
+      conflictReason: null,
+    };
+  };
+
+  const result = await harness.service.converge(harness.command("HTTP_POST_SUBMIT"));
+
+  assert.equal(result.outcome, "BATCH_COMPLETED");
+  assert.equal(result.metrics.appendTxCount, 1);
   assert.equal(harness.appendedSeatIds.length, 5);
 });
 

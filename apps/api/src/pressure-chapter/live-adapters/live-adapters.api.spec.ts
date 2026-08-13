@@ -419,7 +419,8 @@ test("first N1 read selects the committed Genesis seat artifact without exposing
     audienceKey: seatId,
   });
   const serializedQueries = JSON.stringify(calls);
-  assert.doesNotMatch(serializedQueries, /commitManifestJson|payloadJson|lastError|provider/i);
+  assert.match(serializedQueries, /commitManifestJson/u);
+  assert.doesNotMatch(serializedQueries, /payloadJson|lastError|provider/i);
   assert.doesNotMatch(JSON.stringify(result), /peer|rawAuthority|providerResponse/i);
 });
 
@@ -479,6 +480,13 @@ test("Genesis narrative fallback is N1-only and fails closed on route or commit 
     viewerSeatId: seatId,
     chapterRuntimeId: runtime.id,
   };
+
+  const pending = await makeReader({}).readCurrent(scope);
+  assert.equal(pending?.status, "FALLBACK_PUBLISHED");
+  assert.equal(pending?.renderMode, "AUTHORED_FALLBACK");
+  assert.match(pending?.text ?? "", /嘉靖三十五年，天下仍披着太平的外衣/u);
+  assert.match(pending?.text ?? "", /一场谁也无法独善其身的危局，正无声逼近/u);
+  assert.doesNotMatch(pending?.text ?? "", /桑田诏下|九堰将决/u);
 
   const n2 = await makeReader({ runtime: { ...runtime, chapterId: "N2" } }).readCurrent(scope);
   assert.equal(n2, null);

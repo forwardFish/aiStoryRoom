@@ -8,6 +8,12 @@ import {
   pressureProjectionToMainGameViewV1,
 } from "../public/pressure-main-game-storage-v1.js";
 
+const N1_DECISION_NARRATIVE = [
+  "驿卒刚跨进总督府内厅，第二封急报已经追到门外。\n“上游水位又涨了。”他扶着门框喘气，“乡民正在往高处逃。守堰的兵，有人离堰，有人还在等令，各处回报对不上。”\n幕僚展开河图，九处堰口被朱笔一一点亮。",
+  "胡宗宪按住河图：“谁调的兵？”\n幕僚没有回答，只把最危险的一处圈住，低声道：“九处同时出事，不像寻常失修。可若现在抽兵守堰，海防就要露出缺口。”\n胡宗宪抬眼时，门外省府差役已捧着空白回令候着。",
+  "窗外忽然响起奔马和更鼓。新来的差役连礼都顾不上行：“浑水越过第一道田埂了。”\n他身后还有三拨人在等：守堰官要兵，县里要先撤村民，见证人抱着调兵与毁堤记录不肯交给旁人。\n“大人，”差役望向案前，“第一道令先下给谁？”",
+].join("\n\n");
+
 function projection({ runId = "run-pressure-main-shell", optionCode = "SEAL_AND_REVIEW" } = {}) {
   return {
     schemaVersion: "pressure_chapter_game_projection_v1",
@@ -46,7 +52,7 @@ function projection({ runId = "run-pressure-main-shell", optionCode = "SEAL_AND_
     tokens: [{ tokenId: "seal", label: "田契图纸（半页）", description: "可作为田亩凭证", quantity: 1, available: true }],
     decision: {
       decisionPointId: `${runId}:decision:N1`, mode: "SOLO_BEAT", requirement: "REQUIRED",
-      title: "你要如何应对？", summary: "你的选择会立即改变局势。", expectedWorkingRevision: 0,
+      title: "九堰将决：你先下哪一道命令？", summary: N1_DECISION_NARRATIVE, expectedWorkingRevision: 0,
       options: [
         { code: optionCode, label: "由总督府复核清单", description: "巡抚和县令只能派见证人参加。", actionType: optionCode, preferredEntry: "PLAN" },
         { code: "COUNTY_REVIEW", label: "先由县令核查", description: "暂缓只审其结果和原件。", actionType: "COUNTY_REVIEW", preferredEntry: "PLAN" },
@@ -109,12 +115,47 @@ test("Pressure /game dispatches into the approved app.js main-game shell", async
   dom.window.close();
 });
 
+test("fresh Pressure N1 keeps the complete scene and explained decisions together", async () => {
+  const input = projection();
+  const dom = new JSDOM('<!doctype html><main id="app"></main>', {
+    url: `http://game.test/game?runId=${input.runId}`, pretendToBeVisual: true,
+  });
+  dom.window.__STORY_STREAM_DELAY_MULTIPLIER__ = 0;
+  const nativeSetTimeout = dom.window.setTimeout.bind(dom.window);
+  const root = dom.window.document.querySelector("#app");
+
+  await bootGamePage({
+    root,
+    window: dom.window,
+    fetchImpl: async () => new Response(JSON.stringify(input), { status: 200, headers: { "content-type": "application/json" } }),
+    loadPressureMainGameStorage: async () => ({ PressureMainGameStorageV1 }),
+    loadSolo: async () => ({ createStoryApp }),
+  });
+
+  await new Promise((resolve) => nativeSetTimeout(resolve, 700));
+  assert.match(root.querySelector('[data-testid="role-opening"]')?.textContent ?? "", /嘉靖三十五年/);
+  assert.ok(root.querySelector("#beginStoryBtn"));
+
+  root.querySelector("#beginStoryBtn").click();
+  const decisionNarrative = root.querySelector('[data-testid="decision-narrative"]');
+  assert.match(decisionNarrative?.textContent ?? "", /驿卒刚跨进总督府内厅/);
+  assert.match(decisionNarrative?.textContent ?? "", /胡宗宪按住河图：“谁调的兵？”/);
+  assert.match(decisionNarrative?.textContent ?? "", /第一道令先下给谁/);
+  assert.ok(root.querySelector('input[name="decision"]'));
+  const firstOption = root.querySelector('input[name="decision"][value="A"]')?.closest("label");
+  assert.match(firstOption?.querySelector(".option-copy span")?.textContent ?? "", /巡抚和县令只能派见证人参加/);
+  assert.equal(root.querySelector("#beginDecisionBtn"), null);
+  assert.ok(root.querySelector('[data-testid="decision-narrative"]'));
+  dom.window.close();
+});
+
 test("Pressure adapter preserves approved page data and server-sealed decision command", async () => {
   const input = projection();
   const view = pressureProjectionToMainGameViewV1(input);
   assert.equal(view.continuousV2, true);
   assert.equal(view.player.roleName, "浙江总督");
   assert.equal(view.presentation.playerPortrait, "/assets/game/sangtian/generated/role-governor-scene-v1.png");
+  assert.equal(view.decisionNarrative, N1_DECISION_NARRATIVE);
   assert.deepEqual(view.dashboard.statusMetrics.map((item) => item.label), ["国库银两", "民心", "粮价", "改桑进度", "皇帝信任"]);
   assert.deepEqual(view.activeDecision.options.map((item) => item.key), ["A", "B"]);
 

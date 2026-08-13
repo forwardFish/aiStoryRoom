@@ -1,9 +1,20 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
+import { recordPressureDbQueryV1 } from "./pressure-chapter/observability/pressure-db-metrics";
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private databaseConnected = false;
+
+  constructor() {
+    super();
+    const queryEvents = this as unknown as {
+      $on(event: "query", listener: (event: { query: string; duration: number }) => void): void;
+    };
+    queryEvents.$on("query", (event) => {
+      recordPressureDbQueryV1(event.query, event.duration);
+    });
+  }
 
   async onModuleInit() {
     // The v4 causal MVP uses its own durable file storage and must be runnable

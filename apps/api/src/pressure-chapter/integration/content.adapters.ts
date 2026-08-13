@@ -17,6 +17,7 @@ import {
   createChapterWorkingState,
   createPublishedSangtianPressureChapterRegistryV1,
   loadPublishedSangtianActionReleaseV1,
+  loadSangtianPressureStorySourceV1,
   loadSangtianPressureChapterPackageV1,
   selectAvailableSangtianDecisionPointsV1,
   type ChapterWorkingState,
@@ -223,6 +224,7 @@ implements AuthoredChapterContentPort {
 export class SangtianChapterWorkingSeedAdapterV1
 implements ChapterWorkingSeedPort {
   private readonly loaded = loadSangtianPressureChapterPackageV1();
+  private readonly actionRelease = loadPublishedSangtianActionReleaseV1();
 
   constructor(private readonly worlds: AuthoritativeChapterWorldReaderPort) {}
 
@@ -283,10 +285,18 @@ implements ChapterWorkingSeedPort {
       .map((point) => point.decisionPointId)
       .filter((decisionPointId) => !available.has(decisionPointId))
       .sort(compareCanonicalText);
+    const workingFactIdentities = this.actionRelease.compileChapterActionEffects({
+      chapterId: input.chapter.chapterId,
+      confirmedActions: [],
+      defaultEvents: [],
+    }).settlementFacts;
     const seed = createChapterWorkingState({
       runId: route.runId,
       chapterId: input.chapter.chapterId,
-      facts: structuredClone(world.factValues),
+      facts: {
+        ...structuredClone(workingFactIdentities),
+        ...structuredClone(world.factValues),
+      },
       counters: {
         ...Object.fromEntries(
           Object.entries(world.resources).map(([key, value]) => [
@@ -367,7 +377,9 @@ export class SangtianPressureGameContentMapperV1 {
         "game.activeDecision",
       );
     }
-    const options = runtime.execution.allowedActionTypes.map((actionType) => {
+    const options = runtime.execution.allowedActionTypes
+      .filter((actionType) => actionType !== "DEFAULT_PASS")
+      .map((actionType) => {
       const optionId = optionIdForActionTypeV1(actionType);
       const authoredOption = point.options.find(
         (candidate) => candidate.optionId === optionId,
@@ -406,16 +418,23 @@ export class SangtianPressureGameContentMapperV1 {
         preferredEntry: presentation.preferredEntry,
       };
     });
+    const decisionScene = input.chapter.chapterId === "N1"
+      && runtime.decisionPointId === "N1.weir_crisis"
+      ? loadSangtianPressureStorySourceV1(input.chapter.chapterId, input.viewerSeatId).currentScene
+      : null;
     return {
       decisionPointId: runtime.decisionPointId,
       mode: runtime.execution.mode,
       requirement: seat.requirement,
-      title: runtime.execution.purpose,
-      summary: runtime.execution.purpose,
+      title: decisionScene ? `${decisionScene.title}：你先下哪一道命令？` : runtime.execution.purpose,
+      summary: decisionScene?.text ?? runtime.execution.purpose,
       expectedWorkingRevision: input.workingRevision,
       options,
       submitLabel: "确认正式行动",
-      customActionAllowed: false,
+      // Free text is preserved as the player's real action. The command
+      // compiler may bind it to a matching formal action or DEFAULT_PASS; it
+      // never lets free text invent a WorkingDelta.
+      customActionAllowed: runtime.execution.allowedActionTypes.includes("DEFAULT_PASS"),
     };
   }
 }

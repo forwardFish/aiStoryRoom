@@ -55,6 +55,7 @@ const TARGET: SeatIdV1 = "jiangnan_merchant";
 test("OPEN and ACTION do not advance working revision; BEAT CAS alone advances it", async () => {
   const route = routeFixture();
   const chapter = chapterFixture();
+  const narrativeAuthorities: unknown[] = [];
   const initial = createChapterWorkingState({ runId: route.runId, chapterId: "N1" });
   const fake = new WorkingLedgerFake({
     id: "runtime-n1",
@@ -68,7 +69,7 @@ test("OPEN and ACTION do not advance working revision; BEAT CAS alone advances i
   }, route);
   const repository = new PrismaWorkingLedgerRepository(
     fake.client,
-    narrativeCompilerStub(),
+    narrativeCompilerStub((rawAuthority) => narrativeAuthorities.push(rawAuthority)),
     aEmotionBeatCompilerStub(),
   );
 
@@ -128,6 +129,18 @@ test("OPEN and ACTION do not advance working revision; BEAT CAS alone advances i
   assert.equal(fake.beatResolutions.length, 0, "beat authority remains in StoryEvent");
   assert.equal(fake.projections.length, 7);
   assert.equal(fake.outbox.filter((row) => row.taskType === "PROJECT_BEAT_NARRATIVE").length, 7);
+  assert.equal(narrativeAuthorities.length, 7);
+  const narrativeAuthority = narrativeAuthorities[0] as Record<string, unknown>;
+  assert.deepEqual(narrativeAuthority.sealedActionAudiences, [{
+    actionId: action.actionId,
+    audienceSeatIds: [ACTOR, TARGET],
+  }]);
+  assert.ok(narrativeAuthority.stateAfter);
+  assert.equal(
+    narrativeAuthority.stateAfterHash,
+    sha256Canonical(narrativeAuthority.stateAfter),
+  );
+  assert.ok(Object.hasOwn(narrativeAuthority, "nextDecisionPin"));
   assert.equal(
     fake.outbox.filter((row) => row.taskType === "INTERACTION_COMPILE_REQUESTED").length,
     1,
@@ -705,9 +718,14 @@ class MissingRuntimeOpeningFake {
   }
 }
 
-function narrativeCompilerStub(): ExtendedAuthoritativeNarrativeSnapshotCompilerPortV1 {
+function narrativeCompilerStub(
+  onCompile?: (rawAuthority: unknown) => void,
+): ExtendedAuthoritativeNarrativeSnapshotCompilerPortV1 {
   return {
-    compile: () => ({}),
+    compile: (_job, rawAuthority) => {
+      onCompile?.(structuredClone(rawAuthority));
+      return {};
+    },
     deriveAudienceAllowlist: (job) => ({
       audience: structuredClone(job.audience),
       allowedFactIds: [],
