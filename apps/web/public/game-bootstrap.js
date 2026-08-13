@@ -5,15 +5,12 @@ const CONTINUOUS_STORY_V2_SCHEMA = "continuous_game_projection_v2";
 const PRESSURE_CHAPTER_SCHEMA = "pressure_chapter_game_projection_v1";
 const PRESSURE_CHAPTER_TERMINAL_SCHEMA = "pressure_chapter_game_terminal_v1";
 
-const defaultLoadPressureMainGameStorage = () => import("./pressure-main-game-storage-v1.js?v=20260812-main-game-restore-v1");
-const defaultLoadPressureChapter = () => import("./pressure-chapter-game-v1.js?v=20260813-phase1-v4");
-
 export async function bootGamePage({
   root = document.getElementById("app"),
   window: win = globalThis.window,
   fetchImpl = win?.fetch?.bind(win),
-  loadPressureMainGameStorage = defaultLoadPressureMainGameStorage,
-  loadPressureChapter = defaultLoadPressureChapter,
+  loadPressureMainGameStorage = () => import("./pressure-main-game-storage-v1.js?v=20260812-main-game-restore-v1"),
+  loadPressureChapterEnhancement = () => import("./pressure-chapter-game-v1.js?v=20260813-b5-modal-web-v1"),
   loadContinuousStoryV2 = () => import("./continuous-story-v2-maneuver-client.js?v=20260809-remaining-count-v1"),
   loadContinuous = () => import("./continuous-game-client.js?v=20260717-draft-persistence-v3"),
   loadRoomStorage = () => import("./room-story-storage.js?v=20260715-1"),
@@ -58,36 +55,36 @@ export async function bootGamePage({
   }
 
   if (response.ok && payload?.schemaVersion === PRESSURE_CHAPTER_SCHEMA) {
-    // Pressure reuses the approved app.js /game renderer. The Pressure module
-    // is an adapter plus the approved 03-06 enhancement, never a parallel shell.
     win.__AI_STORY_DISABLE_AUTO_BOOT__ = true;
-    const legacyInjectedStorage = loadPressureMainGameStorage !== defaultLoadPressureMainGameStorage
-      && loadPressureChapter === defaultLoadPressureChapter;
-    const [pressureModule, { createStoryApp }] = await Promise.all([
-      legacyInjectedStorage ? loadPressureMainGameStorage() : loadPressureChapter(),
+    const [
+      { PressureMainGameStorageV1: BasePressureMainGameStorageV1 },
+      { PressureMainGameStorageV1, attachPressureChapterEnhancementsV1 },
+      { createStoryApp }
+    ] = await Promise.all([
+      loadPressureMainGameStorage(),
+      loadPressureChapterEnhancement(),
       loadSolo(),
     ]);
-    const storage = new pressureModule.PressureMainGameStorageV1({
+    const StorageClass = PressureMainGameStorageV1 || BasePressureMainGameStorageV1;
+    const storage = new StorageClass({
       runId,
       initialProjection: payload,
       fetchImpl,
     });
     const app = createStoryApp({ root, window: win, storage });
     await app.boot();
-    if (!legacyInjectedStorage) {
-      const pressureEnhancement = pressureModule.attachPressureChapterEnhancementsV1({
-        root,
-        window: win,
-        storyApp: app,
-        storage,
-      });
-      pressureEnhancement.boot();
-      Object.defineProperty(app, "pressureEnhancement", {
-        configurable: true,
-        enumerable: false,
-        value: pressureEnhancement,
-      });
-    }
+    const pressureEnhancement = attachPressureChapterEnhancementsV1({
+      root,
+      window: win,
+      storyApp: app,
+      storage,
+    });
+    pressureEnhancement.boot();
+    Object.defineProperty(app, "pressureEnhancement", {
+      configurable: true,
+      enumerable: false,
+      value: pressureEnhancement,
+    });
     return app;
   }
 

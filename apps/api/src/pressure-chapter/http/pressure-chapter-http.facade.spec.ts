@@ -876,3 +876,91 @@ async function expectHttpCode(
     return true;
   });
 }
+test("every rejected response path leaves delivery ACK/MODAL_SHOWN state unchanged", async () => {
+  const rejectedAckMutations: Array<{ path: string; count: number }> = [];
+  const responseCommand = (routeHash: string, idempotencyKey: string) => ({
+    ...decisionCommand(routeHash),
+    idempotencyKey,
+    sourceEventId: `safe-projected-${idempotencyKey}`,
+    responseActionCode: "SIGNED_RESPONSE_A",
+  });
+  for (const compilerErrorCode of [
+    "INTEGRATION_DECISION_COMMAND_MISMATCH",
+    "SEAT_CONTROL_FENCE_REJECTED",
+  ]) {
+    const harness = createHarness({ compilerErrorCode });
+    await expectHttpCode(
+      () => harness.facade.submitDecision(
+        harness.principal,
+        ROOM_ID,
+        responseCommand(harness.stored.snapshot.routeHash, `reject-${compilerErrorCode}`),
+      ),
+      PRESSURE_CHAPTER_HTTP_ERROR_CODES.COMMAND_REJECTED,
+      422,
+    );
+    rejectedAckMutations.push({
+      path: compilerErrorCode,
+      count: harness.acknowledgementInputs.length,
+    });
+    assert.equal(harness.actionWrites, 0);
+  }
+
+  const wrongSeat = createHarness({ compilerSeatId: "qingliu_law" });
+  await expectHttpCode(
+    () => wrongSeat.facade.submitDecision(
+      wrongSeat.principal,
+      ROOM_ID,
+      responseCommand(wrongSeat.stored.snapshot.routeHash, "reject-wrong-seat"),
+    ),
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.ROUTE_MISMATCH,
+    409,
+  );
+  rejectedAckMutations.push({
+    path: "COMPILED_SEAT_MISMATCH",
+    count: wrongSeat.acknowledgementInputs.length,
+  });
+
+  const casRejected = createHarness({ actionErrorCode: "PRESSURE_WORKING_LEDGER_HEAD_MISMATCH" });
+  await assert.rejects(
+    () => casRejected.facade.submitDecision(
+      casRejected.principal,
+      ROOM_ID,
+      responseCommand(casRejected.stored.snapshot.routeHash, "reject-cas"),
+    ),
+    (error: unknown) => error instanceof PressureChapterHttpException,
+  );
+  rejectedAckMutations.push({
+    path: "WORKING_LEDGER_CAS_REJECTED",
+    count: casRejected.acknowledgementInputs.length,
+  });
+  assert.equal(casRejected.actionWrites, 0);
+
+  const collision = createHarness();
+  const first = {
+    ...decisionCommand(collision.stored.snapshot.routeHash),
+    idempotencyKey: "zero-ack-collision-key",
+    sourceEventId: "safe-projected-event-zero-ack",
+    responseActionCode: "SIGNED_RESPONSE_A",
+  };
+  await collision.facade.submitDecision(collision.principal, ROOM_ID, first);
+  const ackAfterCommit = collision.acknowledgementInputs.length;
+  await expectHttpCode(
+    () => collision.facade.submitDecision(collision.principal, ROOM_ID, {
+      ...first,
+      responseActionCode: "DIFFERENT_RESPONSE",
+    }),
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.IDEMPOTENCY_CONFLICT,
+    409,
+  );
+  rejectedAckMutations.push({
+    path: "IDEMPOTENCY_COLLISION_DELTA",
+    count: collision.acknowledgementInputs.length - ackAfterCommit,
+  });
+  assert.deepEqual(rejectedAckMutations, [
+    { path: "INTEGRATION_DECISION_COMMAND_MISMATCH", count: 0 },
+    { path: "SEAT_CONTROL_FENCE_REJECTED", count: 0 },
+    { path: "COMPILED_SEAT_MISMATCH", count: 0 },
+    { path: "WORKING_LEDGER_CAS_REJECTED", count: 0 },
+    { path: "IDEMPOTENCY_COLLISION_DELTA", count: 0 },
+  ]);
+});

@@ -14,15 +14,42 @@ const typecheck = (packageName) => ({
 
 export const PRESSURE_CHAPTER_SUITES = Object.freeze({
   'modal-trigger-contract': {
-    description: 'Environment-free modal trigger oracle, privacy, transaction and static scope guards',
-    steps: [{
-      id: 'modal-trigger-contract-tests',
-      executable: process.execPath,
-      args: ['--test', '{files}'],
-      cwd: '.',
-      globs: ['scripts/acceptance/pressure-chapter/cases/contracts/modal-trigger-*.test.mjs'],
-      minMatches: 2,
-    }],
+    description: 'Environment-free scope, compiler/projector/feed, API-Web and zero-ACK hard gates',
+    steps: [
+      {
+        id: 'modal-trigger-scope-and-oracle-tests',
+        executable: process.execPath,
+        args: ['--test', '{files}'],
+        cwd: '.',
+        globs: ['scripts/acceptance/pressure-chapter/cases/contracts/modal-trigger-*.test.mjs'],
+        minMatches: 2,
+      },
+      {
+        id: 'modal-trigger-api-hard-gates',
+        executable: process.execPath,
+        args: ['--import', 'tsx', '--test', '{files}'],
+        cwd: '.',
+        environment: { TSX_TSCONFIG_PATH: 'apps/api/tsconfig.json' },
+        globs: [
+          'apps/api/src/pressure-chapter/a-emotion-production/trigger-derivation.spec.ts',
+          'apps/api/src/pressure-chapter/a-emotion-production/a-emotion-production.api.spec.ts',
+          'apps/api/src/pressure-chapter/a-emotion-production/content-source.api.spec.ts',
+          'apps/api/src/pressure-chapter/a-emotion/a-emotion.api.spec.ts',
+          'apps/api/src/pressure-chapter/game-projection/game-projection.service.spec.ts',
+          'apps/api/src/pressure-chapter/game-projection/decision-feed-contract.spec.ts',
+          'apps/api/src/pressure-chapter/http/pressure-chapter-http.facade.spec.ts',
+        ],
+        minMatches: 7,
+      },
+      {
+        id: 'modal-trigger-web-hard-gates',
+        executable: process.execPath,
+        args: ['--test', '{files}'],
+        cwd: '.',
+        globs: ['apps/web/tests/pressure-chapter-game-v1.test.mjs'],
+        minMatches: 1,
+      },
+    ],
   },
   'modal-trigger-live': {
     description: 'Real non-production API and browser closure for the modal trigger chain',
@@ -35,7 +62,7 @@ export const PRESSURE_CHAPTER_SUITES = Object.freeze({
       { name: 'PRESSURE_CHAPTER_ALLOWED_SUPABASE_PROJECT_SHA256', matches: '^[0-9a-fA-F]{64}$' },
       { name: 'PRESSURE_CHAPTER_TEST_BASE_URL', present: true },
       { name: 'PRESSURE_MODAL_TRIGGER_LIVE_FIXTURE', present: true },
-      { name: 'PRESSURE_MODAL_TRIGGER_PROVIDER_TRACE', present: true },
+      { name: 'PRESSURE_MODAL_TRIGGER_SOLO_AUTH_FIXTURE', present: true },
       { name: 'PRESSURE_CHAPTER_BROWSER_AUTH_FIXTURE', present: true },
       { name: 'PRESSURE_MODAL_TRIGGER_VISUAL_REFERENCE_DIR', present: true },
     ],

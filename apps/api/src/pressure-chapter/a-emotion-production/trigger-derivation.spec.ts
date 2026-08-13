@@ -32,6 +32,14 @@ test("CROSS_IMPACT sends minor effects to Feed and major effects to a center car
   assert.equal(major.presentation.responseOptions.length, 3);
   assert.equal(major.presentation.modalTrigger, null);
 
+  const critical = deriveCrossImpactPresentationV1({
+    sourceSeatId: "zhejiang_governor",
+    signal: signal({ severity: "CRITICAL", targetSeatId: "jiangnan_merchant" }),
+  });
+  assert.equal(critical.presentation.recommendedPresentation, "CENTER_CARD");
+  assert.equal(critical.presentation.centerCardType, "CROSS_IMPACT");
+  assert.equal(critical.presentation.modalTrigger, null);
+
   const self = signal({ severity: "CRITICAL", targetSeatId: "zhejiang_governor" });
   assert.deepEqual(deriveCrossImpactPresentationV1({
     sourceSeatId: "zhejiang_governor",
@@ -147,6 +155,49 @@ test("trigger derivation is deterministic under duplicate calculation", () => {
     deriveStateTransitionPresentationV1(input),
     deriveStateTransitionPresentationV1(structuredClone(input)),
   );
+});
+
+test("N2-N7 seal the committed first-transition version and historical re-entry does not re-modal", () => {
+  for (let stateVersion = 2; stateVersion <= 7; stateVersion += 1) {
+    const crisis = deriveStateTransitionPresentationV1({
+      signal: modalCandidate("CRISIS"),
+      stateVersion,
+      metric: {
+        metricTransitionId: `emperor-trust:first-danger:N${stateVersion}`,
+        beforeTone: "WARN",
+        afterTone: "DANGER",
+      },
+    });
+    const victory = deriveStateTransitionPresentationV1({
+      signal: modalCandidate("STAGE_VICTORY"),
+      stateVersion,
+      milestone: {
+        milestoneId: `chapter:N${stateVersion}:HIGH`,
+        beforeState: "INACTIVE",
+        afterState: "ACHIEVED",
+      },
+    });
+    assert.equal(crisis.presentation.modalTrigger?.stateVersion, stateVersion);
+    assert.equal(victory.presentation.modalTrigger?.stateVersion, stateVersion);
+  }
+
+  const historicalReentry = {
+    signal: modalCandidate("CRISIS"),
+    stateVersion: 4,
+    metric: {
+      metricTransitionId: "emperor-trust:danger-lifecycle",
+      beforeTone: "WARN" as const,
+      afterTone: "DANGER" as const,
+    },
+    priorTrigger: {
+      type: "CRISIS" as const,
+      triggerId: "emperor-trust:danger-lifecycle",
+      stateVersion: 2,
+    },
+  };
+  const reentry = deriveStateTransitionPresentationV1(historicalReentry);
+  assert.equal(reentry.presentation.modalTrigger, null, "same trigger lifecycle re-entered DANGER and opened a second modal");
+  assert.equal(reentry.presentation.recommendedPresentation, "CENTER_CARD");
 });
 
 test("deterministic trigger capability has no Provider, LLM, network, or authority writer dependency", () => {

@@ -12,6 +12,7 @@
     "runId": "REPLACE_RESPONSE_RUN",
     "cookie": "REPLACE_SESSION_COOKIE",
     "visibleLatestEventId": "REPLACE_VISIBLE_LATEST_EVENT",
+    "staleVisibleEventId": "REPLACE_OLDER_VISIBLE_UNACKNOWLEDGED_EVENT",
     "invisibleEventId": "REPLACE_OTHER_SEAT_PRIVATE_EVENT",
     "acknowledgedEventId": "REPLACE_ACKNOWLEDGED_EVENT",
     "foreignEventId": "REPLACE_CROSS_RUN_EVENT",
@@ -30,8 +31,19 @@
       "idempotencyKey": "REPLACE_UNIQUE_IDEMPOTENCY_KEY",
       "optionCode": "INVESTIGATE_LEDGER",
       "customText": null,
-      "sourceEventId": "REPLACE_VISIBLE_LATEST_EVENT"
+      "sourceEventId": "REPLACE_VISIBLE_LATEST_EVENT",
+      "responseActionCode": "REPLACE_SERVER_ALLOWED_RESPONSE_CODE"
     }
+  },
+  "deliveryValidation": {
+    "runId": "REPLACE_MODAL_RUN",
+    "eventId": "REPLACE_CURRENT_MODAL_EVENT",
+    "projectionVersion": 1,
+    "cookie": "REPLACE_AUTHORIZED_VIEWER_COOKIE",
+    "crossSeatCookie": "REPLACE_OTHER_SEAT_COOKIE_IN_SAME_RUN",
+    "foreignRunId": "REPLACE_FOREIGN_RUN",
+    "foreignEventId": "REPLACE_FOREIGN_RUN_MODAL_EVENT",
+    "idempotencyKey": "REPLACE_UNIQUE_MODAL_SHOWN_KEY"
   },
   "privacy": {
     "viewerCookie": "REPLACE_SESSION_COOKIE",
@@ -41,23 +53,10 @@
   },
   "faultTransaction": {
     "runId": "REPLACE_ISOLATED_FAULT_RUN",
-    "cookie": "REPLACE_SESSION_COOKIE",
-    "command": {
-      "schemaVersion": "pressure_chapter_game_command_v1",
-      "commandType": "SUBMIT_DECISION",
-      "runId": "REPLACE_ISOLATED_FAULT_RUN",
-      "routeHash": "REPLACE_ROUTE_HASH",
-      "chapterRuntimeId": "REPLACE_CHAPTER_RUNTIME",
-      "chapterId": "N1",
-      "decisionPointId": "REPLACE_DECISION_POINT",
-      "seatId": "REPLACE_VIEWER_SEAT",
-      "controlEpoch": 1,
-      "expectedWorkingRevision": 1,
-      "submissionFenceToken": "REPLACE_FENCE",
-      "idempotencyKey": "REPLACE_FAULT_IDEMPOTENCY_KEY",
-      "optionCode": "REPLACE_ALLOWED_OPTION",
-      "customText": null,
-      "sourceEventId": null
-    }
+    "chapterRuntimeId": "REPLACE_PROVISIONED_CHAPTER_RUNTIME",
+    "expectedHeadHash": "REPLACE_CURRENT_WORKING_LEDGER_HEAD_HASH_OR_NULL",
+    "events": [
+      "REPLACE_WITH_PROVISIONED_UNCOMMITTED_WORKING_LEDGER_EVENT_JSON"
+    ]
   }
 }

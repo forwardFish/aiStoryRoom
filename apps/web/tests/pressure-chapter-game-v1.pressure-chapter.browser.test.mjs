@@ -4,9 +4,13 @@ import { JSDOM } from "jsdom";
 import { createStoryApp } from "../public/app.js";
 import { bootGamePage } from "../public/game-bootstrap.js";
 import {
-  PressureMainGameStorageV1,
+  PressureMainGameStorageV1 as BasePressureMainGameStorageV1,
   pressureProjectionToMainGameViewV1,
 } from "../public/pressure-main-game-storage-v1.js";
+import {
+  PressureMainGameStorageV1,
+  attachPressureChapterEnhancementsV1,
+} from "../public/pressure-chapter-game-v1.js";
 
 function projection({ runId = "run-pressure-main-shell", optionCode = "SEAL_AND_REVIEW" } = {}) {
   return {
@@ -61,7 +65,7 @@ function projection({ runId = "run-pressure-main-shell", optionCode = "SEAL_AND_
       status: "PUBLISHED", projectionKind: "GENESIS_NARRATIVE", sourceAuthority: "GENESIS",
       sourceId: `${runId}:genesis`, sourceCommitHash: "c".repeat(64),
       text: "嘉靖三十五年，天下仍披着太平的外衣。京城的钟鼓按时响起，运河上的漕船一艘接一艘北去。",
-      contentHash: "d".repeat(64), renderMode: "DETERMINISTIC_FALLBACK",
+      contentHash: "d".repeat(64), renderMode: "AUTHORED_FALLBACK",
     },
     feedPage: {
       schemaVersion: "a_emotion_feed_page_v1", roomId: runId, runId,
@@ -85,9 +89,13 @@ test("Pressure /game dispatches into the approved app.js main-game shell", async
     window: dom.window,
     fetchImpl: async () => new Response(JSON.stringify(input), { status: 200, headers: { "content-type": "application/json" } }),
     loadPressureMainGameStorage: async () => ({
+      PressureMainGameStorageV1: BasePressureMainGameStorageV1,
+    }),
+    loadPressureChapterEnhancement: async () => ({
       PressureMainGameStorageV1: class extends PressureMainGameStorageV1 {
         constructor(options) { super(options); storageConstructed = true; }
       },
+      attachPressureChapterEnhancementsV1,
     }),
     loadSolo: async () => ({ createStoryApp }),
   });
@@ -138,11 +146,13 @@ test("Pressure adapter preserves approved page data and server-sealed decision c
   assert.deepEqual(Object.keys(request.body).sort(), [
     "chapterId", "chapterRuntimeId", "commandType", "controlEpoch", "customText",
     "decisionPointId", "expectedWorkingRevision", "idempotencyKey", "optionCode",
-    "routeHash", "runId", "schemaVersion", "seatId", "sourceEventId", "submissionFenceToken",
+    "responseActionCode", "routeHash", "runId", "schemaVersion", "seatId", "sourceEventId", "submissionFenceToken",
   ].sort());
   assert.equal(request.body.optionCode, "SEAL_AND_REVIEW");
   assert.equal(request.body.sourceEventId, null);
-  assert.equal(result.pressureProjection.decision.options[0].code, "NEXT_OPTION");
+  assert.equal(request.body.responseActionCode, null);
+  assert.equal(Object.prototype.hasOwnProperty.call(result, "pressureProjection"), false);
+  assert.equal(storage.projection.decision.options[0].code, "NEXT_OPTION");
 });
 
 test("completed Pressure run uses the existing result route without mounting a parallel page", async () => {

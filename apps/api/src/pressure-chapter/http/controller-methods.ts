@@ -82,6 +82,8 @@ export class PressureChapterHttpControllerMethods {
 }
 
 function isDeliveryMarkCommand(value: unknown): boolean {
+  // The exact DELIVERY_MARK operations are SEEN and MODAL_SHOWN; strict body
+  // validation remains centralized in the facade before any persistence call.
   return !!value
     && typeof value === "object"
     && !Array.isArray(value)

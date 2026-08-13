@@ -172,6 +172,38 @@ test("crash after modal ingest but before ack retries without duplicate event, d
   ].join(":"));
 });
 
+test("N2, N3 and N7 run the real compiler through projector and feed with the committed stateVersion", async () => {
+  for (const stateVersion of [2, 3, 7]) {
+    for (const type of ["CRISIS", "STAGE_VICTORY"] as const) {
+      const pair = type === "CRISIS"
+        ? crisisAuthorityPair(stateVersion)
+        : victoryAuthorityPair(stateVersion);
+      const context = viewerContext(MERCHANT, pair.source.sourceCommitHash);
+      context.viewer.authorizedEvidenceRefs = [...pair.source.signal.evidenceRefs];
+      context.contextHash = sha256Canonical({
+        sourceCommitHash: pair.source.sourceCommitHash,
+        viewer: context.viewer,
+        priorProjectionHash: null,
+        priorAggregationKey: null,
+      });
+      const harness = consumerHarness(pair, [context]);
+
+      const consumed = await harness.consumer.consumeNext(`worker-${type}-${stateVersion}`);
+      assert.equal(consumed.kind, "ACKNOWLEDGED");
+      const page = await harness.feed.list({
+        roomId: pair.source.roomId,
+        runId: pair.source.runId,
+        viewerSeatId: MERCHANT,
+      });
+      assert.equal(page.items.length, 1);
+      assert.equal(page.items[0]?.keyModal?.type, type);
+      assert.equal(page.items[0]?.keyModal?.stateVersion, stateVersion);
+      assert.equal(page.items[0]?.keyModal?.serverSequence, pair.source.eventSequence);
+      assert.equal(page.items[0]?.keyModal?.sourceEventId, page.items[0]?.eventId);
+    }
+  }
+});
+
 test("missing committed authority retries with its fence and dead-letters at the attempt budget", async () => {
   const pair = authorityPair();
   const clock = new MutableClock(1_000);
@@ -281,6 +313,7 @@ function authorityPair(overrides: Partial<{
   storyDay: number;
   sourceId: string;
   sourceCommitHash: string;
+  stateVersion: number;
 }> = {}): { job: AEmotionAuthorityOutboxJobV1; source: AEmotionCommittedAuthoritySourceV1 } {
   const sourceKind = overrides.sourceKind ?? "BEAT_COMMITTED";
   const sourceId = overrides.sourceId ?? `${sourceKind.toLowerCase()}:source-1`;
@@ -306,7 +339,7 @@ function authorityPair(overrides: Partial<{
     sourceSeatId: SOURCE_SEAT,
     committedAt: COMMITTED_AT,
     eventSequence: sourceKind === "FINALE_COMMITTED" ? 8 : 3,
-    stateVersion: 1,
+    stateVersion: overrides.stateVersion ?? 1,
     storyDay: overrides.storyDay ?? (sourceKind === "FINALE_COMMITTED" ? 8 : 3),
     signal: {
       signalId: job.signalId,
@@ -351,12 +384,19 @@ function authorityPair(overrides: Partial<{
   return { job, source };
 }
 
-function crisisAuthorityPair(): {
+function crisisAuthorityPair(stateVersion = 1): {
   job: AEmotionAuthorityOutboxJobV1;
   source: AEmotionCommittedAuthoritySourceV1;
 } {
-  const pair = authorityPair();
+  const pair = authorityPair({
+    stageId: `N${stateVersion}`,
+    storyDay: stateVersion,
+    stateVersion,
+  });
   const { sourceBindingHash: _sourceBindingHash, ...draft } = pair.source;
+  const triggerId = stateVersion === 1
+    ? "metric:emperor-trust:danger-entry"
+    : `metric:emperor-trust:danger-entry:N${stateVersion}`;
   return {
     job: pair.job,
     source: sealAEmotionCommittedAuthoritySourceV1({
@@ -376,7 +416,7 @@ function crisisAuthorityPair(): {
           delta: -5,
           effectCode: "EMPEROR_TRUST_DANGER",
         }],
-        metricTransitionId: "metric:emperor-trust:danger-entry",
+        metricTransitionId: triggerId,
         disclosure: "CONFIRMED",
         evidenceRefs: ["evidence:emperor-trust-danger-entry"],
         presentation: {
@@ -389,9 +429,47 @@ function crisisAuthorityPair(): {
           ],
           modalTrigger: {
             type: "CRISIS",
-            triggerId: "metric:emperor-trust:danger-entry",
-            stateVersion: 1,
+            triggerId,
+            stateVersion,
           },
+        },
+      },
+    }, pair.job),
+  };
+}
+
+function victoryAuthorityPair(stateVersion: number): {
+  job: AEmotionAuthorityOutboxJobV1;
+  source: AEmotionCommittedAuthoritySourceV1;
+} {
+  const pair = authorityPair({
+    stageId: `N${stateVersion}`,
+    storyDay: stateVersion,
+    stateVersion,
+  });
+  const { sourceBindingHash: _sourceBindingHash, ...draft } = pair.source;
+  const triggerId = `chapter:N${stateVersion}:HIGH`;
+  return {
+    job: pair.job,
+    source: sealAEmotionCommittedAuthoritySourceV1({
+      ...draft,
+      signal: {
+        ...draft.signal,
+        eventCode: "SANGTIAN_CHAPTER_HIGH_COMMITTED",
+        eventFamily: "SANGTIAN_CHAPTER_OUTCOME",
+        severity: "MAJOR",
+        milestoneId: triggerId,
+        disclosure: "CONFIRMED",
+        evidenceRefs: [`evidence:chapter:N${stateVersion}:high`],
+        presentation: {
+          recommendedPresentation: "KEY_MODAL",
+          centerCardType: "STAGE_VICTORY",
+          responseOptions: [
+            { code: "VIEW_DETAILS", preferredEntry: "INVESTIGATE", consumesManeuverOnSubmit: false },
+            { code: "RESPOND_NOW", preferredEntry: "PLAN", consumesManeuverOnSubmit: false },
+            { code: "VIEW_LATER", preferredEntry: "DEFER", consumesManeuverOnSubmit: false },
+          ],
+          modalTrigger: { type: "STAGE_VICTORY", triggerId, stateVersion },
         },
       },
     }, pair.job),

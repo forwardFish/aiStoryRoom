@@ -11,5 +11,10 @@
     "promise": { "runId": "REPLACE_PROMISE_RUN", "cookieName": "session", "cookieValue": "REPLACE_COOKIE" },
     "crisis": { "runId": "REPLACE_CRISIS_RUN", "cookieName": "session", "cookieValue": "REPLACE_COOKIE" },
     "victory": { "runId": "REPLACE_VICTORY_RUN", "cookieName": "session", "cookieValue": "REPLACE_COOKIE" }
+  },
+  "feedPaginationScenario": {
+    "runId": "REPLACE_RUN_WITH_MORE_THAN_TEN_VIEWER_SAFE_FEED_ITEMS",
+    "cookieName": "session",
+    "cookieValue": "REPLACE_COOKIE"
   }
 }

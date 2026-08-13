@@ -87,7 +87,7 @@ test('responseToEventId is server-revalidated for visibility/latest/ACK/run/allo
   }
 });
 
-test('Working Ledger and Pressure Outbox commit atomically across crash/replay/retry', () => {
+test('oracle-only atomicity model stays fail-closed; real transaction proof is live-only', () => {
   for (const faultAt of ['AFTER_LEDGER_BEFORE_OUTBOX', 'AFTER_OUTBOX_BEFORE_COMMIT']) {
     const harness = new AtomicLedgerOutboxHarness();
     assert.throws(() => harness.commit({ ledgerKey: 'ledger-1', outboxKey: 'outbox-1', payload: { event: 1 }, faultAt }));
@@ -100,7 +100,7 @@ test('Working Ledger and Pressure Outbox commit atomically across crash/replay/r
   }
 });
 
-test('Solo 1+5 deterministic AI produces five decisions with Provider invocation zero', async () => {
+test('oracle-only 1+5 rule is deterministic; Provider=0 proof is DB live-only', async () => {
   const provider = { invocations: 0 };
   const seats = Array.from({ length: 5 }, (_, index) => `ai-seat-${index + 1}`);
   const first = await runDeterministicSoloAi({ seats, provider, decide: async (seat) => ({ seat, code: `RULE_${seat}` }) });

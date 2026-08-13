@@ -85,14 +85,16 @@ function item({ type = "CROSS_IMPACT", sequence = 1, severity = "MAJOR", modal =
     safeSummary: centerCard.summary,
     statusLabel: modal ? "已确认" : "来源未知",
     visibleImpacts: [{ effectCode: "EMPEROR_TRUST_DELTA", label: "皇帝信任", value: "-6" }],
-    knownFactRefs: ["fact.viewer.safe"],
+    ...(modal ? { visibleSourceSeatId: "zhejiang_administration" } : {}),
     responseOptions: [centerCard.primaryAction, centerCard.secondaryAction, centerCard.tertiaryAction],
-    recommendedPresentation: modal ? "KEY_MODAL" : "FEED_ONLY",
+    recommendedPresentation: modal ? "KEY_MODAL" : severity === "MINOR" ? "FEED_ONLY" : "CENTER_CARD",
     centerCard,
     keyModal: modal ? {
       id: `modal:${eventId}`,
       type,
       priority: { CRISIS: 300, PROMISE_BROKEN: 200, STAGE_VICTORY: 100 }[type],
+      serverSequence: sequence,
+      sourceEventId: eventId,
       triggerId,
       stateVersion: sequence,
       dedupeKey: modalDedupeKeyV1(VIEWER, type, triggerId, sequence),
@@ -252,12 +254,16 @@ test("minor CROSS_IMPACT opens from an existing Feed seam without rewriting that
     }
   });
   assert.equal(h.root.querySelector("[data-pressure-center-enhancement]"), null);
-  assert.equal(h.root.querySelector(".causal-right")?.outerHTML, h.beforeEnhancement.right);
-  const before = feed.outerHTML;
+  const rightWithoutOwnedFeed = h.root.querySelector(".causal-right").cloneNode(true);
+  rightWithoutOwnedFeed.querySelector("[data-pressure-feed-page]")?.remove();
+  assert.equal(rightWithoutOwnedFeed.outerHTML, h.beforeEnhancement.right);
+  const legacyButton = feed.querySelector("button");
+  const before = legacyButton.outerHTML;
   feed.querySelector("button").click();
   await new Promise((resolve) => h.dom.window.setTimeout(resolve, 5));
   assert.ok(h.root.querySelector('[data-testid="pressure-center-card"]'));
-  assert.equal(feed.outerHTML, before);
+  assert.equal(legacyButton.outerHTML, before);
+  assert.equal(feed.firstElementChild, legacyButton);
   h.enhancement.destroy();
   h.dom.window.close();
 });

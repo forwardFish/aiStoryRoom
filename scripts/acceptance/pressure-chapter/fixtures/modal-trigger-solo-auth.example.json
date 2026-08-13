@@ -1,0 +1,5 @@
+{
+  "schemaVersion": "pressure_modal_trigger_solo_auth_fixture_v1",
+  "runId": "REPLACE_AUTHENTICATED_NON_PRODUCTION_SOLO_RUN_ID",
+  "cookie": "REPLACE_AUTHENTICATED_COOKIE_HEADER"
+}

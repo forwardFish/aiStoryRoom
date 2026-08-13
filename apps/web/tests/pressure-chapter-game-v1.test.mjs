@@ -1,15 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
+import { JSDOM } from "jsdom";
 import { bootGamePage } from "../public/game-bootstrap.js";
 import {
   PRESSURE_CHAPTER_PHASE1_SCOPE,
   PRESSURE_CHAPTER_PHASE1_ARTIFACT_VERSION,
   PressureMainGameStorageV1,
+  attachPressureChapterEnhancementsV1,
   buildPressureDecisionCommandV1,
   modalDedupeKeyV1,
   orderPressureModalQueueV1,
-  pressureProjectionToMainGameViewV1,
+  renderPressureFeedPageV1,
   renderPressureKeyModalV1,
   renderPressureStateCardV1,
   selectPressureCenterCardV1,
@@ -121,7 +123,7 @@ function feedItem({
     safeSummary: centerCard.summary,
     statusLabel: disclosure === "CONFIRMED" ? "已确认" : "来源未知",
     visibleImpacts: [{ effectCode: "EMPEROR_TRUST_DELTA", label: "皇帝信任", value: "-6" }],
-    knownFactRefs: ["fact.viewer.safe"],
+    ...(disclosure === "CONFIRMED" ? { visibleSourceSeatId: "zhejiang_administration" } : {}),
     responseOptions: [centerCard.primaryAction, centerCard.secondaryAction, centerCard.tertiaryAction],
     recommendedPresentation: modal ? "KEY_MODAL" : presentation,
     centerCard,
@@ -129,6 +131,8 @@ function feedItem({
       id: `modal:${eventId}`,
       type,
       priority,
+      serverSequence: eventSequence,
+      sourceEventId: eventId,
       triggerId,
       stateVersion: eventSequence,
       dedupeKey: modalDedupeKeyV1(VIEWER, type, triggerId, eventSequence),
@@ -214,9 +218,9 @@ function projection(items = [], overrides = {}) {
     feedPage: {
       schemaVersion: "a_emotion_feed_page_v1", roomId: runId, runId,
       viewerSeatId: VIEWER, items: normalizedItems,
-      unreadCount: normalizedItems.filter((item) => item.isUnread).length,
-      nextCursor: null,
-      serverSequence: Math.max(0, ...normalizedItems.map((item) => item.eventSequence))
+      unreadCount: overrides.unreadCount ?? normalizedItems.filter((item) => item.isUnread).length,
+      nextCursor: overrides.nextCursor ?? null,
+      serverSequence: overrides.serverSequence ?? Math.max(0, ...normalizedItems.map((item) => item.eventSequence))
     },
     projectionHash: HASH
   };
@@ -226,9 +230,9 @@ function response(value, status = 200) {
   return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json" } });
 }
 
-test("Phase 1 v4 is explicitly UI_ONLY and retains only the approved existing-shell enhancement", async () => {
+test("b5 modal Web overlay is UI_ONLY and retains only the approved existing-shell enhancement", async () => {
   assert.equal(PRESSURE_CHAPTER_PHASE1_SCOPE, "UI_ONLY");
-  assert.equal(PRESSURE_CHAPTER_PHASE1_ARTIFACT_VERSION, "phase1-v4");
+  assert.equal(PRESSURE_CHAPTER_PHASE1_ARTIFACT_VERSION, "b5-modal-web-v1");
   assert.equal(PRESSURE_WORKBENCH_BRIDGE_SCOPE_V1, "EXISTING_WORKBENCH_ONLY");
   const [gameSource, bridgeSource, css, bootstrap, index] = await Promise.all([
     readFile(new URL("../public/pressure-chapter-game-v1.js", import.meta.url), "utf8"),
@@ -255,14 +259,19 @@ test("Phase 1 v4 is explicitly UI_ONLY and retains only the approved existing-sh
   assert.match(bootstrap, /attachPressureChapterEnhancementsV1/);
   assert.match(gameSource, /state\.activeCenterCard && !modalActive/);
   assert.match(gameSource, /root\.classList\.toggle\(MODAL_ACTIVE_CLASS, modalActive\)/);
+  assert.doesNotMatch(gameSource, /localStorage|modal-seen/);
   assert.match(css, /\.pressure-modal-active \[data-pressure-center-enhancement\][\s\S]*?display:\s*none !important/);
-  assert.equal((index.match(/pressure-chapter-game-v1\.css/g) || []).length, 1);
+  assert.equal((index.match(/pressure-chapter-game-v1\.css/g) || []).length, 0);
   assert.doesNotMatch(index, /pressure-chapter-workbench-v1\.css/);
 });
 
 test("Pressure adapter preserves the approved app.js view contract without exposing authority fields", () => {
   const input = projection([]);
-  const view = pressureProjectionToMainGameViewV1(input);
+  const view = new PressureMainGameStorageV1({
+    runId: input.runId,
+    initialProjection: input,
+    fetchImpl: async () => { throw new Error("unused"); }
+  }).toView();
   assert.equal(view.continuousV2, true);
   assert.equal(view.player.roleName, "浙江总督");
   assert.deepEqual(view.player.resources.map(([label]) => label), ["银两", "粮草", "兵丁", "幕僚", "密报"]);
@@ -278,7 +287,7 @@ test("Pressure adapter preserves the approved app.js view contract without expos
 
 test("major CROSS_IMPACT auto-selects while minor FEED_ONLY stays Feed-first", () => {
   const minor = feedItem({ severity: "MINOR", presentation: "FEED_ONLY" });
-  const major = feedItem({ eventSequence: 2, severity: "MAJOR", presentation: "FEED_ONLY" });
+  const major = feedItem({ eventSequence: 2, severity: "MAJOR", presentation: "CENTER_CARD" });
   assert.equal(selectPressureCenterCardV1([minor]), null);
   assert.equal(selectPressureCenterCardV1([minor, major])?.sourceEventId, major.eventId);
   const hidden = new Set([major.eventId]);
@@ -292,9 +301,9 @@ test("modal priority and exact dedupe are CRISIS 300 > PROMISE 200 > STAGE 100",
   const queue = orderPressureModalQueueV1([stage, promise, crisis]);
   assert.deepEqual(queue.map((item) => item.type), ["CRISIS", "PROMISE_BROKEN", "STAGE_VICTORY"]);
   assert.equal(crisis.keyModal.dedupeKey, `${VIEWER}:CRISIS:trigger-crisis:1`);
-  const presented = new Set([crisis.keyModal.dedupeKey]);
-  assert.deepEqual(orderPressureModalQueueV1([stage, promise, crisis], presented).map((item) => item.type), ["PROMISE_BROKEN", "STAGE_VICTORY"]);
-  assert.equal(selectPressureCenterCardV1([crisis], presented)?.sourceEventId, crisis.eventId);
+  const crisisShown = { ...crisis, keyModal: null, recommendedPresentation: "CENTER_CARD" };
+  assert.deepEqual(orderPressureModalQueueV1([stage, promise, crisisShown]).map((item) => item.type), ["PROMISE_BROKEN", "STAGE_VICTORY"]);
+  assert.equal(selectPressureCenterCardV1([crisisShown])?.sourceEventId, crisis.eventId);
 });
 
 test("approved 03-06 markup contains only center-card/modal UI and no internal identifiers", () => {
@@ -372,7 +381,6 @@ test("invalid modal trigger projections fail closed on the UI boundary", () => {
 
 test("v4 source files are UTF-8 Chinese and contain no common mojibake sequences", async () => {
   const sources = await Promise.all([
-    readFile(new URL("./pressure-chapter-game-v1.browser.py", import.meta.url), "utf8"),
     readFile(new URL("./pressure-chapter-game-v1.existing-shell.test.mjs", import.meta.url), "utf8"),
     readFile(new URL("../public/pressure-chapter-game-v1.js", import.meta.url), "utf8")
   ]);
@@ -394,8 +402,9 @@ test("game-bootstrap Pressure branch calls the existing createStoryApp renderer,
     document: { cookie: "" },
     sessionStorage: { length: 0, key() { return null; }, removeItem() {} }
   };
-  class StubStorage {
-    constructor(options) { calls.push(["storage", options.runId]); }
+  class StubBaseStorage {}
+  class StubStorage extends StubBaseStorage {
+    constructor(options) { super(); calls.push(["storage", options.runId]); }
   }
   const app = {
     async boot() { calls.push(["app.boot"]); },
@@ -405,7 +414,10 @@ test("game-bootstrap Pressure branch calls the existing createStoryApp renderer,
     root,
     window: win,
     fetchImpl: async () => response(input),
-    loadPressureChapter: async () => ({
+    loadPressureMainGameStorage: async () => ({
+      PressureMainGameStorageV1: StubBaseStorage
+    }),
+    loadPressureChapterEnhancement: async () => ({
       PressureMainGameStorageV1: StubStorage,
       attachPressureChapterEnhancementsV1({ storyApp }) {
         calls.push(["enhancer.attach", storyApp === app]);
@@ -427,4 +439,257 @@ test("game-bootstrap Pressure branch calls the existing createStoryApp renderer,
     ["enhancer.attach", true],
     ["enhancer.boot"]
   ]);
+});
+
+test("real API public shape rejects knownFactRefs and accepts the exact keyModal envelope", () => {
+  const crisis = feedItem({ type: "CRISIS", eventSequence: 7, severity: "CRITICAL", modal: true });
+  const input = projection([crisis], { unreadCount: 18, nextCursor: "opaque:+/page=2", serverSequence: 7 });
+  const validated = validatePressureProjectionV1(input);
+  assert.equal(validated.feedPage.unreadCount, 18);
+  assert.deepEqual(Object.keys(validated.feedPage.items[0].keyModal).sort(), [
+    "card", "dedupeKey", "id", "priority", "serverSequence", "sourceEventId", "stateVersion", "triggerId", "type"
+  ].sort());
+
+  const leaked = structuredClone(input);
+  leaked.feedPage.items[0].knownFactRefs = ["internal.fact"];
+  assert.throws(() => validatePressureProjectionV1(leaked), /knownFactRefs is not allowed/);
+  const widened = structuredClone(input);
+  widened.feedPage.items[0].keyModal.internalFence = HASH;
+  assert.throws(() => validatePressureProjectionV1(widened), /internalFence is not allowed/);
+});
+
+test("global unread count is independent from a ten-row page", () => {
+  const items = Array.from({ length: 10 }, (_value, index) =>
+    feedItem({ eventSequence: 20 - index, severity: "MINOR", presentation: "FEED_ONLY" })
+  );
+  const page = validatePressureProjectionV1(projection(items, { unreadCount: 37 })).feedPage;
+  assert.equal(page.items.length, 10);
+  assert.equal(page.items.filter((item) => item.isUnread).length, 10);
+  assert.equal(page.unreadCount, 37);
+  assert.match(renderPressureFeedPageV1(page), /37 条未读/);
+});
+
+test("opaque Load older paging returns 11 and 25 stable unique event projections", async () => {
+  async function runCase({ initialSequences, pages, expected }) {
+    const initialItems = initialSequences.map((eventSequence) =>
+      feedItem({ eventSequence, severity: "MINOR", presentation: "FEED_ONLY" })
+    );
+    const requests = [];
+    const initial = projection(initialItems, {
+      projectionVersion: 9,
+      unreadCount: expected + 4,
+      nextCursor: pages[0]?.cursor ?? null,
+      serverSequence: Math.max(...initialSequences)
+    });
+    const storage = new PressureMainGameStorageV1({
+      runId: initial.runId,
+      initialProjection: initial,
+      fetchImpl: async (url) => {
+        const cursor = new URL(url, "http://game.test").searchParams.get("feedCursor");
+        requests.push(cursor);
+        const page = pages.find((candidate) => candidate.cursor === cursor);
+        assert.ok(page, `unexpected opaque cursor ${cursor}`);
+        const value = projection(page.sequences.map((eventSequence) =>
+          feedItem({ eventSequence, severity: "MINOR", presentation: "FEED_ONLY" })
+        ), {
+          projectionVersion: 1,
+          unreadCount: expected + 4,
+          nextCursor: page.nextCursor,
+          serverSequence: Math.max(...initialSequences)
+        });
+        value.chapter.title = "STALE OLD PAGE";
+        return response(value);
+      }
+    });
+    while (storage.projection.feedPage.nextCursor !== null) await storage.loadOlderFeed(10);
+    const identities = storage.projection.feedPage.items.map((item) => `${item.eventId}:${item.projectionVersion}`);
+    assert.equal(identities.length, expected);
+    assert.equal(new Set(identities).size, expected);
+    assert.equal(storage.projection.chapter.title, "九堰将决");
+    return { storage, requests };
+  }
+
+  const eleven = await runCase({
+    initialSequences: [11, 10, 9, 8, 7, 6, 5, 4, 3, 2],
+    pages: [{ cursor: "opaque:11:+/=", sequences: [1], nextCursor: null }],
+    expected: 11
+  });
+  assert.deepEqual(eleven.requests, ["opaque:11:+/="]);
+
+  const twentyFive = await runCase({
+    initialSequences: [25, 24, 23, 22, 21, 20, 19, 18, 17, 16],
+    pages: [
+      { cursor: "opaque:25:page/2+=", sequences: [16, 15, 14, 13, 12, 11, 10, 9, 8, 7], nextCursor: "opaque:25:page/3+=" },
+      { cursor: "opaque:25:page/3+=", sequences: [6, 5, 4, 3, 2, 1], nextCursor: null }
+    ],
+    expected: 25
+  });
+  assert.deepEqual(twentyFive.requests, ["opaque:25:page/2+=", "opaque:25:page/3+="]);
+  assert.deepEqual(
+    twentyFive.storage.projection.feedPage.items.map((item) => item.eventSequence),
+    Array.from({ length: 25 }, (_value, index) => 25 - index)
+  );
+});
+
+test("stale reconnect cannot regress seat-transport sequence; BFCache and online recover forward", async () => {
+  const first = projection([], { projectionVersion: 5, serverSequence: 25 });
+  let current = projection([], { projectionVersion: 4, serverSequence: 24 });
+  const storage = new PressureMainGameStorageV1({
+    runId: first.runId,
+    initialProjection: first,
+    fetchImpl: async () => response(current)
+  });
+  await storage.getRun();
+  assert.equal(storage.projection.projectionVersion, 5);
+  assert.equal(storage.projection.feedPage.serverSequence, 25);
+  current = projection([], { projectionVersion: 6, serverSequence: 26 });
+  await storage.getRun();
+  assert.equal(storage.projection.projectionVersion, 6);
+
+  const dom = new JSDOM('<!doctype html><main id="app"><div class="causal-center"></div></main>', {
+    url: "http://game.test/game?runId=run-pressure"
+  });
+  let refreshes = 0;
+  const enhancement = attachPressureChapterEnhancementsV1({
+    root: dom.window.document.querySelector("#app"),
+    window: dom.window,
+    storage,
+    storyApp: {
+      getState: () => ({}),
+      refresh: async () => { refreshes += 1; }
+    }
+  }).boot();
+  const pageShow = new dom.window.Event("pageshow");
+  Object.defineProperty(pageShow, "persisted", { value: true });
+  dom.window.dispatchEvent(pageShow);
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+  dom.window.dispatchEvent(new dom.window.Event("online"));
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+  assert.equal(refreshes, 2);
+  enhancement.destroy();
+  dom.window.close();
+});
+
+test("modal DOM insertion emits one server MODAL_SHOWN mark and server null retains center", async () => {
+  const crisis = feedItem({ type: "CRISIS", eventSequence: 5, severity: "CRITICAL", modal: true });
+  const input = projection([crisis], { unreadCount: 14, serverSequence: 5 });
+  const shownItem = { ...crisis, keyModal: null, recommendedPresentation: "CENTER_CARD" };
+  const shownProjection = projection([shownItem], { unreadCount: 14, serverSequence: 5 });
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const posts = [];
+  const storage = new PressureMainGameStorageV1({
+    runId: input.runId,
+    initialProjection: input,
+    createIdempotencyKey: () => "modal-shown-idempotency",
+    fetchImpl: async (_url, init) => {
+      posts.push(JSON.parse(init.body));
+      await gate;
+      return response({
+        schemaVersion: "pressure_chapter_delivery_mark_http_response_v1",
+        operation: "MODAL_SHOWN",
+        idempotencyKey: "modal-shown-idempotency",
+        projection: shownProjection
+      });
+    }
+  });
+  const dom = new JSDOM('<!doctype html><main id="app"><div class="causal-center"></div></main>', {
+    url: "http://game.test/game?runId=run-pressure",
+    pretendToBeVisual: true
+  });
+  const root = dom.window.document.querySelector("#app");
+  const enhancement = attachPressureChapterEnhancementsV1({
+    root,
+    window: dom.window,
+    storage,
+    storyApp: { getState: () => ({}) }
+  }).boot();
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+  assert.ok(root.querySelector('[data-testid="pressure-modal-crisis"]'));
+  enhancement.mount();
+  enhancement.mount();
+  assert.equal(posts.length, 1);
+  assert.deepEqual(Object.keys(posts[0]).sort(), [
+    "commandType", "eventId", "idempotencyKey", "operation", "projectionVersion"
+  ].sort());
+  assert.equal(posts[0].commandType, "DELIVERY_MARK");
+  assert.equal(posts[0].operation, "MODAL_SHOWN");
+  release();
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 10));
+  assert.equal(root.querySelector('[data-testid="pressure-modal-crisis"]'), null);
+  assert.ok(root.querySelector('[data-testid="pressure-center-card"]'));
+  assert.equal(enhancement.getState().activeCenterCard?.sourceEventId, crisis.eventId);
+  enhancement.destroy();
+  dom.window.close();
+});
+
+test("separate browser profiles obey one shared server modal authority", async () => {
+  const promise = feedItem({ type: "PROMISE_BROKEN", eventSequence: 3, severity: "CRITICAL", modal: true });
+  const modalProjection = projection([promise], { serverSequence: 3 });
+  const centerProjection = projection([
+    { ...promise, keyModal: null, recommendedPresentation: "CENTER_CARD" }
+  ], { serverSequence: 3 });
+  let shown = false;
+  let marks = 0;
+  const server = async (_url, init = {}) => {
+    if (String(init.method || "GET").toUpperCase() === "POST") {
+      marks += 1;
+      shown = true;
+      const body = JSON.parse(init.body);
+      return response({
+        schemaVersion: "pressure_chapter_delivery_mark_http_response_v1",
+        operation: "MODAL_SHOWN",
+        idempotencyKey: body.idempotencyKey,
+        projection: centerProjection
+      });
+    }
+    return response(shown ? centerProjection : modalProjection);
+  };
+  const profileA = new PressureMainGameStorageV1({
+    runId: modalProjection.runId,
+    initialProjection: modalProjection,
+    createIdempotencyKey: () => "profile-a-mark",
+    fetchImpl: server
+  });
+  await profileA.markModalShown(promise.keyModal);
+  const profileB = new PressureMainGameStorageV1({
+    runId: modalProjection.runId,
+    initialProjection: modalProjection,
+    createIdempotencyKey: () => "profile-b-mark",
+    fetchImpl: server
+  });
+  await profileB.getRun();
+  assert.equal(profileB.projection.feedPage.items[0].keyModal, null);
+  assert.equal(marks, 1);
+});
+
+test("failed MODAL_SHOWN delivery retries with the same idempotency key", async () => {
+  const stage = feedItem({ type: "STAGE_VICTORY", eventSequence: 4, severity: "MAJOR", modal: true });
+  const input = projection([stage], { serverSequence: 4 });
+  const shown = projection([
+    { ...stage, keyModal: null, recommendedPresentation: "CENTER_CARD" }
+  ], { serverSequence: 4 });
+  const bodies = [];
+  const storage = new PressureMainGameStorageV1({
+    runId: input.runId,
+    initialProjection: input,
+    createIdempotencyKey: () => "stable-modal-retry",
+    fetchImpl: async (_url, init) => {
+      const body = JSON.parse(init.body);
+      bodies.push(body);
+      if (bodies.length === 1) throw new Error("connection lost");
+      return response({
+        schemaVersion: "pressure_chapter_delivery_mark_http_response_v1",
+        operation: "MODAL_SHOWN",
+        idempotencyKey: body.idempotencyKey,
+        projection: shown
+      });
+    }
+  });
+  await assert.rejects(storage.markModalShown(stage.keyModal), /connection lost/);
+  await storage.markModalShown(stage.keyModal);
+  assert.equal(bodies.length, 2);
+  assert.equal(bodies[0].idempotencyKey, "stable-modal-retry");
+  assert.equal(bodies[1].idempotencyKey, "stable-modal-retry");
+  assert.equal(storage.projection.feedPage.items[0].keyModal, null);
 });

@@ -628,3 +628,116 @@ test("the A-Emotion read side has no authority or Provider mutation surface", ()
   }
   assert.equal(PRESSURE_CHAPTER_SEAT_IDS_V1.length, 6);
 });
+test("feed keeps rank pagination cursor separate from monotonic sequence recovery cursor", async () => {
+  const repository = new InMemoryAEmotionFeedRepositoryV1();
+  const feed = new AEmotionFeedServiceV1(repository);
+  const ordinary = await project(event());
+  const crisis = await project(modalEvent("CRISIS", 80));
+  const victory = await project(modalEvent("STAGE_VICTORY", 120));
+  await feed.ingest(ordinary, NOW);
+  await feed.ingest(victory, "2026-08-12T01:00:01.000Z");
+  await feed.ingest(crisis, "2026-08-12T01:00:02.000Z");
+
+  const first = await feed.list({ roomId: "room-ae-1", runId: "run-ae-1", viewerSeatId: VIEWER, limit: 1 });
+  assert.equal(first.items[0]?.centerCard?.type, "CRISIS");
+  assert.equal(first.unreadCount, 3);
+  assert.ok(first.nextCursor);
+  const second = await feed.list({ roomId: "room-ae-1", runId: "run-ae-1", viewerSeatId: VIEWER, cursor: first.nextCursor, limit: 2 });
+  assert.deepEqual(second.items.map((item) => item.centerCard?.type), ["STAGE_VICTORY", "CROSS_IMPACT"]);
+
+  const liveFirst = await feed.listAfterSequence({
+    roomId: "room-ae-1",
+    runId: "run-ae-1",
+    viewerSeatId: VIEWER,
+    afterSequence: 0,
+    limit: 2,
+  });
+  assert.deepEqual(liveFirst.items.map((item) => item.eventSequence), [80, 108]);
+  assert.equal(liveFirst.nextAfterSequence, 108);
+  assert.equal(liveFirst.currentServerSequence, 120);
+  assert.equal(liveFirst.hasMore, true);
+  const liveSecond = await feed.listAfterSequence({
+    roomId: "room-ae-1",
+    runId: "run-ae-1",
+    viewerSeatId: VIEWER,
+    afterSequence: liveFirst.nextAfterSequence,
+    limit: 2,
+  });
+  assert.deepEqual(liveSecond.items.map((item) => item.eventSequence), [120]);
+  assert.equal(liveSecond.nextAfterSequence, 120);
+  assert.equal(liveSecond.hasMore, false);
+
+  await assert.rejects(
+    () => feed.list({ roomId: "room-ae-1", runId: "run-ae-1", viewerSeatId: OBSERVER, cursor: first.nextCursor, limit: 2 }),
+    (error: unknown) => error instanceof AEmotionProjectionError && error.code === "A_EMOTION_CURSOR_INVALID",
+  );
+
+  const crisisItem = first.items[0]!;
+  const mark = {
+    eventId: crisisItem.eventId,
+    projectionVersion: crisisItem.projectionVersion,
+    roomId: "room-ae-1",
+    runId: "run-ae-1",
+    viewerSeatId: VIEWER,
+    operation: "SEEN" as const,
+    occurredAt: "2026-08-12T01:00:03.000Z",
+  };
+  assert.equal((await feed.mark(mark)).seenAt, mark.occurredAt);
+  assert.equal((await feed.mark({ ...mark, occurredAt: "2026-08-12T01:00:04.000Z" })).seenAt, mark.occurredAt);
+  await assert.rejects(
+    () => feed.mark({ ...mark, projectionVersion: 2 }),
+    (error: unknown) => error instanceof AEmotionProjectionError
+      && error.code === "A_EMOTION_PROJECTION_VERSION_STALE",
+  );
+  assert.equal((await feed.list({ roomId: "room-ae-1", runId: "run-ae-1", viewerSeatId: VIEWER })).unreadCount, 2);
+
+  const writes = repository.aggregateWrites;
+  assert.equal((await feed.ingest(ordinary, "2026-08-12T01:01:00.000Z")).status, "REPLAYED");
+  assert.equal(repository.aggregateWrites, writes);
+  await assert.rejects(
+    () => feed.ingest({ ...ordinary, inputFingerprint: digest("different-input") }, NOW),
+    (error: unknown) => error instanceof AEmotionProjectionError && error.code === "A_EMOTION_IDEMPOTENCY_MISMATCH",
+  );
+
+  const orderingRepository = new InMemoryAEmotionFeedRepositoryV1();
+  const orderingFeed = new AEmotionFeedServiceV1(orderingRepository);
+  const olderMajorRelated = await project(event({ eventId: "event-related-major", eventSequence: 10, idempotencyKey: "related-major" }));
+  const newerPublic = await project(event({
+    eventId: "event-public-newer",
+    kind: "PUBLIC_ACTION",
+    eventCode: "LEDGER_COPY_DELIVERED",
+    eventFamily: "PUBLIC_LEDGER_DELIVERY",
+    sharedObjectId: "public-ledger-copy",
+    eventSequence: 999,
+    idempotencyKey: "public-newer",
+    presentation: {
+      recommendedPresentation: "FEED_ONLY",
+      centerCardType: null,
+      responseOptions: [],
+      modalTrigger: null,
+    },
+  }));
+  await orderingFeed.ingest(newerPublic, NOW);
+  await orderingFeed.ingest(olderMajorRelated, "2026-08-12T01:02:00.000Z");
+  const priorityOrder = await orderingFeed.list({ roomId: "room-ae-1", runId: "run-ae-1", viewerSeatId: VIEWER });
+  assert.deepEqual(priorityOrder.items.map((entry) => entry.eventId), ["event-related-major", "event-public-newer"]);
+});
+
+test("CRISIS and STAGE_VICTORY accept the committed first-transition stateVersion for N2-N7", async () => {
+  for (let stateVersion = 2; stateVersion <= 7; stateVersion += 1) {
+    for (const type of ["CRISIS", "STAGE_VICTORY"] as const) {
+      const source = modalEvent(type, stateVersion * 100, stateVersion);
+      const first = await project(source);
+      const replay = await project(structuredClone(source));
+      assert.equal(first.projection.keyModal?.type, type);
+      assert.equal(first.projection.keyModal?.stateVersion, stateVersion);
+      assert.equal(first.projection.keyModal?.serverSequence, source.eventSequence);
+      assert.equal(first.projection.keyModal?.sourceEventId, source.eventId);
+      assert.equal(
+        first.projection.keyModal?.dedupeKey,
+        [VIEWER, type, source.presentation.modalTrigger?.triggerId, stateVersion].join(":"),
+      );
+      assert.deepEqual(replay, first, `${type} N${stateVersion} replay changed deterministic projection`);
+    }
+  }
+});

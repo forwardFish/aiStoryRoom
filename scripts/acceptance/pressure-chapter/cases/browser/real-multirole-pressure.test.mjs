@@ -269,6 +269,7 @@ test('real /game preserves frozen layout and modal lifecycle across close, refre
     ], { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 
     if (contract.modalType) {
+      const shownRequestsBefore = modalShownRequests(browser.requests, runId).length;
       const closeResult = await evaluate(cdp, `(() => {
         const close = document.querySelector('[data-testid="pressure-modal-close"]');
         if (!close) return false;
@@ -277,12 +278,42 @@ test('real /game preserves frozen layout and modal lifecycle across close, refre
       })()`);
       assert.equal(closeResult, true, `${name}: modal close control absent`);
       await waitFor(async () => (await inspectModalDom(cdp)).modalCount === 0, `${name} modal close`, 10_000);
+      await waitFor(
+        async () => modalShownRequests(browser.requests, runId).length === shownRequestsBefore + 1,
+        `${name} server MODAL_SHOWN receipt`,
+        10_000,
+      );
+      const shownRequest = modalShownRequests(browser.requests, runId).at(-1);
+      assert.deepEqual(
+        Object.keys(shownRequest.body).sort(),
+        ['commandType', 'eventId', 'idempotencyKey', 'operation', 'projectionVersion', 'schemaVersion'].sort(),
+        `${name}: MODAL_SHOWN sent client authority or omitted the projected event binding`,
+      );
+      assert.equal(shownRequest.body.commandType, 'DELIVERY_MARK');
+      assert.equal(shownRequest.body.operation, 'MODAL_SHOWN');
+      assert.equal(typeof shownRequest.body.eventId, 'string');
+      assert.equal(Number.isSafeInteger(shownRequest.body.projectionVersion), true);
       assert.equal((await inspectModalDom(cdp)).cardType, contract.cardType, `${name}: closing modal removed center card`);
       await cdp.send('Page.reload', { ignoreCache: true });
       await waitForGame(cdp, runId, `${name} refresh`);
       const refreshed = await inspectModalDom(cdp);
       assert.equal(refreshed.modalCount, 0, `${name}: acknowledged modal repeated after refresh`);
       assert.equal(refreshed.cardType, contract.cardType, `${name}: center card did not persist after refresh`);
+
+      const freshProfileDirectory = await mkdtemp(path.join(os.tmpdir(), `pressure-modal-fresh-${name}-`));
+      t.after(async () => rm(freshProfileDirectory, { recursive: true, force: true }));
+      const freshBrowser = await launchBrowser(chromeBinary, freshProfileDirectory);
+      t.after(() => freshBrowser.close());
+      await freshBrowser.cdp.send('Network.setCookie', {
+        name: cookieName, value: cookieValue, url: baseUrl, httpOnly: true,
+        sameSite: 'Lax', secure: baseUrl.startsWith('https:'),
+      });
+      await freshBrowser.cdp.send('Page.navigate', { url: gameUrl });
+      await waitForGame(freshBrowser.cdp, runId, `${name} fresh-profile projection`);
+      const freshProfileDom = await inspectModalDom(freshBrowser.cdp);
+      assert.equal(freshProfileDom.modalCount, 0, `${name}: server one-shot failed in a fresh browser profile`);
+      assert.equal(freshProfileDom.cardType, contract.cardType, `${name}: fresh profile lost the retained center card`);
+      freshBrowser.close();
     }
 
     if (name === 'center') {
@@ -295,26 +326,118 @@ test('real /game preserves frozen layout and modal lifecycle across close, refre
       assert.equal(doubleClick.clicked, true, 'center card response control absent');
       assert.ok(doubleClick.workbenches <= 1, 'duplicate click opened duplicate workspaces');
 
+      const responsePostsBefore = responseSubmissionRequests(browser.requests, runId).length;
+      const submittedTwice = await evaluate(cdp, `(() => {
+        const submit = document.querySelector('#maneuverSubmit, [data-testid="pressure-workbench-submit"]');
+        if (!submit) return false;
+        submit.click(); submit.click();
+        return true;
+      })()`);
+      assert.equal(submittedTwice, true, 'existing workbench submit control absent');
+      await waitFor(
+        async () => responseSubmissionRequests(browser.requests, runId).length > responsePostsBefore,
+        'duplicate response network submission',
+        15_000,
+      );
+      const responsePosts = responseSubmissionRequests(browser.requests, runId).slice(responsePostsBefore);
+      assert.equal(responsePosts.length, 1, 'duplicate response click emitted more than one HTTP submission');
+      const responseBody = responsePosts[0].body;
+      assert.equal(typeof responseBody.sourceEventId, 'string');
+      assert.equal(typeof responseBody.responseActionCode, 'string');
+      for (const forbidden of ['seatId', 'viewerSeatId', 'evidenceRefs', 'projectionHash', 'submissionFenceToken', 'provider']) {
+        assert.equal(Object.hasOwn(responseBody, forbidden), false, `response payload leaked ${forbidden}`);
+      }
+
       await cdp.send('Page.navigate', { url: new URL('/', `${baseUrl}/`).href });
       await waitFor(async () => (await evaluate(cdp, 'location.pathname')) === '/', 'BFCache away navigation', 15_000);
-      await cdp.send('Page.goBack');
+      const history = await cdp.send('Page.getNavigationHistory');
+      const gameEntry = [...history.entries]
+        .slice(0, history.currentIndex)
+        .reverse()
+        .find((entry) => new URL(entry.url).pathname === '/game');
+      assert.ok(gameEntry?.id, 'CDP navigation history did not retain the real /game entry');
+      await cdp.send('Page.navigateToHistoryEntry', { entryId: gameEntry.id });
       await waitForGame(cdp, runId, 'BFCache return');
       assert.equal((await inspectModalDom(cdp)).cardType, 'CROSS_IMPACT', 'BFCache return lost center card');
 
+      const beforeReconnect = await readGameProjectionInPage(cdp, runId);
       await cdp.send('Network.emulateNetworkConditions', {
         offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0,
       });
+      const observedDisconnect = await evaluate(cdp, `(async () => {
+        try {
+          await fetch('/api/v4/rooms/${encodeURIComponent(runId)}/game', { credentials: 'include', cache: 'no-store' });
+          return false;
+        } catch {
+          return true;
+        }
+      })()`);
+      assert.equal(observedDisconnect, true, 'offline phase did not observe a real transport failure');
       await cdp.send('Network.emulateNetworkConditions', {
         offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1,
       });
       await cdp.send('Page.reload', { ignoreCache: true });
       await waitForGame(cdp, runId, 'disconnect/reconnect');
       assert.equal((await inspectModalDom(cdp)).cardType, 'CROSS_IMPACT', 'reconnect lost center card');
+      const afterReconnect = await readGameProjectionInPage(cdp, runId);
+      assert.ok(afterReconnect.serverSequence >= beforeReconnect.serverSequence, 'reconnect regressed serverSequence');
+      assert.equal(new Set(afterReconnect.eventIds).size, afterReconnect.eventIds.length, 'reconnect duplicated feed eventId');
+      for (const eventId of beforeReconnect.eventIds) {
+        assert.ok(afterReconnect.eventIds.includes(eventId), `reconnect lost feed event ${eventId}`);
+      }
     }
     assert.deepEqual(browser.exceptions, [], `${name}: runtime exceptions`);
     assert.deepEqual(browser.networkFailures.filter((failure) => !failure.canceled), [], `${name}: network failures`);
     browser.close();
   }
+});
+
+test('real /game backfills more than ten Feed items with an opaque cursor and global unread count', { timeout: 120_000 }, async (t) => {
+  if (skipUnlessEnvironment(t, [
+    'PRESSURE_CHAPTER_ALLOW_BROWSER_TESTS',
+    'PRESSURE_CHAPTER_ALLOW_MODAL_TRIGGER_TESTS',
+    'PRESSURE_CHAPTER_TEST_SCOPE',
+    'PRESSURE_CHAPTER_TEST_BASE_URL',
+    'PRESSURE_CHAPTER_BROWSER_AUTH_FIXTURE',
+  ])) return;
+  assert.equal(process.env.PRESSURE_CHAPTER_TEST_SCOPE, 'non-production');
+  assert.notEqual(process.env.NODE_ENV, 'production');
+  const baseUrl = normalizeBaseUrl(process.env.PRESSURE_CHAPTER_TEST_BASE_URL);
+  const fixture = await readJsonFixture(process.env.PRESSURE_CHAPTER_BROWSER_AUTH_FIXTURE, 'PRESSURE_CHAPTER_BROWSER_AUTH_FIXTURE');
+  const scenario = fixture.feedPaginationScenario;
+  const runId = requireFixtureString(scenario, 'runId', 'feedPaginationScenario');
+  const cookieName = requireFixtureString(scenario, 'cookieName', 'feedPaginationScenario');
+  const cookieValue = requireFixtureString(scenario, 'cookieValue', 'feedPaginationScenario');
+  const profileDirectory = await mkdtemp(path.join(os.tmpdir(), 'pressure-feed-pagination-'));
+  t.after(async () => rm(profileDirectory, { recursive: true, force: true }));
+  const browser = await launchBrowser(resolveChromeBinary(), profileDirectory);
+  t.after(() => browser.close());
+  await browser.cdp.send('Network.setCookie', {
+    name: cookieName, value: cookieValue, url: baseUrl, httpOnly: true,
+    sameSite: 'Lax', secure: baseUrl.startsWith('https:'),
+  });
+  const gameUrl = new URL(`/game?runId=${encodeURIComponent(runId)}`, `${baseUrl}/`).href;
+  await browser.cdp.send('Page.navigate', { url: gameUrl });
+  await waitForGame(browser.cdp, runId, 'paginated Feed initial render');
+  const first = await readGameProjectionInPage(browser.cdp, runId, { feedLimit: 10 });
+  assert.equal(first.eventIds.length, 10, 'pagination fixture must expose a full first page');
+  assert.equal(typeof first.nextCursor, 'string', 'first page must expose an opaque nextCursor');
+  assert.ok(first.unreadCount > first.pageUnreadCount, 'unreadCount must be global, not current-page unread');
+  const older = await readGameProjectionInPage(browser.cdp, runId, { feedLimit: 10, feedCursor: first.nextCursor });
+  assert.ok(older.eventIds.length > 0, 'nextCursor returned no older Feed items');
+  assert.equal(new Set([...first.eventIds, ...older.eventIds]).size, first.eventIds.length + older.eventIds.length, 'cursor pages overlap by eventId');
+
+  const clicked = await evaluate(browser.cdp, `(() => {
+    const button = document.querySelector('[data-testid="pressure-feed-load-older"]');
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert.equal(clicked, true, 'real /game has no existing Load older/backfill control');
+  await waitFor(async () => {
+    const rendered = await evaluate(browser.cdp, `Array.from(document.querySelectorAll('[data-pressure-feed-event-id]')).map(node => node.dataset.pressureFeedEventId)`);
+    return older.eventIds.every((eventId) => rendered.includes(eventId));
+  }, 'older Feed items rendered', 20_000);
 });
 
 async function waitForGame(cdp, runId, label) {
@@ -330,6 +453,50 @@ async function inspectModalDom(cdp) {
     modalType: document.querySelector('[data-testid="pressure-key-modal"]')?.dataset?.modalType || null,
     modalCount: document.querySelectorAll('[data-testid="pressure-key-modal"]').length,
   }))()`);
+}
+
+async function readGameProjectionInPage(cdp, runId, query = {}) {
+  const params = new URLSearchParams();
+  if (query.feedLimit !== undefined) params.set('feedLimit', String(query.feedLimit));
+  if (query.feedCursor !== undefined && query.feedCursor !== null) params.set('feedCursor', query.feedCursor);
+  const suffix = params.size > 0 ? `?${params.toString()}` : '';
+  return evaluate(cdp, `(async () => {
+    const response = await fetch('/api/v4/rooms/${encodeURIComponent(runId)}/game${suffix}', {
+      credentials: 'include', cache: 'no-store', headers: { accept: 'application/json' },
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error('game projection HTTP ' + response.status);
+    const items = payload.feedPage?.items || [];
+    return {
+      eventIds: items.map(item => item.eventId),
+      pageUnreadCount: items.filter(item => item.isUnread === true).length,
+      unreadCount: payload.feedPage?.unreadCount,
+      nextCursor: payload.feedPage?.nextCursor,
+      serverSequence: payload.feedPage?.serverSequence,
+    };
+  })()`);
+}
+
+function parsedPostRequests(requests, runId) {
+  const suffix = `/api/v4/rooms/${encodeURIComponent(runId)}/game/action`;
+  return requests.flatMap((request) => {
+    if (request.method !== 'POST' || !new URL(request.url).pathname.endsWith(suffix) || !request.postData) return [];
+    try { return [{ ...request, body: JSON.parse(request.postData) }]; } catch { return []; }
+  });
+}
+
+function modalShownRequests(requests, runId) {
+  return parsedPostRequests(requests, runId).filter((request) => (
+    request.body.commandType === 'DELIVERY_MARK'
+    && request.body.operation === 'MODAL_SHOWN'
+  ));
+}
+
+function responseSubmissionRequests(requests, runId) {
+  return parsedPostRequests(requests, runId).filter((request) => (
+    typeof request.body.sourceEventId === 'string'
+    && typeof request.body.responseActionCode === 'string'
+  ));
 }
 
 async function resolveReference(directory, stem) {
@@ -364,16 +531,23 @@ async function launchBrowser(executable, profileDirectory) {
   await cdp.send('Network.enable');
   const exceptions = [];
   const networkFailures = [];
+  const requests = [];
   cdp.on('Runtime.exceptionThrown', (params) => exceptions.push(params.exceptionDetails?.exception?.description ?? params.exceptionDetails?.text ?? 'runtime exception'));
   cdp.on('Network.loadingFailed', (params) => networkFailures.push({
     url: params.url ?? null,
     errorText: params.errorText,
     canceled: params.canceled === true,
   }));
+  cdp.on('Network.requestWillBeSent', (params) => requests.push({
+    url: params.request.url,
+    method: params.request.method,
+    postData: params.request.postData ?? null,
+  }));
   return {
     cdp,
     exceptions,
     networkFailures,
+    requests,
     close() {
       cdp.close();
       child.kill();

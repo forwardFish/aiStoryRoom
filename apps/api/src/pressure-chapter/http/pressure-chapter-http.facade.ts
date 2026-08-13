@@ -107,6 +107,7 @@ export class PressureChapterHttpFacade {
     });
   }
 
+  /** Persists the authenticated viewer's SEEN or MODAL_SHOWN delivery mark. */
   markFeedDelivery(
     principalValue: PressureChapterHttpPrincipalV1,
     roomIdValue: string,

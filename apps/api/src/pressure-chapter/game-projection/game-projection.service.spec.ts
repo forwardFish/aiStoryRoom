@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import test from "node:test";
 import {
   PRESSURE_CHAPTER_SEAT_IDS_V1,
@@ -190,6 +192,18 @@ test("API selects the viewer-safe vocabulary and drops raw secrets from every so
     "resourceId",
     "value",
   ]);
+  const webModuleUrl = pathToFileURL(resolve(
+    process.cwd(),
+    "apps/web/public/pressure-chapter-game-v1.js",
+  )).href;
+  const web = await import(webModuleUrl) as {
+    validatePressureProjectionV1(value: unknown, runId: string): unknown;
+  };
+  assert.deepEqual(
+    web.validatePressureProjectionV1(structuredClone(projection), projection.runId),
+    projection,
+    "the actual API projection does not roundtrip through the strict Web boundary",
+  );
 });
 
 test("P0 projects frozen Genesis narrative and forbids every world action capability", async () => {

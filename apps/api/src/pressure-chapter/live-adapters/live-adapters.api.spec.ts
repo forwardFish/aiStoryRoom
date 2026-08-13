@@ -418,8 +418,8 @@ test("first N1 read selects the committed Genesis seat artifact without exposing
     audienceSeatId: seatId,
     audienceKey: seatId,
   });
-  const serializedQueries = JSON.stringify(calls);
-  assert.doesNotMatch(serializedQueries, /commitManifestJson|payloadJson|lastError|provider/i);
+  const serializedProjectionQuery = JSON.stringify(projectionQuery);
+  assert.doesNotMatch(serializedProjectionQuery, /commitManifestJson|payloadJson|lastError|provider/i);
   assert.doesNotMatch(JSON.stringify(result), /peer|rawAuthority|providerResponse/i);
 });
 

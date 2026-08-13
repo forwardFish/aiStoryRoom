@@ -94,6 +94,11 @@ export function deriveStateTransitionPresentationV1(input: Readonly<{
   stateVersion: number;
   metric?: AEmotionMetricTransitionV1 | null;
   milestone?: AEmotionMilestoneTransitionV1 | null;
+  priorTrigger?: Readonly<{
+    type: "CRISIS" | "STAGE_VICTORY";
+    triggerId: string;
+    stateVersion: number;
+  }> | null;
 }>): AEmotionAuthoritySignalV1 {
   if (!Number.isSafeInteger(input.stateVersion) || input.stateVersion < 1) {
     return failAEmotionProduction(ERROR.AUTHORITY_SOURCE_INVALID, "trigger.stateVersion", "POSITIVE_INTEGER");
@@ -110,9 +115,27 @@ export function deriveStateTransitionPresentationV1(input: Readonly<{
       ? { type: "STAGE_VICTORY" as const, triggerId: input.milestone!.milestoneId }
       : null;
 
+  if (input.priorTrigger) {
+    nonEmpty(input.priorTrigger.triggerId, "trigger.priorTrigger.triggerId");
+    if (!Number.isSafeInteger(input.priorTrigger.stateVersion) || input.priorTrigger.stateVersion < 1) {
+      return failAEmotionProduction(ERROR.AUTHORITY_SOURCE_INVALID, "trigger.priorTrigger.stateVersion", "POSITIVE_INTEGER");
+    }
+  }
+
+  const repeatedLifecycle = trigger !== null
+    && input.priorTrigger?.type === trigger.type
+    && input.priorTrigger.triggerId === trigger.triggerId;
+
   signal.metricTransitionId = trigger?.type === "CRISIS" ? trigger.triggerId : null;
   signal.milestoneId = trigger?.type === "STAGE_VICTORY" ? trigger.triggerId : null;
-  if (trigger) {
+  if (trigger && repeatedLifecycle) {
+    signal.presentation = {
+      ...signal.presentation,
+      recommendedPresentation: "CENTER_CARD",
+      centerCardType: trigger.type,
+      modalTrigger: null,
+    };
+  } else if (trigger) {
     if (trigger.type === "CRISIS" && !signal.eventCode.endsWith("_DANGER_ENTERED")) {
       signal.eventCode = signal.eventCode.endsWith("_COMMITTED")
         ? `${signal.eventCode.slice(0, -"_COMMITTED".length)}_DANGER_ENTERED`
