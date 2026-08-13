@@ -54,6 +54,78 @@ function statusLabel(disclosure: AEmotionInteractionEventPortV1["disclosure"]): 
   return "已确认";
 }
 
+function assertSurfaceSemantics(
+  event: AEmotionInteractionEventPortV1,
+): void {
+  const cardType = event.presentation.centerCardType;
+  const recommendation = event.presentation.recommendedPresentation;
+  const trigger = event.presentation.modalTrigger;
+  if (cardType === null) {
+    if (recommendation !== "FEED_ONLY" || trigger !== null) {
+      failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:FEED_ONLY`);
+    }
+    return;
+  }
+  if (cardType === "CROSS_IMPACT") {
+    const expected = event.severity === "MINOR" ? "FEED_ONLY" : "CENTER_CARD";
+    if (
+      (event.kind !== "DIRECT_IMPACT" && event.kind !== "REVEAL")
+      || recommendation !== expected
+      || trigger !== null
+    ) {
+      failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:CROSS_IMPACT_SURFACE`);
+    }
+    return;
+  }
+  if (cardType === "PROMISE_BROKEN") {
+    if (!event.promiseId) {
+      failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:PROMISE_ID`);
+    }
+    if (trigger === null) {
+      if (recommendation !== "CENTER_CARD") {
+        failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:BROKEN_NOT_MODAL`);
+      }
+      return;
+    }
+    if (
+      recommendation !== "KEY_MODAL"
+      || trigger.type !== "PROMISE_BROKEN"
+      || trigger.triggerId !== event.promiseId
+      || trigger.stateVersion !== event.stateVersion
+      || event.kind !== "REVEAL"
+      || event.disclosure !== "CONFIRMED"
+    ) {
+      failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:PROMISE_NOT_REVEALED`);
+    }
+    return;
+  }
+  if (cardType === "CRISIS") {
+    if (
+      recommendation !== "KEY_MODAL"
+      || trigger?.type !== "CRISIS"
+      || trigger.triggerId !== event.metricTransitionId
+      || trigger.stateVersion !== 1
+      || event.stateVersion !== 1
+      || event.kind !== "DIRECT_IMPACT"
+      || event.disclosure !== "CONFIRMED"
+      || !event.eventCode.endsWith("_DANGER_ENTERED")
+    ) {
+      failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:CRISIS_TRANSITION`);
+    }
+    return;
+  }
+  if (
+    recommendation !== "KEY_MODAL"
+    || trigger?.type !== "STAGE_VICTORY"
+    || trigger.triggerId !== event.milestoneId
+    || trigger.stateVersion !== 1
+    || event.stateVersion !== 1
+    || event.disclosure !== "CONFIRMED"
+  ) {
+    failAEmotionProjection(ERROR.PRESENTATION_UNSUPPORTED, `${event.eventId}:STAGE_VICTORY_TRANSITION`);
+  }
+}
+
 async function resolveAudience(
   event: AEmotionInteractionEventPortV1,
   resolver: AEmotionObserverResolverPortV1,
@@ -102,6 +174,7 @@ export class AEmotionViewerProjectorV1 {
     }
     const audience = await resolveAudience(event, this.observerResolver);
     if (!audience.includes(viewer.viewerSeatId)) return null;
+    assertSurfaceSemantics(event);
 
     if (input.priorProjection && input.priorProjection.viewerSeatId !== viewer.viewerSeatId) {
       failAEmotionProjection(ERROR.CONTEXT_MISMATCH, `${event.eventId}:PRIOR_VIEWER`);
@@ -185,6 +258,8 @@ export class AEmotionViewerProjectorV1 {
         id: `modal:${viewer.viewerSeatId}:${trigger.type}:${trigger.triggerId}:${trigger.stateVersion}`,
         type: trigger.type,
         priority: modalPriority(trigger.type),
+        serverSequence: event.eventSequence,
+        sourceEventId: event.eventId,
         triggerId: trigger.triggerId,
         stateVersion: trigger.stateVersion,
         dedupeKey: [viewer.viewerSeatId, trigger.type, trigger.triggerId, trigger.stateVersion].join(":"),
@@ -240,7 +315,14 @@ export function selectAEmotionCenterStateV1<T extends { type: string }>(states: 
   }, null);
 }
 
-export function orderAEmotionModalQueueV1<T extends { priority: number; id: string }>(modals: readonly T[]): T[] {
-  return [...new Map(modals.map((modal) => [modal.id, modal])).values()]
-    .sort((left, right) => right.priority - left.priority || compareAEmotionCanonicalText(left.id, right.id));
+export function orderAEmotionModalQueueV1<T extends {
+  priority: number;
+  dedupeKey: string;
+  serverSequence: number;
+  sourceEventId: string;
+}>(modals: readonly T[]): T[] {
+  return [...new Map(modals.map((modal) => [modal.dedupeKey, modal])).values()]
+    .sort((left, right) => right.priority - left.priority
+      || left.serverSequence - right.serverSequence
+      || compareAEmotionCanonicalText(left.sourceEventId, right.sourceEventId));
 }

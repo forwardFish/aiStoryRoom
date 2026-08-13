@@ -21,6 +21,7 @@ export const PRESSURE_CHAPTER_HTTP_TOKENS = Object.freeze({
   ACCESS: Symbol.for("PressureChapterHttp.Access"),
   ROUTES: Symbol.for("PressureChapterHttp.Routes"),
   GAME: Symbol.for("PressureChapterHttp.Game"),
+  RESPONSE_ACKNOWLEDGER: Symbol.for("PressureChapterHttp.ResponseAcknowledger"),
   DECISION_COMPILER: Symbol.for("PressureChapterHttp.DecisionCompiler"),
   ACTIONS: Symbol.for("PressureChapterHttp.Actions"),
   CHAT: Symbol.for("PressureChapterHttp.Chat"),
@@ -97,6 +98,22 @@ export interface PressureChapterHttpDecisionCompilerPort {
     command: PressureChapterSubmitDecisionCommandV1;
     nowMs: number;
   }): Promise<SubmitOrchestratedActionCommandV1>;
+}
+
+/**
+ * Read-side delivery acknowledgement used only by response submissions.
+ * Implementations may mutate Feed delivery state, but never Working Ledger,
+ * trigger, modal, settlement or Provider authority.
+ */
+export interface PressureChapterHttpResponseAcknowledgerPort {
+  acknowledgeCurrent(input: {
+    roomId: string;
+    runId: string;
+    viewerSeatId: SeatIdV1;
+    sourceEventId: string;
+    responseActionCode: string;
+    occurredAt: string;
+  }): Promise<boolean>;
 }
 
 /** Command surface implemented by PressureChapterChatService. */

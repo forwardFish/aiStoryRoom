@@ -97,6 +97,8 @@
     "test:story:real-model": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs",
     "test:story:real-model:g00-t20": "pnpm --filter @apps/openovel-runtime build && node scripts/acceptance/run-real-model-g00-t20.mjs",
     "test:pressure-chapter:contracts": "node scripts/acceptance/pressure-chapter/run-suite.mjs contracts",
+    "test:pressure-chapter:modal-trigger-contract": "node scripts/acceptance/pressure-chapter/run-suite.mjs modal-trigger-contract",
+    "test:pressure-chapter:modal-trigger-live": "node scripts/acceptance/pressure-chapter/run-suite.mjs modal-trigger-live",
     "test:pressure-chapter:api": "node scripts/acceptance/pressure-chapter/run-suite.mjs api",
     "test:pressure-chapter:settlement-core": "node scripts/acceptance/pressure-chapter/run-suite.mjs settlement-core",
     "test:pressure-chapter:db": "node scripts/acceptance/pressure-chapter/run-suite.mjs db",

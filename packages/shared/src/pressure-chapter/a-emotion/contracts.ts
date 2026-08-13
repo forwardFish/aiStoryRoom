@@ -164,6 +164,8 @@ export interface AEmotionKeyModalV1 {
   id: string;
   type: AEmotionKeyModalTypeV1;
   priority: 100 | 200 | 300;
+  serverSequence: number;
+  sourceEventId: string;
   triggerId: string;
   stateVersion: number;
   dedupeKey: string;

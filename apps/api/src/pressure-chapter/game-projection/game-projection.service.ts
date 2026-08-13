@@ -11,6 +11,8 @@ import {
   PRESSURE_CHAPTER_GAME_PROJECTION_SCHEMA_V1,
   type AEmotionFeedItemPortV1,
   type AEmotionFeedPagePortV1,
+  type AEmotionFeedSourceItemPortV1,
+  type AEmotionFeedSourcePagePortV1,
   type PressureChapterGameProjectionV1,
   type PressureGameAEmotionFeedPort,
   type PressureGameCapabilitiesV1,
@@ -476,7 +478,7 @@ function sanitizeNarrative(
 }
 
 function sanitizeFeedPage(
-  page: AEmotionFeedPagePortV1,
+  page: AEmotionFeedSourcePagePortV1,
   scope: { roomId: string; runId: string; viewerSeatId: SeatIdV1 },
 ): AEmotionFeedPagePortV1 {
   if (
@@ -508,7 +510,7 @@ function sanitizeFeedPage(
 }
 
 function sanitizeFeedItem(
-  item: AEmotionFeedItemPortV1,
+  item: AEmotionFeedSourceItemPortV1,
   scope: { roomId: string; runId: string; viewerSeatId: SeatIdV1 },
   index: number,
 ): AEmotionFeedItemPortV1 {
@@ -557,9 +559,18 @@ function sanitizeFeedItem(
     : sanitizeCenterCard(item.centerCard, item.eventId, `${path}.centerCard`);
   const keyModal = item.keyModal === null
     ? null
-    : sanitizeKeyModal(item.keyModal, centerCard, item.eventId, `${path}.keyModal`);
+    : sanitizeKeyModal(
+      item.keyModal,
+      centerCard,
+      item.eventId,
+      item.viewerSeatId,
+      item.eventSequence,
+      `${path}.keyModal`,
+    );
   if (
-    (recommendedPresentation === "FEED_ONLY" && (centerCard !== null || keyModal !== null)) ||
+    (recommendedPresentation === "FEED_ONLY" && (
+      keyModal !== null || (centerCard !== null && centerCard.type !== "CROSS_IMPACT")
+    )) ||
     (recommendedPresentation === "CENTER_CARD" && (centerCard === null || keyModal !== null)) ||
     (recommendedPresentation === "KEY_MODAL" && (centerCard === null || keyModal === null))
   ) {
@@ -568,7 +579,7 @@ function sanitizeFeedItem(
   // Select only the established viewer projection vocabulary. Extra source
   // fields are deliberately dropped at this API boundary.
   const projectionWithoutHash: Omit<
-    AEmotionFeedItemPortV1,
+    AEmotionFeedSourceItemPortV1,
     "projectionHash" | "isUnread" | "isAcknowledged" | "isResolved"
   > = {
     schemaVersion: "a_emotion_viewer_projection_v1",
@@ -602,8 +613,12 @@ function sanitizeFeedItem(
   if (sha256Canonical(projectionWithoutHash) !== item.projectionHash) {
     failPressureGameProjection(ERROR.VIEWER_DATA_UNSAFE, `${path}.projectionHash`, "HASH_MISMATCH");
   }
+  const {
+    knownFactRefs: _internalKnownFactRefs,
+    ...viewerSafeProjection
+  } = projectionWithoutHash;
   return {
-    ...projectionWithoutHash,
+    ...viewerSafeProjection,
     projectionHash: item.projectionHash,
     isUnread: item.isUnread,
     isAcknowledged: item.isAcknowledged,
@@ -612,7 +627,7 @@ function sanitizeFeedItem(
 }
 
 function sanitizeVisibleImpacts(
-  value: AEmotionFeedItemPortV1["visibleImpacts"],
+  value: AEmotionFeedSourceItemPortV1["visibleImpacts"],
   path: string,
 ): AEmotionFeedItemPortV1["visibleImpacts"] {
   if (!Array.isArray(value) || value.length > 30) {
@@ -628,7 +643,7 @@ function sanitizeVisibleImpacts(
 }
 
 function sanitizeCardActions(
-  value: AEmotionFeedItemPortV1["responseOptions"],
+  value: AEmotionFeedSourceItemPortV1["responseOptions"],
   path: string,
 ): AEmotionFeedItemPortV1["responseOptions"] {
   if (!Array.isArray(value) || value.length > 10) {
@@ -638,7 +653,7 @@ function sanitizeCardActions(
 }
 
 function sanitizeCardAction(
-  action: AEmotionFeedItemPortV1["responseOptions"][number],
+  action: AEmotionFeedSourceItemPortV1["responseOptions"][number],
   path: string,
 ): AEmotionFeedItemPortV1["responseOptions"][number] {
   string(action.code, `${path}.code`);
@@ -658,7 +673,7 @@ function sanitizeCardAction(
 }
 
 function sanitizeCenterCard(
-  card: NonNullable<AEmotionFeedItemPortV1["centerCard"]>,
+  card: NonNullable<AEmotionFeedSourceItemPortV1["centerCard"]>,
   eventId: string,
   path: string,
 ): NonNullable<AEmotionFeedItemPortV1["centerCard"]> {
@@ -700,9 +715,11 @@ function sanitizeCardBlock(
 }
 
 function sanitizeKeyModal(
-  modal: NonNullable<AEmotionFeedItemPortV1["keyModal"]>,
+  modal: NonNullable<AEmotionFeedSourceItemPortV1["keyModal"]>,
   card: AEmotionFeedItemPortV1["centerCard"],
   eventId: string,
+  viewerSeatId: SeatIdV1,
+  eventSequence: number,
   path: string,
 ): NonNullable<AEmotionFeedItemPortV1["keyModal"]> {
   string(modal.id, `${path}.id`);
@@ -714,6 +731,15 @@ function sanitizeKeyModal(
   string(modal.triggerId, `${path}.triggerId`);
   integer(modal.stateVersion, `${path}.stateVersion`, 1);
   string(modal.dedupeKey, `${path}.dedupeKey`);
+  integer(modal.serverSequence, `${path}.serverSequence`, 1);
+  string(modal.sourceEventId, `${path}.sourceEventId`);
+  if (
+    modal.serverSequence !== eventSequence
+    || modal.sourceEventId !== eventId
+    || modal.dedupeKey !== [viewerSeatId, type, modal.triggerId, modal.stateVersion].join(":")
+  ) {
+    failPressureGameProjection(ERROR.INVALID_SOURCE, path, "MODAL_IDENTITY");
+  }
   const modalCard = sanitizeCenterCard(modal.card, eventId, `${path}.card`);
   if (modalCard.id !== card.id || sha256Canonical(modalCard) !== sha256Canonical(card)) {
     failPressureGameProjection(ERROR.INVALID_SOURCE, `${path}.card`, "MODAL_CARD_MISMATCH");
@@ -722,6 +748,8 @@ function sanitizeKeyModal(
     id: modal.id,
     type,
     priority: expectedPriority,
+    serverSequence: eventSequence,
+    sourceEventId: eventId,
     triggerId: modal.triggerId,
     stateVersion: modal.stateVersion,
     dedupeKey: modal.dedupeKey,

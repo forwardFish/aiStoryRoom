@@ -206,9 +206,17 @@ test("formal commitment appends to StoryEvent and emits A-Emotion work in the sa
   let compileCalls = 0;
   const compiler = {
     ...aEmotionBeatCompilerStub(),
-    compileFormalCommitment: () => {
+    compileFormalCommitment: (input: any) => {
       compileCalls += 1;
-      return [];
+      const job = sealAEmotionAuthorityOutboxJobV1({
+        schemaVersion: "a_emotion_authority_outbox_job_v1",
+        sourceKind: "FORMAL_COMMITMENT_COMMITTED",
+        runId: input.ledgerEvents[0]?.runId ?? "missing-run",
+        sourceId: input.commitmentEventHash,
+        sourceCommitHash: input.commitmentEventHash,
+        signalId: `formal:${input.commitmentEventHash}`,
+      });
+      return [{ dedupeKey: `aemotion:${job.jobHash}`, job, source: {} as never }];
     },
   };
   const repository = new PrismaWorkingLedgerRepository(fake.client, undefined, compiler);
@@ -253,6 +261,16 @@ test("formal commitment appends to StoryEvent and emits A-Emotion work in the sa
   });
   assert.equal(result.status, "APPENDED");
   assert.equal(compileCalls, 1);
+  const aEmotionRows = fake.outbox.filter(
+    (row) => row.taskType === "INTERACTION_COMPILE_REQUESTED",
+  );
+  assert.equal(aEmotionRows.length, 1);
+  assert.equal(aEmotionRows[0]?.sourceId, event!.eventHash);
+  assert.equal(aEmotionRows[0]?.sourceCommitHash, event!.eventHash);
+  assert.equal(aEmotionRows[0]?.dedupeKey, `aemotion:${aEmotionRows[0]?.payloadJson.jobHash}`);
+  assert(fake.calls.lastIndexOf("outbox.create") < fake.calls.lastIndexOf("event.create:PRESSURE_WORKING_LEDGER_EVENT"));
+  assert(fake.calls.lastIndexOf("event.create:PRESSURE_WORKING_LEDGER_EVENT") < fake.calls.lastIndexOf("runtime.cas"));
+  assert(fake.calls.lastIndexOf("runtime.cas") < fake.calls.lastIndexOf("tx.commit"));
   assert.equal(fake.actions.length, 0, "commitments do not create a DecisionAction row");
   assert.equal(projectWorkingLedger(await repository.read(projection.key)).state.revision, 0);
 });
@@ -817,18 +835,27 @@ class InteractionAccessFake {
           controlEpoch: input.snapshotControlEpoch ?? 7,
         })
       : null;
-    this.seatControlSnapshot = input.systemDefault
-      ? seatControlSnapshotFixture({
-          routeHash: input.snapshotRouteHash ?? this.runtime.routeHash,
-          controllerId: input.snapshotControllerId ?? input.subjectId,
-          controlEpoch: input.snapshotControlEpoch ?? 7,
-          stateHash: this.directive?.authorityStateHash ?? digest("seat-control-access"),
-        })
-      : null;
+    this.seatControlSnapshot = seatControlSnapshotFixture({
+      routeHash: input.snapshotRouteHash ?? this.runtime.routeHash,
+      controllerId: input.snapshotControllerId ?? input.subjectId,
+      controlEpoch: input.snapshotControlEpoch ?? (input.mode === "HUMAN" ? 4 : 7),
+      stateHash: this.directive?.authorityStateHash ?? digest("seat-control-access"),
+      actorMode: input.mode === "HUMAN" ? "HUMAN_ACTIVE" : "AI_ACTIVE",
+    });
     this.client = {
       $transaction: async <T>(operation: (tx: any) => Promise<T>): Promise<T> => operation({
         pressureChapterRuntime: {
           findUnique: async () => structuredClone(this.runtime),
+        },
+        storyPlayer: {
+          findUnique: async () => this.controlRows.length === 0 ? null : ({
+            id: "story-player-access",
+            runId: this.runtime.runId,
+            userId: this.subjectId,
+            playerType: "human",
+            status: "active",
+            role: structuredClone(this.controlRows[0]!.role),
+          }),
         },
         roleControl: {
           findMany: async () => structuredClone(this.controlRows),
@@ -1117,15 +1144,20 @@ function seatControlSnapshotFixture(input: {
   controllerId: string;
   controlEpoch: number;
   stateHash: string;
+  actorMode: "HUMAN_ACTIVE" | "AI_ACTIVE";
 }): SeatControlSnapshotV1 {
   const controls = PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId, index) => {
     const isActor = seatId === ACTOR;
     const controllerId = isActor ? input.controllerId : `human-${index + 1}`;
     return {
       seatId,
-      mode: isActor ? "AI_ACTIVE" as const : "HUMAN_ACTIVE" as const,
-      originalHumanControllerId: `human-${index}`,
-      designatedAiControllerId: isActor ? input.controllerId : `ai-${index}`,
+      mode: isActor ? input.actorMode : "HUMAN_ACTIVE" as const,
+      originalHumanControllerId: isActor && input.actorMode === "HUMAN_ACTIVE"
+        ? input.controllerId
+        : `human-${index}`,
+      designatedAiControllerId: isActor && input.actorMode === "AI_ACTIVE"
+        ? input.controllerId
+        : `ai-${index}`,
       activeControllerId: controllerId,
       controlEpoch: isActor ? input.controlEpoch : 1,
       submissionFenceToken: digest(`${seatId}:submit:${controllerId}`),

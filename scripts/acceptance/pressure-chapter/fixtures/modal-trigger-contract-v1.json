@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "pressure_modal_trigger_acceptance_fixture_v1",
+  "viewerSeatId": "seat-viewer",
+  "triggerCases": [
+    { "id": "cross-major", "contract": "CROSS_IMPACT", "severity": "MAJOR", "center": true, "feed": true, "modalType": null },
+    { "id": "cross-minor", "contract": "CROSS_IMPACT", "severity": "MINOR", "center": false, "feed": true, "modalType": null },
+    { "id": "promise-broken", "contract": "PROMISE", "transition": "BROKEN", "center": false, "feed": true, "modalType": null },
+    { "id": "promise-revealed", "contract": "PROMISE", "transition": "REVEALED", "disclosure": "CONFIRMED", "authorizedEvidence": true, "center": true, "feed": true, "modalType": "PROMISE_BROKEN" },
+    { "id": "crisis-entry", "contract": "CRISIS", "before": "WARN", "after": "DANGER", "center": true, "feed": true, "modalType": "CRISIS" },
+    { "id": "crisis-repeat", "contract": "CRISIS", "before": "DANGER", "after": "DANGER", "center": false, "feed": true, "modalType": null },
+    { "id": "victory-entry", "contract": "VICTORY", "before": false, "after": true, "center": true, "feed": true, "modalType": "STAGE_VICTORY", "terminal": false },
+    { "id": "victory-repeat", "contract": "VICTORY", "before": true, "after": true, "center": false, "feed": true, "modalType": null }
+  ]
+}

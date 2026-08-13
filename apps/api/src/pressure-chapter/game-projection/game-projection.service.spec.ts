@@ -20,7 +20,7 @@ import {
   type StoredRunRouteRecordV1,
 } from "../run-router";
 import {
-  type AEmotionFeedPagePortV1,
+  type AEmotionFeedSourcePagePortV1,
   type PressureGameCapabilitiesV1,
   type PressureGameChapterSourceV1,
   type PressureGameMetricProjectionV1,
@@ -162,9 +162,10 @@ test("API selects the viewer-safe vocabulary and drops raw secrets from every so
     eventSequence: 1,
     occurredAt: "2026-08-12T00:00:00.000Z",
   };
+  const expectedFeedProjectionHash = sha256Canonical(feedProjection);
   harness.feedPage.items.push({
     ...feedProjection,
-    projectionHash: sha256Canonical(feedProjection),
+    projectionHash: expectedFeedProjectionHash,
     isUnread: true,
     isAcknowledged: false,
     isResolved: false,
@@ -181,7 +182,8 @@ test("API selects the viewer-safe vocabulary and drops raw secrets from every so
     subjectId: "user-viewer",
   });
   const serialized = JSON.stringify(projection);
-  assert.doesNotMatch(serialized, /NEVER_SERIALIZE|fact\.private\.peer|repositoryCursorSecret|rawFactRefs|rawOtherSeatSecret|rawProviderInstruction|providerRawSecret/u);
+  assert.doesNotMatch(serialized, /NEVER_SERIALIZE|fact\.private\.peer|fact\.viewer\.allowed|repositoryCursorSecret|rawFactRefs|rawOtherSeatSecret|rawProviderInstruction|providerRawSecret/u);
+  assert.equal(projection.feedPage.items[0]!.projectionHash, expectedFeedProjectionHash);
   assert.deepEqual(Object.keys(projection.resources[0]!).sort(), [
     "displayValue",
     "label",
@@ -550,7 +552,7 @@ async function createHarness(input: {
     contentHash: digest(`${input.runId}:narrative-content`),
     renderMode: "PROVIDER",
   };
-  const feedPage: AEmotionFeedPagePortV1 = {
+  const feedPage: AEmotionFeedSourcePagePortV1 = {
     schemaVersion: "a_emotion_feed_page_v1",
     roomId: input.runId,
     runId: input.runId,

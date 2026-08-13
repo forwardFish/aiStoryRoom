@@ -1,0 +1,15 @@
+{
+  "runId": "REPLACE_BASE_RUN",
+  "viewers": [
+    { "name": "viewer-a", "seatId": "REPLACE_SEAT_A", "cookieName": "session", "cookieValue": "REPLACE_COOKIE_A", "privateMarkers": [] },
+    { "name": "viewer-b", "seatId": "REPLACE_SEAT_B", "cookieName": "session", "cookieValue": "REPLACE_COOKIE_B", "privateMarkers": [] }
+  ],
+  "modalScenarios": {
+    "layout": { "runId": "REPLACE_LAYOUT_RUN", "cookieName": "session", "cookieValue": "REPLACE_COOKIE" },
+    "feed": { "runId": "REPLACE_FEED_RUN", "cookieName": "session", "cookieValue": "REPLACE_COOKIE" },
+    "center": { "runId": "REPLACE_CENTER_RUN", "cookieName": "session", "cookieValue": "REPLACE_COOKIE" },
+    "promise": { "runId": "REPLACE_PROMISE_RUN", "cookieName": "session", "cookieValue": "REPLACE_COOKIE" },
+    "crisis": { "runId": "REPLACE_CRISIS_RUN", "cookieName": "session", "cookieValue": "REPLACE_COOKIE" },
+    "victory": { "runId": "REPLACE_VICTORY_RUN", "cookieName": "session", "cookieValue": "REPLACE_COOKIE" }
+  }
+}

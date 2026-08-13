@@ -132,9 +132,17 @@ test("an AI-only audience is acknowledged as a validated zero-delivery no-op", a
   assert.equal(harness.outbox.status, "COMPLETED");
 });
 
-test("crash after pipeline ingest but before ack replays journal and viewer projection without duplication", async () => {
-  const pair = authorityPair();
-  const harness = consumerHarness(pair, [viewerContext(MERCHANT, pair.source.sourceCommitHash)]);
+test("crash after modal ingest but before ack retries without duplicate event, delivery, or modal", async () => {
+  const pair = crisisAuthorityPair();
+  const context = viewerContext(MERCHANT, pair.source.sourceCommitHash);
+  context.viewer.authorizedEvidenceRefs = ["evidence:emperor-trust-danger-entry"];
+  context.contextHash = sha256Canonical({
+    sourceCommitHash: pair.source.sourceCommitHash,
+    viewer: context.viewer,
+    priorProjectionHash: null,
+    priorAggregationKey: null,
+  });
+  const harness = consumerHarness(pair, [context]);
   harness.outbox.crashNextAcknowledge = true;
 
   await assert.rejects(harness.consumer.consumeNext("worker-crash"), /SIMULATED_CRASH_AFTER_INGEST/u);
@@ -150,6 +158,18 @@ test("crash after pipeline ingest but before ack replays journal and viewer proj
   assert.equal(harness.journal.writes, 1);
   assert.equal(harness.repository.aggregateWrites, 1);
   assert.equal(harness.repository.deliveryWrites, 1);
+  const page = await harness.feed.list({
+    roomId: pair.source.roomId,
+    runId: pair.source.runId,
+    viewerSeatId: MERCHANT,
+  });
+  assert.equal(page.items.length, 1);
+  assert.equal(page.items[0]?.keyModal?.dedupeKey, [
+    MERCHANT,
+    "CRISIS",
+    "metric:emperor-trust:danger-entry",
+    1,
+  ].join(":"));
 });
 
 test("missing committed authority retries with its fence and dead-letters at the attempt budget", async () => {
@@ -329,6 +349,53 @@ function authorityPair(overrides: Partial<{
     },
   }, job);
   return { job, source };
+}
+
+function crisisAuthorityPair(): {
+  job: AEmotionAuthorityOutboxJobV1;
+  source: AEmotionCommittedAuthoritySourceV1;
+} {
+  const pair = authorityPair();
+  const { sourceBindingHash: _sourceBindingHash, ...draft } = pair.source;
+  return {
+    job: pair.job,
+    source: sealAEmotionCommittedAuthoritySourceV1({
+      ...draft,
+      signal: {
+        ...draft.signal,
+        eventCode: "EMPEROR_TRUST_DANGER_ENTERED",
+        eventFamily: "EMPEROR_TRUST",
+        severity: "CRITICAL",
+        impacts: [{
+          targetSeatId: MERCHANT,
+          visibility: "TARGET_ONLY",
+          type: "RISK",
+          key: "emperorTrust",
+          before: 23,
+          after: 18,
+          delta: -5,
+          effectCode: "EMPEROR_TRUST_DANGER",
+        }],
+        metricTransitionId: "metric:emperor-trust:danger-entry",
+        disclosure: "CONFIRMED",
+        evidenceRefs: ["evidence:emperor-trust-danger-entry"],
+        presentation: {
+          recommendedPresentation: "KEY_MODAL",
+          centerCardType: "CRISIS",
+          responseOptions: [
+            { code: "RESPOND_NOW", preferredEntry: "TOKEN", consumesManeuverOnSubmit: true },
+            { code: "HANDLE_LATER", preferredEntry: "DEFER", consumesManeuverOnSubmit: false },
+            { code: "VIEW_DETAILS", preferredEntry: "DEFER", consumesManeuverOnSubmit: false },
+          ],
+          modalTrigger: {
+            type: "CRISIS",
+            triggerId: "metric:emperor-trust:danger-entry",
+            stateVersion: 1,
+          },
+        },
+      },
+    }, pair.job),
+  };
 }
 
 function viewerContext(

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { access, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -200,6 +200,145 @@ test('real Chrome renders two isolated Pressure viewers without cross-seat leaka
     }
   }
 });
+
+test('real /game preserves frozen layout and modal lifecycle across close, refresh, BFCache and reconnect', { timeout: 240_000 }, async (t) => {
+  if (skipUnlessEnvironment(t, [
+    'PRESSURE_CHAPTER_ALLOW_BROWSER_TESTS',
+    'PRESSURE_CHAPTER_ALLOW_MODAL_TRIGGER_TESTS',
+    'PRESSURE_CHAPTER_TEST_SCOPE',
+    'PRESSURE_CHAPTER_TEST_BASE_URL',
+    'PRESSURE_CHAPTER_BROWSER_AUTH_FIXTURE',
+    'PRESSURE_MODAL_TRIGGER_VISUAL_REFERENCE_DIR',
+  ])) return;
+  assert.equal(process.env.PRESSURE_CHAPTER_ALLOW_BROWSER_TESTS, '1');
+  assert.equal(process.env.PRESSURE_CHAPTER_ALLOW_MODAL_TRIGGER_TESTS, '1');
+  assert.equal(process.env.PRESSURE_CHAPTER_TEST_SCOPE, 'non-production');
+  assert.notEqual(process.env.NODE_ENV, 'production');
+
+  const baseUrl = normalizeBaseUrl(process.env.PRESSURE_CHAPTER_TEST_BASE_URL);
+  const fixture = await readJsonFixture(process.env.PRESSURE_CHAPTER_BROWSER_AUTH_FIXTURE, 'PRESSURE_CHAPTER_BROWSER_AUTH_FIXTURE');
+  const scenarios = fixture.modalScenarios;
+  assert.ok(scenarios && typeof scenarios === 'object', 'browser fixture requires modalScenarios');
+  const expected = {
+    layout: { reference: '01', cardType: null, modalType: null },
+    feed: { reference: '02', cardType: null, modalType: null },
+    center: { reference: '03', cardType: 'CROSS_IMPACT', modalType: null },
+    promise: { reference: '04', cardType: 'PROMISE_BROKEN', modalType: 'PROMISE_BROKEN' },
+    crisis: { reference: '05', cardType: 'CRISIS', modalType: 'CRISIS' },
+    victory: { reference: '06', cardType: 'STAGE_VICTORY', modalType: 'STAGE_VICTORY' },
+  };
+  const referenceDirectory = path.resolve(process.env.PRESSURE_MODAL_TRIGGER_VISUAL_REFERENCE_DIR);
+  const outputDirectory = await mkdtemp(path.join(os.tmpdir(), 'pressure-modal-visual-'));
+  t.after(async () => rm(outputDirectory, { recursive: true, force: true }));
+  const chromeBinary = resolveChromeBinary();
+
+  for (const [name, contract] of Object.entries(expected)) {
+    const scenario = scenarios[name];
+    const runId = requireFixtureString(scenario, 'runId', `modalScenarios.${name}`);
+    const cookieName = requireFixtureString(scenario, 'cookieName', `modalScenarios.${name}`);
+    const cookieValue = requireFixtureString(scenario, 'cookieValue', `modalScenarios.${name}`);
+    const referencePath = await resolveReference(referenceDirectory, contract.reference);
+    const profileDirectory = await mkdtemp(path.join(os.tmpdir(), `pressure-modal-${name}-`));
+    t.after(async () => rm(profileDirectory, { recursive: true, force: true }));
+    const browser = await launchBrowser(chromeBinary, profileDirectory);
+    t.after(() => browser.close());
+    const { cdp } = browser;
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+    await cdp.send('Network.setCookie', {
+      name: cookieName, value: cookieValue, url: baseUrl, httpOnly: true,
+      sameSite: 'Lax', secure: baseUrl.startsWith('https:'),
+    });
+    const gameUrl = new URL(`/game?runId=${encodeURIComponent(runId)}`, `${baseUrl}/`).href;
+    await cdp.send('Page.navigate', { url: gameUrl });
+    await waitForGame(cdp, runId, `${name} initial render`);
+    const dom = await inspectModalDom(cdp);
+    assert.equal(dom.path, '/game', `${name}: acceptance must use real /game`);
+    assert.equal(dom.columnCount, 3, `${name}: frozen three-column layout changed`);
+    assert.equal(dom.feedTabCount, 3, `${name}: frozen Feed tabs changed`);
+    assert.equal(dom.cardType, contract.cardType, `${name}: center card mismatch`);
+    assert.equal(dom.modalType, contract.modalType, `${name}: modal mismatch`);
+    assert.equal(dom.modalCount, contract.modalType ? 1 : 0, `${name}: duplicate modal DOM`);
+
+    const screenshot = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, fromSurface: true });
+    const actualPath = path.join(outputDirectory, `${contract.reference}-${name}.png`);
+    await writeFile(actualPath, Buffer.from(screenshot.data, 'base64'));
+    execFileSync(process.env.PYTHON || 'python3', [
+      'scripts/acceptance/pressure-chapter/modal-trigger-visual-diff.py',
+      referencePath,
+      actualPath,
+    ], { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+
+    if (contract.modalType) {
+      const closeResult = await evaluate(cdp, `(() => {
+        const close = document.querySelector('[data-testid="pressure-modal-close"]');
+        if (!close) return false;
+        close.click();
+        return true;
+      })()`);
+      assert.equal(closeResult, true, `${name}: modal close control absent`);
+      await waitFor(async () => (await inspectModalDom(cdp)).modalCount === 0, `${name} modal close`, 10_000);
+      assert.equal((await inspectModalDom(cdp)).cardType, contract.cardType, `${name}: closing modal removed center card`);
+      await cdp.send('Page.reload', { ignoreCache: true });
+      await waitForGame(cdp, runId, `${name} refresh`);
+      const refreshed = await inspectModalDom(cdp);
+      assert.equal(refreshed.modalCount, 0, `${name}: acknowledged modal repeated after refresh`);
+      assert.equal(refreshed.cardType, contract.cardType, `${name}: center card did not persist after refresh`);
+    }
+
+    if (name === 'center') {
+      const doubleClick = await evaluate(cdp, `(() => {
+        const action = document.querySelector('[data-testid="pressure-center-card"] [data-response-action]');
+        if (!action) return { clicked: false };
+        action.click(); action.click();
+        return { clicked: true, workbenches: document.querySelectorAll('[data-testid="pressure-workbench-host"] .maneuver-workbench').length };
+      })()`);
+      assert.equal(doubleClick.clicked, true, 'center card response control absent');
+      assert.ok(doubleClick.workbenches <= 1, 'duplicate click opened duplicate workspaces');
+
+      await cdp.send('Page.navigate', { url: new URL('/', `${baseUrl}/`).href });
+      await waitFor(async () => (await evaluate(cdp, 'location.pathname')) === '/', 'BFCache away navigation', 15_000);
+      await cdp.send('Page.goBack');
+      await waitForGame(cdp, runId, 'BFCache return');
+      assert.equal((await inspectModalDom(cdp)).cardType, 'CROSS_IMPACT', 'BFCache return lost center card');
+
+      await cdp.send('Network.emulateNetworkConditions', {
+        offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0,
+      });
+      await cdp.send('Network.emulateNetworkConditions', {
+        offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1,
+      });
+      await cdp.send('Page.reload', { ignoreCache: true });
+      await waitForGame(cdp, runId, 'disconnect/reconnect');
+      assert.equal((await inspectModalDom(cdp)).cardType, 'CROSS_IMPACT', 'reconnect lost center card');
+    }
+    assert.deepEqual(browser.exceptions, [], `${name}: runtime exceptions`);
+    assert.deepEqual(browser.networkFailures.filter((failure) => !failure.canceled), [], `${name}: network failures`);
+    browser.close();
+  }
+});
+
+async function waitForGame(cdp, runId, label) {
+  await waitFor(async () => await evaluate(cdp, `document.querySelector('[data-testid="pressure-chapter-game-v1"]')?.dataset?.runId === ${JSON.stringify(runId)}`), label, 30_000);
+}
+
+async function inspectModalDom(cdp) {
+  return evaluate(cdp, `(() => ({
+    path: location.pathname,
+    columnCount: document.querySelectorAll('[data-testid="pressure-left-rail"], [data-testid="pressure-center-stage"], [data-testid="pressure-right-rail"]').length,
+    feedTabCount: document.querySelectorAll('[data-testid="pressure-feed"] [data-feed-category]').length,
+    cardType: document.querySelector('[data-testid="pressure-center-card"]')?.dataset?.cardType || null,
+    modalType: document.querySelector('[data-testid="pressure-key-modal"]')?.dataset?.modalType || null,
+    modalCount: document.querySelectorAll('[data-testid="pressure-key-modal"]').length,
+  }))()`);
+}
+
+async function resolveReference(directory, stem) {
+  for (const extension of ['png', 'jpg', 'jpeg', 'webp']) {
+    const candidate = path.join(directory, `${stem}.${extension}`);
+    try { await access(candidate); return candidate; } catch {}
+  }
+  assert.fail(`missing visual reference ${stem}.(png|jpg|jpeg|webp) in ${directory}`);
+}
 
 async function launchBrowser(executable, profileDirectory) {
   const port = await reservePort();

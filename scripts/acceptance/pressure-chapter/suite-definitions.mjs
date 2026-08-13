@@ -13,6 +13,65 @@ const typecheck = (packageName) => ({
 });
 
 export const PRESSURE_CHAPTER_SUITES = Object.freeze({
+  'modal-trigger-contract': {
+    description: 'Environment-free modal trigger oracle, privacy, transaction and static scope guards',
+    steps: [{
+      id: 'modal-trigger-contract-tests',
+      executable: process.execPath,
+      args: ['--test', '{files}'],
+      cwd: '.',
+      globs: ['scripts/acceptance/pressure-chapter/cases/contracts/modal-trigger-*.test.mjs'],
+      minMatches: 2,
+    }],
+  },
+  'modal-trigger-live': {
+    description: 'Real non-production API and browser closure for the modal trigger chain',
+    requiredEnvironment: [
+      { name: 'PRESSURE_CHAPTER_ALLOW_MODAL_TRIGGER_TESTS', equals: '1' },
+      { name: 'PRESSURE_CHAPTER_TEST_SCOPE', equals: 'non-production' },
+      { name: 'PRESSURE_CHAPTER_DB_SCOPE', equals: 'non-production' },
+      { name: 'PRESSURE_CHAPTER_DATABASE_PROVIDER', equals: 'supabase' },
+      { name: 'DATABASE_URL', present: true },
+      { name: 'PRESSURE_CHAPTER_ALLOWED_SUPABASE_PROJECT_SHA256', matches: '^[0-9a-fA-F]{64}$' },
+      { name: 'PRESSURE_CHAPTER_TEST_BASE_URL', present: true },
+      { name: 'PRESSURE_MODAL_TRIGGER_LIVE_FIXTURE', present: true },
+      { name: 'PRESSURE_MODAL_TRIGGER_PROVIDER_TRACE', present: true },
+      { name: 'PRESSURE_CHAPTER_BROWSER_AUTH_FIXTURE', present: true },
+      { name: 'PRESSURE_MODAL_TRIGGER_VISUAL_REFERENCE_DIR', present: true },
+    ],
+    forbiddenEnvironment: [{ name: 'NODE_ENV', equals: 'production' }],
+    steps: [
+      {
+        id: 'modal-trigger-live-api-tests',
+        executable: process.execPath,
+        args: ['--test', '{files}'],
+        cwd: '.',
+        globs: [
+          'scripts/acceptance/pressure-chapter/cases/e2e/modal-trigger-chain-live.test.mjs',
+          'scripts/acceptance/pressure-chapter/cases/e2e/solo-ai-zero-provider-live.test.mjs',
+        ],
+        minMatches: 2,
+      },
+      {
+        id: 'modal-trigger-fault-db-tests',
+        executable: process.execPath,
+        args: ['--import', 'tsx', '--test', '{files}'],
+        cwd: '.',
+        environment: { PRESSURE_CHAPTER_ALLOW_FAULT_TESTS: '1' },
+        globs: ['scripts/acceptance/pressure-chapter/cases/fault/modal-ledger-outbox-live.test.mjs'],
+        minMatches: 1,
+      },
+      {
+        id: 'modal-trigger-real-browser-tests',
+        executable: process.execPath,
+        args: ['--test', '{files}'],
+        cwd: '.',
+        environment: { PRESSURE_CHAPTER_ALLOW_BROWSER_TESTS: '1' },
+        globs: ['scripts/acceptance/pressure-chapter/cases/browser/real-multirole-pressure.test.mjs'],
+        minMatches: 1,
+      },
+    ],
+  },
   contracts: {
     description: 'Pressure Chapter shared contracts and frozen route registry',
     steps: [

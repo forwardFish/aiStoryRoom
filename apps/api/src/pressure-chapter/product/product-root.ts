@@ -35,6 +35,7 @@ import {
   type PressureChapterHttpDecisionCompilerPort,
   type PressureChapterHttpGamePort,
   type PressureChapterHttpReplayPort,
+  type PressureChapterHttpResponseAcknowledgerPort,
   type PressureChapterHttpResultPort,
   type PressureChapterHttpRoutePort,
 } from "../http";
@@ -44,6 +45,8 @@ import {
 } from "../http-production";
 import {
   ExistingN7FinaleOutboxConfirmationAdapterV1,
+  AEmotionResponseEventAcknowledgerAdapterV1,
+  AEmotionResponseEventAuthorityAdapterV1,
   PressureDecisionCommandCompilerV1,
   RequiredSeatsDecisionCloseAdapterV1,
   SangtianAuthoredChapterContentAdapterV1,
@@ -182,6 +185,7 @@ export interface PressureChapterProductRootV1 {
     access: PressureChapterHttpAccessPort;
     routes: PressureChapterHttpRoutePort;
     game: PressureChapterHttpGamePort;
+    responseAcknowledger: PressureChapterHttpResponseAcknowledgerPort;
     decisionCompiler: PressureChapterHttpDecisionCompilerPort;
     actions: PressureChapterHttpActionPort;
     chat: PressureChapterHttpChatPort;
@@ -475,11 +479,19 @@ export async function createPressureChapterProductRootV1(input: {
   );
   const runtimeFacets = pressureHttpRuntimeFacetsV1(runtime);
   const httpRoutes = pressureHttpRouteReadPortV1(routes);
+  const responseAuthority = new AEmotionResponseEventAuthorityAdapterV1(
+    aEmotion.repository,
+  );
+  const responseAcknowledger = new AEmotionResponseEventAcknowledgerAdapterV1(
+    responseAuthority,
+    aEmotion.feed,
+  );
   const decisionCompiler = new PressureDecisionCommandCompilerV1(
     gameProjection,
     projections,
     content,
     new SangtianServerDecisionWorkingIntentCompilerV1(release),
+    responseAuthority,
   );
   const chat = new PressureChapterChatService(
     interactionAccess,
@@ -586,6 +598,7 @@ export async function createPressureChapterProductRootV1(input: {
     access: httpProduction.access,
     routes: httpRoutes,
     game: gameProjection,
+    responseAcknowledger,
     decisionCompiler,
     actions: runtimeFacets.actions,
     chat,
@@ -597,6 +610,7 @@ export async function createPressureChapterProductRootV1(input: {
     httpPorts.access,
     httpPorts.routes,
     httpPorts.game,
+    httpPorts.responseAcknowledger,
     httpPorts.decisionCompiler,
     httpPorts.actions,
     httpPorts.chat,

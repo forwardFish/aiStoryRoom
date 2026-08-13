@@ -1,4 +1,4 @@
-import type { AEmotionFeedPageV1 } from "../a-emotion/contracts";
+import type { AEmotionFeedItemV1 } from "../a-emotion/contracts";
 import type { ParticipantModeV1 } from "../contracts/route";
 import type { SeatIdV1, TrackIdV1 } from "../contracts/domain";
 import type {
@@ -114,6 +114,22 @@ export interface PressureGameNarrativeProjectionV1 {
   renderMode: "PROVIDER" | "AUTHORED_FALLBACK" | null;
 }
 
+export type PressureGameAEmotionFeedItemV1 = Omit<
+  AEmotionFeedItemV1,
+  "knownFactRefs"
+>;
+
+export interface PressureGameAEmotionFeedPageV1 {
+  schemaVersion: "a_emotion_feed_page_v1";
+  roomId: string;
+  runId: string;
+  viewerSeatId: SeatIdV1;
+  items: PressureGameAEmotionFeedItemV1[];
+  unreadCount: number;
+  nextCursor: string | null;
+  serverSequence: number;
+}
+
 export interface PressureChapterGameProjectionV1 {
   schemaVersion: typeof PRESSURE_CHAPTER_GAME_PROJECTION_SCHEMA_V1;
   projectionVersion: number;
@@ -141,7 +157,7 @@ export interface PressureChapterGameProjectionV1 {
     allowedActionTypes: string[];
   };
   narrative: PressureGameNarrativeProjectionV1;
-  feedPage: AEmotionFeedPageV1;
+  feedPage: PressureGameAEmotionFeedPageV1;
   projectionHash: string;
 }
 
@@ -165,12 +181,13 @@ export interface PressureChapterSubmitDecisionCommandV1
   optionCode: string | null;
   customText: string | null;
   /**
-   * Viewer-visible A-Emotion event selected from the current feed. The server
-   * accepts it only for the two frozen N6 investigation actions and compiles
-   * the canonical responseToEventId payload itself. Every other action must
-   * submit null.
+   * Viewer-visible A-Emotion event selected from a server projection. The
+   * server reloads its current aggregate/delivery and alone compiles the
+   * canonical responseToEventId authority payload.
    */
   sourceEventId: string | null;
+  /** Server-projected response option code paired with sourceEventId. */
+  responseActionCode: string | null;
 }
 
 export interface PressureChapterOpenWorkbenchCommandV1

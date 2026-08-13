@@ -131,21 +131,30 @@ export interface PressureGameNarrativeProjectionV1 {
   renderMode: "PROVIDER" | "AUTHORED_FALLBACK" | null;
 }
 
-export interface AEmotionFeedItemPortV1 extends AEmotionViewerProjectionPortV1 {
+export interface AEmotionFeedSourceItemPortV1 extends AEmotionViewerProjectionPortV1 {
   isUnread: boolean;
   isAcknowledged: boolean;
   isResolved: boolean;
 }
 
-export interface AEmotionFeedPagePortV1 {
+export type AEmotionFeedItemPortV1 = Omit<
+  AEmotionFeedSourceItemPortV1,
+  "knownFactRefs"
+>;
+
+export interface AEmotionFeedSourcePagePortV1 {
   schemaVersion: "a_emotion_feed_page_v1";
   roomId: string;
   runId: string;
   viewerSeatId: SeatIdV1;
-  items: AEmotionFeedItemPortV1[];
+  items: AEmotionFeedSourceItemPortV1[];
   unreadCount: number;
   nextCursor: string | null;
   serverSequence: number;
+}
+
+export interface AEmotionFeedPagePortV1 extends Omit<AEmotionFeedSourcePagePortV1, "items"> {
+  items: AEmotionFeedItemPortV1[];
 }
 
 export interface PressureChapterGameProjectionV1 {
@@ -242,7 +251,7 @@ export interface PressureGameAEmotionFeedPort {
     viewerSeatId: SeatIdV1;
     cursor: string | null;
     limit: number;
-  }): Promise<AEmotionFeedPagePortV1>;
+  }): Promise<AEmotionFeedSourcePagePortV1>;
 }
 
 /** Server policy output; Web is forbidden from inferring these booleans. */

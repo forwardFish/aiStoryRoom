@@ -52,6 +52,33 @@ const INVESTIGATION_ACTION_TYPES = Object.freeze([
 
 type InvestigationActionTypeV1 = (typeof INVESTIGATION_ACTION_TYPES)[number];
 
+export interface PressureResponseEventAuthorityV1 {
+  roomId: string;
+  runId: string;
+  viewerSeatId: SeatIdV1;
+  sourceEventId: string;
+  projectionVersion: number;
+  projectionHash: string;
+  disclosure: "HIDDEN" | "SUSPECTED" | "CONFIRMED";
+  responseOptions: Array<{
+    code: string;
+    preferredEntry: "TALK" | "INVESTIGATE" | "TOKEN" | "PLAN" | "DEFER";
+    consumesManeuverOnSubmit: boolean;
+  }>;
+  acknowledged: boolean;
+  resolved: boolean;
+}
+
+/** Read-only, viewer-scoped authority required for every response command. */
+export interface PressureResponseEventAuthorityPortV1 {
+  readCurrent(input: Readonly<{
+    roomId: string;
+    runId: string;
+    viewerSeatId: SeatIdV1;
+    sourceEventId: string;
+  }>): Promise<PressureResponseEventAuthorityV1 | null>;
+}
+
 /** Explicit test fixture only; production composition must use the release compiler. */
 export class EmptyServerDecisionWorkingIntentCompilerV1
 implements ServerDecisionWorkingIntentCompilerPortV1 {
@@ -111,6 +138,7 @@ implements PressureChapterHttpDecisionCompilerPort {
     private readonly working: WorkingProjectionReaderPort,
     private readonly content: AuthoredChapterContentPort,
     private readonly intents: ServerDecisionWorkingIntentCompilerPortV1,
+    private readonly responseEvents: PressureResponseEventAuthorityPortV1 | null = null,
   ) {}
 
   async compile(input: Readonly<{
@@ -201,17 +229,18 @@ implements PressureChapterHttpDecisionCompilerPort {
       seatId: publicCommand.seatId,
       actionType,
     }));
-    const investigation = compileInvestigationBinding({
+    const response = await compileResponseBinding({
       game,
       publicCommand,
       actionType,
       releasedIntent,
+      responseEvents: this.responseEvents,
     });
-    const payload: CanonicalJsonObject = investigation?.payload ?? {
+    const payload: CanonicalJsonObject = response?.payload ?? {
       optionCode: publicCommand.optionCode,
       customText: publicCommand.customText,
     };
-    const intent = investigation?.intent ?? releasedIntent;
+    const intent = response?.intent ?? releasedIntent;
     const prior = projection.actionsByIdempotencyKey.get(publicCommand.idempotencyKey);
     if (prior) {
       if (
@@ -335,6 +364,7 @@ function validatePublicCommand(
     "chapterRuntimeId", "chapterId", "seatId", "controlEpoch",
     "expectedWorkingRevision", "decisionPointId", "submissionFenceToken",
     "idempotencyKey", "optionCode", "customText", "sourceEventId",
+    "responseActionCode",
   ].sort(compareCanonicalText);
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     mismatch("decision.publicCommand", "OBJECT");
@@ -360,24 +390,71 @@ function validatePublicCommand(
     || (value.customText !== null && typeof value.customText !== "string")
     || (value.sourceEventId !== null
       && (typeof value.sourceEventId !== "string" || !value.sourceEventId.trim()))
+    || (value.responseActionCode !== null
+      && (typeof value.responseActionCode !== "string" || !value.responseActionCode.trim()))
+    || ((value.sourceEventId === null) !== (value.responseActionCode === null))
   ) {
     mismatch("decision.publicCommand", "INVALID_FIELDS");
   }
   return structuredClone(value);
 }
 
-function compileInvestigationBinding(input: Readonly<{
+async function compileResponseBinding(input: Readonly<{
   game: PressureChapterGameProjectionV1;
   publicCommand: PressureChapterSubmitDecisionCommandV1;
   actionType: string;
   releasedIntent: WorkingActionIntentV1;
-}>): { payload: CanonicalJsonObject; intent: WorkingActionIntentV1 } | null {
+  responseEvents: PressureResponseEventAuthorityPortV1 | null;
+}>): Promise<{ payload: CanonicalJsonObject; intent: WorkingActionIntentV1 } | null> {
   const actionType = INVESTIGATION_ACTION_TYPES.find((candidate) => candidate === input.actionType);
-  if (!actionType) {
-    if (input.publicCommand.sourceEventId !== null) {
-      mismatch("decision.sourceEventId", "NON_INVESTIGATION_MUST_BE_NULL");
-    }
+  if (input.publicCommand.sourceEventId === null) {
+    if (actionType) mismatch("decision.responseBinding", "INVESTIGATION_RESPONSE_REQUIRED");
     return null;
+  }
+  if (!input.responseEvents || input.publicCommand.responseActionCode === null) {
+    mismatch("decision.responseBinding", "AUTHORITY_READER_REQUIRED");
+  }
+  const source = await input.responseEvents.readCurrent({
+    roomId: input.game.roomId,
+    runId: input.game.runId,
+    viewerSeatId: input.game.viewer.seatId,
+    sourceEventId: input.publicCommand.sourceEventId,
+  });
+  const responseOption = source?.responseOptions.find(
+    (option) => option.code === input.publicCommand.responseActionCode,
+  );
+  const decisionOption = input.game.decision?.options.find(
+    (option) => option.code === input.publicCommand.optionCode,
+  );
+  if (
+    !source
+    || source.roomId !== input.game.roomId
+    || source.runId !== input.game.runId
+    || source.viewerSeatId !== input.game.viewer.seatId
+    || source.sourceEventId !== input.publicCommand.sourceEventId
+    || !source.acknowledged
+    || source.resolved
+    || !responseOption
+    || responseOption.preferredEntry === "DEFER"
+    || !decisionOption
+    || decisionOption.actionType !== input.actionType
+    || decisionOption.preferredEntry !== responseOption.preferredEntry
+    || input.publicCommand.responseActionCode !== input.actionType
+  ) {
+    mismatch("decision.responseBinding", "NOT_CURRENT_VISIBLE_ACKNOWLEDGED_OR_ALLOWED");
+  }
+  if (!actionType) {
+    return {
+      payload: {
+        optionCode: input.publicCommand.optionCode,
+        customText: input.publicCommand.customText,
+        responseToEventId: source.sourceEventId,
+        responseActionCode: input.publicCommand.responseActionCode,
+        responseWorkbench: responseOption.preferredEntry,
+        sourceProjectionVersion: source.projectionVersion,
+      },
+      intent: input.releasedIntent,
+    };
   }
   if (
     input.publicCommand.chapterId !== "N6"
@@ -385,34 +462,17 @@ function compileInvestigationBinding(input: Readonly<{
     || input.publicCommand.seatId !== "qingliu_law"
     || input.publicCommand.customText !== null
     || input.publicCommand.optionCode !== actionType
-    || input.publicCommand.sourceEventId === null
-  ) {
-    mismatch("decision.investigation", "FROZEN_N6_CONTEXT_REQUIRED");
-  }
-  const source = input.game.feedPage.items.find(
-    (item) => item.eventId === input.publicCommand.sourceEventId,
-  );
-  const expectedDisclosure = actionType === "INVESTIGATE_LEDGER_SOURCE"
-    ? "HIDDEN"
-    : "SUSPECTED";
-  if (
-    !source
-    || source.roomId !== input.game.roomId
-    || source.runId !== input.game.runId
-    || source.viewerSeatId !== "qingliu_law"
-    || !source.isAcknowledged
-    || source.isResolved
-    || source.disclosure !== expectedDisclosure
-    || !source.responseOptions.some((option) => option.code === actionType)
-  ) {
-    mismatch("decision.sourceEventId", "NOT_VISIBLE_ACKNOWLEDGED_LATEST_SOURCE");
+  ) mismatch("decision.investigation", "FROZEN_N6_CONTEXT_REQUIRED");
+  const expectedDisclosure = actionType === "INVESTIGATE_LEDGER_SOURCE" ? "HIDDEN" : "SUSPECTED";
+  if (source.disclosure !== expectedDisclosure) {
+    mismatch("decision.responseBinding", "DISCLOSURE_NOT_ALLOWED");
   }
   const evidenceRefs = actionType === "CONFIRM_LEDGER_SOURCE_WITH_EVIDENCE"
     ? [`evidence.a-emotion.${sha256Canonical({
         schemaVersion: "pressure_a_emotion_investigation_evidence_v1",
         runId: input.game.runId,
         viewerSeatId: input.game.viewer.seatId,
-        sourceEventId: source.eventId,
+        sourceEventId: source.sourceEventId,
         sourceProjectionVersion: source.projectionVersion,
         sourceProjectionHash: source.projectionHash,
         disclosure: source.disclosure,
@@ -422,7 +482,7 @@ function compileInvestigationBinding(input: Readonly<{
     payload: {
       interactionKind: "A_EMOTION_INVESTIGATION",
       investigationCode: actionType as InvestigationActionTypeV1,
-      responseToEventId: source.eventId,
+      responseToEventId: source.sourceEventId,
       sharedObjectId: "original-grain-ledger",
     },
     intent: canonicalizeWorkingActionIntentV1({

@@ -36,6 +36,7 @@ import type {
   PressureChapterHttpDecisionCompilerPort,
   PressureChapterHttpGamePort,
   PressureChapterHttpReplayPort,
+  PressureChapterHttpResponseAcknowledgerPort,
   PressureChapterHttpResultPort,
   PressureChapterHttpRoutePort,
 } from "./contracts";
@@ -166,6 +167,8 @@ test("changed public input conflicts and client authority or intent fields fail 
     { requestFingerprint: sha256Canonical("client-fingerprint") },
     { sourceEventId: " " },
     { sourceEventId: 42 },
+    { responseActionCode: " " },
+    { responseActionCode: 42 },
   ];
   for (const injected of forbiddenClientAuthority) {
     await expectHttpCode(
@@ -184,7 +187,52 @@ test("changed public input conflicts and client authority or intent fields fail 
     PRESSURE_CHAPTER_HTTP_ERROR_CODES.INPUT_INVALID,
     400,
   );
+  const { responseActionCode: _omittedResponseActionCode, ...missingResponseActionCode } = first;
+  await expectHttpCode(
+    () => harness.facade.submitDecision(harness.principal, ROOM_ID, missingResponseActionCode),
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.INPUT_INVALID,
+    400,
+  );
   assert.equal(harness.compilerInputs.length, 2, "invalid bodies never reach the compiler");
+});
+
+test("response binding is transported through the existing endpoint with replay and collision semantics", async () => {
+  const harness = createHarness();
+  const routeHash = harness.stored.snapshot.routeHash;
+  const body = {
+    ...decisionCommand(routeHash),
+    idempotencyKey: "response-http-key-1",
+    sourceEventId: "safe-projected-event-1",
+    responseActionCode: "SIGNED_RESPONSE_A",
+  };
+  await harness.facade.submitDecision(harness.principal, ROOM_ID, body);
+  await harness.facade.submitDecision(harness.principal, ROOM_ID, structuredClone(body));
+  assert.equal(harness.actionWrites, 1);
+  assert.equal(harness.acknowledgementInputs.length, 2);
+  assert.deepEqual(harness.acknowledgementInputs[0], {
+    roomId: ROOM_ID,
+    runId: RUN_ID,
+    viewerSeatId: SEAT_ID,
+    sourceEventId: "safe-projected-event-1",
+    responseActionCode: "SIGNED_RESPONSE_A",
+    occurredAt: "2023-11-14T22:13:20.000Z",
+  });
+  assert.ok(
+    harness.calls.indexOf("response-acknowledge") < harness.calls.indexOf("decision-compile"),
+    "delivery acknowledgement precedes canonical response compilation",
+  );
+  assert.equal(harness.compilerInputs[0]?.command.sourceEventId, "safe-projected-event-1");
+  assert.equal(harness.compilerInputs[0]?.command.responseActionCode, "SIGNED_RESPONSE_A");
+
+  await expectHttpCode(
+    () => harness.facade.submitDecision(harness.principal, ROOM_ID, {
+      ...body,
+      responseActionCode: "SIGNED_RESPONSE_B",
+    }),
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.IDEMPOTENCY_CONFLICT,
+    409,
+  );
+  assert.equal(harness.actionWrites, 1);
 });
 
 test("run route chapter and compiler seat scope mismatches fail closed", async () => {
@@ -379,6 +427,7 @@ function createHarness(options: {
   let resultReads = 0;
   const actionCommands: SubmitOrchestratedActionCommandV1[] = [];
   const compilerInputs: Parameters<PressureChapterHttpDecisionCompilerPort["compile"]>[0][] = [];
+  const acknowledgementInputs: Parameters<PressureChapterHttpResponseAcknowledgerPort["acknowledgeCurrent"]>[0][] = [];
   const chatCommands: SubmitPressureChatCommandV1[] = [];
   const replayCommands: unknown[] = [];
   const replayViewerIds: string[] = [];
@@ -431,7 +480,15 @@ function createHarness(options: {
         schemaVersion: "pressure_chapter_game_projection_v1",
         runId: RUN_ID,
         roomId: ROOM_ID,
+        viewer: { seatId: SEAT_ID },
       } as unknown as PressureChapterGameProjectionV1;
+    },
+  };
+  const responseAcknowledger: PressureChapterHttpResponseAcknowledgerPort = {
+    async acknowledgeCurrent(input) {
+      calls.push("response-acknowledge");
+      acknowledgementInputs.push(structuredClone(input));
+      return true;
     },
   };
   const decisionCompiler: PressureChapterHttpDecisionCompilerPort = {
@@ -509,6 +566,7 @@ function createHarness(options: {
     access,
     routes,
     game,
+    responseAcknowledger,
     decisionCompiler,
     actions,
     chat,
@@ -522,6 +580,7 @@ function createHarness(options: {
     stored,
     calls,
     compilerInputs,
+    acknowledgementInputs,
     actionCommands,
     chatCommands,
     replayCommands,
@@ -604,6 +663,7 @@ function decisionCommand(routeHash: string): PressureChapterSubmitDecisionComman
     optionCode: "A",
     customText: "核验粮册",
     sourceEventId: null,
+    responseActionCode: null,
   };
 }
 
@@ -617,6 +677,10 @@ function compiledDecisionCommand(
   const payload = {
     optionCode: input.command.optionCode,
     customText: input.command.customText,
+    ...(input.command.sourceEventId === null ? {} : {
+      responseToEventId: input.command.sourceEventId,
+      responseActionCode: input.command.responseActionCode,
+    }),
   };
   const actionIdentityHash = sha256Canonical({
     runId: input.command.runId,

@@ -210,14 +210,18 @@ test("server decision compiler derives authority fields and rejects controlEpoch
     () => compiler.compile({
       access,
       storedRoute: stored,
-      command: { ...publicCommand, sourceEventId: "event-not-valid-for-normal-action" },
+      command: {
+        ...publicCommand,
+        sourceEventId: "event-not-valid-for-normal-action",
+        responseActionCode: option,
+      },
       nowMs: 103,
     }),
     (error: unknown) => (
       error instanceof PressureChapterIntegrationError
       && error.code === "INTEGRATION_DECISION_COMMAND_MISMATCH"
-      && error.path === "decision.sourceEventId"
-      && error.detail === "NON_INVESTIGATION_MUST_BE_NULL"
+      && error.path === "decision.responseBinding"
+      && error.detail === "AUTHORITY_READER_REQUIRED"
     ),
   );
 });
@@ -269,6 +273,28 @@ test("N6 investigation commands consume one visible ACKed aggregate and server-s
       { load: async () => cloneProjection(working) },
       content,
       new SangtianServerDecisionWorkingIntentCompilerV1(),
+      {
+        readCurrent: async () => {
+          const item = game.feedPage.items[0];
+          if (!item) return null;
+          return {
+            roomId: item.roomId,
+            runId: item.runId,
+            viewerSeatId: item.viewerSeatId,
+            sourceEventId: item.eventId,
+            projectionVersion: item.projectionVersion,
+            projectionHash: item.projectionHash,
+            disclosure: item.disclosure,
+            responseOptions: item.responseOptions.map((option) => ({
+              code: option.code,
+              preferredEntry: option.preferredEntry,
+              consumesManeuverOnSubmit: option.consumesManeuverOnSubmit,
+            })),
+            acknowledged: item.isAcknowledged,
+            resolved: item.isResolved,
+          };
+        },
+      },
     );
     const command: PressureChapterSubmitDecisionCommandV1 = {
       schemaVersion: PRESSURE_CHAPTER_GAME_COMMAND_SCHEMA_V1,
@@ -286,6 +312,7 @@ test("N6 investigation commands consume one visible ACKed aggregate and server-s
       optionCode: actionType,
       customText: null,
       sourceEventId,
+      responseActionCode: actionType,
     };
     return { compiled: await compiler.compile({ access, storedRoute: stored, command, nowMs: 200 }), game };
   }
@@ -323,8 +350,8 @@ test("N6 investigation commands consume one visible ACKed aggregate and server-s
     (error: unknown) => (
       error instanceof PressureChapterIntegrationError
       && error.code === "INTEGRATION_DECISION_COMMAND_MISMATCH"
-      && error.path === "decision.sourceEventId"
-      && error.detail === "NOT_VISIBLE_ACKNOWLEDGED_LATEST_SOURCE"
+      && error.path === "decision.responseBinding"
+      && error.detail === "NOT_CURRENT_VISIBLE_ACKNOWLEDGED_OR_ALLOWED"
     ),
   );
   await assert.rejects(
@@ -332,9 +359,101 @@ test("N6 investigation commands consume one visible ACKed aggregate and server-s
     (error: unknown) => (
       error instanceof PressureChapterIntegrationError
       && error.code === "INTEGRATION_DECISION_COMMAND_MISMATCH"
-      && error.detail === "NOT_VISIBLE_ACKNOWLEDGED_LATEST_SOURCE"
+      && error.path === "decision.responseBinding"
+      && error.detail === "DISCLOSURE_NOT_ALLOWED"
     ),
   );
+});
+
+test("response commands revalidate current viewer authority and bind only a signed action", async () => {
+  const stored = await storedRoute();
+  const content = new SangtianAuthoredChapterContentAdapterV1();
+  const descriptor = await content.load({ routeSnapshot: stored.snapshot, chapterId: "N1" });
+  const working = workingProjection(stored, descriptor);
+  const decision = descriptor.decisions[0]!;
+  const actionType = decision.execution.allowedActionTypes.find(
+    (candidate) => candidate !== "DEFAULT_PASS",
+  )!;
+  const fence = digest("response-fence");
+  const game = gameProjection(stored, decision, actionType, fence);
+  const sourceEventId = "event-response-current";
+  const authority = {
+    roomId: game.roomId,
+    runId: game.runId,
+    viewerSeatId: game.viewer.seatId,
+    sourceEventId,
+    projectionVersion: 4,
+    projectionHash: digest("response-projection"),
+    disclosure: "CONFIRMED" as const,
+    responseOptions: [{
+      code: actionType,
+      preferredEntry: game.decision!.options[0]!.preferredEntry,
+      consumesManeuverOnSubmit: true,
+    }],
+    acknowledged: true,
+    resolved: false,
+  };
+  const access: PressureChapterHttpAccessV1 = {
+    schemaVersion: "pressure_chapter_http_access_v1",
+    roomId: game.roomId,
+    runId: game.runId,
+    subjectId: "subject-response",
+    viewerId: "viewer-response",
+  };
+  const command = {
+    ...decisionCommand(stored, decision.decisionPointId, actionType, fence),
+    idempotencyKey: "response-command-v1",
+    sourceEventId,
+    responseActionCode: actionType,
+  };
+  const compile = (current: typeof authority | null, candidate = command) => (
+    new PressureDecisionCommandCompilerV1(
+      { read: async () => structuredClone(game) },
+      { load: async () => cloneProjection(working) },
+      content,
+      new SangtianServerDecisionWorkingIntentCompilerV1(),
+      { readCurrent: async () => current ? structuredClone(current) : null },
+    ).compile({ access, storedRoute: stored, command: candidate, nowMs: 300 })
+  );
+
+  const compiled = await compile(authority);
+  assert.deepEqual(compiled.action.payload, {
+    optionCode: actionType,
+    customText: null,
+    responseToEventId: sourceEventId,
+    responseActionCode: actionType,
+    responseWorkbench: game.decision!.options[0]!.preferredEntry,
+    sourceProjectionVersion: 4,
+  });
+
+  for (const invalid of [
+    null,
+    { ...authority, roomId: "foreign-room" },
+    { ...authority, runId: "foreign-run" },
+    { ...authority, viewerSeatId: "jiangnan_merchant" as const },
+    { ...authority, sourceEventId: "stale-event-version" },
+    { ...authority, acknowledged: false },
+    { ...authority, resolved: true },
+    { ...authority, responseOptions: [] },
+    { ...authority, responseOptions: [{ ...authority.responseOptions[0]!, preferredEntry: "TALK" as const }] },
+  ]) {
+    await assert.rejects(
+      () => compile(invalid),
+      (error: unknown) => error instanceof PressureChapterIntegrationError
+        && error.path === "decision.responseBinding",
+    );
+  }
+  for (const stale of [
+    { ...command, controlEpoch: command.controlEpoch + 1 },
+    { ...command, expectedWorkingRevision: command.expectedWorkingRevision + 1 },
+    { ...command, submissionFenceToken: digest("stale-fence") },
+    { ...command, responseActionCode: "UNKNOWN_RESPONSE" },
+  ]) {
+    await assert.rejects(
+      () => compile(authority, stale),
+      (error: unknown) => error instanceof PressureChapterIntegrationError,
+    );
+  }
 });
 
 test("game chapter reader keeps decision projection viewer-scoped", async () => {
@@ -591,6 +710,7 @@ function decisionCommand(
     optionCode,
     customText: null,
     sourceEventId: null,
+    responseActionCode: null,
   };
 }
 
@@ -795,7 +915,6 @@ function investigationGameProjection(input: {
     safeSummary: "A viewer-safe ledger source summary.",
     statusLabel: input.disclosure,
     visibleImpacts: [],
-    knownFactRefs: [],
     responseOptions: [{
       code: input.actionType,
       label: input.actionType,

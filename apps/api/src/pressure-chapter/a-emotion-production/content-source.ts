@@ -47,6 +47,10 @@ import {
   A_EMOTION_PRODUCTION_ERROR_CODES as ERROR,
   failAEmotionProduction,
 } from "./errors";
+import {
+  deriveCrossImpactPresentationV1,
+  deriveStateTransitionPresentationV1,
+} from "./trigger-derivation";
 
 type ImpactV1 = AEmotionInteractionEventPortV1["impacts"][number];
 
@@ -183,6 +187,20 @@ export class SangtianAEmotionContentSourceCompilerV1 {
         const signalId = [
           "beat", event.eventHash, sourceActionId, template.eventCode, cohort.kind.toLowerCase(),
         ].join(":");
+        const compiledSignal = signal(template, {
+          signalId,
+          sharedObjectId: commitmentIds[0] ?? null,
+          factRefs: [],
+          publicFactRefs: [],
+          impacts,
+          audienceSpec: {
+            type: "EXPLICIT",
+            seatIds: cohort.seatIds,
+          },
+          evidenceRefs: cohort.evidenceRefs,
+          milestoneId: null,
+          stateVersion: beat.committedWorkingRevision,
+        });
         emissions.push(this.emit({
           sourceKind: "BEAT_COMMITTED",
           sourceId: event.eventHash,
@@ -197,19 +215,9 @@ export class SangtianAEmotionContentSourceCompilerV1 {
             + beat.committedWorkingRevision * 1_000 + index * 2 + cohortIndex + 1,
           stateVersion: beat.committedWorkingRevision,
           storyDay: chapterSequence(event.chapterId),
-          signal: signal(template, {
-            signalId,
-            sharedObjectId: commitmentIds[0] ?? null,
-            factRefs: [],
-            publicFactRefs: [],
-            impacts,
-            audienceSpec: {
-              type: "EXPLICIT",
-              seatIds: cohort.seatIds,
-            },
-            evidenceRefs: cohort.evidenceRefs,
-            milestoneId: null,
-            stateVersion: beat.committedWorkingRevision,
+          signal: deriveCrossImpactPresentationV1({
+            sourceSeatId: accepted.action.seatId,
+            signal: compiledSignal,
           }),
         }));
       });
@@ -263,50 +271,49 @@ export class SangtianAEmotionContentSourceCompilerV1 {
       eventSequence: chapterSequence(event.chapterId) * 10_000_000 + 5_000_000 + event.sequence,
       stateVersion: event.sequence,
       storyDay: chapterSequence(event.chapterId),
-      signal: {
-        signalId,
-        kind: isBroken ? "DIRECT_IMPACT" : "PUBLIC_ACTION",
-        eventCode: operation.eventCode,
-        eventFamily: isBroken ? "LEDGER_FLOW" : "PROMISE",
-        severity: isBroken ? "MAJOR" : "MINOR",
-        sharedObjectId: isBroken ? "original-grain-ledger" : mutation.commitmentId,
-        factRefs: isBroken ? [] : [operation.factCode],
-        publicFactRefs: [],
-        impacts: mutation.seatIds.map((seatId) => ({
-          targetSeatId: seatId,
-          visibility: "TARGET_ONLY" as const,
-          type: "SHARED_OBJECT" as const,
-          key: mutation.commitmentId,
-          before: null,
-          after: mutation.operation,
-          delta: null,
-          effectCode: operation.effectCode,
-        })),
-        audienceSpec: {
-          type: "EXPLICIT",
-          seatIds: canonicalSeats(isBroken
-            ? [...event.payload.audienceSeatIds, "qingliu_law"]
-            : event.payload.audienceSeatIds),
+      signal: deriveCrossImpactPresentationV1({
+        sourceSeatId: action.seatId,
+        signal: {
+          signalId,
+          kind: isBroken ? "DIRECT_IMPACT" : "PUBLIC_ACTION",
+          eventCode: operation.eventCode,
+          eventFamily: isBroken ? "LEDGER_FLOW" : "PROMISE",
+          severity: isBroken ? "MAJOR" : "MINOR",
+          sharedObjectId: isBroken ? "original-grain-ledger" : mutation.commitmentId,
+          factRefs: isBroken ? [] : [operation.factCode],
+          publicFactRefs: [],
+          impacts: mutation.seatIds.map((seatId) => ({
+            targetSeatId: seatId,
+            visibility: "TARGET_ONLY" as const,
+            type: "SHARED_OBJECT" as const,
+            key: mutation.commitmentId,
+            before: null,
+            after: mutation.operation,
+            delta: null,
+            effectCode: operation.effectCode,
+          })),
+          audienceSpec: {
+            type: "EXPLICIT",
+            seatIds: canonicalSeats(isBroken
+              ? [...event.payload.audienceSeatIds, "qingliu_law"]
+              : event.payload.audienceSeatIds),
+          },
+          disclosure: isBroken ? "HIDDEN" : "CONFIRMED",
+          suspectedSeatIds: [],
+          suspicionBasisRefs: [],
+          evidenceRefs,
+          revealOfEventId: null,
+          promiseId: mutation.commitmentId,
+          milestoneId: null,
+          metricTransitionId: null,
+          presentation: {
+            recommendedPresentation: isBroken ? "CENTER_CARD" : "FEED_ONLY",
+            centerCardType: isBroken ? "CROSS_IMPACT" : null,
+            responseOptions: [],
+            modalTrigger: null,
+          },
         },
-        disclosure: isBroken ? "HIDDEN" : "CONFIRMED",
-        suspectedSeatIds: [],
-        suspicionBasisRefs: [],
-        evidenceRefs,
-        revealOfEventId: null,
-        promiseId: mutation.commitmentId,
-        milestoneId: null,
-        metricTransitionId: null,
-        presentation: {
-          recommendedPresentation: isBroken ? "CENTER_CARD" : "FEED_ONLY",
-          centerCardType: isBroken ? "CROSS_IMPACT" : null,
-          responseOptions: isBroken ? [{
-            code: "INVESTIGATE_LEDGER_SOURCE",
-            preferredEntry: "INVESTIGATE",
-            consumesManeuverOnSubmit: false,
-          }] : [],
-          modalTrigger: null,
-        },
-      },
+      }),
     })]);
   }
 
@@ -341,6 +348,50 @@ export class SangtianAEmotionContentSourceCompilerV1 {
       const signalId = [
         "chapter", record.receipt.commitHash, seatId, outcome.band,
       ].join(":");
+      const milestoneId = template.milestoneMode === "NONE"
+        ? null
+        : `chapter:${record.chapterId}:${outcome.band}`;
+      let compiledSignal = signal(template, {
+        signalId,
+        sharedObjectId: `chapter:${record.chapterId}:outcome:${outcome.band}`,
+        factRefs: [outcome.factRef],
+        publicFactRefs: [outcome.factRef],
+        impacts: [{
+          targetSeatId: seatId,
+          visibility: "TARGET_ONLY",
+          type: "GOAL_PROGRESS",
+          key: "publicGoalProgress",
+          before: null,
+          after: arc.afterState.publicGoalProgress,
+          delta: null,
+          effectCode: `SANGTIAN_CHAPTER_ARC_${outcome.band}`,
+        }],
+        audienceSpec: { type: "AFFECTED_SEATS", seatIds: [seatId] },
+        evidenceRefs,
+        milestoneId,
+        stateVersion: record.frozenChapterBundle.committedWorldSequence,
+      });
+      if (outcome.band === "LOW") {
+        compiledSignal = deriveStateTransitionPresentationV1({
+          signal: compiledSignal,
+          stateVersion: record.frozenChapterBundle.committedWorldSequence,
+          metric: {
+            metricTransitionId: `run:${record.runId}:chapter-outcome-health`,
+            beforeTone: priorChapterOutcomeTone(record),
+            afterTone: "DANGER",
+          },
+        });
+      } else if (outcome.band === "HIGH" && milestoneId) {
+        compiledSignal = deriveStateTransitionPresentationV1({
+          signal: compiledSignal,
+          stateVersion: record.frozenChapterBundle.committedWorldSequence,
+          milestone: {
+            milestoneId,
+            beforeState: "INACTIVE",
+            afterState: "ACHIEVED",
+          },
+        });
+      }
       emissions.push(this.emit({
         sourceKind: "CHAPTER_SETTLEMENT_COMMITTED",
         sourceId: record.receipt.settlementId,
@@ -354,28 +405,7 @@ export class SangtianAEmotionContentSourceCompilerV1 {
         eventSequence: chapterSequence(record.chapterId) * 10_000_000 + 9_999_000 + index + 1,
         stateVersion: record.frozenChapterBundle.committedWorldSequence,
         storyDay: chapterSequence(record.chapterId),
-        signal: signal(template, {
-          signalId,
-          sharedObjectId: `chapter:${record.chapterId}:outcome:${outcome.band}`,
-          factRefs: [outcome.factRef],
-          publicFactRefs: [outcome.factRef],
-          impacts: [{
-            targetSeatId: seatId,
-            visibility: "TARGET_ONLY",
-            type: "GOAL_PROGRESS",
-            key: "publicGoalProgress",
-            before: null,
-            after: arc.afterState.publicGoalProgress,
-            delta: null,
-            effectCode: `SANGTIAN_CHAPTER_ARC_${outcome.band}`,
-          }],
-          audienceSpec: { type: "AFFECTED_SEATS", seatIds: [seatId] },
-          evidenceRefs,
-          milestoneId: template.milestoneMode === "NONE"
-            ? null
-            : `chapter:${record.chapterId}:${outcome.band}`,
-          stateVersion: record.frozenChapterBundle.committedWorldSequence,
-        }),
+        signal: compiledSignal,
       }));
     });
     return freezeEmissions(emissions);
@@ -668,6 +698,19 @@ function assertPublicChapterOutcome(record: AtomicChapterCommitRecordV1, factRef
   ) {
     invalid("input.record.frozenChapterBundle.frozenWorldState", "OUTCOME_NOT_PUBLIC");
   }
+}
+
+function priorChapterOutcomeTone(
+  record: AtomicChapterCommitRecordV1,
+): "DEFAULT" | "DANGER" {
+  const sequence = chapterSequence(record.chapterId);
+  if (sequence === 1) return "DEFAULT";
+  const priorFactRef = `chapter.N${sequence - 1}.outcome_band`;
+  const priorBand = record.frozenChapterBundle.frozenWorldState.factValues[priorFactRef];
+  if (!["HIGH", "MID", "LOW"].includes(String(priorBand))) {
+    invalid("input.record.frozenChapterBundle.frozenWorldState", "PRIOR_OUTCOME_MISSING");
+  }
+  return priorBand === "LOW" ? "DANGER" : "DEFAULT";
 }
 
 function beatInput(value: unknown): CompileAEmotionBeatAuthorityInputV1 {

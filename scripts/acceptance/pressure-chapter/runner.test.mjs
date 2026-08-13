@@ -22,7 +22,7 @@ const testStep = (args = ['-e', 'process.exit(0)', '{files}']) => ({
   minMatches: 1,
 });
 
-test('suite registry exposes exactly the eleven harness commands', () => {
+test('suite registry exposes the thirteen fail-closed harness commands', () => {
   assert.deepEqual(Object.keys(PRESSURE_CHAPTER_SUITES).sort(), [
     'acceptance',
     'api',
@@ -32,6 +32,8 @@ test('suite registry exposes exactly the eleven harness commands', () => {
     'e2e',
     'fault',
     'legacy',
+    'modal-trigger-contract',
+    'modal-trigger-live',
     'provider-contract',
     'provider-live',
     'settlement-core',

@@ -7,6 +7,7 @@ import {
 } from "./errors";
 import {
   A_EMOTION_PROJECTION_VERSION_V1,
+  computeAEmotionProjectionHashV1,
   hasValidAEmotionProjectionHashV1,
   isAEmotionProjectionIdentityV1,
   isSameAEmotionProjectionV1,
@@ -282,7 +283,7 @@ export class AEmotionFeedServiceV1 {
     const hasMore = eligible.length > selected.length;
     const last = selected.at(-1);
     const items = selected.map(({ aggregate, delivery }) => ({
-      ...structuredClone(aggregate.projection),
+      ...toDeliveryProjection(aggregate.projection, delivery!),
       isUnread: delivery?.seenAt === null,
       isAcknowledged: delivery?.acknowledgedAt !== null && delivery?.acknowledgedAt !== undefined,
       isResolved: delivery?.resolvedAt !== null && delivery?.resolvedAt !== undefined,
@@ -381,7 +382,7 @@ export class AEmotionFeedServiceV1 {
       runId: input.runId,
       viewerSeatId: input.viewerSeatId,
       items: selectedRows.map(({ aggregate, delivery }) => ({
-        ...structuredClone(aggregate.projection),
+        ...toDeliveryProjection(aggregate.projection, delivery),
         isUnread: delivery.seenAt === null,
         isAcknowledged: delivery.acknowledgedAt !== null,
         isResolved: delivery.resolvedAt !== null,
@@ -403,7 +404,7 @@ export class AEmotionFeedServiceV1 {
     operation: "SEEN" | "ACKNOWLEDGED" | "RESOLVED" | "MODAL_SHOWN";
     occurredAt: string;
   }): Promise<AEmotionDeliveryRecordV1> {
-    if (input.projectionVersion !== A_EMOTION_PROJECTION_VERSION_V1) {
+    if (!Number.isSafeInteger(input.projectionVersion) || input.projectionVersion < A_EMOTION_PROJECTION_VERSION_V1) {
       failAEmotionProjection(ERROR.PROJECTION_VERSION_UNSUPPORTED, deliveryKey(input));
     }
     const existing = await this.repository.readDelivery(input);
@@ -415,6 +416,21 @@ export class AEmotionFeedServiceV1 {
     if (!updated) failAEmotionProjection(ERROR.DELIVERY_NOT_FOUND, deliveryKey(input));
     return updated;
   }
+}
+
+function toDeliveryProjection(
+  source: AEmotionViewerProjectionPortV1,
+  delivery: AEmotionDeliveryRecordV1,
+): AEmotionViewerProjectionPortV1 {
+  const projection = structuredClone(source);
+  if (delivery.keyModalShownAt !== null && projection.keyModal !== null) {
+    // A modal is a one-shot delivery surface. Its central card remains in the
+    // feed after dismissal, so refresh/retry can never resurrect the modal.
+    projection.keyModal = null;
+    projection.recommendedPresentation = "CENTER_CARD";
+    projection.projectionHash = computeAEmotionProjectionHashV1(projection);
+  }
+  return projection;
 }
 
 async function hydrateDeliveryRows(

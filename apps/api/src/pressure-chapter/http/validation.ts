@@ -32,6 +32,7 @@ const SUBMIT_DECISION_KEYS = [
   "optionCode",
   "customText",
   "sourceEventId",
+  "responseActionCode",
 ] as const;
 const CHAT_KEYS = [
   "schemaVersion",
@@ -119,6 +120,14 @@ export function parseSubmitDecisionCommand(
   const optionCode = nullableBoundedString(body.optionCode, "body.optionCode", 200);
   const customText = nullableBoundedString(body.customText, "body.customText", 500);
   const sourceEventId = nullableBoundedString(body.sourceEventId, "body.sourceEventId", 200);
+  const responseActionCode = nullableBoundedString(
+    body.responseActionCode,
+    "body.responseActionCode",
+    200,
+  );
+  if ((sourceEventId === null) !== (responseActionCode === null)) {
+    failPressureChapterHttp(ERROR.INPUT_INVALID, "body.responseBinding");
+  }
   if (optionCode === null && customText === null) {
     failPressureChapterHttp(ERROR.INPUT_INVALID, "body.optionCode");
   }
@@ -138,6 +147,7 @@ export function parseSubmitDecisionCommand(
     optionCode,
     customText,
     sourceEventId,
+    responseActionCode,
   };
 }
 

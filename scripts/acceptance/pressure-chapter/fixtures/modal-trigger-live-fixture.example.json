@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "pressure_modal_trigger_live_fixture_v1",
+  "scenarios": {
+    "crossMajor": { "runId": "REPLACE_MAJOR_RUN", "cookie": "REPLACE_SESSION_COOKIE", "viewerSeatId": "REPLACE_VIEWER_SEAT", "eventId": "REPLACE_MAJOR_EVENT" },
+    "crossMinor": { "runId": "REPLACE_MINOR_RUN", "cookie": "REPLACE_SESSION_COOKIE", "viewerSeatId": "REPLACE_VIEWER_SEAT", "eventId": "REPLACE_MINOR_EVENT" },
+    "promiseBroken": { "runId": "REPLACE_BROKEN_RUN", "cookie": "REPLACE_SESSION_COOKIE", "viewerSeatId": "REPLACE_VIEWER_SEAT", "eventId": "REPLACE_BROKEN_EVENT" },
+    "promiseRevealed": { "runId": "REPLACE_REVEAL_RUN", "cookie": "REPLACE_SESSION_COOKIE", "viewerSeatId": "REPLACE_VIEWER_SEAT", "eventId": "REPLACE_REVEAL_EVENT" },
+    "crisis": { "runId": "REPLACE_CRISIS_RUN", "cookie": "REPLACE_SESSION_COOKIE", "viewerSeatId": "REPLACE_VIEWER_SEAT", "eventId": "REPLACE_CRISIS_EVENT" },
+    "victory": { "runId": "REPLACE_VICTORY_RUN", "cookie": "REPLACE_SESSION_COOKIE", "viewerSeatId": "REPLACE_VIEWER_SEAT", "eventId": "REPLACE_VICTORY_EVENT" }
+  },
+  "responseValidation": {
+    "runId": "REPLACE_RESPONSE_RUN",
+    "cookie": "REPLACE_SESSION_COOKIE",
+    "visibleLatestEventId": "REPLACE_VISIBLE_LATEST_EVENT",
+    "invisibleEventId": "REPLACE_OTHER_SEAT_PRIVATE_EVENT",
+    "acknowledgedEventId": "REPLACE_ACKNOWLEDGED_EVENT",
+    "foreignEventId": "REPLACE_CROSS_RUN_EVENT",
+    "allowedCommand": {
+      "schemaVersion": "pressure_chapter_game_command_v1",
+      "commandType": "SUBMIT_DECISION",
+      "runId": "REPLACE_RESPONSE_RUN",
+      "routeHash": "REPLACE_ROUTE_HASH",
+      "chapterRuntimeId": "REPLACE_CHAPTER_RUNTIME",
+      "chapterId": "N6",
+      "decisionPointId": "REPLACE_DECISION_POINT",
+      "seatId": "REPLACE_VIEWER_SEAT",
+      "controlEpoch": 1,
+      "expectedWorkingRevision": 1,
+      "submissionFenceToken": "REPLACE_FENCE",
+      "idempotencyKey": "REPLACE_UNIQUE_IDEMPOTENCY_KEY",
+      "optionCode": "INVESTIGATE_LEDGER",
+      "customText": null,
+      "sourceEventId": "REPLACE_VISIBLE_LATEST_EVENT"
+    }
+  },
+  "privacy": {
+    "viewerCookie": "REPLACE_SESSION_COOKIE",
+    "visibleRunId": "REPLACE_VISIBLE_RUN",
+    "crossRoomRunId": "REPLACE_UNAUTHORIZED_OTHER_ROOM_RUN",
+    "forbiddenMarkers": ["REPLACE_OTHER_SEAT_SECRET", "REPLACE_HIDDEN_EVIDENCE_SECRET"]
+  },
+  "faultTransaction": {
+    "runId": "REPLACE_ISOLATED_FAULT_RUN",
+    "cookie": "REPLACE_SESSION_COOKIE",
+    "command": {
+      "schemaVersion": "pressure_chapter_game_command_v1",
+      "commandType": "SUBMIT_DECISION",
+      "runId": "REPLACE_ISOLATED_FAULT_RUN",
+      "routeHash": "REPLACE_ROUTE_HASH",
+      "chapterRuntimeId": "REPLACE_CHAPTER_RUNTIME",
+      "chapterId": "N1",
+      "decisionPointId": "REPLACE_DECISION_POINT",
+      "seatId": "REPLACE_VIEWER_SEAT",
+      "controlEpoch": 1,
+      "expectedWorkingRevision": 1,
+      "submissionFenceToken": "REPLACE_FENCE",
+      "idempotencyKey": "REPLACE_FAULT_IDEMPOTENCY_KEY",
+      "optionCode": "REPLACE_ALLOWED_OPTION",
+      "customText": null,
+      "sourceEventId": null
+    }
+  }
+}

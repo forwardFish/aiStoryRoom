@@ -1,0 +1,470 @@
+/*
+ * Pressure Chapter Phase 1 v4 — UI_ONLY.
+ *
+ * This stylesheet owns only the approved 03–06 center-card and key-modal
+ * enhancement surfaces mounted inside the existing /game DOM seams. It does
+ * not own the three-column shell, status strip, objectives, resources, Feed,
+ * or existing maneuver workbench.
+ */
+
+.pressure-center-host {
+  position: relative;
+  isolation: isolate;
+}
+
+/* v4 fail-safe: state is retained in JavaScript, but its DOM surface is never
+ * visible beneath an active key modal. This selector owns only the enhancement. */
+.pressure-modal-active [data-pressure-center-enhancement],
+[data-pressure-center-enhancement][hidden],
+[data-pressure-center-enhancement][aria-hidden="true"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.pressure-center-enhancement {
+  position: absolute;
+  inset: 0;
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(10px, 1.4vw, 22px);
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(247, 244, 255, 0.16));
+}
+
+.pressure-center-enhancement > .pressure-state-card {
+  width: min(610px, calc(100% - 2px));
+  max-height: calc(100% - 2px);
+}
+
+.pressure-key-modal-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 16px;
+  overflow: auto;
+  background: rgba(245, 247, 255, 0.30);
+  backdrop-filter: blur(1.5px);
+}
+
+.pressure-state-card,
+.pressure-key-modal {
+  --pressure-accent: #5b3bd8;
+  --pressure-accent-strong: #4b24c4;
+  --pressure-accent-soft: #f4f1ff;
+  --pressure-border: rgba(91, 59, 216, 0.24);
+  --pressure-shadow: rgba(70, 43, 160, 0.22);
+  box-sizing: border-box;
+  width: min(610px, 100%);
+  overflow: auto;
+  padding: 0 26px 20px;
+  border: 1px solid var(--pressure-border);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.975);
+  color: #17204d;
+  box-shadow: 0 18px 48px var(--pressure-shadow), 0 2px 8px rgba(45, 38, 86, 0.08);
+  pointer-events: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--pressure-accent) 28%, transparent) transparent;
+}
+
+.pressure-key-modal {
+  width: min(570px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding-right: 24px;
+  padding-left: 24px;
+  animation: pressure-modal-enter 0.18s ease-out both;
+}
+
+/* 03 — CROSS_IMPACT: approved purple. */
+.pressure-state-card--cross-impact {
+  --pressure-accent: #5b3bd8;
+  --pressure-accent-strong: #4b24c4;
+  --pressure-accent-soft: #f4f1ff;
+  --pressure-border: rgba(91, 59, 216, 0.25);
+  --pressure-shadow: rgba(70, 43, 160, 0.23);
+}
+
+/* 04 — PROMISE_BROKEN: purple, deliberately distinct from CRISIS. */
+.pressure-state-card--promise-broken,
+.pressure-key-modal--promise-broken {
+  --pressure-accent: #6a36d5;
+  --pressure-accent-strong: #5422bd;
+  --pressure-accent-soft: #f7f2ff;
+  --pressure-border: rgba(106, 54, 213, 0.26);
+  --pressure-shadow: rgba(82, 38, 168, 0.23);
+}
+
+/* 05 — CRISIS: orange-red danger treatment. */
+.pressure-state-card--crisis,
+.pressure-key-modal--crisis {
+  --pressure-accent: #e24c2e;
+  --pressure-accent-strong: #c9361f;
+  --pressure-accent-soft: #fff1ec;
+  --pressure-border: rgba(226, 76, 46, 0.29);
+  --pressure-shadow: rgba(183, 54, 29, 0.23);
+}
+
+/* 06 — STAGE_VICTORY: deeper, higher-contrast green. */
+.pressure-state-card--stage-victory,
+.pressure-key-modal--stage-victory {
+  --pressure-accent: #176b3a;
+  --pressure-accent-strong: #0f562d;
+  --pressure-accent-soft: #edf8f1;
+  --pressure-border: rgba(23, 107, 58, 0.30);
+  --pressure-shadow: rgba(15, 86, 45, 0.24);
+}
+
+.pressure-state-card__header,
+.pressure-key-modal__header {
+  margin: 0 -26px 14px;
+  padding: 19px 26px 15px;
+  text-align: center;
+  border-radius: 22px 22px 0 0;
+  background: linear-gradient(180deg, var(--pressure-accent-soft), rgba(255, 255, 255, 0.88));
+}
+
+.pressure-key-modal__header {
+  margin-right: -24px;
+  margin-left: -24px;
+  padding-right: 24px;
+  padding-left: 24px;
+}
+
+.pressure-title-stack {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+}
+
+.pressure-title-emblem {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--pressure-accent) 45%, white);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--pressure-accent-soft) 78%, white);
+  color: var(--pressure-accent);
+  font: 800 14px/1 Inter, system-ui, sans-serif;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--pressure-accent) 14%, transparent);
+}
+
+.pressure-state-card--promise-broken .pressure-title-emblem,
+.pressure-key-modal--promise-broken .pressure-title-emblem {
+  width: 23px;
+  height: 23px;
+  border-radius: 6px;
+  background: linear-gradient(145deg, #f1e8ff, #ffffff);
+  font-size: 12px;
+  transform: rotate(45deg);
+}
+
+.pressure-state-card--promise-broken .pressure-title-emblem > span,
+.pressure-key-modal--promise-broken .pressure-title-emblem > span {
+  transform: rotate(-45deg);
+}
+
+.pressure-state-card--crisis .pressure-title-emblem,
+.pressure-key-modal--crisis .pressure-title-emblem {
+  width: 36px;
+  height: 36px;
+  border: 2px solid color-mix(in srgb, var(--pressure-accent) 72%, white);
+  border-radius: 50%;
+  background: #fff7f3;
+  font-size: 21px;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--pressure-accent) 10%, transparent);
+}
+
+.pressure-state-card--stage-victory .pressure-title-emblem,
+.pressure-key-modal--stage-victory .pressure-title-emblem {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #2d8b55, var(--pressure-accent-strong));
+  color: #fff;
+  font-size: 27px;
+  box-shadow: 0 8px 20px rgba(15, 86, 45, 0.28);
+}
+
+.pressure-title-line {
+  display: grid;
+  grid-template-columns: minmax(24px, 1fr) auto minmax(24px, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 520px);
+}
+
+.pressure-title-decor {
+  position: relative;
+  display: block;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--pressure-accent) 65%, white));
+}
+
+.pressure-title-decor--right {
+  transform: scaleX(-1);
+}
+
+.pressure-title-decor::after {
+  position: absolute;
+  top: 50%;
+  right: -2px;
+  width: 5px;
+  height: 5px;
+  content: "";
+  background: var(--pressure-accent);
+  transform: translateY(-50%) rotate(45deg);
+  opacity: 0.72;
+}
+
+.pressure-state-card__header h2,
+.pressure-key-modal__header h2 {
+  margin: 0;
+  color: var(--pressure-accent);
+  font-family: "Noto Serif SC", "Songti SC", SimSun, Georgia, serif;
+  font-size: clamp(27px, 2.05vw, 34px);
+  font-weight: 800;
+  line-height: 1.24;
+  letter-spacing: 0.055em;
+  white-space: nowrap;
+}
+
+.pressure-state-card--stage-victory .pressure-state-card__header h2,
+.pressure-key-modal--stage-victory .pressure-key-modal__header h2 {
+  color: var(--pressure-accent-strong);
+  font-size: clamp(29px, 2.1vw, 35px);
+}
+
+.pressure-state-card__header p,
+.pressure-key-modal__header p {
+  max-width: 520px;
+  margin: 9px auto 0;
+  color: #5d6888;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.pressure-state-card__blocks,
+.pressure-key-modal__blocks {
+  display: grid;
+  gap: 10px;
+}
+
+.pressure-state-card__block {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 14px;
+  min-height: 92px;
+  box-sizing: border-box;
+  padding: 14px 18px;
+  border: 1px solid #dfe3f1;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.90);
+}
+
+.pressure-state-card--stage-victory .pressure-state-card__block,
+.pressure-key-modal--stage-victory .pressure-state-card__block {
+  border-color: rgba(23, 107, 58, 0.20);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 251, 247, 0.88));
+}
+
+.pressure-state-card__block > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--pressure-accent) 82%, white), var(--pressure-accent-strong));
+  color: #fff;
+  font: 800 20px/1 Inter, system-ui, sans-serif;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--pressure-accent) 24%, transparent);
+}
+
+.pressure-state-card--stage-victory .pressure-state-card__block > span,
+.pressure-key-modal--stage-victory .pressure-state-card__block > span {
+  background: linear-gradient(145deg, #23804a, var(--pressure-accent-strong));
+}
+
+.pressure-state-card__block h3 {
+  margin: 0 0 5px;
+  color: var(--pressure-accent-strong);
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.pressure-state-card--stage-victory .pressure-state-card__block h3,
+.pressure-key-modal--stage-victory .pressure-state-card__block h3 {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.pressure-state-card__block ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #354268;
+  font-size: 14.5px;
+  line-height: 1.62;
+}
+
+.pressure-state-card__actions,
+.pressure-key-modal__actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pressure-state-card__action {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 9px 17px;
+  border: 1px solid color-mix(in srgb, var(--pressure-accent) 50%, white);
+  border-radius: 11px;
+  background: #fff;
+  color: var(--pressure-accent-strong);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+}
+
+.pressure-state-card__action:hover:not(:disabled),
+.pressure-state-card__action:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 17px color-mix(in srgb, var(--pressure-accent) 18%, transparent);
+}
+
+.pressure-state-card__action:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--pressure-accent) 24%, transparent);
+  outline-offset: 2px;
+}
+
+.pressure-state-card__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.pressure-state-card__action.is-primary {
+  min-height: 49px;
+  border-color: transparent;
+  background: linear-gradient(100deg, var(--pressure-accent-strong), var(--pressure-accent));
+  color: #fff;
+  font-size: 17px;
+  box-shadow: 0 9px 20px color-mix(in srgb, var(--pressure-accent) 29%, transparent);
+}
+
+.pressure-state-card--stage-victory .pressure-state-card__action.is-primary,
+.pressure-key-modal--stage-victory .pressure-state-card__action.is-primary {
+  background: linear-gradient(100deg, #0f562d, #1c7b44);
+  box-shadow: 0 10px 22px rgba(15, 86, 45, 0.30);
+}
+
+.pressure-state-card__action.is-tertiary {
+  min-height: 31px;
+  padding-top: 4px;
+  padding-bottom: 2px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@keyframes pressure-modal-enter {
+  from { opacity: 0; transform: translateY(10px) scale(0.987); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-height: 760px) {
+  .pressure-center-enhancement {
+    align-items: flex-start;
+    padding: 8px;
+  }
+
+  .pressure-center-enhancement > .pressure-state-card {
+    max-height: calc(100% - 1px);
+  }
+
+  .pressure-key-modal-layer {
+    align-items: flex-start;
+    padding: 10px;
+  }
+
+  .pressure-key-modal {
+    max-height: calc(100vh - 20px);
+  }
+}
+
+@media (max-width: 760px) {
+  .pressure-center-enhancement,
+  .pressure-key-modal-layer {
+    padding: 10px;
+    align-items: flex-start;
+  }
+
+  .pressure-state-card,
+  .pressure-key-modal {
+    width: 100%;
+    max-height: calc(100% - 1px);
+    padding: 0 16px 16px;
+    border-radius: 17px;
+  }
+
+  .pressure-key-modal {
+    max-height: calc(100vh - 20px);
+  }
+
+  .pressure-state-card__header,
+  .pressure-key-modal__header {
+    margin: 0 -16px 11px;
+    padding: 15px 16px 13px;
+    border-radius: 17px 17px 0 0;
+  }
+
+  .pressure-title-line {
+    gap: 8px;
+  }
+
+  .pressure-state-card__header h2,
+  .pressure-key-modal__header h2 {
+    font-size: 24px;
+    white-space: normal;
+  }
+
+  .pressure-state-card__block {
+    grid-template-columns: 35px minmax(0, 1fr);
+    gap: 11px;
+    min-height: 0;
+    padding: 12px 13px;
+  }
+
+  .pressure-state-card__block > span {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressure-key-modal,
+  .pressure-state-card__action {
+    animation: none;
+    transition: none;
+  }
+}

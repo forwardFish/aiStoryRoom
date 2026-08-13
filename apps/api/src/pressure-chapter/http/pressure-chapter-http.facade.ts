@@ -34,6 +34,7 @@ import {
   type PressureChapterHttpGamePort,
   type PressureChapterHttpPrincipalV1,
   type PressureChapterHttpReplayPort,
+  type PressureChapterHttpResponseAcknowledgerPort,
   type PressureChapterHttpResultPort,
   type PressureChapterHttpRoutePort,
   type PressureChapterSubmitDecisionHttpResponseV1,
@@ -64,6 +65,8 @@ export class PressureChapterHttpFacade {
     private readonly routes: PressureChapterHttpRoutePort,
     @Inject(TOKEN.GAME)
     private readonly game: PressureChapterHttpGamePort,
+    @Inject(TOKEN.RESPONSE_ACKNOWLEDGER)
+    private readonly responseAcknowledger: PressureChapterHttpResponseAcknowledgerPort,
     @Inject(TOKEN.DECISION_COMPILER)
     private readonly decisionCompiler: PressureChapterHttpDecisionCompilerPort,
     @Inject(TOKEN.ACTIONS)
@@ -123,6 +126,27 @@ export class PressureChapterHttpFacade {
       const command = parseSubmitDecisionCommand(bodyValue);
       assertPublicDecisionScope(command, context.access, context.stored);
       const nowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
+      if (command.sourceEventId !== null && command.responseActionCode !== null) {
+        const projection = await this.game.read({
+          runId: context.access.runId,
+          subjectId: context.access.subjectId,
+        });
+        if (
+          projection.roomId !== context.access.roomId
+          || projection.runId !== context.access.runId
+          || projection.viewer.seatId !== command.seatId
+        ) {
+          failPressureChapterHttp(ERROR.ROUTE_MISMATCH, "body.sourceEventId");
+        }
+        await this.responseAcknowledger.acknowledgeCurrent({
+          roomId: projection.roomId,
+          runId: projection.runId,
+          viewerSeatId: projection.viewer.seatId,
+          sourceEventId: command.sourceEventId,
+          responseActionCode: command.responseActionCode,
+          occurredAt: new Date(nowMs).toISOString(),
+        });
+      }
       const compiled = validateCompiledDecisionCommand(
         await this.decisionCompiler.compile({
           access: structuredClone(context.access),

@@ -50,6 +50,7 @@ import {
 import { createChapterWorkingState } from "@ai-story/templates";
 import { CanonicalAEmotionAuthorityEventCompilerV1 } from "./compiler";
 import { FrozenAEmotionPresentationCatalogV1 } from "../a-emotion/presentation";
+import { computePressureFormalCommitmentFingerprintV1 } from "../a-emotion-promise";
 import {
   SangtianAEmotionContentSourceCompilerV1,
   type AEmotionFinaleChapterAuthorityV1,
@@ -150,6 +151,35 @@ test("Beat evidence disclosure is split into authorized confirmed and safe hidde
   assert.notEqual(confirmed.source.eventSequence, hidden.source.eventSequence);
 });
 
+test("committed BREAK stays HIDDEN and non-modal until an authorized REVEAL", () => {
+  const ledger = formalPromiseLedger();
+  const subject = compiler();
+  const broken = subject.compileFormalCommitment({
+    sourceKind: "FORMAL_COMMITMENT_COMMITTED",
+    roomId: ROOM_ID,
+    committedAt: COMMITTED_AT,
+    commitmentEventHash: ledger.breakEvent.eventHash,
+    ledgerEvents: ledger.events,
+  });
+  const replay = subject.compileFormalCommitment({
+    sourceKind: "FORMAL_COMMITMENT_COMMITTED",
+    roomId: ROOM_ID,
+    committedAt: COMMITTED_AT,
+    commitmentEventHash: ledger.breakEvent.eventHash,
+    ledgerEvents: structuredClone(ledger.events),
+  });
+
+  assert.deepEqual(replay, broken);
+  assert.equal(broken.length, 1);
+  const signal = broken[0]!.source.signal;
+  assert.equal(signal.disclosure, "HIDDEN");
+  assert.equal(signal.promiseId, "promise-ledger-1");
+  assert.equal(signal.presentation.recommendedPresentation, "CENTER_CARD");
+  assert.equal(signal.presentation.centerCardType, "CROSS_IMPACT");
+  assert.equal(signal.presentation.modalTrigger, null);
+  assert.equal(broken[0]!.dedupeKey, `aemotion:${broken[0]!.job.jobHash}`);
+});
+
 test("real Sangtian N1 ChapterSettlement emits six viewer-safe seat outcomes", () => {
   const fixture = realN1ChapterRecord();
   const emissions = compiler().compileChapter({
@@ -166,6 +196,12 @@ test("real Sangtian N1 ChapterSettlement emits six viewer-safe seat outcomes", (
   );
   for (const emission of emissions) {
     assert.equal(emission.source.signal.eventCode, "SANGTIAN_CHAPTER_HIGH_COMMITTED");
+    assert.equal(emission.source.signal.milestoneId, "chapter:N1:HIGH");
+    assert.deepEqual(emission.source.signal.presentation.modalTrigger, {
+      type: "STAGE_VICTORY",
+      triggerId: "chapter:N1:HIGH",
+      stateVersion: 1,
+    });
     assert.deepEqual(emission.source.signal.publicFactRefs, ["chapter.N1.outcome_band"]);
     assert.equal(emission.source.signal.audienceSpec.type, "AFFECTED_SEATS");
     assert.equal(emission.source.signal.suspectedSeatIds.length, 0);
@@ -416,6 +452,91 @@ function actionIntent(item: DecisionActionV1, withImpacts: boolean): WorkingActi
     knowledgeGrants: [],
     seatArcProgress: withImpacts ? [{ seatId: item.seatId, progressDelta: 1 }] : [],
   };
+}
+
+function formalPromiseLedger(): {
+  events: WorkingLedgerEventV1[];
+  breakEvent: WorkingLedgerEventV1;
+} {
+  const opened = ledgerFixture("N1", { withBeat: false, defaultOnly: false }).events[0]!;
+  const createAction = formalPromiseAction("CREATE_SIMPLE_PROMISE_DELIVER_ORIGINAL", "create");
+  const createMutation = {
+    commitmentId: "promise-ledger-1",
+    operation: "CREATE" as const,
+    seatIds: ["zhejiang_governor", "jiangnan_merchant"] as SeatIdV1[],
+    sourceActionId: createAction.actionId,
+  };
+  const audienceSeatIds = [...createMutation.seatIds];
+  const [createEvent] = buildWorkingLedgerEvents({
+    key: { runId: RUN_ID, chapterRuntimeId: "runtime-N1" },
+    chapterId: "N1",
+    previousEvents: [opened],
+    payloads: [{
+      eventType: "FORMAL_COMMITMENT_APPLIED",
+      routeHash: opened.payload.routeHash,
+      inputFingerprint: computePressureFormalCommitmentFingerprintV1({
+        routeHash: opened.payload.routeHash,
+        action: createAction,
+        mutation: createMutation,
+        audienceSeatIds,
+      }),
+      action: createAction,
+      mutation: createMutation,
+      audienceSeatIds,
+    }],
+  });
+  const breakAction = formalPromiseAction("PROMISE_DELIVER_COPY_BREAK", "break");
+  const breakMutation = {
+    ...createMutation,
+    operation: "BREAK" as const,
+    sourceActionId: breakAction.actionId,
+  };
+  const prior = [opened, createEvent!];
+  const [breakEvent] = buildWorkingLedgerEvents({
+    key: { runId: RUN_ID, chapterRuntimeId: "runtime-N1" },
+    chapterId: "N1",
+    previousEvents: prior,
+    payloads: [{
+      eventType: "FORMAL_COMMITMENT_APPLIED",
+      routeHash: opened.payload.routeHash,
+      inputFingerprint: computePressureFormalCommitmentFingerprintV1({
+        routeHash: opened.payload.routeHash,
+        action: breakAction,
+        mutation: breakMutation,
+        audienceSeatIds,
+      }),
+      action: breakAction,
+      mutation: breakMutation,
+      audienceSeatIds,
+    }],
+  });
+  const events = [...prior, breakEvent!];
+  projectWorkingLedger(events);
+  return { events, breakEvent: breakEvent! };
+}
+
+function formalPromiseAction(actionType: string, suffix: string): DecisionActionV1 {
+  const payload: CanonicalJsonObject = { promiseId: "promise-ledger-1", operation: suffix };
+  const base = {
+    schemaVersion: "sangtian_decision_action_v1" as const,
+    actionId: `action-formal-${suffix}`,
+    runId: RUN_ID,
+    chapterRuntimeId: "runtime-N1",
+    chapterId: "N1" as const,
+    decisionPointId: "decision-N1",
+    seatId: "zhejiang_governor" as const,
+    actionOrdinal: suffix === "create" ? 1 : 2,
+    actionRevision: 1,
+    controlEpoch: 1,
+    expectedWorkingRevision: 0,
+    status: "SEALED" as const,
+    actionType,
+    payload,
+    payloadHash: sha256Canonical(payload),
+    idempotencyKey: `idempotency-formal-${suffix}`,
+  };
+  const requested = { ...base, requestFingerprint: computeDecisionActionRequestFingerprint(base) };
+  return { ...requested, sealedHash: sha256Canonical(requested) };
 }
 
 function realN1ChapterRecord() {

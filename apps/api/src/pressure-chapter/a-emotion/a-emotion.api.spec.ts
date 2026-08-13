@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 import {
   PRESSURE_CHAPTER_SEAT_IDS_V1,
@@ -338,6 +340,54 @@ test("reveal events preserve causal disclosure while publishing immutable event-
   );
 });
 
+test("surface policy keeps minor CROSS_IMPACT in Feed and BROKEN distinct from REVEALED", async () => {
+  const minor = await project(event({
+    eventId: "event-minor-cross-impact",
+    severity: "MINOR",
+    idempotencyKey: "minor-cross-impact",
+    presentation: {
+      recommendedPresentation: "FEED_ONLY",
+      centerCardType: "CROSS_IMPACT",
+      responseOptions: RESPONSE_OPTIONS.CROSS_IMPACT.map(([code, preferredEntry, consumesManeuverOnSubmit]) => ({ code, preferredEntry, consumesManeuverOnSubmit })),
+      modalTrigger: null,
+    },
+  }));
+  assert.equal(minor.projection.recommendedPresentation, "FEED_ONLY");
+  assert.equal(minor.projection.centerCard?.type, "CROSS_IMPACT");
+  assert.equal(minor.projection.keyModal, null);
+
+  const brokenEvent = event({
+    eventId: "event-promise-broken",
+    kind: "OBSERVABLE_TRACE",
+    eventCode: "PROMISE_DELIVER_LEDGER_BROKEN",
+    eventFamily: "LEDGER_FLOW",
+    disclosure: "SUSPECTED",
+    suspectedSeatIds: [SOURCE],
+    suspicionBasisRefs: ["fact.ledger.suspected-governor"],
+    promiseId: "promise-ledger-1",
+    idempotencyKey: "promise-broken",
+    presentation: {
+      recommendedPresentation: "CENTER_CARD",
+      centerCardType: "PROMISE_BROKEN",
+      responseOptions: RESPONSE_OPTIONS.PROMISE_BROKEN.map(([code, preferredEntry, consumesManeuverOnSubmit]) => ({ code, preferredEntry, consumesManeuverOnSubmit })),
+      modalTrigger: null,
+    },
+  });
+  const broken = await project(brokenEvent);
+  assert.equal(broken.projection.centerCard?.type, "PROMISE_BROKEN");
+  assert.equal(broken.projection.keyModal, null);
+
+  const revealed = await project(reveal({
+    prior: brokenEvent,
+    disclosure: "CONFIRMED",
+    cardType: "PROMISE_BROKEN",
+  }), broken);
+  assert.equal(revealed.projection.keyModal?.type, "PROMISE_BROKEN");
+  assert.equal(revealed.projection.keyModal?.dedupeKey, `${VIEWER}:PROMISE_BROKEN:promise-ledger-1:3`);
+  assert.equal(revealed.projection.keyModal?.sourceEventId, revealed.projection.eventId);
+  assert.equal(revealed.projection.keyModal?.serverSequence, revealed.projection.eventSequence);
+});
+
 test("feed applies priority, cursor scope, unread and idempotent delivery recovery", async () => {
   const repository = new InMemoryAEmotionFeedRepositoryV1();
   const feed = new AEmotionFeedServiceV1(repository);
@@ -397,7 +447,7 @@ test("feed applies priority, cursor scope, unread and idempotent delivery recove
   await assert.rejects(
     () => feed.mark({ ...mark, projectionVersion: 2 }),
     (error: unknown) => error instanceof AEmotionProjectionError
-      && error.code === "A_EMOTION_PROJECTION_VERSION_UNSUPPORTED",
+      && error.code === "A_EMOTION_PROJECTION_VERSION_STALE",
   );
   assert.equal((await feed.list({ roomId: "room-ae-1", runId: "run-ae-1", viewerSeatId: VIEWER })).unreadCount, 2);
 
@@ -433,6 +483,31 @@ test("feed applies priority, cursor scope, unread and idempotent delivery recove
   assert.deepEqual(priorityOrder.items.map((entry) => entry.eventId), ["event-related-major", "event-public-newer"]);
 });
 
+test("modal delivery is one-shot while its central card survives seen, ack, retry, and refresh", async () => {
+  const repository = new InMemoryAEmotionFeedRepositoryV1();
+  const feed = new AEmotionFeedServiceV1(repository);
+  const crisis = await project(modalEvent("CRISIS", 80));
+  await feed.ingest(crisis, NOW);
+  const initial = await feed.list({ roomId: "room-ae-1", runId: "run-ae-1", viewerSeatId: VIEWER });
+  assert.equal(initial.items[0]?.keyModal?.type, "CRISIS");
+  const mark = {
+    eventId: crisis.projection.eventId,
+    projectionVersion: crisis.projection.projectionVersion,
+    roomId: "room-ae-1",
+    runId: "run-ae-1",
+    viewerSeatId: VIEWER,
+    occurredAt: "2026-08-12T01:00:03.000Z",
+  };
+  await feed.mark({ ...mark, operation: "MODAL_SHOWN" });
+  await feed.mark({ ...mark, operation: "SEEN" });
+  await feed.mark({ ...mark, operation: "ACKNOWLEDGED" });
+  await feed.ingest(crisis, "2026-08-12T01:00:04.000Z");
+  const refreshed = await feed.list({ roomId: "room-ae-1", runId: "run-ae-1", viewerSeatId: VIEWER });
+  assert.equal(refreshed.items[0]?.keyModal, null);
+  assert.equal(refreshed.items[0]?.recommendedPresentation, "CENTER_CARD");
+  assert.equal(refreshed.items[0]?.centerCard?.type, "CRISIS");
+});
+
 test("central state and modal queues enforce the frozen five-state priority", async () => {
   assert.equal(selectAEmotionCenterStateV1([
     { type: "DECISION" },
@@ -443,17 +518,32 @@ test("central state and modal queues enforce the frozen five-state priority", as
     { type: "UNKNOWN" },
   ])?.type, "CRISIS");
   assert.deepEqual(orderAEmotionModalQueueV1([
-    { id: "victory", priority: 100 },
-    { id: "crisis", priority: 300 },
-    { id: "promise", priority: 200 },
-    { id: "crisis", priority: 300 },
-  ]).map((item) => item.id), ["crisis", "promise", "victory"]);
+    { id: "victory", priority: 100, dedupeKey: "victory", serverSequence: 12, sourceEventId: "event-victory" },
+    { id: "crisis", priority: 300, dedupeKey: "crisis", serverSequence: 14, sourceEventId: "event-crisis" },
+    { id: "promise", priority: 200, dedupeKey: "promise", serverSequence: 13, sourceEventId: "event-promise" },
+    { id: "crisis-retry", priority: 300, dedupeKey: "crisis", serverSequence: 14, sourceEventId: "event-crisis" },
+  ]).map((item) => item.id), ["crisis-retry", "promise", "victory"]);
+  assert.deepEqual(orderAEmotionModalQueueV1([
+    { id: "later", priority: 300, dedupeKey: "later", serverSequence: 9, sourceEventId: "event-z" },
+    { id: "same-b", priority: 300, dedupeKey: "same-b", serverSequence: 8, sourceEventId: "event-b" },
+    { id: "same-a", priority: 300, dedupeKey: "same-a", serverSequence: 8, sourceEventId: "event-a" },
+  ]).map((item) => item.id), ["same-a", "same-b", "later"]);
 
   const unknown = event({ eventId: "unknown", eventCode: "UNKNOWN_EVENT_CODE", idempotencyKey: "unknown" });
   await assert.rejects(
     () => projector().project({ event: unknown as AEmotionInteractionEventPortV1, viewer: viewerContext() }),
     (error: unknown) => error instanceof AEmotionProjectionError && error.code === "A_EMOTION_PRESENTATION_UNSUPPORTED",
   );
+});
+
+test("same viewer modal trigger owns the fixed dedupe key and replays identically", async () => {
+  const source = modalEvent("CRISIS", 80);
+  const first = await project(source);
+  const replay = await project(structuredClone(source));
+  const expected = [VIEWER, "CRISIS", "metric-transition-1", 1].join(":");
+  assert.equal(first.projection.keyModal?.dedupeKey, expected);
+  assert.equal(replay.projection.keyModal?.dedupeKey, expected);
+  assert.deepEqual(replay, first);
 });
 
 test("the A-Emotion read side has no authority or Provider mutation surface", () => {
@@ -463,5 +553,9 @@ test("the A-Emotion read side has no authority or Provider mutation surface", ()
     FrozenAEmotionPresentationCatalogV1.toString(),
   ].join("\n");
   assert.doesNotMatch(sourceFiles, /worldSequence|ChapterSettlement|Finale|Provider|Narrative/u);
+  for (const relative of ["projector.ts", "feed.service.ts", "presentation.ts", "ports.ts"]) {
+    const source = readFileSync(resolve(process.cwd(), "apps/api/src/pressure-chapter/a-emotion", relative), "utf8");
+    assert.doesNotMatch(source, /import[^;]*(?:Provider|working-ledger|settlement)/iu);
+  }
   assert.equal(PRESSURE_CHAPTER_SEAT_IDS_V1.length, 6);
 });

@@ -2,11 +2,13 @@ import { renderTransitionScreen } from "./transition-screen.js";
 
 const CONTINUOUS_SCHEMA = "continuous_game_projection_v1";
 const CONTINUOUS_STORY_V2_SCHEMA = "continuous_game_projection_v2";
+const PRESSURE_CHAPTER_SCHEMA = "pressure_chapter_game_projection_v1";
 
 export async function bootGamePage({
   root = document.getElementById("app"),
   window: win = globalThis.window,
   fetchImpl = win?.fetch?.bind(win),
+  loadPressureChapter = () => import("./pressure-chapter-game-v1.js?v=20260813-phase1-v4"),
   loadContinuousStoryV2 = () => import("./continuous-story-v2-maneuver-client.js?v=20260809-remaining-count-v1"),
   loadContinuous = () => import("./continuous-game-client.js?v=20260717-draft-persistence-v3"),
   loadRoomStorage = () => import("./room-story-storage.js?v=20260715-1"),
@@ -41,6 +43,42 @@ export async function bootGamePage({
   } catch {
     renderClosedError(root, runId, "We can't load this shared story room right now. Please try again in a moment.", true);
     return null;
+  }
+
+  if (response.ok && payload?.schemaVersion === PRESSURE_CHAPTER_SCHEMA) {
+    // Pressure reuses the approved app.js /game renderer. The Pressure module
+    // is an adapter plus the approved 03-06 enhancement, never a parallel shell.
+    win.__AI_STORY_DISABLE_AUTO_BOOT__ = true;
+    const [{ PressureMainGameStorageV1, attachPressureChapterEnhancementsV1 }, { createStoryApp }] = await Promise.all([
+      loadPressureChapter(),
+      loadSolo()
+    ]);
+    const storage = new PressureMainGameStorageV1({
+      runId,
+      initialProjection: payload,
+      fetchImpl
+    });
+    const app = createStoryApp({ root, window: win, storage });
+    await app.boot();
+    const existingState = app.getState?.();
+    if (existingState) {
+      existingState.showOpening = false;
+      existingState.openingStream = null;
+      app.render?.();
+    }
+    const pressureEnhancement = attachPressureChapterEnhancementsV1({
+      root,
+      window: win,
+      storyApp: app,
+      storage
+    });
+    pressureEnhancement.boot();
+    Object.defineProperty(app, "pressureEnhancement", {
+      configurable: true,
+      enumerable: false,
+      value: pressureEnhancement
+    });
+    return app;
   }
 
   if (response.ok && payload?.schemaVersion === CONTINUOUS_STORY_V2_SCHEMA) {

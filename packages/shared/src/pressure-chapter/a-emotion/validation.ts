@@ -171,8 +171,11 @@ function validatePresentation(value: unknown, disclosure: string, promiseId: str
     ? null
     : enumeration(record.centerCardType, A_EMOTION_CENTER_CARD_TYPES_V1.filter((item) => item !== "DECISION"), `${path}.centerCardType`);
   validateResponseOptions(record.responseOptions, `${path}.responseOptions`);
-  if (recommendation === "FEED_ONLY" && (cardType !== null || record.modalTrigger !== null)) {
-    failAEmotionContract(ERROR.PRESENTATION_VIOLATION, path, "FEED_ONLY_HAS_CARD");
+  if (
+    recommendation === "FEED_ONLY"
+    && (record.modalTrigger !== null || (cardType !== null && cardType !== "CROSS_IMPACT"))
+  ) {
+    failAEmotionContract(ERROR.PRESENTATION_VIOLATION, path, "FEED_ONLY_SURFACE_INVALID");
   }
   if (recommendation !== "FEED_ONLY" && cardType === null) {
     failAEmotionContract(ERROR.PRESENTATION_VIOLATION, `${path}.centerCardType`, "CARD_REQUIRED");
@@ -187,7 +190,10 @@ function validatePresentation(value: unknown, disclosure: string, promiseId: str
   } else if (record.modalTrigger !== null) {
     failAEmotionContract(ERROR.PRESENTATION_VIOLATION, `${path}.modalTrigger`, "UNEXPECTED_MODAL");
   }
-  if (cardType === "PROMISE_BROKEN" && (disclosure !== "CONFIRMED" || promiseId === null)) {
+  if (cardType === "PROMISE_BROKEN" && promiseId === null) {
+    failAEmotionContract(ERROR.PRESENTATION_VIOLATION, path, "PROMISE_ID_REQUIRED");
+  }
+  if (recommendation === "KEY_MODAL" && cardType === "PROMISE_BROKEN" && disclosure !== "CONFIRMED") {
     failAEmotionContract(ERROR.PRESENTATION_VIOLATION, path, "PROMISE_NOT_REVEALED");
   }
 }
@@ -292,11 +298,12 @@ function validateCard(value: unknown, path: string): AEmotionCenterCardV1 {
 function validateModal(value: unknown, card: AEmotionCenterCardV1 | null, path: string): AEmotionKeyModalV1 | null {
   if (value === null) return null;
   const record = object(value, path);
-  exactKeys(record, ["id", "type", "priority", "triggerId", "stateVersion", "dedupeKey", "card"], path);
-  ["id", "triggerId", "dedupeKey"].forEach((key) => string(record[key], `${path}.${key}`));
+  exactKeys(record, ["id", "type", "priority", "serverSequence", "sourceEventId", "triggerId", "stateVersion", "dedupeKey", "card"], path);
+  ["id", "sourceEventId", "triggerId", "dedupeKey"].forEach((key) => string(record[key], `${path}.${key}`));
   const type = enumeration(record.type, ["PROMISE_BROKEN", "CRISIS", "STAGE_VICTORY"] as const, `${path}.type`);
   const expectedPriority = type === "CRISIS" ? 300 : type === "PROMISE_BROKEN" ? 200 : 100;
   if (record.priority !== expectedPriority) failAEmotionContract(ERROR.PRESENTATION_VIOLATION, `${path}.priority`);
+  integer(record.serverSequence, `${path}.serverSequence`, 1);
   integer(record.stateVersion, `${path}.stateVersion`, 1);
   const modalCard = validateCard(record.card, `${path}.card`);
   if (!card || modalCard.type !== type || modalCard.id !== card.id) {
@@ -335,8 +342,15 @@ export function validateAEmotionViewerProjectionV1(
   validateCardActions(record.responseOptions, `${path}.responseOptions`);
   enumeration(record.recommendedPresentation, A_EMOTION_PRESENTATIONS_V1, `${path}.recommendedPresentation`);
   const card = record.centerCard === null ? null : validateCard(record.centerCard, `${path}.centerCard`);
-  validateModal(record.keyModal, card, `${path}.keyModal`);
-  integer(record.eventSequence, `${path}.eventSequence`, 1);
+  const modal = validateModal(record.keyModal, card, `${path}.keyModal`);
+  const eventSequence = integer(record.eventSequence, `${path}.eventSequence`, 1);
+  if (modal && (
+    modal.sourceEventId !== record.eventId
+    || modal.serverSequence !== eventSequence
+    || modal.dedupeKey !== [record.viewerSeatId, modal.type, modal.triggerId, modal.stateVersion].join(":")
+  )) {
+    failAEmotionContract(ERROR.PRESENTATION_VIOLATION, `${path}.keyModal`, "IDENTITY_MISMATCH");
+  }
   timestamp(record.occurredAt, `${path}.occurredAt`);
   if (disclosure === "HIDDEN") {
     if ("visibleSourceSeatId" in record || "visibleSuspectedSeatIds" in record) {

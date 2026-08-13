@@ -118,6 +118,8 @@ export interface AEmotionKeyModalPortV1 {
   id: string;
   type: "PROMISE_BROKEN" | "CRISIS" | "STAGE_VICTORY";
   priority: 100 | 200 | 300;
+  serverSequence: number;
+  sourceEventId: string;
   triggerId: string;
   stateVersion: number;
   dedupeKey: string;
