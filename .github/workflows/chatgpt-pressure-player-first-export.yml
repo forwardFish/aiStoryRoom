@@ -1,0 +1,39 @@
+name: Export source for pressure player-first implementation
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact main commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Archive source without generated dependencies
+        run: |
+          set -euo pipefail
+          tar \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude='**/node_modules' \
+            -czf /tmp/aiStoryRoom-source.tar.gz .
+          git rev-parse HEAD > /tmp/source-head.txt
+          git rev-parse HEAD^{tree} > /tmp/source-tree.txt
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: aiStoryRoom-main-source
+          path: |
+            /tmp/aiStoryRoom-source.tar.gz
+            /tmp/source-head.txt
+            /tmp/source-tree.txt
+          if-no-files-found: error
+          retention-days: 1
