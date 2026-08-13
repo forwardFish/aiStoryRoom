@@ -3,17 +3,22 @@ import { renderTransitionScreen } from "./transition-screen.js";
 const CONTINUOUS_SCHEMA = "continuous_game_projection_v1";
 const CONTINUOUS_STORY_V2_SCHEMA = "continuous_game_projection_v2";
 const PRESSURE_CHAPTER_SCHEMA = "pressure_chapter_game_projection_v1";
+const PRESSURE_CHAPTER_TERMINAL_SCHEMA = "pressure_chapter_game_terminal_v1";
+
+const defaultLoadPressureMainGameStorage = () => import("./pressure-main-game-storage-v1.js?v=20260812-main-game-restore-v1");
+const defaultLoadPressureChapter = () => import("./pressure-chapter-game-v1.js?v=20260813-phase1-v4");
 
 export async function bootGamePage({
   root = document.getElementById("app"),
   window: win = globalThis.window,
   fetchImpl = win?.fetch?.bind(win),
-  loadPressureChapter = () => import("./pressure-chapter-game-v1.js?v=20260813-phase1-v4"),
+  loadPressureMainGameStorage = defaultLoadPressureMainGameStorage,
+  loadPressureChapter = defaultLoadPressureChapter,
   loadContinuousStoryV2 = () => import("./continuous-story-v2-maneuver-client.js?v=20260809-remaining-count-v1"),
   loadContinuous = () => import("./continuous-game-client.js?v=20260717-draft-persistence-v3"),
   loadRoomStorage = () => import("./room-story-storage.js?v=20260715-1"),
   loadSolo = () => import("./app.js?v=20260809-remaining-count-v1"),
-  navigate = (url) => win?.location?.assign?.(url)
+  navigate = (url) => win?.location?.assign?.(url),
 } = {}) {
   if (!root) throw new TypeError("game root is required");
   const runId = new URLSearchParams(win?.location?.search || "").get("runId") || "";
@@ -45,39 +50,44 @@ export async function bootGamePage({
     return null;
   }
 
+  if (response.ok && payload?.schemaVersion === PRESSURE_CHAPTER_TERMINAL_SCHEMA) {
+    const terminal = validatePressureTerminalProjection(payload, runId);
+    clearPressureDecisionDraftsForRun(win, runId);
+    navigate(terminal.resultUrl);
+    return null;
+  }
+
   if (response.ok && payload?.schemaVersion === PRESSURE_CHAPTER_SCHEMA) {
     // Pressure reuses the approved app.js /game renderer. The Pressure module
     // is an adapter plus the approved 03-06 enhancement, never a parallel shell.
     win.__AI_STORY_DISABLE_AUTO_BOOT__ = true;
-    const [{ PressureMainGameStorageV1, attachPressureChapterEnhancementsV1 }, { createStoryApp }] = await Promise.all([
-      loadPressureChapter(),
-      loadSolo()
+    const legacyInjectedStorage = loadPressureMainGameStorage !== defaultLoadPressureMainGameStorage
+      && loadPressureChapter === defaultLoadPressureChapter;
+    const [pressureModule, { createStoryApp }] = await Promise.all([
+      legacyInjectedStorage ? loadPressureMainGameStorage() : loadPressureChapter(),
+      loadSolo(),
     ]);
-    const storage = new PressureMainGameStorageV1({
+    const storage = new pressureModule.PressureMainGameStorageV1({
       runId,
       initialProjection: payload,
-      fetchImpl
+      fetchImpl,
     });
     const app = createStoryApp({ root, window: win, storage });
     await app.boot();
-    const existingState = app.getState?.();
-    if (existingState) {
-      existingState.showOpening = false;
-      existingState.openingStream = null;
-      app.render?.();
+    if (!legacyInjectedStorage) {
+      const pressureEnhancement = pressureModule.attachPressureChapterEnhancementsV1({
+        root,
+        window: win,
+        storyApp: app,
+        storage,
+      });
+      pressureEnhancement.boot();
+      Object.defineProperty(app, "pressureEnhancement", {
+        configurable: true,
+        enumerable: false,
+        value: pressureEnhancement,
+      });
     }
-    const pressureEnhancement = attachPressureChapterEnhancementsV1({
-      root,
-      window: win,
-      storyApp: app,
-      storage
-    });
-    pressureEnhancement.boot();
-    Object.defineProperty(app, "pressureEnhancement", {
-      configurable: true,
-      enumerable: false,
-      value: pressureEnhancement
-    });
     return app;
   }
 
@@ -128,6 +138,58 @@ export async function bootGamePage({
     : "We can't load this shared story room right now. Please try again in a moment.";
   renderClosedError(root, runId, message, true);
   return null;
+}
+
+function validatePressureTerminalProjection(value, expectedRunId) {
+  const terminal = exactRecord(value, ["schemaVersion", "runId", "resultUrl"], "terminal projection");
+  const expectedResultUrl = `/game/result?runId=${encodeURIComponent(expectedRunId)}`;
+  if (
+    terminal.schemaVersion !== PRESSURE_CHAPTER_TERMINAL_SCHEMA
+    || terminal.runId !== expectedRunId
+    || terminal.resultUrl !== expectedResultUrl
+  ) {
+    throw new Error("The terminal projection did not match this Pressure run.");
+  }
+  return terminal;
+}
+
+function exactRecord(value, keys, label) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`The ${label} must be an object.`);
+  }
+  const actual = Object.keys(value).sort();
+  const expected = [...keys].sort();
+  if (actual.length !== expected.length || actual.some((key, index) => key !== expected[index])) {
+    throw new Error(`The ${label} contains incompatible fields.`);
+  }
+  return value;
+}
+
+function safePressureDraftStorage(win) {
+  try {
+    if (win?.sessionStorage) return win.sessionStorage;
+  } catch {}
+  try {
+    return win?.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function clearPressureDecisionDraftsForRun(win, runId) {
+  const prefix = `many-worlds:pressure-decision-draft:v1:${encodeURIComponent(runId)}:`;
+  for (const storage of [
+    (() => { try { return win?.sessionStorage; } catch { return null; } })(),
+    (() => { try { return win?.localStorage; } catch { return null; } })(),
+  ]) {
+    if (!storage) continue;
+    try {
+      for (let index = storage.length - 1; index >= 0; index -= 1) {
+        const key = storage.key(index);
+        if (key?.startsWith(prefix)) storage.removeItem(key);
+      }
+    } catch {}
+  }
 }
 
 function loadingView() {

@@ -17,6 +17,10 @@ import {
   buildChapterWorkingSet,
   createChapterWorkingState,
 } from "@ai-story/templates";
+import {
+  measurePressureDecisionStageV1,
+  recordPressureDecisionW4ConflictV1,
+} from "../observability/decision-convergence-timing";
 import type {
   ActiveDecisionSeatV1,
   ActiveDecisionStateV1,
@@ -98,7 +102,12 @@ export class PressureChapterOrchestratorService {
     assertNow(nowMs);
     let state = await this.requireState(route.runId);
     assertRoute(state, route);
-    if (state.phase === "ACTIVE") state = await this.reconcileAcceptedActions(route, state);
+    if (state.phase === "ACTIVE") {
+      state = await measurePressureDecisionStageV1(
+        "orchestratorReconcileMs",
+        () => this.reconcileAcceptedActions(route, state),
+      );
+    }
     switch (state.phase) {
       case "ACTIVE": {
         const deadlineAtMs = state.activeDecision?.deadlineAtMs;
@@ -106,7 +115,7 @@ export class PressureChapterOrchestratorService {
           && nowMs >= deadlineAtMs) {
           return this.advanceDeadline(route, nowMs);
         }
-        return this.maybeResolve(route, nowMs);
+        return this.maybeResolve(route, nowMs, state);
       }
       case "RESOLVING_BEAT":
         return this.driveBeatResolution(route, state, nowMs);
@@ -297,13 +306,16 @@ export class PressureChapterOrchestratorService {
     const actionIds = [...new Set(active.seats.flatMap((seat) => seat.actionIds))]
       .sort(compareCanonicalText);
     if (!actionIds.length) failChapterOrchestrator(ERROR.CLOSE_POLICY_NOT_MET, "no-actions");
-    const result = await this.beatResolution.resolve({
-      routeSnapshot: route,
-      chapterRuntimeId: state.chapterRuntimeId,
-      chapterDefinition: descriptor.definition,
-      actionIds,
-      resolverVersion: RESOLVER_VERSION,
-    });
+    const result = await measurePressureDecisionStageV1(
+      "beatMs",
+      () => this.beatResolution.resolve({
+        routeSnapshot: route,
+        chapterRuntimeId: state.chapterRuntimeId,
+        chapterDefinition: descriptor.definition,
+        actionIds,
+        resolverVersion: RESOLVER_VERSION,
+      }),
+    );
     const resolutionActions = actionIds.map((actionId) => {
       const accepted = result.projection.acceptedActions.get(actionId);
       if (!accepted) failChapterOrchestrator(ERROR.DECISION_MISMATCH, `missing-action:${actionId}`);
@@ -322,7 +334,10 @@ export class PressureChapterOrchestratorService {
         phase: "ACTIVE",
         activeDecision: nextDecision,
       });
-      return this.saveOrResume(route, state, next, nowMs);
+      return measurePressureDecisionStageV1(
+        "nextOpenMs",
+        () => this.saveOrResume(route, state, next, nowMs),
+      );
     }
     assertChapterClose(descriptor, result.projection.state.completedDecisionPointIds);
     const settlementInput = compileSettlementInput(state, descriptor, result.projection);
@@ -353,12 +368,15 @@ export class PressureChapterOrchestratorService {
     if (state.settlementInputHash !== settlementInput.inputHash) {
       failChapterOrchestrator(ERROR.SETTLEMENT_MISMATCH, "sealed-input");
     }
-    const result = await this.settlement.settle({
-      routeSnapshot: route,
-      settlementInput,
-      chapterDescriptorHash: descriptor.descriptorHash,
-      seatParticipation: compileSeatParticipation(state.chapterSeatSummaries),
-    });
+    const result = await measurePressureDecisionStageV1(
+      "settlementMs",
+      () => this.settlement.settle({
+        routeSnapshot: route,
+        settlementInput,
+        chapterDescriptorHash: descriptor.descriptorHash,
+        seatParticipation: compileSeatParticipation(state.chapterSeatSummaries),
+      }),
+    );
     const bundle = validateFrozenChapterBundleV1(
       result.frozenBundle,
       state.authorityBase.previousFrozenHash,
@@ -408,13 +426,16 @@ export class PressureChapterOrchestratorService {
     }
     const next = nextChapterId(state.currentChapterId);
     if (next === "FINALE") failChapterOrchestrator(ERROR.N8_FORBIDDEN);
-    return this.openChapter({
-      route,
-      chapterId: next,
-      authorityBase: state.authorityBase,
-      expected: state,
-      nowMs,
-    });
+    return measurePressureDecisionStageV1(
+      "nextOpenMs",
+      () => this.openChapter({
+        route,
+        chapterId: next,
+        authorityBase: state.authorityBase,
+        expected: state,
+        nowMs,
+      }),
+    );
   }
 
   private async openChapter(input: {
@@ -541,8 +562,9 @@ export class PressureChapterOrchestratorService {
   private async reconcileAcceptedActions(
     route: RunRouteSnapshotV1,
     supplied: ChapterOrchestratorStateV1,
+    attempt = 0,
   ): Promise<ChapterOrchestratorStateV1> {
-    let state = supplied;
+    const state = supplied;
     const active = requireActiveDecision(state);
     const descriptor = await this.loadDescriptor(route, state.currentChapterId, state.descriptorHash);
     const decision = requireDecision(descriptor, active.decisionPointId);
@@ -554,20 +576,45 @@ export class PressureChapterOrchestratorService {
         && !recorded.has(accepted.action.actionId)
       ))
       .sort((left, right) => compareCanonicalText(left.action.actionId, right.action.actionId));
+    if (!missing.length) return state;
+
+    const nextActive = structuredClone(active);
+    const nextSummaries = structuredClone(state.chapterSeatSummaries);
     for (const accepted of missing) {
       const seatId = accepted.action.seatId;
       const budget = decision.execution.perSeatActionBudget[seatId];
       if (!budget) failChapterOrchestrator(ERROR.SEAT_NOT_REQUIRED, seatId);
-      state = await this.recordAction(route, {
-        expectedChapterRuntimeId: state.chapterRuntimeId,
-        decisionPointId: active.decisionPointId,
+      if (!decision.execution.allowedActionTypes.includes(accepted.action.actionType)) {
+        failChapterOrchestrator(ERROR.DECISION_MISMATCH, accepted.action.actionType);
+      }
+      if (accepted.action.expectedWorkingRevision !== projection.state.revision) {
+        failChapterOrchestrator(ERROR.STALE_ACTION, accepted.action.actionId);
+      }
+      foldRecordedAction(nextActive, nextSummaries, {
         seatId,
         actionId: accepted.action.actionId,
         defaultCode: recoveredDefaultCode(accepted.action.idempotencyKey, decision),
         actionBudget: budget,
       });
     }
-    return state;
+    const next = nextState(state, {
+      activeDecision: nextActive,
+      chapterSeatSummaries: nextSummaries,
+    });
+    const saved = await this.states.compareAndSwap({
+      runId: state.runId,
+      expectedRevision: state.revision,
+      next,
+    });
+    if (saved.status === "COMMITTED") return next;
+    recordPressureDecisionW4ConflictV1();
+    if (attempt + 1 >= MAX_CAS_ATTEMPTS) {
+      failChapterOrchestrator(ERROR.CAS_CONFLICT, active.decisionPointId);
+    }
+    const current = saved.current ?? await this.requireState(route.runId);
+    assertRoute(current, route);
+    if (current.phase !== "ACTIVE") return current;
+    return this.reconcileAcceptedActions(route, current, attempt + 1);
   }
 
   private async loadDescriptor(
@@ -623,6 +670,41 @@ export class PressureChapterOrchestratorService {
       next,
     });
     return saved.status === "COMMITTED" ? next : this.resume(route, nowMs);
+  }
+}
+
+function foldRecordedAction(
+  active: ActiveDecisionStateV1,
+  summaries: ChapterSeatSummaryV1[],
+  input: {
+    seatId: SeatIdV1;
+    actionId: string;
+    defaultCode: string | null;
+    actionBudget: number;
+  },
+): void {
+  const seat = requireSeat(active, input.seatId);
+  if (seat.actionIds.includes(input.actionId)) return;
+  if (seat.requirement !== "REQUIRED") {
+    failChapterOrchestrator(ERROR.SEAT_NOT_REQUIRED, input.seatId);
+  }
+  if (seat.actionCount >= input.actionBudget) {
+    failChapterOrchestrator(ERROR.ACTION_BUDGET_EXCEEDED, input.seatId);
+  }
+  seat.actionIds = [...seat.actionIds, input.actionId].sort(compareCanonicalText);
+  seat.actionCount += 1;
+  seat.completion = input.defaultCode ? "DEFAULTED" : "SEALED_ACTIONS";
+  seat.defaultCode = input.defaultCode;
+  const summary = summaries.find((item) => item.seatId === input.seatId);
+  if (!summary) failChapterOrchestrator(ERROR.STATE_CORRUPT, `summary:${input.seatId}`);
+  summary.requirement = "REQUIRED";
+  summary.sealedActionIds = [...new Set([...summary.sealedActionIds, input.actionId])]
+    .sort(compareCanonicalText);
+  if (input.defaultCode) {
+    summary.defaultActionIds = [...new Set([...summary.defaultActionIds, input.actionId])]
+      .sort(compareCanonicalText);
+    summary.defaultCodes = [...new Set([...summary.defaultCodes, input.defaultCode])]
+      .sort(compareCanonicalText);
   }
 }
 

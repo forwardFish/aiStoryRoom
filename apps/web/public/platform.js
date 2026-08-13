@@ -1366,33 +1366,9 @@ async function hydrateSharedRoom(roomId) {
   }
 }
 
-async function startSoloFromWorld(worldId, element) {
+function startSoloFromWorld(worldId) {
   if (!worldId) return;
-  const returnTo = `/worlds/${encodeURIComponent(worldId)}?play=solo`;
-  if (!sessionToken()) {
-    location.assign(loginUrl(returnTo));
-    return;
-  }
-  try {
-    await request("/api/v4/auth/me");
-  } catch (error) {
-    if (error.status === 401) location.assign(loginUrl(returnTo));
-    else notice(error.message || "Unable to verify your session.");
-    return;
-  }
-  const storageKey = `many-worlds:solo-entry:${worldId}`;
-  const idempotencyKey = lobbyMutationKey(storageKey, "solo-entry");
-  return runMutationOnce(`solo-entry:${worldId}`, element, "Opening story…", async () => {
-    try {
-      const started = await request("/api/v4/rooms/solo", { method:"POST", body:JSON.stringify({ worldId, idempotencyKey, resumeExisting:true }) });
-      const runId = started.id || started.runId || started.roomId;
-      if (!runId) throw new Error("The Solo story did not return a run id.");
-      localStorage.removeItem(storageKey);
-      location.assign(`/game?runId=${encodeURIComponent(runId)}`);
-    } catch (error) {
-      notice(error.message || "Unable to open Solo Play.");
-    }
-  });
+  location.assign(`/role-select?story=${encodeURIComponent(worldId)}`);
 }
 
 function openStartConfirmation(room, trigger) {

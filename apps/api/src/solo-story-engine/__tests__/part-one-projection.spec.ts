@@ -51,6 +51,25 @@ test("Part One visible reform progress starts at zero and follows the determinis
   assert.equal(reformProgress(project("UNKNOWN", "STARTED")), 20);
 });
 
+test("Solo world projection exposes private profile data only for the player's role", () => {
+  const projection = project("UNKNOWN");
+  assert.ok(projection.world);
+  const viewerRole = projection.world.roles.find((role) => role.roleKey === projection.player.roleKey)!;
+
+  assert.ok(viewerRole.personalGoal.length > 0);
+  assert.ok(viewerRole.knownInfo.length > 0);
+  assert.ok(viewerRole.gameplayProfile.goals.length > 0);
+
+  for (const otherRole of projection.world.roles.filter((role) => role.roleKey !== projection.player.roleKey)) {
+    assert.equal(otherRole.personalGoal, "");
+    assert.deepEqual(otherRole.knownInfo, []);
+    assert.equal(otherRole.gameplayProfile.fateQuestion, "");
+    assert.deepEqual(otherRole.gameplayProfile.goals, []);
+    assert.deepEqual(otherRole.gameplayProfile.resources, []);
+    assert.deepEqual(otherRole.gameplayProfile.leverage, []);
+  }
+});
+
 test("T20 exposes a read-only Part Two handoff decision set without opening T21", () => {
   const candidate = (id: string, label: string) => ({
     id,

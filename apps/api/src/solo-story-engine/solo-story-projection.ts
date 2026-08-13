@@ -28,7 +28,7 @@ export type SoloProjectionSource = {
 
 export function buildSoloStoryProjection(source: SoloProjectionSource): GameProjectionV2 {
   const { run, player, role, control, thread, turn, decisionSet } = source;
-  const world = gamePageProjection(run.templateKey);
+  const world = gamePageProjection(run.templateKey, String(role.roleKey));
   applyPartOneStatusMetrics(world, run);
   const timeline = source.narratives
     .map(toTimelineEntry)

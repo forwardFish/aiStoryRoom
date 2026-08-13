@@ -21,6 +21,15 @@ type SourceGame = {
   roles: Array<{ roleKey: string; roleName: string; publicInfo: string; portrait: string }>;
 };
 
+const SANGTIAN_PUBLIC_PORTRAITS = [
+  "/assets/game/sangtian/generated/role-governor-scene-v1.png",
+  "/assets/game/sangtian/generated/role-xunfu-scene-v1.png",
+  "/assets/game/sangtian/generated/governor-scene-v1.png",
+  "/assets/game/sangtian/generated/role-clerk-scene-v1.png",
+  "/assets/game/sangtian/generated/role-merchant-scene-v1.png",
+  "/assets/game/sangtian/generated/role-spy-scene-v1.png"
+];
+
 function sourceGame(worldId: string): SourceGame {
   return JSON.parse(readFileSync(resolve(__dirname, `../../../packages/templates/config/${worldId}/game.json`), "utf8")) as SourceGame;
 }
@@ -55,25 +64,61 @@ for (const worldId of ["sangtian", "caesar"] as const) {
     assert.equal(detail.maxHumanPlayers, source.modes.maxHumanPlayers);
     assert.equal(detail.minPlayers, source.modes.minHumanPlayers);
     assert.equal(detail.maxPlayers, Math.min(source.modes.maxHumanPlayers, source.roles.length));
-    assert.deepEqual(detail.roles.map((role) => ({ key: role.key, name: role.name, publicInfo: role.publicInfo, portrait: role.portrait })),
-      source.roles.map((role) => ({ key: role.roleKey, name: role.roleName, publicInfo: role.publicInfo, portrait: role.portrait })));
+    if (worldId !== "sangtian") {
+      assert.deepEqual(detail.roles.map((role) => ({ key: role.key, name: role.name, publicInfo: role.publicInfo })),
+        source.roles.map((role) => ({ key: role.roleKey, name: role.roleName, publicInfo: role.publicInfo })));
+    }
+    assert.deepEqual(
+      detail.roles.map((role) => role.portrait),
+      worldId === "sangtian" ? SANGTIAN_PUBLIC_PORTRAITS : source.roles.map((role) => role.portrait)
+    );
+    assert.equal(detail.roles.every((role) => existsSync(resolve(__dirname, `../../web/public${role.portrait}`))), true);
+    assert.equal(detail.roles.every((role) => !("personalGoal" in role)), true);
+    assert.equal(detail.roles.every((role) => !("knownInfo" in role)), true);
+    assert.equal(detail.roles.every((role) => !("gameplayProfile" in role)), true);
   });
 }
 
-test("world runtime metadata follows the same continuous-strategy rollout flag as room creation", () => {
+test("Sangtian public Role Preview preserves the established characters without changing canonical Pressure seats", () => {
+  const source = sourceGame("sangtian");
+  const detail = new WorldsController().detail("sangtian");
+  assert.deepEqual(detail.roles.map((role) => role.key), [
+    "zhejiang_governor",
+    "zhejiang_administration",
+    "qingliu_law",
+    "cabinet_finance",
+    "jiangnan_merchant",
+    "sili_weaving"
+  ]);
+  assert.deepEqual(source.roles.map((role) => role.portrait), [
+    "/assets/game/sangtian/governor.png",
+    "/assets/game/sangtian/rank.png",
+    "/assets/game/sangtian/shield.png",
+    "/assets/game/sangtian/treasury.png",
+    "/assets/game/sangtian/grain.png",
+    "/assets/game/sangtian/crown.png"
+  ]);
+  assert.deepEqual(detail.roles.map((role) => role.portrait), SANGTIAN_PUBLIC_PORTRAITS);
+  assert.deepEqual(detail.roles.map((role) => role.name), [
+    "浙江总督", "浙江巡抚", "清流县令", "改桑书吏", "江南商会会首", "司礼监织造使"
+  ]);
+  assert.equal(detail.roles.some((role) => /(?:rank|shield|treasury|grain|crown|magistrate|minister)\.png$/u.test(role.portrait)), false);
+});
+
+test("Sangtian runtime metadata remains pinned to Pressure regardless of the legacy rollout flag", () => {
   const prior = process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED;
   try {
     process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED = "false";
-    assert.equal(new WorldsController().detail("sangtian").engineVersion, "legacy_v1");
+    assert.equal(new WorldsController().detail("sangtian").engineVersion, "pressure_chapter_v1");
     process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED = "true";
-    assert.equal(new WorldsController().detail("sangtian").engineVersion, "continuous_story_v2");
+    assert.equal(new WorldsController().detail("sangtian").engineVersion, "pressure_chapter_v1");
   } finally {
     if (prior === undefined) delete process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED;
     else process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED = prior;
   }
 });
 
-test("world pricing metadata never advertises the active-action fee for a legacy engine", () => {
+test("world pricing metadata never advertises an unsupported active-action fee", () => {
   const prior = {
     rollout: process.env.MULTIPLAYER_CONTINUOUS_STRATEGY_ENABLED,
     policy: process.env.CREDIT_DEFAULT_POLICY,
@@ -86,9 +131,9 @@ test("world pricing metadata never advertises the active-action fee for a legacy
     const controller = new WorldsController();
     const sangtian = controller.detail("sangtian");
     const caesar = controller.detail("caesar");
-    assert.equal(sangtian.engineVersion, "continuous_story_v2");
-    assert.equal(sangtian.billingPolicyVersion, "active_action_v1");
-    assert.equal(sangtian.runCreateCredits, 20);
+    assert.equal(sangtian.engineVersion, "pressure_chapter_v1");
+    assert.equal(sangtian.billingPolicyVersion, "world_unlock_v1");
+    assert.equal(sangtian.runCreateCredits, 0);
     assert.equal(caesar.engineVersion, "legacy_v1");
     assert.equal(caesar.billingPolicyVersion, "world_unlock_v1");
     assert.equal(caesar.runCreateCredits, 0);

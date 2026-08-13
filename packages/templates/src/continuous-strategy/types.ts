@@ -1,7 +1,21 @@
 export const SANGTIAN_STRATEGY_VERSION = "sangtian_v1_1" as const;
 export const SANGTIAN_TEMPLATE_KEY = "sangtian" as const;
-export const SANGTIAN_PLAYABLE_ROLE_KEYS = ["zhejiang_governor", "xunfu", "county_magistrate"] as const;
-export const SANGTIAN_SYSTEM_ROLE_KEY = "merchant" as const;
+/** Historical Continuous Story v1.2 contract for already-created runs only. */
+export const SANGTIAN_V1_1_PLAYABLE_ROLE_KEYS = [
+  "zhejiang_governor",
+  "xunfu",
+  "county_magistrate",
+] as const;
+export const SANGTIAN_V1_1_SYSTEM_ROLE_KEY = "merchant" as const;
+export const SANGTIAN_PLAYABLE_ROLE_KEYS = [
+  "zhejiang_governor",
+  "xunfu",
+  "county_magistrate",
+  "clerk",
+  "merchant",
+  "sili_jian",
+] as const;
+export const SANGTIAN_SYSTEM_ROLE_KEY = "court_market_pressure" as const;
 
 export const CONTINUOUS_V1_STAGE_COUNT = 7 as const;
 export const CONTINUOUS_V1_MAIN_CARDS_PER_ROLE_STAGE = 3 as const;

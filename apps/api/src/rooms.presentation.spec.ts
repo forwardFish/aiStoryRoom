@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { getGameDefinition } from "@ai-story/templates";
-import { CONTINUOUS_STORY_ENGINE_VERSION } from "@ai-story/shared";
+import { CONTINUOUS_STORY_ENGINE_VERSION, PRESSURE_CHAPTER_ROUTE_V1, PRESSURE_CHAPTER_SEAT_IDS_V1 } from "@ai-story/shared";
 import { RoomsService, compareSoloProgress, roomTitleForCreate, sharedRoomRunIdForRequest, shouldResumeExistingSolo, soloCreationResponse, soloRunIdForRequest } from "./rooms.service";
+import { publicWorldRolePresentation } from "./public-world-role-presentation";
 
 const service = new RoomsService(
   {} as never,
@@ -22,6 +23,12 @@ test("room projection uses the standard game definition for both worlds", () => 
   for (const worldId of ["caesar", "sangtian"]) {
     const definition = getGameDefinition(worldId);
     const firstRole = definition.roles[0];
+    const publicPresentation = publicWorldRolePresentation(worldId, firstRole.roleKey, {
+      name: firstRole.roleName,
+      identity: firstRole.identity,
+      publicInfo: firstRole.publicInfo,
+      portrait: firstRole.portrait,
+    });
     const roleId = `${worldId}-role-1`;
     const room = {
       id: `${worldId}-room`,
@@ -50,8 +57,16 @@ test("room projection uses the standard game definition for both worlds", () => 
     assert.equal(projection.world.presentation.sceneBackground, definition.presentation.sceneBackground);
     assert.equal(projection.world.presentation.locationLabel, definition.presentation.locationLabel);
     assert.equal(projection.world.roles.length, definition.roles.length);
-    assert.equal(projection.world.roles[0]?.portrait, firstRole.portrait);
-    assert.equal(projection.world.roles[0]?.gameplayProfile.characterName, firstRole.gameplayProfile?.characterName || firstRole.roleName);
+    assert.equal(projection.world.roles[0]?.portrait, publicPresentation.portrait);
+    assert.equal(projection.world.roles[0]?.roleName, publicPresentation.name);
+    assert.equal(projection.world.roles[0]?.identity, publicPresentation.identity);
+    assert.equal(projection.world.roles[0]?.publicInfo, publicPresentation.publicInfo);
+    assert.equal(
+      projection.world.roles[0]?.gameplayProfile.characterName,
+      worldId === "sangtian"
+        ? publicPresentation.name
+        : firstRole.gameplayProfile?.characterName || firstRole.roleName,
+    );
     assert.equal(projection.roles[0]?.portrait, firstRole.portrait);
     assert.equal(projection.roles[0]?.roleName, firstRole.roleName);
     assert.equal(projection.roles[0]?.identity, firstRole.identity);
@@ -164,7 +179,8 @@ test("Solo create resumes the furthest active first-role story without creating 
   const result = await resumableService.createSolo(user, { worldId: "sangtian", roleKey: "zhejiang_governor", idempotencyKey: "solo-create:test-resume" });
   assert.equal(result.id, "solo-progressed");
   assert.equal(result.runId, "solo-progressed");
-  assert.equal(v2StartCalls, 1);
+  assert.equal((result as { resumedExisting?: boolean }).resumedExisting, true);
+  assert.equal(v2StartCalls, 0);
 });
 
 test("Solo creation only resumes an unfinished run when the caller chose continue", () => {
@@ -191,4 +207,119 @@ test("playing Story V2 start bypasses the waiting-room guard and delegates idemp
   const result = await resumableService.start({ id: "user-1" } as never, "solo-progressed");
   assert.equal(result.status, "playing");
   assert.equal(delegated, 1);
+});
+
+test("pressure room projection preserves room compatibility fields and shows joined-unseated members", async () => {
+  const pressureService = new RoomsService(
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+  );
+  (pressureService as any).pressureRoomsGateway = {
+    getStatus: async () => ({
+      schemaVersion: "pressure_lobby_status_v1",
+      runId: "pressure-room-1",
+      participantMode: "MULTIPLAYER",
+      ownerUserId: "user-1",
+      lifecycle: "WAITING_PLAYERS",
+      engineVersion: PRESSURE_CHAPTER_ROUTE_V1.engineVersion,
+      strategyVersion: PRESSURE_CHAPTER_ROUTE_V1.strategyVersion,
+      runtimeProfile: PRESSURE_CHAPTER_ROUTE_V1.runtimeProfile,
+      members: [
+        { userId: "user-1", joined: true, selectedSeatId: "cabinet_finance", ready: true },
+        { userId: "user-2", joined: true, selectedSeatId: null, ready: false },
+      ],
+      seats: PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId, index) => ({
+        seatId,
+        roleKey: seatId,
+        roleStatus: "claimed" as const,
+        roleIsAiControlled: index !== 0,
+        userId: index === 0 ? "user-1" : null,
+        controllerId: index === 0 ? "user-1" : `ai-${seatId}`,
+        controllerType: index === 0 ? "human" as const : "ai" as const,
+        ready: index === 0,
+      })),
+    }),
+    getStartStatus: async () => ({
+      schemaVersion: "pressure_start_status_v1",
+      runId: "pressure-room-1",
+      phase: "STARTED",
+      completedStages: ["FREEZE_ROUTE"],
+      frozenHumanSeatSetHash: "a".repeat(64),
+      routeHash: "b".repeat(64),
+      genesisHash: null,
+      seatControlStateHash: null,
+      n1ChapterHash: null,
+      lastFailure: null,
+    }),
+  };
+  const room = {
+    id: "pressure-room-1",
+    title: "Pressure room",
+    templateKey: "sangtian",
+    templateId: "sangtian-template",
+    status: "waiting_players",
+    inviteCode: "PRESS1",
+    visibility: "public",
+    maxPlayers: 6,
+    ownerUserId: "user-1",
+    engineVersion: PRESSURE_CHAPTER_ROUTE_V1.engineVersion,
+    strategyVersion: PRESSURE_CHAPTER_ROUTE_V1.strategyVersion,
+    accessLevel: "free",
+    freeDecisionsUsed: 0,
+    roles: PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => ({ id: `role-${seatId}`, roleKey: seatId })),
+    players: [],
+    updatedAt: new Date("2026-08-11T00:00:00.000Z"),
+    createdAt: new Date("2026-08-11T00:00:00.000Z"),
+  };
+
+  const projection = await (pressureService as unknown as { projectRoom: (room: unknown, viewerId: string, requireMembership?: boolean) => Promise<any> })
+    .projectRoom(room, "user-2", true);
+  assert.equal(projection.isPressure, true);
+  assert.equal(projection.participantMode, "MULTIPLAYER");
+  assert.equal(projection.runtimeProfile, PRESSURE_CHAPTER_ROUTE_V1.runtimeProfile);
+  assert.equal(projection.lifecycle, "WAITING_PLAYERS");
+  assert.equal(projection.routeHash, "b".repeat(64));
+  assert.equal(projection.players.some((player: any) => player.userId === "user-2" && player.joinedUnseated === true), true);
+  assert.equal(projection.players.some((player: any) => player.userId === "user-1"), false);
+  assert.equal(projection.ownerUserId, null);
+  assert.deepEqual(projection.readyUserIds, []);
+  assert.equal(projection.players.some((player: any) => player.id.includes("user-1") || player.id.includes("user-2")), false);
+  assert.equal(projection.readyHumanCount, 1);
+  assert.deepEqual(
+    projection.roles.map((role: any) => role.roleKey),
+    PRESSURE_CHAPTER_SEAT_IDS_V1,
+  );
+  assert.equal(projection.roles.some((role: any) => role.roleKey === "clerk" || role.roleKey === "xunfu"), false);
+  assert.equal(projection.roles.every((role: any) => role.personalGoal === undefined), true);
+  assert.equal(projection.roles.every((role: any) => role.knownInfo.length === 0 && role.gameplayProfile === undefined), true);
+  assert.equal(projection.world.roles.every((role: any) => !("personalGoal" in role) && !("knownInfo" in role) && !("gameplayProfile" in role)), true);
+
+  const ownerProjection = await (pressureService as unknown as { projectRoom: (room: unknown, viewerId: string, requireMembership?: boolean) => Promise<any> })
+    .projectRoom(room, "user-1", true);
+  assert.equal(ownerProjection.ownerUserId, "user-1");
+  assert.equal(ownerProjection.players.some((player: any) => player.userId === "user-2"), false);
+  assert.equal(ownerProjection.roles.find((role: any) => role.roleKey === "cabinet_finance")?.personalGoal.length > 0, true);
+  assert.equal(ownerProjection.roles.filter((role: any) => role.roleKey !== "cabinet_finance").every((role: any) => role.personalGoal === undefined), true);
+  assert.equal(ownerProjection.world.roles.find((role: any) => role.roleKey === "cabinet_finance")?.personalGoal.length > 0, true);
+  assert.equal(ownerProjection.world.roles.filter((role: any) => role.roleKey !== "cabinet_finance").every((role: any) => !("personalGoal" in role)), true);
+
+  await assert.rejects(
+    () => (pressureService as unknown as { projectRoom: (room: unknown, viewerId: string, requireMembership?: boolean) => Promise<any> })
+      .projectRoom({ ...room, templateKey: "caesar" }, "user-2", true),
+    /PRESSURE_ROOM_CATALOG_MISMATCH/,
+  );
 });

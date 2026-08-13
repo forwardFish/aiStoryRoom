@@ -1,5 +1,7 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { PRESSURE_CHAPTER_ROUTE_V1 } from "@ai-story/shared";
 import { getGameDefinition } from "@ai-story/templates";
+import { publicWorldRolePresentation } from "./public-world-role-presentation";
 
 export interface MvpRoleCatalogItem {
   key: string;
@@ -247,21 +249,35 @@ const CAESAR_DETAIL = {
 
 function registryRoles(worldId: string, legacyRoles: MvpRoleCatalogItem[]): MvpRoleCatalogItem[] {
   const game = getGameDefinition(worldId);
+  const isPressure = game.engine.engineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion;
   return game.roles.map((definition) => {
-    const legacy = legacyRoles.find((role) => role.key === definition.roleKey);
-    return {
-      key: definition.roleKey,
+    const presentation = publicWorldRolePresentation(game.worldId, definition.roleKey, {
       name: definition.roleName,
       identity: definition.identity,
-      tagline: definition.publicInfo,
+      publicInfo: definition.publicInfo,
       portrait: definition.portrait,
+    });
+    // Pressure seats are content-owned institutions. Even when a canonical
+    // key happens to match an older character key, never reuse the legacy
+    // character's private goal, resources, or leverage in the public catalog.
+    const legacy = isPressure
+      ? undefined
+      : legacyRoles.find((role) => role.key === definition.roleKey);
+    return {
+      key: definition.roleKey,
+      name: presentation.name,
+      identity: presentation.identity,
+      tagline: presentation.publicInfo,
+      portrait: presentation.portrait,
       playable: true,
-      publicGoal: definition.personalGoal,
+      publicGoal: isPressure ? presentation.publicInfo : definition.personalGoal,
       fateQuestion: legacy?.fateQuestion || definition.arcText,
       rank: legacy?.rank || game.catalog.genre,
       office: legacy?.office || game.presentation.locationLabel,
-      goals: legacy?.goals || [definition.personalGoal],
-      resources: legacy?.resources || definition.knownInfo.map((value) => [value, "Known"] as [string, string]),
+      goals: legacy?.goals || [isPressure ? presentation.publicInfo : definition.personalGoal],
+      resources: legacy?.resources || (isPressure
+        ? []
+        : definition.knownInfo.map((value) => [value, "Known"] as [string, string])),
       leverage: legacy?.leverage || [definition.abilityText],
       traits: legacy?.traits || [{ icon: "strategy", label: definition.arcText }]
     };

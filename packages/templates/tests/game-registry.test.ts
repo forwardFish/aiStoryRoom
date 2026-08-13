@@ -2,7 +2,16 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
-import { findGameDefinition, getGameDefinition, getTemplate, listGameDefinitions, loadGameContinuousStrategyPackage, loadGameRegistry } from "../src";
+import {
+  findGameDefinition,
+  getGameDefinition,
+  getTemplate,
+  listGameDefinitions,
+  loadGameRegistry,
+  loadPublishedSangtianActionReleaseV1,
+  loadSangtianPressureChapterPackageV1,
+  validateGameDefinition,
+} from "../src";
 
 test("the canonical game registry owns all six lobby cards in display order", () => {
   const games = listGameDefinitions();
@@ -26,15 +35,31 @@ test("the canonical game registry owns all six lobby cards in display order", ()
 
 test("Sangtian defines six normal human-or-Agent roles plus a separate world actor", () => {
   const game = getGameDefinition("sangtian");
+  const accepted = loadSangtianPressureChapterPackageV1();
   assert.equal(game.roles.length, 6);
-  assert.deepEqual(game.roles.map((role) => role.roleKey), ["zhejiang_governor", "xunfu", "county_magistrate", "clerk", "merchant", "sili_jian"]);
+  assert.deepEqual(
+    [...game.roles.map((role) => role.roleKey)].sort(),
+    [...accepted.content.genesis.seats.map((seat) => seat.seatId)].sort(),
+  );
+  for (const seat of accepted.content.genesis.seats) {
+    const role = game.roles.find((candidate) => candidate.roleKey === seat.seatId);
+    assert.equal(role?.roleName, seat.displayName);
+    assert.equal(role?.identity, seat.institutionalMission);
+    assert.equal(role?.publicInfo, seat.institutionalMission);
+    assert.equal(role?.portrait.includes("/generated/"), false);
+  }
   assert.ok(game.roles.every((role) => role.canBeHumanControlled && role.canBeAiControlled));
   assert.ok(game.roles.every((role) => role.identity && role.publicInfo && role.personalGoal && role.portrait.startsWith("/assets/")));
-  assert.ok(game.roles.every((role) => role.portrait.startsWith("/assets/game/sangtian/generated/")));
+  assert.ok(game.roles.every((role) => role.portrait.startsWith("/assets/game/sangtian/")));
   assert.equal(game.worldActor?.actorKey, "court_market_pressure");
   assert.equal(game.roles.some((role) => role.roleKey === game.worldActor?.actorKey), false);
   assert.deepEqual(game.modes, { solo: true, multiplayer: true, minHumanPlayers: 1, maxHumanPlayers: 6 });
-  assert.equal(game.engine.strategyVersion, "sangtian_v1_2");
+  assert.deepEqual(game.engine, {
+    engineVersion: "pressure_chapter_v1",
+    strategyVersion: "sangtian_pressure_chapter_v1_0",
+    strategyRegistryPath: null,
+    fixedRules: null,
+  });
 });
 
 test("Caesar may define six normal human-or-Agent roles without changing the registry code", () => {
@@ -46,15 +71,45 @@ test("Caesar may define six normal human-or-Agent roles without changing the reg
   assert.deepEqual(getTemplate(game.templateId).roles.map((role) => role.roleKey), game.roles.map((role) => role.roleKey));
 });
 
-test("the registered Sangtian strategy and role contract load together", () => {
-  const content = loadGameContinuousStrategyPackage("sangtian");
-  assert.equal(content.contract.worldId, "sangtian");
-  assert.deepEqual(content.contract.playableRoleKeys, getGameDefinition("sangtian").roles.map((role) => role.roleKey));
-  assert.equal(content.contract.worldActorKey, getGameDefinition("sangtian").worldActor?.actorKey);
-  assert.equal(content.contract.strategyVersion, "sangtian_v1_2");
-  assert.equal(content.roleStageContent.roleStages.length, 42);
-  assert.equal(content.roleStageContent.roleStages.flatMap((entry) => entry.mainCards).length, 126);
-  assert.equal(content.endingRules.personalEndingRules.length, 6);
+test("the registered Sangtian Pressure route and accepted role contract load together", () => {
+  const game = getGameDefinition("sangtian");
+  const content = loadSangtianPressureChapterPackageV1();
+  const release = loadPublishedSangtianActionReleaseV1();
+  assert.deepEqual(
+    [...game.roles.map((role) => role.roleKey)].sort(),
+    [...content.content.genesis.seats.map((seat) => seat.seatId)].sort(),
+  );
+  assert.equal(release.route.status, "PUBLISHED");
+  assert.equal(release.routeRegistration.route.engineVersion, game.engine.engineVersion);
+  assert.equal(release.routeRegistration.route.strategyVersion, game.engine.strategyVersion);
+  assert.equal(release.route.contentPackageVersion, content.manifest.packageVersion);
+  assert.equal(release.route.contentPackageSha256, content.manifest.contentSha256);
+  assert.equal(content.content.chapters.length, 7);
+});
+
+test("the game registry fails closed on a split Pressure route or legacy seat alias", () => {
+  const game = structuredClone(getGameDefinition("sangtian"));
+  assert.throws(
+    () => validateGameDefinition({
+      ...game,
+      engine: { ...game.engine, strategyVersion: "sangtian_v1_2" },
+    }),
+    /frozen strategyVersion/,
+  );
+  assert.throws(
+    () => validateGameDefinition({
+      ...game,
+      roles: game.roles.map((role, index) => index === 0 ? { ...role, roleKey: "clerk" } : role),
+    }),
+    /canonical six-seat catalog/,
+  );
+  assert.throws(
+    () => validateGameDefinition({
+      ...game,
+      engine: { ...game.engine, soloEngineVersion: "openovel_v1" },
+    }),
+    /second Solo engine/,
+  );
 });
 
 test("every registered background and role portrait exists in the Web asset tree", () => {

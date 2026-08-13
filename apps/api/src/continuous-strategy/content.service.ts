@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import {
+  loadContinuousStrategyPackage,
   loadGameContinuousStrategyPackage,
   type AgentPolicy,
   type ContinuousStrategyPackage,
@@ -18,7 +19,13 @@ export class ContinuousStrategyContentService {
     const cacheKey = `${worldId}\u0000${strategyVersion}`;
     let content = this.cached.get(cacheKey);
     if (!content) {
-      content = loadGameContinuousStrategyPackage(worldId, strategyVersion);
+      // The current Sangtian catalog is Pressure-only, but already-created
+      // Continuous Story runs remain pinned to their stored strategyVersion.
+      // Resolve that historical package through the legacy loader rather than
+      // consulting the mutable current game definition.
+      content = worldId === "sangtian" && /^sangtian_v1_[0-9]+$/.test(strategyVersion)
+        ? loadContinuousStrategyPackage(strategyVersion)
+        : loadGameContinuousStrategyPackage(worldId, strategyVersion);
       this.cached.set(cacheKey, content);
     }
     if (content.manifest.releaseStatus !== "published") {

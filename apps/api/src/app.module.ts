@@ -31,12 +31,13 @@ import { OpenNovelManeuverPreviewService } from "./openovel-adapter/openovel-man
 import { OpenNovelManeuverService } from "./openovel-adapter/openovel-maneuver.service";
 import { installFourManeuverRuntime } from "./mvp-four-maneuver-runtime";
 import { installFourManeuverResolution } from "./mvp-four-maneuver-resolution";
+import { PressureChapterModule } from "./pressure-chapter/pressure-chapter.module";
 
 installFourManeuverRuntime();
 installFourManeuverResolution();
 
 @Module({
-  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule],
+  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule, PressureChapterModule.forRoot()],
   controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController, OpenNovelSharedController, OpenNovelManeuverController],
   providers: [
     StoryService,

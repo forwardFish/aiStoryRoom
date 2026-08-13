@@ -1,3 +1,4 @@
+import { performance } from "node:perf_hooks";
 import { Inject, Injectable } from "@nestjs/common";
 import {
   assertSangtianPressureRouteV1,
@@ -6,6 +7,7 @@ import {
   validatePressureReplayCommandV1,
   type PressureChapterSubmitDecisionCommandV1,
 } from "@ai-story/shared";
+import type { PressureDecisionConvergencePortV1 } from "../decision-automation/contracts";
 import { computePressureChatRequestFingerprint } from "../interaction/chat.service";
 import {
   canonicalizeWorkingActionIntentV1,
@@ -79,6 +81,7 @@ export class PressureChapterHttpFacade {
     private readonly replayPort: PressureChapterHttpReplayPort,
     @Inject(TOKEN.CLOCK)
     private readonly clock: PressureChapterHttpClockPort,
+    private readonly convergence: PressureDecisionConvergencePortV1 | undefined = undefined,
   ) {}
 
   getGame(
@@ -120,6 +123,7 @@ export class PressureChapterHttpFacade {
     bodyValue: unknown,
   ): Promise<PressureChapterSubmitDecisionHttpResponseV1> {
     return pressureHttpBoundary(async () => {
+      const endToEndStartedAt = performance.now();
       const principal = parsePrincipal(principalValue);
       const roomId = requiredString(roomIdValue, "roomId");
       const context = await this.resolveContext(principal, roomId, "ACTION");
@@ -127,21 +131,21 @@ export class PressureChapterHttpFacade {
       assertPublicDecisionScope(command, context.access, context.stored);
       const nowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
       if (command.sourceEventId !== null && command.responseActionCode !== null) {
-        const projection = await this.game.read({
+        const responseProjection = await this.game.read({
           runId: context.access.runId,
           subjectId: context.access.subjectId,
         });
         if (
-          projection.roomId !== context.access.roomId
-          || projection.runId !== context.access.runId
-          || projection.viewer.seatId !== command.seatId
+          responseProjection.roomId !== context.access.roomId
+          || responseProjection.runId !== context.access.runId
+          || responseProjection.viewer.seatId !== command.seatId
         ) {
           failPressureChapterHttp(ERROR.ROUTE_MISMATCH, "body.sourceEventId");
         }
         await this.responseAcknowledger.acknowledgeCurrent({
-          roomId: projection.roomId,
-          runId: projection.runId,
-          viewerSeatId: projection.viewer.seatId,
+          roomId: responseProjection.roomId,
+          runId: responseProjection.runId,
+          viewerSeatId: responseProjection.viewer.seatId,
           sourceEventId: command.sourceEventId,
           responseActionCode: command.responseActionCode,
           occurredAt: new Date(nowMs).toISOString(),
@@ -159,11 +163,52 @@ export class PressureChapterHttpFacade {
         command,
         nowMs,
       );
+      const humanSubmitStartedAt = performance.now();
       await this.actions.submitAction(compiled);
+      const humanSubmitMs = elapsed(humanSubmitStartedAt);
+      const postSubmitNowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
+      const convergence = this.convergence
+        ? await this.convergence.converge({
+            trigger: "HTTP_POST_SUBMIT",
+            runId: context.access.runId,
+            expectedRouteHash: context.stored.snapshot.routeHash,
+            source: {
+              chapterRuntimeId: compiled.action.chapterRuntimeId,
+              chapterId: compiled.action.chapterId,
+              decisionPointId: compiled.action.decisionPointId,
+            },
+            nowMs: postSubmitNowMs,
+            humanSubmitMs,
+          })
+        : null;
+      const projectionStartedAt = performance.now();
       const projection = await this.game.read({
         runId: context.access.runId,
         subjectId: context.access.subjectId,
       });
+      const projectionMs = elapsed(projectionStartedAt);
+      if (this.convergence && convergence) {
+        try {
+          const recording = this.convergence.recordHttpCompletion(convergence, {
+            projectionMs,
+            endToEndMs: elapsed(endToEndStartedAt),
+          });
+          // Post-authority diagnostics may never keep the player response open.
+          void Promise.resolve(recording).catch((error: unknown) => {
+            logConvergenceDiagnosticsFailure(
+              context.access.runId,
+              convergence.batchId,
+              error,
+            );
+          });
+        } catch (error) {
+          logConvergenceDiagnosticsFailure(
+            context.access.runId,
+            convergence.batchId,
+            error,
+          );
+        }
+      }
       return {
         schemaVersion: "pressure_chapter_submit_decision_http_response_v1",
         idempotencyKey: command.idempotencyKey,
@@ -373,4 +418,21 @@ function validateCompiledDecisionCommand(
     inputFingerprint: expectedInputFingerprint,
     nowMs,
   };
+}
+
+function logConvergenceDiagnosticsFailure(
+  runId: string,
+  batchId: string,
+  error: unknown,
+): void {
+  if (process.env.PRESSURE_CHAPTER_DIAGNOSTIC_ERRORS !== "1") return;
+  console.error("Pressure convergence diagnostics failed", {
+    runId,
+    batchId,
+    message: error instanceof Error ? error.message : "UNKNOWN",
+  });
+}
+
+function elapsed(startedAt: number): number {
+  return Math.max(0, performance.now() - startedAt);
 }

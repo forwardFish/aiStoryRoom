@@ -34,10 +34,16 @@ export interface DecisionAutomationTaskV1 {
 export type DecisionAutomationOutcomeKindV1 =
   | "ACTION_SUBMITTED"
   | "ACTION_RECONCILED"
-  | "DEADLINE_ADVANCED"
   | "AI_FAILURE_DEFAULTED"
+  | "BATCH_COMPLETED"
+  | "BATCH_PARTIAL"
+  | "WAITING_FOR_HUMANS"
+  | "NO_PENDING_AI"
+  | "ALREADY_PROGRESSED"
+  | "DEADLINE_ADVANCED"
   | "STALE_SKIPPED";
 
+/** Legacy per-seat recovery outcome retained for source/test compatibility. */
 export interface DecisionAutomationOutcomeV1 {
   schemaVersion: "pressure_decision_automation_outcome_v1";
   taskHash: string;
@@ -49,38 +55,52 @@ export interface DecisionAutomationOutcomeV1 {
 }
 
 /**
- * Read-only scan seam. A production implementation scans only started
- * Pressure runs whose W4 state is ACTIVE, then returns at most one canonical
- * task per (run, chapterRuntime, decision, seat, controlEpoch). It must never
- * scan or write a Provider, Narrative artifact, Result projection, or
- * client-owned queue. Concurrency is closed by deterministic action identity,
- * W5 idempotency, W4 CAS, and resume reconciliation instead of another queue.
+ * Read-only discovery only. Production execution groups returned seat facts by
+ * (run, chapterRuntime, decision) and performs one coherent convergence attempt.
  */
 export interface ActivePressureDecisionScannerPortV1 {
   scanActive(): Promise<DecisionAutomationTaskV1[]>;
 }
 
-/** Read-only wrapper over the immutable stored Run route. */
+
+/** Legacy read seams remain available to the un-wired per-seat service. */
 export interface DecisionAutomationRouteReaderPortV1 {
   readRoute(runId: string): Promise<RunRouteSnapshotV1 | null>;
 }
 
-/** Read-only W4 seam; deliberately excludes compareAndSwap. */
 export interface DecisionAutomationOrchestratorReaderPortV1 {
   read(runId: string): Promise<ChapterOrchestratorStateV1 | null>;
 }
 
-/** Read-only seat authority seam; deliberately excludes transitions/defaults. */
 export interface DecisionAutomationSeatAuthorityReaderPortV1 {
   readSnapshot(runId: string): Promise<SeatControlSnapshotV1 | null>;
 }
 
-/** Existing authored W4 content, resolved by the frozen route. */
 export interface DecisionAutomationContentPortV1 {
   load(input: Readonly<{
     routeSnapshot: RunRouteSnapshotV1;
     chapterId: ChapterIdV1;
   }>): Promise<AuthoredChapterRuntimeV1>;
+}
+
+export interface DecisionConvergenceAuthoritySnapshotV1 {
+  schemaVersion: "pressure_decision_convergence_authority_snapshot_v1";
+  routeSnapshot: RunRouteSnapshotV1;
+  chapter: ChapterOrchestratorStateV1;
+  projection: WorkingLedgerProjectionV1;
+  seatAuthority: SeatControlSnapshotV1;
+  aiPolicyArtifactHash: string;
+  capturedAtMs: number;
+  snapshotHash: string;
+}
+
+export interface DecisionConvergenceSnapshotReaderPortV1 {
+  capture(input: Readonly<{
+    runId: string;
+    expectedRouteHash: string;
+    aiPolicyArtifactHash: string;
+    capturedAtMs: number;
+  }>): Promise<DecisionConvergenceAuthoritySnapshotV1 | null>;
 }
 
 export interface AiDecisionPolicyInputV1 {
@@ -110,15 +130,17 @@ export interface AiDecisionPolicySelectionV1 {
   selectionHash: string;
 }
 
-/**
- * Trusted content boundary. Its production implementation must load the
- * published, hash-pinned policy belonging to route.contentPackageSha256. It is
- * deterministic and cannot call an LLM/Provider or read player free text.
- */
+/** Deterministic content-owned policy contract used by legacy and batch paths. */
 export interface ContentOwnedAiDecisionPolicyPortV1 {
   select(
     input: Readonly<AiDecisionPolicyInputV1>,
   ): Promise<AiDecisionPolicySelectionV1> | AiDecisionPolicySelectionV1;
+}
+
+/** Production convergence requires the verified published artifact hash. */
+export interface PublishedContentOwnedAiDecisionPolicyPortV1
+  extends ContentOwnedAiDecisionPolicyPortV1 {
+  readonly artifactSha256: string;
 }
 
 export type DecisionAutomationCompilationResultV1 =
@@ -149,11 +171,59 @@ export interface DecisionAutomationCommandCompilerPortV1 {
   }>): DecisionAutomationCompilationResultV1;
 }
 
-/**
- * Narrow runtime command surface. It cannot write world/finale/narrative.
- * resume() exists only to reconcile an already accepted ledger action after a
- * crash between W5 append and W4 recordAction.
- */
+export type PreparedAutomationActionStaleReasonV1 =
+  | "ROUTE"
+  | "ORCHESTRATOR_REVISION"
+  | "ORCHESTRATOR_HASH"
+  | "CHAPTER_OR_DECISION"
+  | "DESCRIPTOR"
+  | "DECISION_POLICY"
+  | "WORKING_REVISION"
+  | "WORKING_STATE"
+  | "DEADLINE"
+  | "SEAT_AUTHORITY"
+  | "SEAT_CONTROLLER"
+  | "SEAT_EPOCH"
+  | "SEAT_FENCE"
+  | "AI_POLICY";
+
+export interface PreparedAutomationActionAuthorityV1 {
+  snapshotHash: string;
+  expectedOrchestratorRevision: number;
+  expectedOrchestratorHash: string;
+  expectedDescriptorHash: string;
+  expectedDecisionPolicyHash: string;
+  expectedWorkingRevision: number;
+  expectedWorkingStateHash: string;
+  expectedLedgerHeadHash: string;
+  expectedSeatAuthorityStateHash: string;
+  expectedControllerId: string;
+  expectedControlEpoch: number;
+  expectedSubmissionFenceToken: string;
+  expectedAiPolicyHash: string;
+}
+
+export interface AppendPreparedAutomationActionCommandV1 {
+  command: SubmitOrchestratedActionCommandV1;
+  authority: PreparedAutomationActionAuthorityV1;
+}
+
+export interface AppendPreparedAutomationActionResultV1 {
+  status: "APPENDED" | "REPLAYED" | "HEAD_CONFLICT" | "STALE";
+  actionId: string;
+  eventHash: string | null;
+  ledgerHeadHash: string;
+  staleReason: PreparedAutomationActionStaleReasonV1 | null;
+}
+
+/** One short W5 transaction; it has no Beat/Settlement/Provider capability. */
+export interface PreparedAutomationActionSubmissionPortV1 {
+  submitPrepared(
+    command: AppendPreparedAutomationActionCommandV1,
+  ): Promise<AppendPreparedAutomationActionResultV1>;
+}
+
+/** Existing runtime surface retained for the legacy recovery source. */
 export interface DecisionAutomationRuntimePortV1 {
   submitAction(
     command: SubmitOrchestratedActionCommandV1,
@@ -172,6 +242,88 @@ export interface DecisionAutomationClockPortV1 {
   nowMs(): number;
 }
 
+export type DecisionConvergenceTriggerV1 = "HTTP_POST_SUBMIT" | "RECOVERY";
+
+export interface DecisionConvergenceCommandV1 {
+  trigger: DecisionConvergenceTriggerV1;
+  runId: string;
+  expectedRouteHash: string;
+  source: {
+    chapterRuntimeId: string;
+    chapterId: ChapterIdV1;
+    decisionPointId: string;
+  } | null;
+  nowMs: number;
+  humanSubmitMs: number;
+}
+
+export interface DecisionConvergenceStageTimingsV1 {
+  humanSubmitMs: number;
+  snapshotMs: number;
+  compileAllMs: number;
+  ledgerAppendTotalMs: number;
+  ledgerAppendEachMs: number[];
+  orchestratorReconcileMs: number;
+  orchestratorTotalMs: number;
+  beatMs: number;
+  settlementMs: number;
+  nextOpenMs: number;
+  projectionMs: number;
+  endToEndMs: number;
+}
+
+export interface DecisionConvergenceDiagnosticsV1 {
+  schemaVersion: "pressure_decision_convergence_diagnostics_v1";
+  batchId: string;
+  trigger: DecisionConvergenceTriggerV1;
+  runId: string;
+  chapterRuntimeId: string | null;
+  chapterId: ChapterIdV1 | null;
+  decisionPointId: string | null;
+  outcome: DecisionAutomationOutcomeKindV1;
+  pendingHumanCount: number;
+  pendingAiCount: number;
+  snapshotReadCount: number;
+  policyCallCount: number;
+  compileCount: number;
+  appendTxCount: number;
+  replayCount: number;
+  headConflictCount: number;
+  w4ConflictCount: number;
+  staleRouteCount: number;
+  staleRevisionCount: number;
+  staleEpochCount: number;
+  staleFenceCount: number;
+  stalePolicyCount: number;
+  resumeCount: number;
+  providerCallCount: 0;
+  timings: DecisionConvergenceStageTimingsV1;
+}
+
+export interface DecisionConvergenceResultV1 {
+  schemaVersion: "pressure_decision_convergence_result_v1";
+  batchId: string;
+  outcome: DecisionAutomationOutcomeKindV1;
+  actionIds: string[];
+  chapter: ChapterOrchestratorStateV1 | null;
+  metrics: DecisionConvergenceDiagnosticsV1;
+}
+
+export interface DecisionConvergenceDiagnosticsPortV1 {
+  record(metrics: Readonly<DecisionConvergenceDiagnosticsV1>): Promise<void> | void;
+}
+
+export interface PressureDecisionConvergencePortV1 {
+  converge(
+    command: Readonly<DecisionConvergenceCommandV1>,
+  ): Promise<DecisionConvergenceResultV1>;
+  recordHttpCompletion(
+    result: Readonly<DecisionConvergenceResultV1>,
+    input: Readonly<{ projectionMs: number; endToEndMs: number }>,
+  ): Promise<void>;
+}
+
+/** Original per-seat dependency surface retained but no longer production-wired. */
 export interface DecisionAutomationDependenciesV1 {
   scanner: ActivePressureDecisionScannerPortV1;
   routes: DecisionAutomationRouteReaderPortV1;
@@ -183,6 +335,20 @@ export interface DecisionAutomationDependenciesV1 {
   compiler: DecisionAutomationCommandCompilerPortV1;
   runtime: DecisionAutomationRuntimePortV1;
   deadlineDefaults: PressureDeadlineDefaultCoordinatorPortV1;
+  clock: DecisionAutomationClockPortV1;
+}
+
+/** Decision-scoped zero-model production dependency surface. */
+export interface DecisionConvergenceDependenciesV1 {
+  scanner: ActivePressureDecisionScannerPortV1;
+  snapshots: DecisionConvergenceSnapshotReaderPortV1;
+  content: DecisionAutomationContentPortV1;
+  policy: PublishedContentOwnedAiDecisionPolicyPortV1;
+  compiler: DecisionAutomationCommandCompilerPortV1;
+  preparedActions: PreparedAutomationActionSubmissionPortV1;
+  runtime: Pick<DecisionAutomationRuntimePortV1, "resume">;
+  deadlineDefaults: PressureDeadlineDefaultCoordinatorPortV1;
+  diagnostics: DecisionConvergenceDiagnosticsPortV1;
   clock: DecisionAutomationClockPortV1;
 }
 
@@ -211,7 +377,7 @@ export interface DecisionAutomationDrainResultV1 {
   stoppedBecause: "IDLE" | "BUSY" | "LIMIT";
 }
 
-/** Canonical payload owned by the server compiler, never by the policy port. */
+/** Canonical payload owned by the server compiler, never by a model. */
 export interface AiDecisionAutomationPayloadV1 extends CanonicalJsonObject {
   source: "CONTENT_OWNED_AI_POLICY";
   policyRef: string;

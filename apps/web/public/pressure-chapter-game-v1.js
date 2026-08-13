@@ -3,6 +3,7 @@ import {
   openPressureResponseInExistingWorkbenchV1,
   pressureWorkbenchToExistingManeuverTypeV1
 } from "./pressure-chapter-workbench-v1.js";
+import { pressureProjectionToMainGameViewV1 as pressureBaseMainGameViewV1 } from "./pressure-main-game-storage-v1.js";
 
 export const PRESSURE_CHAPTER_PHASE1_SCOPE = "UI_ONLY";
 export const PRESSURE_CHAPTER_PHASE1_ARTIFACT_VERSION = "phase1-v4";
@@ -212,95 +213,9 @@ export class PressureMainGameStorageV1 {
 
 export function pressureProjectionToMainGameViewV1(projectionValue) {
   const projection = validatePressureProjectionV1(projectionValue, projectionValue?.runId);
-  // Pressure Phase 1 must not invent role IDs, portraits, ranks, or offices.
-  // The approved shell receives only the viewer-safe role name that already
-  // exists in the Pressure projection. Rich role presentation remains owned by
-  // the existing content/audience projection contract.
-  const role = {
-    name: projection.viewer.roleName,
-    rank: projection.viewer.roleName,
-    office: projection.viewer.roleName,
-    portrait: ""
-  };
-  const decision = projection.decision;
-  const canSubmit = Boolean(
-    decision
-    && projection.capabilities.canSubmitDecision === true
-    && projection.viewer.control.mode === "HUMAN_ACTIVE"
-    && projection.viewer.control.canSubmit === true
-  );
-  const availableTokens = projection.tokens.filter((token) => token.available && token.quantity > 0);
-  const statusMetrics = metricPresentation(projection.metrics);
+  const { pressureProjection: _internalProjection, ...baseView } = pressureBaseMainGameViewV1(projection);
   return {
-    continuousV2: true,
-    locale: "zh-CN",
-    run: {
-      id: projection.runId,
-      storyId: "sangtian",
-      title: projection.chapter.title,
-      location: "浙江",
-      currentDay: projection.chapter.chapterNumber,
-      currentTime: projection.chapter.title,
-      totalDays: 7,
-      status: projection.chapter.phase === "ACTIVE" ? "awaiting_decision" : "resolving",
-      version: projection.projectionVersion,
-      decisionsCompletedToday: 0,
-      decisionsRequiredToday: 1,
-      totalDecisionsCompleted: Math.max(0, projection.chapter.chapterNumber - 1),
-      totalDecisionsRequired: 7
-    },
-    v2CurrentTurn: {
-      stageIndex: projection.chapter.chapterNumber,
-      turnIndex: Math.max(1, projection.chapter.workingRevision + 1),
-      title: projection.chapter.title,
-      status: projection.chapter.phase === "ACTIVE" ? "OPEN" : "RESOLVING"
-    },
-    player: {
-      roleName: projection.viewer.roleName,
-      name: role.name,
-      rank: role.rank,
-      office: role.office,
-      fateQuestion: projection.situation.goal,
-      goals: [projection.situation.goal, projection.situation.risk, projection.situation.judgment],
-      resources: projection.resources.map((resource) => [resource.label, resource.displayValue]),
-      leverage: availableTokens.map((token) => token.label)
-    },
-    presentation: {
-      locale: "zh-CN",
-      title: "嘉靖财政危局",
-      locationLabel: "浙江",
-      totalStages: 7,
-      sceneBackground: "/assets/game/sangtian/background.png",
-      playerPortrait: role.portrait,
-      accent: "#6545f5",
-      accentSoft: "#f3f0ff"
-    },
-    openingNarrative: projection.narrative.text || decision?.summary || projection.chapter.title,
-    messages: [],
-    activeDecision: canSubmit ? {
-      messageId: decision.decisionPointId,
-      title: decision.title,
-      help: decision.summary,
-      options: decision.options.map((option, index) => ({
-        key: optionLabel(index),
-        title: option.label,
-        body: option.description
-      }))
-    } : null,
-    dashboard: {
-      statusMetrics,
-      worldState: statusMetrics.map((metric) => [metric.label, metric.value]),
-      relationships: [],
-      risks: [],
-      traces: [],
-      visibleCausalCard: null,
-      causalRecallMessages: []
-    },
-    decisionHistory: [],
-    dayProgress: { completed: 0, required: 1 },
-    leverageHand: {
-      items: availableTokens.map((token) => ({ label: token.label, description: token.description }))
-    },
+    ...baseView,
     maneuverPanel: buildPressureManeuverPanelV1(projection),
   };
 }

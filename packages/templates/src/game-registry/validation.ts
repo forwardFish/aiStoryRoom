@@ -1,3 +1,7 @@
+import {
+  PRESSURE_CHAPTER_ROUTE_V1,
+  PRESSURE_CHAPTER_SEAT_IDS_V1,
+} from "@ai-story/shared";
 import type { GameDefinition, GameRegistryIndex } from "./types";
 
 type JsonRecord = Record<string, unknown>;
@@ -127,6 +131,17 @@ export function validateGameDefinition(value: unknown): GameDefinition {
     if (rules.stageCount !== 7 || rules.mainCardsPerRoleStage !== 3) fail("continuous v1 rules must remain 7 stages and 3 MAIN cards per role-stage");
   }
   if (engineVersion.startsWith("continuous_") && engine.fixedRules === null) fail("continuous games require fixedRules");
+  if (engineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion) {
+    if (engine.strategyVersion !== PRESSURE_CHAPTER_ROUTE_V1.strategyVersion) {
+      fail("Pressure games require the frozen strategyVersion");
+    }
+    if (engine.strategyRegistryPath !== null || engine.fixedRules !== null) {
+      fail("Pressure games use the published route registry instead of legacy strategy/fixed rules");
+    }
+    if (engine.soloEngineVersion !== undefined || engine.soloRuntime !== undefined) {
+      fail("Pressure games cannot configure a second Solo engine");
+    }
+  }
 
   if (root.worldActor !== null) {
     const worldActor = record(root.worldActor, "worldActor");
@@ -182,6 +197,15 @@ export function validateGameDefinition(value: unknown): GameDefinition {
     if (boolean(role.canBeAiControlled, `roles[${index}].canBeAiControlled`) !== true) fail(`roles[${index}] must support AI Agent control`);
   });
   if (new Set(roleKeys).size !== roleKeys.length) fail("roleKey values must be unique");
+  if (
+    engineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion
+    && (
+      roleKeys.length !== PRESSURE_CHAPTER_SEAT_IDS_V1.length
+      || PRESSURE_CHAPTER_SEAT_IDS_V1.some((seatId) => !roleKeys.includes(seatId))
+    )
+  ) {
+    fail("Pressure games must expose the canonical six-seat catalog");
+  }
   if (root.status === "playable" && maxHumanPlayers > root.roles.length) fail("maxHumanPlayers cannot exceed the configured role count");
   if (root.worldActor && roleKeys.includes(String((root.worldActor as JsonRecord).actorKey))) fail("worldActor must not duplicate a player roleKey");
   if (engineVersion.startsWith("continuous_") && (!engine.strategyRegistryPath || !root.worldActor)) fail("continuous games require a strategy registry and a separate worldActor");

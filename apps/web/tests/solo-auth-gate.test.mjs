@@ -52,13 +52,13 @@ test("Play Solo sends an expired hinted session back through login", async () =>
   assert.deepEqual(harness.notices, []);
 });
 
-test("every normal Solo entry uses the direct Solo-start flow", async () => {
+test("every normal Solo entry opens role selection before creating a run", async () => {
   const source = await readFile(platformUrl, "utf8");
   const actions = source.slice(source.indexOf("const actions ="), source.indexOf("async function initializePlatform"));
 
   assert.match(source, /function startSoloFromWorld/);
-  assert.match(source, /runMutationOnce\(`solo-entry:\$\{worldId\}`/);
-  assert.match(source, /\/api\/v4\/rooms\/solo/);
+  assert.match(source, /location\.assign\(`\/role-select\?story=\$\{encodeURIComponent\(worldId\)\}`\)/);
+  assert.doesNotMatch(source.slice(source.indexOf("function startSoloFromWorld"), source.indexOf("function openStartConfirmation")), /\/api\/v4\/rooms\/solo/);
   assert.match(actions, /solo:[\s\S]*startSoloFromWorld\("caesar"/);
   assert.match(actions, /"sangtian-solo":[\s\S]*startSoloFromWorld\("sangtian"/);
   assert.match(actions, /"world-solo":[\s\S]*startSoloFromWorld\(worldId/);

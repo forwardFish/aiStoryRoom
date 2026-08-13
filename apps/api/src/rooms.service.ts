@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, HttpException, HttpStatus, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, HttpStatus, Inject, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { PrismaService } from "./prisma.service";
 import { StoryService } from "./story.service";
 import { StoryTaskOutboxService } from "./story-task-outbox.service";
@@ -7,7 +7,7 @@ import { CreditsService } from "./credits/credits.service";
 import { ReferralsService } from "./referrals/referrals.service";
 import type { AuthenticatedUser } from "./auth/current-user.decorator";
 import { Observable } from "rxjs";
-import { CONTINUOUS_ENGINE_VERSION, CONTINUOUS_STORY_ENGINE_VERSION, type ControlCommandV1, type HeartbeatCommandV1, type LayoutCommandV1, type SlotCommandV1, type TurnDecisionCommandV2 } from "@ai-story/shared";
+import { CONTINUOUS_ENGINE_VERSION, CONTINUOUS_STORY_ENGINE_VERSION, PRESSURE_CHAPTER_ROUTE_V1, type ControlCommandV1, type HeartbeatCommandV1, type LayoutCommandV1, type SlotCommandV1, type TurnDecisionCommandV2 } from "@ai-story/shared";
 import { findGameDefinition } from "@ai-story/templates";
 import { readContinuousStrategyConfig, selectRunVersions } from "./config/continuous-strategy.config";
 import { ActionWindowService } from "./continuous-strategy/action-window.service";
@@ -26,6 +26,27 @@ import { creditRequestHash } from "./credits/credit-policy";
 import { RunSponsorshipService } from "./credits/run-sponsorship.service";
 import { OpenNovelAdapterService } from "./openovel-adapter/openovel-adapter.service";
 import { OPENOVEL_ENGINE_VERSION } from "./openovel-adapter/openovel-runtime.client";
+import { PRESSURE_CHAPTER_PRODUCT_TOKENS } from "./pressure-chapter/product/contracts";
+import type { PressureProductionBridgeV1 } from "./pressure-chapter/production";
+import { PressureRoomsEntryAdapter } from "./pressure-chapter/rooms-entry";
+import type { PressureRoomsEntryHttpDelegateV1 } from "./pressure-chapter/rooms-entry";
+import {
+  PRESSURE_SEAT_TRANSPORT_ERROR_CODES,
+  PressureSeatTransportError,
+  PressureSeatTransportFacadeV1,
+  streamPressureSeatTransportV1,
+  type PressureSeatHandoffCommandV1,
+  type PressureSeatHeartbeatCommandV1,
+  type PressureSeatReclaimCommandV1,
+} from "./pressure-chapter/seat-transport";
+import { SeatControlError } from "./pressure-chapter/seat-control";
+import {
+  PRESSURE_SIMPLE_PROMISE_ERROR_CODES_V1,
+  PressureSimplePromiseErrorV1,
+  type CreatePressureSimplePromiseBodyV1,
+  type PressurePromiseOperationCodeV1,
+} from "./pressure-chapter/a-emotion-promise";
+import type { PressurePromiseProductFacadeV1 } from "./pressure-chapter/product";
 
 const SOLO_IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const IDEMPOTENCY_REPLAY_ATTEMPTS = 300;
@@ -160,6 +181,54 @@ function withBilling<T extends Record<string, unknown>>(payload: T, reservation:
   };
 }
 
+function parsePressureSeatFeedLimit(value?: string): number | undefined {
+  if (value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1 || parsed > 50) {
+    throw new BadRequestException({ code: "PRESSURE_SEAT_FEED_LIMIT_INVALID", message: "feedLimit must be an integer from 1 to 50" });
+  }
+  return parsed;
+}
+
+function pressureSeatHttpError(error: unknown): unknown {
+  if (error instanceof HttpException) return error;
+  if (error instanceof PressureSeatTransportError) {
+    if (
+      error.code === PRESSURE_SEAT_TRANSPORT_ERROR_CODES.SUBJECT_FORBIDDEN
+      || error.code === PRESSURE_SEAT_TRANSPORT_ERROR_CODES.VIEWER_SCOPE_MISMATCH
+      || error.code === PRESSURE_SEAT_TRANSPORT_ERROR_CODES.FEED_SCOPE_MISMATCH
+    ) {
+      return new ForbiddenException({ code: error.code, message: "Pressure seat scope is not authorized" });
+    }
+    return new BadRequestException({ code: error.code, message: error.message });
+  }
+  if (error instanceof SeatControlError) {
+    if (error.code === "SEAT_CONTROL_CONTROLLER_FORBIDDEN") {
+      return new ForbiddenException({ code: error.code, message: "Seat control is not authorized" });
+    }
+    if (error.code === "SEAT_CONTROL_INVALID_COMMAND") {
+      return new BadRequestException({ code: error.code, message: error.message });
+    }
+    return new ConflictException({ code: error.code, message: error.message });
+  }
+  return error;
+}
+
+function pressurePromiseHttpError(error: unknown): unknown {
+  if (error instanceof HttpException) return error;
+  if (!(error instanceof PressureSimplePromiseErrorV1)) return error;
+  if (error.code === PRESSURE_SIMPLE_PROMISE_ERROR_CODES_V1.INPUT_INVALID) {
+    return new BadRequestException({ code: error.code, message: error.message });
+  }
+  if (
+    error.code === PRESSURE_SIMPLE_PROMISE_ERROR_CODES_V1.ROLE_FORBIDDEN
+    || error.code === PRESSURE_SIMPLE_PROMISE_ERROR_CODES_V1.TARGET_FORBIDDEN
+  ) {
+    return new ForbiddenException({ code: error.code, message: "Promise authority is not authorized" });
+  }
+  return new ConflictException({ code: error.code, message: error.message });
+}
+
 @Injectable()
 export class RoomsService {
   constructor(
@@ -177,7 +246,11 @@ export class RoomsService {
     @Inject(SoloStoryEngineService) private readonly soloStory: SoloStoryEngineService = null as never,
     @Inject(CreditConsumptionService) private readonly creditConsumption: CreditConsumptionService = null as never,
     @Inject(RunSponsorshipService) private readonly sponsorships: RunSponsorshipService = null as never,
-    @Inject(OpenNovelAdapterService) private readonly openNovel: OpenNovelAdapterService = null as never
+    @Inject(OpenNovelAdapterService) private readonly openNovel: OpenNovelAdapterService = null as never,
+    @Optional() @Inject(PRESSURE_CHAPTER_PRODUCT_TOKENS.ROOMS_GATEWAY) private readonly pressureRoomsGateway?: PressureProductionBridgeV1,
+    @Optional() @Inject(PRESSURE_CHAPTER_PRODUCT_TOKENS.HTTP_CONTROLLER_METHODS) private readonly pressureHttp?: PressureRoomsEntryHttpDelegateV1,
+    @Optional() @Inject(PRESSURE_CHAPTER_PRODUCT_TOKENS.SEAT_TRANSPORT) private readonly pressureSeatTransport?: PressureSeatTransportFacadeV1,
+    @Optional() @Inject(PRESSURE_CHAPTER_PRODUCT_TOKENS.PROMISES) private readonly pressurePromises?: PressurePromiseProductFacadeV1,
   ) {}
 
   async list(worldId?: string, user?: AuthenticatedUser) {
@@ -189,11 +262,11 @@ export class RoomsService {
     });
     const openRooms = rooms.filter((room) => room.players.filter((player) => player.playerType === "human").length < room.maxPlayers);
     const mine = user ? await this.mine(user, worldId) : { rooms: [] };
-    const publicProjection = (room: any) => {
-      const projected = this.project(room, user?.id);
+    const publicProjection = await Promise.all(openRooms.map(async (room: any) => {
+      const projected = await this.projectRoom(room, user?.id);
       return { ...projected, roles: projected.roles.map(({ personalGoal: _personalGoal, ...role }: any) => role) };
-    };
-    return { rooms: openRooms.map(publicProjection), myRooms: mine.rooms };
+    }));
+    return { rooms: publicProjection, myRooms: mine.rooms };
   }
 
   /** Rooms the authenticated player can reopen, continue, or inspect after completion. */
@@ -202,18 +275,31 @@ export class RoomsService {
     const rooms = await this.prisma.storyRun.findMany({
       where: {
         mode: "room",
-        status: { in: ["waiting_players", "playing", "chapter_generated"] },
-        players: { some: { userId: user.id } },
+        status: { in: ["waiting_players", "playing", "chapter_generated", "completed"] },
+        OR: [
+          { players: { some: { userId: user.id } } },
+          {
+            engineVersion: PRESSURE_CHAPTER_ROUTE_V1.engineVersion,
+            pressureLifecycle: {
+              is: {
+                lobbyJson: {
+                  path: ["joinedUserIds"],
+                  array_contains: [user.id],
+                },
+              },
+            },
+          },
+        ],
         ...(worldId ? { templateKey: worldId } : {})
       },
       include: { players: { include: { user: true, role: true } }, roles: true, owner: true },
       orderBy: { updatedAt: "desc" }, take: 50
     });
     return {
-      rooms: rooms.map((room) => {
-        const projected = this.project(room, user.id);
+      rooms: await Promise.all(rooms.map(async (room) => {
+        const projected = await this.projectRoom(room, user.id);
         return { ...projected, roles: projected.roles.map((role: any) => role.claimedByCurrentUser ? role : { ...role, personalGoal: undefined }) };
-      })
+      }))
     };
   }
 
@@ -230,6 +316,17 @@ export class RoomsService {
     } = {}
   ) {
     const worldId = String(input.worldId || "sangtian");
+    const pressureEntry = this.getPressureRoomsEntry();
+    if (pressureEntry?.supportsWorld(worldId)) {
+      const created = await pressureEntry.createLobby({
+        userId: user.id,
+        worldId,
+        title: input.title,
+        visibility: input.visibility,
+        idempotencyKey: input.idempotencyKey,
+      });
+      return this.get(user, created.shell.room.runId);
+    }
     const world = findGameDefinition(worldId);
     if (!world || world.status !== "playable" || !world.modes.multiplayer) throw new BadRequestException({ code: "UNKNOWN_WORLD", message: "That world is not available for multiplayer" });
     const isInternalSoloCreate = input.maxPlayers === 1 && internal.skipPublicIdempotency;
@@ -337,6 +434,24 @@ export class RoomsService {
   /** A private one-player run that uses the same seven-node engine as rooms. */
   async createSolo(user: AuthenticatedUser, input: { worldId?: string; roleKey?: string; idempotencyKey?: string; resumeExisting?: boolean }) {
     const worldId = String(input.worldId || "caesar");
+    const pressureEntry = this.getPressureRoomsEntry();
+    if (pressureEntry?.supportsWorld(worldId)) {
+      const created = await pressureEntry.createSoloShell({
+        userId: user.id,
+        worldId,
+        roleKey: input.roleKey,
+        idempotencyKey: input.idempotencyKey,
+      });
+      // A Pressure Solo shell is born with one ready human and five AI seats.
+      // Start it through the same durable, idempotent lifecycle used by rooms
+      // before returning a navigation target; otherwise the first /game read
+      // races an uninitialized P0/N1 run.
+      await pressureEntry.start({
+        runId: created.shell.room.runId,
+        userId: user.id,
+      });
+      return soloCreationResponse(created.shell.room.runId, await this.get(user, created.shell.room.runId));
+    }
     const world = findGameDefinition(worldId);
     if (!world || world.status !== "playable" || !world.modes.solo) throw new BadRequestException({ code: "UNKNOWN_WORLD", message: "That world is not available for solo play" });
     const requestedRole = world.roles[0]?.roleKey || "";
@@ -373,7 +488,12 @@ export class RoomsService {
     // added to the contract.
     if (shouldResumeExistingSolo(input)) {
       const activeSolo = await this.findActiveSoloRun(user.id, worldId, requestedRole);
-      if (activeSolo) return soloCreationResponse(activeSolo.id, await this.start(user, activeSolo.id));
+      if (activeSolo) {
+        // The world page only needs the existing run identity so it can ask
+        // whether to continue or start over. Do not restart an already-playing
+        // engine before the player has made that choice.
+        return soloCreationResponse(activeSolo.id, { resumedExisting: true });
+      }
     }
 
     // The product's Solo runtime is selected by the world definition. The
@@ -591,9 +711,14 @@ export class RoomsService {
     throw new ConflictException({ code: "SOLO_CREATION_IN_PROGRESS", message: "This Solo game is still being created; retry the same request" });
   }
 
-  async joinByCode(user: AuthenticatedUser, inviteCode: string) {
+  async joinByCode(user: AuthenticatedUser, inviteCode: string, idempotencyKey?: string) {
     const room = await this.prisma.storyRun.findUnique({ where: { inviteCode: String(inviteCode || "").trim().toUpperCase() } });
     if (!room || room.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
+    if (this.isPressureRoom(room)) {
+      const pressureEntry = this.requirePressureRoomsEntry();
+      await pressureEntry.join({ runId: room.id, userId: user.id, idempotencyKey });
+      return this.get(user, room.id);
+    }
     if (room.status !== "waiting_players") throw new ConflictException({ code: "ROOM_NOT_JOINABLE", message: "Room has already started" });
     const state = roomState(room.stateJson);
     if (!state.room?.solo && Date.now() >= lobbyTimes(state.room).expiresAt) {
@@ -609,17 +734,27 @@ export class RoomsService {
   async get(user: AuthenticatedUser, roomId: string) {
     const room = await this.prisma.storyRun.findUnique({ where: { id: roomId }, include: { owner: true, players: { include: { user: true, role: true }, orderBy: { joinedAt: "asc" } }, roles: { orderBy: { createdAt: "asc" } } } });
     if (!room || room.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
+    if (this.isPressureRoom(room)) {
+      return this.projectRoom(room, user.id, true);
+    }
     const member = room.players.some((player) => player.userId === user.id) || room.ownerUserId === user.id;
     if (!member) throw new ForbiddenException({ code: "ROOM_ACCESS_DENIED", message: "Join this room before viewing its private state" });
     const projected = this.project(room, user.id);
     return { ...projected, roles: projected.roles.map((role: any) => role.claimedByCurrentUser ? role : { ...role, personalGoal: undefined }) };
   }
 
-  async selectRole(user: AuthenticatedUser, roomId: string, roleId: string) {
-    const room = await this.requireWaitingMember(user, roomId);
-    const selected = room.roles.find((role) => role.id === roleId);
+  async selectRole(user: AuthenticatedUser, roomId: string, roleId: string, idempotencyKey?: string) {
+    const room = await this.prisma.storyRun.findUnique({ where: { id: roomId }, include: { owner: true, players: { include: { user: true, role: true }, orderBy: { joinedAt: "asc" } }, roles: { orderBy: { createdAt: "asc" } } } });
+    if (!room || room.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
+    if (this.isPressureRoom(room)) {
+      const pressureEntry = this.requirePressureRoomsEntry();
+      await pressureEntry.selectRole({ runId: roomId, userId: user.id, roleKey: roleId, idempotencyKey });
+      return this.get(user, roomId);
+    }
+    const waitingRoom = await this.requireWaitingMember(user, roomId);
+    const selected = waitingRoom.roles.find((role) => role.id === roleId);
     if (!selected) throw new NotFoundException({ code: "ROLE_NOT_FOUND", message: "Role not found" });
-    if (selected.roleKey === findGameDefinition(room.templateKey)?.worldActor?.actorKey) {
+    if (selected.roleKey === findGameDefinition(waitingRoom.templateKey)?.worldActor?.actorKey) {
       throw new ForbiddenException({ code: "SYSTEM_ROLE_NOT_CLAIMABLE", message: "The world actor is not a player role" });
     }
     await this.prisma.$transaction(async (tx) => {
@@ -648,7 +783,13 @@ export class RoomsService {
     throw new ConflictException({ code: "ROOM_STATE_CONFLICT", message: "Room state changed; refresh and lock the host role again" });
   }
 
-  async ready(user: AuthenticatedUser, roomId: string, isReady = true) {
+  async ready(user: AuthenticatedUser, roomId: string, isReady = true, idempotencyKey?: string) {
+    const room = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { id: true, mode: true, engineVersion: true } });
+    if (!room || room.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
+    if (this.isPressureRoom(room)) {
+      await this.requirePressureRoomsEntry().ready({ runId: roomId, userId: user.id, ready: isReady, idempotencyKey });
+      return this.get(user, roomId);
+    }
     // `ready` is a genuine multi-user write.  Read-modify-write on its JSON
     // state needs an optimistic version guard, otherwise simultaneous player
     // clicks can silently erase another player's ready flag.
@@ -666,11 +807,16 @@ export class RoomsService {
     throw new ConflictException({ code: "ROOM_STATE_CONFLICT", message: "Room state changed; refresh and try again" });
   }
 
-  async start(user: AuthenticatedUser, roomId: string): Promise<any> {
+  async start(user: AuthenticatedUser, roomId: string, input: { idempotencyKey?: string } = {}): Promise<any> {
     // Story V2 owns an idempotent start/resume implementation.  Route it
     // before the legacy waiting-lobby guard so a playing Solo run can be
     // reopened without attempting lobby mutations again.
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    if (engine?.engineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion) {
+      const pressureEntry = this.requirePressureRoomsEntry();
+      await pressureEntry.start({ runId: roomId, userId: user.id });
+      return this.get(user, roomId);
+    }
     if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION) {
       return { gameProjection: await this.openNovel.game(user, roomId) };
     }
@@ -693,6 +839,7 @@ export class RoomsService {
   }
 
   async extendWaiting(user: AuthenticatedUser, roomId: string, input: { idempotencyKey?: string; expectedLobbyDeadlineAt?: string }) {
+    await this.rejectIfPressureRoomId(roomId, "extendWaiting");
     const idempotencyKey = String(input.idempotencyKey || "").trim();
     if (!SOLO_IDEMPOTENCY_KEY.test(idempotencyKey)) {
       throw new BadRequestException({ code: "INVALID_IDEMPOTENCY_KEY", message: "A valid idempotencyKey is required" });
@@ -727,6 +874,7 @@ export class RoomsService {
   }
 
   async playSoloFromWaitingRoom(user: AuthenticatedUser, roomId: string, input: { idempotencyKey?: string; expectedLobbyDeadlineAt?: string; confirmReadyPlayersChanged?: boolean }) {
+    await this.rejectIfPressureRoomId(roomId, "playSoloFromWaitingRoom");
     const idempotencyKey = String(input.idempotencyKey || "").trim();
     if (!SOLO_IDEMPOTENCY_KEY.test(idempotencyKey)) {
       throw new BadRequestException({ code: "INVALID_IDEMPOTENCY_KEY", message: "A valid idempotencyKey is required" });
@@ -748,24 +896,39 @@ export class RoomsService {
   }
 
   async close(user: AuthenticatedUser, roomId: string) {
+    await this.rejectIfPressureRoomId(roomId, "close");
     const room = await this.requireWaitingMember(user, roomId);
     if (room.ownerUserId !== user.id) throw new ForbiddenException({ code: "HOST_REQUIRED", message: "Only the host can close a waiting room" });
     await this.prisma.storyRun.update({ where: { id: roomId }, data: { status: "closed", version: { increment: 1 } } });
     return this.get(user, roomId);
   }
 
-  async game(user: AuthenticatedUser, roomId: string) {
-    const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+  async game(user: AuthenticatedUser, roomId: string, feedCursor?: string, feedLimit?: string | number) {
+    const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true, status: true } });
+    if (engine?.engineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion) {
+      if (engine.status === "completed" || engine.status === "chapter_generated") {
+        // The result read is also the membership/route authorization boundary.
+        // Do not expose terminal run existence merely because its id is known.
+        await this.requirePressureHttp().result(user, roomId);
+        return {
+          schemaVersion: "pressure_chapter_game_terminal_v1",
+          runId: roomId,
+          resultUrl: `/game/result?runId=${encodeURIComponent(roomId)}`,
+        };
+      }
+      return this.requirePressureHttp().game(user, roomId, feedCursor, feedLimit);
+    }
     if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION) return this.openNovel.game(user, roomId);
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) return this.soloStory.game(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.game(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION) return this.memberProjections.game(user, roomId);
     const room = await this.get(user, roomId);
-    if (room.status === "chapter_generated") return { world: room.world, room, completed: true, currentNode: null, submittedRoleIds: [], access: this.access.roomAccessState(room, 7) };
+    const storyAccessRun = requireStoryAccessProjection(room);
+    if (room.status === "chapter_generated") return { world: room.world, room, completed: true, currentNode: null, submittedRoleIds: [], access: this.access.roomAccessState(storyAccessRun, 7) };
     if (room.status !== "playing" && room.status !== "resolving") throw new ConflictException({ code: "ROOM_NOT_STARTED", message: "The host has not started this room" });
     const currentNode = await this.story.currentNode(roomId);
     const actions = await this.story.nodeActions(currentNode.id);
-    const access = this.access.roomAccessState(room, currentNode.nodeIndex);
+    const access = this.access.roomAccessState(storyAccessRun, currentNode.nodeIndex);
     const balance = access.requiresUnlock ? await this.credits.getBalance(user.id) : undefined;
     return {
       world: room.world,
@@ -786,6 +949,7 @@ export class RoomsService {
 
   async result(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    if (engine?.engineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion) return this.requirePressureHttp().result(user, roomId);
     if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION) return this.openNovel.result(user, roomId);
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) return this.soloStory.result(user, roomId);
     if (engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION) return this.storyV2.result(user, roomId);
@@ -812,6 +976,7 @@ export class RoomsService {
 
   async submitGameAction(user: AuthenticatedUser, roomId: string, input: { actionType?: string; targetText?: string; method?: string; intent?: string; riskLevel?: string }) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    if (engine?.engineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion) return this.requirePressureHttp().action(user, roomId, input);
     if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION || engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) throw new ConflictException({ code: "LEGACY_ACTION_ENDPOINT_DISABLED", message: "Use the versioned decision endpoint" });
     const room = await this.requirePlayingMember(user, roomId);
     const player = room.players.find((item) => item.userId === user.id);
@@ -830,7 +995,8 @@ export class RoomsService {
       riskLevel: riskLevel as any
     });
     await this.referrals.qualifyFromExperience(user.id, roomId);
-    return { result, ...(await this.game(user, roomId)) };
+    const projection = await this.game(user, roomId) as Record<string, unknown>;
+    return { result, ...projection };
   }
 
   async resolveGameNode(user: AuthenticatedUser, roomId: string) {
@@ -838,7 +1004,8 @@ export class RoomsService {
     if (engine?.engineVersion === CONTINUOUS_ENGINE_VERSION || engine?.engineVersion === CONTINUOUS_STORY_ENGINE_VERSION || engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) throw new ForbiddenException({ code: "PLAYER_RESOLVE_DISABLED", message: "Continuous rooms advance automatically" });
     const { node } = await this.requireResolvableNode(user, roomId);
     const resolution = await this.story.resolveNode(node.id);
-    return { resolution, ...(await this.game(user, roomId)) };
+    const projection = await this.game(user, roomId) as Record<string, unknown>;
+    return { resolution, ...projection };
   }
 
   async resolveGameNodeAsync(user: AuthenticatedUser, roomId: string) {
@@ -862,6 +1029,7 @@ export class RoomsService {
 
   /** Member-scoped incremental events. Never include another player's actions or private projection. */
   async events(user: AuthenticatedUser, roomId: string, after?: string) {
+    await this.rejectIfPressureRoomId(roomId, "events");
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
     if (engine?.engineVersion === SOLO_STORY_ENGINE_VERSION) {
       const sequence = after && /^\d+$/.test(after) ? Number(after) : 0;
@@ -920,7 +1088,27 @@ export class RoomsService {
     });
   }
 
-  submitMain(user: AuthenticatedUser, roomId: string, command: SlotCommandV1) { return this.commands.submitMain(user, roomId, command); }
+  async submitPressureChat(user: AuthenticatedUser, roomId: string, body: unknown) {
+    await this.assertPressureRoomId(roomId);
+    return this.requirePressureHttp().chat(user, roomId, body);
+  }
+  async replayPressureRoom(user: AuthenticatedUser, roomId: string, body: unknown) {
+    await this.assertPressureRoomId(roomId);
+    return this.requirePressureHttp().replay(user, roomId, body);
+  }
+  async leave(user: AuthenticatedUser, roomId: string, input: { idempotencyKey?: string }) {
+    const room = await this.prisma.storyRun.findUnique({ where: { id: roomId }, include: { owner: true, players: { include: { user: true, role: true }, orderBy: { joinedAt: "asc" } }, roles: { orderBy: { createdAt: "asc" } } } });
+    if (!room || room.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
+    if (this.isPressureRoom(room)) {
+      await this.requirePressureRoomsEntry().leave({ runId: roomId, userId: user.id, idempotencyKey: input.idempotencyKey });
+      return this.get(user, roomId);
+    }
+    throw new ConflictException({ code: "ROOM_LEAVE_UNSUPPORTED", message: "Leave is only supported for Pressure rooms" });
+  }
+  async submitMain(user: AuthenticatedUser, roomId: string, command: SlotCommandV1) {
+    if (await this.isPressureRoomId(roomId)) return this.requirePressureHttp().legacySlot(user, roomId, "MAIN");
+    return this.commands.submitMain(user, roomId, command);
+  }
   async submitTurnDecision(user: AuthenticatedUser, roomId: string, turnId: string, command: TurnDecisionCommandV2) {
     if (await this.usesOpenNovel(roomId)) return this.openNovel.submitDecision(user, roomId, turnId, command);
     return await this.usesSoloStory(roomId) ? this.soloStory.submit(user, roomId, turnId, command) : this.storyV2.submit(user, roomId, turnId, command);
@@ -946,21 +1134,198 @@ export class RoomsService {
     if (await this.usesSoloStory(roomId)) throw new ConflictException({ code: "SOLO_INTERACTION_ENDPOINT_DISABLED", message: "Solo 人物交谈通过当前回合决策提交，不创建等待回应的另一条线程。" });
     return this.storyV2.replyInteraction(user, roomId, interactionId, command);
   }
-  submitManeuver(user: AuthenticatedUser, roomId: string, command: SlotCommandV1) { return this.commands.submitManeuver(user, roomId, command); }
-  submitReaction(user: AuthenticatedUser, roomId: string, eventId: string, command: SlotCommandV1) { return this.commands.submitReaction(user, roomId, eventId, command); }
+  async submitManeuver(user: AuthenticatedUser, roomId: string, command: SlotCommandV1) {
+    if (await this.isPressureRoomId(roomId)) return this.requirePressureHttp().legacySlot(user, roomId, "MANEUVER");
+    return this.commands.submitManeuver(user, roomId, command);
+  }
+  async submitReaction(user: AuthenticatedUser, roomId: string, eventId: string, command: SlotCommandV1) {
+    if (await this.isPressureRoomId(roomId)) return this.requirePressureHttp().legacySlot(user, roomId, "REACTION");
+    return this.commands.submitReaction(user, roomId, eventId, command);
+  }
   layoutDone(user: AuthenticatedUser, roomId: string, command: LayoutCommandV1) { return this.commands.done(user, roomId, command); }
   leaveStage(user: AuthenticatedUser, roomId: string, command: LayoutCommandV1) { return this.commands.leaveStage(user, roomId, command); }
   async heartbeat(user: AuthenticatedUser, roomId: string, command: HeartbeatCommandV1) {
+    if (await this.isPressureRoomId(roomId)) {
+      return this.pressureSeatHeartbeat(user, roomId, {
+        sessionId: command.sessionInstanceId,
+        signalSequence: command.heartbeatSequence,
+        status: "ONLINE",
+        idempotencyKey: `${command.sessionInstanceId}:presence:${command.heartbeatSequence}:ONLINE`,
+      });
+    }
     if (await this.usesSoloStory(roomId)) return this.soloStory.heartbeat(user, roomId, command);
     return await this.usesStoryV2(roomId) ? this.storyV2.heartbeat(user, roomId, command) : this.commands.heartbeat(user, roomId, command);
   }
   async handoffToAi(user: AuthenticatedUser, roomId: string, command: ControlCommandV1) {
+    if (await this.isPressureRoomId(roomId)) {
+      const expectedSubmissionFenceToken = (command as ControlCommandV1 & {
+        expectedSubmissionFenceToken?: string;
+      }).expectedSubmissionFenceToken;
+      if (!expectedSubmissionFenceToken) {
+        throw new BadRequestException({ code: "PRESSURE_SUBMISSION_FENCE_REQUIRED", message: "expectedSubmissionFenceToken is required" });
+      }
+      return this.pressureSeatHandoff(user, roomId, {
+        expectedControlEpoch: command.expectedControlEpoch,
+        expectedSubmissionFenceToken,
+        idempotencyKey: command.idempotencyKey,
+      });
+    }
     if (await this.usesSoloStory(roomId)) return this.soloStory.handoff(user, roomId, command);
     return await this.usesStoryV2(roomId) ? this.storyV2.handoff(user, roomId, command) : this.commands.handoff(user, roomId, command);
   }
   async reclaim(user: AuthenticatedUser, roomId: string, command: ControlCommandV1) {
+    if (await this.isPressureRoomId(roomId)) {
+      const expectedReclaimFenceToken = (command as ControlCommandV1 & {
+        expectedReclaimFenceToken?: string;
+      }).expectedReclaimFenceToken;
+      if (!expectedReclaimFenceToken) {
+        throw new BadRequestException({ code: "PRESSURE_RECLAIM_FENCE_REQUIRED", message: "expectedReclaimFenceToken is required" });
+      }
+      return this.pressureSeatReclaim(user, roomId, {
+        expectedControlEpoch: command.expectedControlEpoch,
+        expectedReclaimFenceToken,
+        idempotencyKey: command.idempotencyKey,
+      });
+    }
     if (await this.usesSoloStory(roomId)) return this.soloStory.reclaim(user, roomId, command);
     return await this.usesStoryV2(roomId) ? this.storyV2.reclaim(user, roomId, command) : this.commands.reclaim(user, roomId, command);
+  }
+
+  async pressureSeatSnapshot(
+    user: AuthenticatedUser,
+    roomId: string,
+    cursor?: string,
+    feedLimit?: string,
+  ) {
+    await this.assertPressureRoomId(roomId);
+    try {
+      return await this.requirePressureSeatTransport().readSnapshot({
+        runId: roomId,
+        subjectId: user.id,
+        cursor: cursor || null,
+        feedLimit: parsePressureSeatFeedLimit(feedLimit),
+      });
+    } catch (error) {
+      throw pressureSeatHttpError(error);
+    }
+  }
+
+  pressureSeatEventStream(
+    user: AuthenticatedUser,
+    roomId: string,
+    afterCursor?: string,
+  ): Observable<MessageEvent> {
+    return new Observable<MessageEvent>((subscriber) => {
+      const controller = new AbortController();
+      void (async () => {
+        try {
+          await this.assertPressureRoomId(roomId);
+          for await (const event of streamPressureSeatTransportV1(
+            this.requirePressureSeatTransport(),
+            { runId: roomId, subjectId: user.id },
+            { afterCursor: afterCursor || null, signal: controller.signal },
+          )) {
+            subscriber.next({
+              id: event.id ?? undefined,
+              type: event.event,
+              data: event.data,
+            } as unknown as MessageEvent);
+          }
+          subscriber.complete();
+        } catch (error) {
+          subscriber.error(pressureSeatHttpError(error));
+        }
+      })();
+      return () => controller.abort();
+    });
+  }
+
+  async pressureSeatHeartbeat(
+    user: AuthenticatedUser,
+    roomId: string,
+    body: Omit<PressureSeatHeartbeatCommandV1, "runId" | "subjectId">,
+  ) {
+    await this.assertPressureRoomId(roomId);
+    try {
+      return await this.requirePressureSeatTransport().heartbeat({
+        ...body,
+        runId: roomId,
+        subjectId: user.id,
+      });
+    } catch (error) {
+      throw pressureSeatHttpError(error);
+    }
+  }
+
+  async pressureSeatHandoff(
+    user: AuthenticatedUser,
+    roomId: string,
+    body: Omit<PressureSeatHandoffCommandV1, "runId" | "subjectId">,
+  ) {
+    await this.assertPressureRoomId(roomId);
+    try {
+      return await this.requirePressureSeatTransport().handoff({
+        ...body,
+        runId: roomId,
+        subjectId: user.id,
+      });
+    } catch (error) {
+      throw pressureSeatHttpError(error);
+    }
+  }
+
+  async pressureSeatReclaim(
+    user: AuthenticatedUser,
+    roomId: string,
+    body: Omit<PressureSeatReclaimCommandV1, "runId" | "subjectId">,
+  ) {
+    await this.assertPressureRoomId(roomId);
+    try {
+      return await this.requirePressureSeatTransport().reclaim({
+        ...body,
+        runId: roomId,
+        subjectId: user.id,
+      });
+    } catch (error) {
+      throw pressureSeatHttpError(error);
+    }
+  }
+
+  async createPressurePromise(
+    user: AuthenticatedUser,
+    roomId: string,
+    body: CreatePressureSimplePromiseBodyV1,
+  ) {
+    await this.assertPressureRoomId(roomId);
+    try {
+      return await this.requirePressurePromises().create({
+        roomId,
+        subjectId: user.id,
+        body,
+      });
+    } catch (error) {
+      throw pressurePromiseHttpError(error);
+    }
+  }
+
+  async applyPressurePromiseOperation(
+    user: AuthenticatedUser,
+    roomId: string,
+    promiseId: string,
+    body: { operationCode: PressurePromiseOperationCodeV1; clientRequestId: string },
+  ) {
+    await this.assertPressureRoomId(roomId);
+    try {
+      return await this.requirePressurePromises().apply({
+        roomId,
+        subjectId: user.id,
+        promiseId,
+        operationCode: body.operationCode,
+        clientRequestId: body.clientRequestId,
+      });
+    } catch (error) {
+      throw pressurePromiseHttpError(error);
+    }
   }
 
   private async usesSoloStory(roomId: string) {
@@ -1023,6 +1388,73 @@ export class RoomsService {
       if (updated.count === 1) return;
     }
     throw new ConflictException({ code: "ROOM_STATE_CONFLICT", message: "Room state changed; refresh and select the role again" });
+  }
+
+  private getPressureRoomsEntry() {
+    return this.pressureRoomsGateway
+      ? new PressureRoomsEntryAdapter({ gateway: this.pressureRoomsGateway })
+      : null;
+  }
+
+  private requirePressureRoomsEntry() {
+    const entry = this.getPressureRoomsEntry();
+    if (!entry) {
+      throw new ConflictException({ code: "PRESSURE_ROOMS_UNAVAILABLE", message: "Pressure room routing is not wired" });
+    }
+    return entry;
+  }
+
+  private requirePressureHttp() {
+    if (!this.pressureHttp) {
+      throw new ConflictException({ code: "PRESSURE_HTTP_UNAVAILABLE", message: "Pressure room HTTP delegate is not wired" });
+    }
+    return this.pressureHttp;
+  }
+
+  private requirePressureSeatTransport() {
+    if (!this.pressureSeatTransport) {
+      throw new ConflictException({ code: "PRESSURE_SEAT_TRANSPORT_UNAVAILABLE", message: "Pressure seat transport is not wired" });
+    }
+    return this.pressureSeatTransport;
+  }
+
+  private requirePressurePromises() {
+    if (!this.pressurePromises) {
+      throw new ConflictException({ code: "PRESSURE_PROMISES_UNAVAILABLE", message: "Pressure Promise commands are not wired" });
+    }
+    return this.pressurePromises;
+  }
+
+  private isPressureRoom(room: { engineVersion: string }) {
+    return room.engineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion;
+  }
+
+  private async isPressureRoomId(roomId: string) {
+    const room = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
+    return Boolean(room && this.isPressureRoom(room));
+  }
+
+  private async assertPressureRoomId(roomId: string) {
+    if (!(await this.isPressureRoomId(roomId))) {
+      throw new ConflictException({ code: "PRESSURE_ROOM_REQUIRED", message: "This endpoint requires a Pressure room" });
+    }
+  }
+
+  private async rejectIfPressureRoomId(roomId: string, endpoint: string) {
+    if (await this.isPressureRoomId(roomId)) {
+      throw new ConflictException({ code: "PRESSURE_LEGACY_ENDPOINT_DISABLED", message: `${endpoint} is not supported for Pressure rooms` });
+    }
+  }
+
+  private async projectRoom(room: any, viewerId?: string, requireMembership = false) {
+    if (!this.isPressureRoom(room)) {
+      return this.project(room, viewerId);
+    }
+    return this.requirePressureRoomsEntry().projectRoom({
+      room,
+      viewerId,
+      requireMembership,
+    });
   }
 
   private project(room: any, viewerId?: string) {
@@ -1119,4 +1551,38 @@ export class RoomsService {
       updatedAt: room.updatedAt
     };
   }
+}
+
+function requireStoryAccessProjection(room: {
+  accessLevel?: unknown;
+  freeDecisionsUsed?: unknown;
+  billingPolicyVersion?: unknown;
+}): {
+  accessLevel: string;
+  freeDecisionsUsed: number;
+  billingPolicyVersion?: string;
+} {
+  if (
+    typeof room.accessLevel !== "string"
+    || !Number.isSafeInteger(room.freeDecisionsUsed)
+    || (
+      room.billingPolicyVersion !== undefined
+      && typeof room.billingPolicyVersion !== "string"
+    )
+  ) {
+    throw new HttpException(
+      {
+        code: "ROOM_ACCESS_STATE_INVALID",
+        message: "Room access state is invalid",
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+  return {
+    accessLevel: room.accessLevel,
+    freeDecisionsUsed: room.freeDecisionsUsed as number,
+    ...(room.billingPolicyVersion === undefined
+      ? {}
+      : { billingPolicyVersion: room.billingPolicyVersion }),
+  };
 }

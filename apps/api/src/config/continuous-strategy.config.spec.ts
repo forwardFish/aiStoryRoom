@@ -25,14 +25,13 @@ assert.equal(normalizeRoleAgentAttemptTimeoutMs(1_250.8), 1_250);
 assert.equal(normalizeRoleAgentAttemptTimeoutMs(10_000), 4_500);
 assert.equal(normalizeRoleAgentAttemptTimeoutMs("invalid"), 4_500);
 
-assert.deepEqual(selectRunVersions({ templateKey: "sangtian", mode: "room", maxPlayers: 3, enabledForNewRooms: true }), {
-  engineVersion: "continuous_story_v2",
-  strategyVersion: "sangtian_v1_2"
-});
-for (const maxPlayers of [1, 2, 4, 5, 6]) {
+// Sangtian is now owned by the Pressure route. This legacy selector must not
+// re-enrol it into continuous_story_v2 even when the old rollout flag is on;
+// Pressure callers bypass this selector and use the frozen game registration.
+for (const maxPlayers of [1, 2, 3, 4, 5, 6]) {
   assert.deepEqual(selectRunVersions({ templateKey: "sangtian", mode: "room", maxPlayers, enabledForNewRooms: true }), {
-    engineVersion: "continuous_story_v2",
-    strategyVersion: "sangtian_v1_2"
+    engineVersion: "legacy_v1",
+    strategyVersion: "legacy_v1"
   });
 }
 for (const changed of [
