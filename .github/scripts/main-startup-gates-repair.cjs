@@ -8,11 +8,26 @@ const EXPECTED_KNOWN_TARGET_SHA256 =
   "eb8c8a8496d5b2a12df815831cf3b3a2f0cb02c9fe7ea8853283708eb12bb5da";
 const OLD_KNOWN_TARGET_SHA256 =
   "cbf471ed910510731987b8046919d44e281da2a3648de7761076014fe303db7a";
+
 const STALE_B0_TARGET = "packages/shared/tests/pressure-chapter-b0.spec.ts";
 const OLD_STALE_B0_SHA256 =
   "816e1bb4f7a69b707ebc31eae16bab4bd76320b0c6dc9fd6ff8d6e690611fa67";
 const CURRENT_B0_TARGET =
   "apps/api/src/pressure-chapter/chapter-settlement/chapter-settlement.orchestrator.spec.ts";
+
+const LEGACY_V2_TARGET = "apps/web/tests/continuous-story-v2.test.mjs";
+const OLD_LEGACY_V2_SHA256 =
+  "5cbd68220aec6f3b10e8f49a8cd38a6c45339b42f3ba4c323c6b06866657b281";
+const EXPECTED_LEGACY_V2_SHA256 =
+  "d29aedd9bf8bc6af27e7f2239a6f39beef712cf742c84367b5a6dfef4a4aaf5e";
+
+const STALE_ENDGAME_TARGET =
+  "apps/web/tests/endgame-result-registry-v1.pressure-chapter.browser.test.mjs";
+const OLD_STALE_ENDGAME_SHA256 =
+  "9db76d774cdc9da2b4e629e8bdad329804d1c53753bbd2cf264c4b97f22b5617";
+const CURRENT_ENDGAME_TARGET =
+  "apps/web/tests/pressure-chapter-game-v1.pressure-chapter.browser.test.mjs";
+
 const OLD_SOURCE_MANIFEST_SHA256 =
   "d3764c96d04ca2938b34d1413c04a04b19e2afb9ce2241a002d06da1a89980c1";
 const SOURCE_MANIFEST =
@@ -48,29 +63,66 @@ function canonicalSha256(value) {
   return createHash("sha256").update(canonical(value), "utf8").digest("hex");
 }
 
+function requireFileWithEvidence(filePath, evidence) {
+  if (!existsSync(filePath)) throw new Error(`CURRENT_TARGET_MISSING:${filePath}`);
+  const source = readFileSync(filePath, "utf8");
+  for (const marker of evidence) {
+    if (!source.includes(marker)) {
+      throw new Error(`CURRENT_TARGET_SEMANTIC_DRIFT:${filePath}:${marker}`);
+    }
+  }
+  return rawSha256(filePath);
+}
+
+function requireSingleTarget(targetRefs, targetPath, expectedOldSha) {
+  const refs = targetRefs.filter((entry) => entry.path === targetPath);
+  if (refs.length !== 1) {
+    throw new Error(`TARGET_REFERENCE_COUNT:${targetPath}:${refs.length}`);
+  }
+  if (refs[0].sha256RawBytes !== expectedOldSha) {
+    throw new Error(
+      `UNEXPECTED_OLD_TARGET_SHA:${targetPath}:${refs[0].sha256RawBytes}`,
+    );
+  }
+  return refs[0];
+}
+
 const knownActual = rawSha256(KNOWN_TARGET_TEST);
 if (knownActual !== EXPECTED_KNOWN_TARGET_SHA256) {
   throw new Error(`KNOWN_TARGET_SHA_DRIFT:${knownActual}`);
 }
+
 if (existsSync(STALE_B0_TARGET)) {
-  throw new Error(`EXPECTED_STALE_B0_TARGET_TO_BE_ABSENT:${STALE_B0_TARGET}`);
+  throw new Error(`EXPECTED_STALE_TARGET_TO_BE_ABSENT:${STALE_B0_TARGET}`);
 }
-if (!existsSync(CURRENT_B0_TARGET)) {
-  throw new Error(`CURRENT_B0_TARGET_MISSING:${CURRENT_B0_TARGET}`);
-}
-const currentB0Source = readFileSync(CURRENT_B0_TARGET, "utf8");
-for (const evidence of [
+const currentB0Actual = requireFileWithEvidence(CURRENT_B0_TARGET, [
   "ChapterSettlementOrchestrator",
   "PC-W6 commits canonical settlement authority once",
   "same key/fingerprint replays durable commit",
   "serializable failure leaves zero half-write",
   "crash after commit recovers receipt",
-]) {
-  if (!currentB0Source.includes(evidence)) {
-    throw new Error(`CURRENT_B0_TARGET_SEMANTIC_DRIFT:${evidence}`);
-  }
+]);
+
+const legacyV2Actual = requireFileWithEvidence(LEGACY_V2_TARGET, [
+  "ContinuousStoryV2LegacyStorage",
+  "reading a resolving Solo projection never triggers generation or retry",
+  "a missing opening turn is not adapted as a completed story",
+  "roomSessionForView",
+  "resultUrl: null",
+]);
+if (legacyV2Actual !== EXPECTED_LEGACY_V2_SHA256) {
+  throw new Error(`LEGACY_V2_TARGET_SHA_DRIFT:${legacyV2Actual}`);
 }
-const currentB0Actual = rawSha256(CURRENT_B0_TARGET);
+
+if (existsSync(STALE_ENDGAME_TARGET)) {
+  throw new Error(`EXPECTED_STALE_TARGET_TO_BE_ABSENT:${STALE_ENDGAME_TARGET}`);
+}
+const currentEndgameActual = requireFileWithEvidence(CURRENT_ENDGAME_TARGET, [
+  "completed Pressure run uses the existing result route without mounting a parallel page",
+  "pressure_chapter_game_terminal_v1",
+  "resultUrl: `/game/result?runId=${runId}`",
+  "terminal must not mount live storage",
+]);
 
 const source = JSON.parse(readFileSync(SOURCE_MANIFEST, "utf8"));
 if (!Array.isArray(source.entries) || source.entries.length === 0) {
@@ -83,27 +135,39 @@ const targetRefs = source.entries.flatMap((entry) => {
   return entry.targetTests;
 });
 
-const knownRefs = targetRefs.filter((entry) => entry.path === KNOWN_TARGET_TEST);
-if (knownRefs.length !== 1) {
-  throw new Error(`KNOWN_TARGET_REFERENCE_COUNT:${knownRefs.length}`);
-}
-if (knownRefs[0].sha256RawBytes !== OLD_KNOWN_TARGET_SHA256) {
-  throw new Error(`UNEXPECTED_OLD_KNOWN_TARGET_SHA:${knownRefs[0].sha256RawBytes}`);
-}
-knownRefs[0].sha256RawBytes = knownActual;
+requireSingleTarget(
+  targetRefs,
+  KNOWN_TARGET_TEST,
+  OLD_KNOWN_TARGET_SHA256,
+).sha256RawBytes = knownActual;
 
-const staleB0Refs = targetRefs.filter((entry) => entry.path === STALE_B0_TARGET);
-if (staleB0Refs.length !== 1) {
-  throw new Error(`STALE_B0_REFERENCE_COUNT:${staleB0Refs.length}`);
-}
-if (staleB0Refs[0].sha256RawBytes !== OLD_STALE_B0_SHA256) {
-  throw new Error(`UNEXPECTED_OLD_STALE_B0_SHA:${staleB0Refs[0].sha256RawBytes}`);
-}
+const staleB0Ref = requireSingleTarget(
+  targetRefs,
+  STALE_B0_TARGET,
+  OLD_STALE_B0_SHA256,
+);
 if (targetRefs.some((entry) => entry.path === CURRENT_B0_TARGET)) {
-  throw new Error(`CURRENT_B0_TARGET_ALREADY_BOUND:${CURRENT_B0_TARGET}`);
+  throw new Error(`CURRENT_TARGET_ALREADY_BOUND:${CURRENT_B0_TARGET}`);
 }
-staleB0Refs[0].path = CURRENT_B0_TARGET;
-staleB0Refs[0].sha256RawBytes = currentB0Actual;
+staleB0Ref.path = CURRENT_B0_TARGET;
+staleB0Ref.sha256RawBytes = currentB0Actual;
+
+requireSingleTarget(
+  targetRefs,
+  LEGACY_V2_TARGET,
+  OLD_LEGACY_V2_SHA256,
+).sha256RawBytes = legacyV2Actual;
+
+const staleEndgameRef = requireSingleTarget(
+  targetRefs,
+  STALE_ENDGAME_TARGET,
+  OLD_STALE_ENDGAME_SHA256,
+);
+if (targetRefs.some((entry) => entry.path === CURRENT_ENDGAME_TARGET)) {
+  throw new Error(`CURRENT_TARGET_ALREADY_BOUND:${CURRENT_ENDGAME_TARGET}`);
+}
+staleEndgameRef.path = CURRENT_ENDGAME_TARGET;
+staleEndgameRef.sha256RawBytes = currentEndgameActual;
 
 const remainingErrors = [];
 for (const target of targetRefs) {
@@ -150,5 +214,8 @@ writeFileSync(RELEASE_MANIFEST, `${JSON.stringify(release, null, 2)}\n`);
 console.log(`KNOWN_TARGET_SHA256=${knownActual}`);
 console.log(`B0_TARGET_PATH=${CURRENT_B0_TARGET}`);
 console.log(`B0_TARGET_SHA256=${currentB0Actual}`);
+console.log(`LEGACY_V2_TARGET_SHA256=${legacyV2Actual}`);
+console.log(`ENDGAME_TARGET_PATH=${CURRENT_ENDGAME_TARGET}`);
+console.log(`ENDGAME_TARGET_SHA256=${currentEndgameActual}`);
 console.log(`TARGET_REFERENCE_COUNT=${targetRefs.length}`);
 console.log(`SOURCE_REGRESSION_MANIFEST_SHA256=${sourceActual}`);
