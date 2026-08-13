@@ -664,6 +664,11 @@ function assertEvaluationBinding(
   const actionIds = new Set(input.wireInput.sealedDecisionActionIds);
   const actionsById = new Map(input.settlementMaterial.actions.map((action) => [action.actionId, action]));
   const mutationIds = new Set(evaluation.mutations.map((mutation) => mutation.mutationId));
+  const evaluationEvidenceRefs = new Set(
+    evaluation.mutations
+      .filter((mutation) => mutation.entityType === "EVIDENCE")
+      .map((mutation) => mutation.entityId),
+  );
   for (const mutation of evaluation.mutations) {
     if (mutation.originActionIds.some((actionId) => !actionIds.has(actionId))) {
       fail("CAUSAL_REFERENCE_INVALID", `Mutation ${mutation.mutationId} references an action outside the sealed ledger.`);
@@ -675,7 +680,9 @@ function assertEvaluationBinding(
     ));
     if (edge.fromActionIds.some((actionId) => !actionIds.has(actionId))
       || edge.toMutationIds.some((mutationId) => !mutationIds.has(mutationId))
-      || edge.evidenceRefs.some((evidenceRef) => !edgeEvidenceRefs.has(evidenceRef))) {
+      || edge.evidenceRefs.some((evidenceRef) => (
+        !edgeEvidenceRefs.has(evidenceRef) && !evaluationEvidenceRefs.has(evidenceRef)
+      ))) {
       fail("CAUSAL_REFERENCE_INVALID", `Causal edge ${edge.edgeId} references data outside the sealed input/evaluation.`);
     }
   }

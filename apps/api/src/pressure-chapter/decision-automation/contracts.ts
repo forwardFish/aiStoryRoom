@@ -7,12 +7,18 @@ import type {
 import type {
   AuthoredChapterRuntimeV1,
   ChapterOrchestratorStateV1,
+  CommittedSettlementResumeAuthorityV1,
   SubmitOrchestratedActionCommandV1,
   WorkingProjectionReaderPort,
 } from "../orchestrator/contracts";
 import type { SeatControlSnapshotV1 } from "../seat-control/types";
 import type { WorkingLedgerProjectionV1 } from "../working-ledger/contracts";
 import type { PressureDeadlineDefaultCoordinatorPortV1 } from "../deadline-default-production/contracts";
+import type { AEmotionAuthorityEmissionV1 } from "../a-emotion-production/content-source";
+import type { AuthorityDownstreamManifestV1 } from "../projection-plan/authority-downstream";
+import type { OpenNovelNarrativeProjectionJobV1, SealedChapterSettlementInputV1 } from "@ai-story/shared";
+import type { BeatResolutionV1 } from "@ai-story/shared";
+import type { WorkingLedgerEventV1 } from "../working-ledger/contracts";
 
 export interface DecisionAutomationTaskV1 {
   schemaVersion: "pressure_decision_automation_task_v1";
@@ -94,6 +100,22 @@ export interface DecisionConvergenceAuthoritySnapshotV1 {
   snapshotHash: string;
 }
 
+export interface DecisionSubmitViewerBindingV1 {
+  roomId: string;
+  runId: string;
+  subjectId: string;
+  seatId: SeatIdV1;
+  humanControllerId: string;
+}
+
+/** One authenticated HTTP submit bound to one exact authority snapshot. */
+export interface DecisionSubmitSnapshotV1 {
+  schemaVersion: "pressure_decision_submit_snapshot_v1";
+  authority: DecisionConvergenceAuthoritySnapshotV1;
+  viewer: DecisionSubmitViewerBindingV1;
+  submitSnapshotHash: string;
+}
+
 export interface DecisionConvergenceSnapshotReaderPortV1 {
   capture(input: Readonly<{
     runId: string;
@@ -101,6 +123,27 @@ export interface DecisionConvergenceSnapshotReaderPortV1 {
     aiPolicyArtifactHash: string;
     capturedAtMs: number;
   }>): Promise<DecisionConvergenceAuthoritySnapshotV1 | null>;
+  captureSubmit?(input: Readonly<{
+    runId: string;
+    expectedRouteHash: string;
+    aiPolicyArtifactHash: string;
+    capturedAtMs: number;
+    roomId: string;
+    subjectId: string;
+    seatId: SeatIdV1;
+    chapterRuntimeId: string;
+    decisionPointId: string;
+    expectedWorkingRevision: number;
+    expectedControlEpoch: number;
+    expectedSubmissionFenceToken: string;
+  }>): Promise<DecisionSubmitSnapshotV1 | null>;
+  /** One-row post-transition cache read used only when settlement opens a new chapter. */
+  loadWorkingProjection?(input: Readonly<{
+    runId: string;
+    routeHash: string;
+    chapterRuntimeId: string;
+    chapterId: ChapterIdV1;
+  }>): Promise<WorkingLedgerProjectionV1 | null>;
 }
 
 export interface AiDecisionPolicyInputV1 {
@@ -188,6 +231,7 @@ export type PreparedAutomationActionStaleReasonV1 =
   | "AI_POLICY";
 
 export interface PreparedAutomationActionAuthorityV1 {
+  actorKind: "HUMAN" | "AI";
   snapshotHash: string;
   expectedOrchestratorRevision: number;
   expectedOrchestratorHash: string;
@@ -200,7 +244,7 @@ export interface PreparedAutomationActionAuthorityV1 {
   expectedControllerId: string;
   expectedControlEpoch: number;
   expectedSubmissionFenceToken: string;
-  expectedAiPolicyHash: string;
+  expectedAiPolicyHash: string | null;
 }
 
 export interface AppendPreparedAutomationActionCommandV1 {
@@ -228,7 +272,19 @@ export interface PreparedAutomationActionBatchV1 {
   expectedWorkingStateHash: string;
   expectedLedgerHeadHash: string;
   expectedSeatAuthorityStateHash: string;
+  frozenSeatOrder: SeatIdV1[];
   actions: AppendPreparedAutomationActionCommandV1[];
+  chapterDescriptor: AuthoredChapterRuntimeV1;
+  nextOrchestratorState: ChapterOrchestratorStateV1;
+  beatPlan: {
+    event: WorkingLedgerEventV1;
+    resolution: BeatResolutionV1;
+    postBeatOrchestratorState: ChapterOrchestratorStateV1;
+    settlementInput: SealedChapterSettlementInputV1 | null;
+    narrativeJobs: OpenNovelNarrativeProjectionJobV1[];
+    aEmotionEmissions: AEmotionAuthorityEmissionV1[];
+    downstreamManifest: AuthorityDownstreamManifestV1;
+  };
   batchHash: string;
 }
 
@@ -243,6 +299,8 @@ export interface PreparedAutomationActionBatchResultV1 {
   replayedActionIds: string[];
   eventHashes: string[];
   ledgerHeadHash: string;
+  orchestratorState: ChapterOrchestratorStateV1;
+  projection: WorkingLedgerProjectionV1 | null;
   conflictReason: PreparedAutomationActionBatchConflictReasonV1 | null;
 }
 
@@ -273,6 +331,11 @@ export interface DecisionAutomationRuntimePortV1 {
     routeSnapshot: RunRouteSnapshotV1,
     nowMs: number,
   ): Promise<ChapterOrchestratorStateV1>;
+  resumeFromCommittedSettlementAuthority?(
+    routeSnapshot: RunRouteSnapshotV1,
+    authority: Readonly<CommittedSettlementResumeAuthorityV1>,
+    nowMs: number,
+  ): Promise<ChapterOrchestratorStateV1>;
   advanceDeadline(
     routeSnapshot: RunRouteSnapshotV1,
     nowMs: number,
@@ -296,6 +359,15 @@ export interface DecisionConvergenceCommandV1 {
   } | null;
   nowMs: number;
   humanSubmitMs: number;
+  /**
+   * HTTP-only prepared player action.  Recovery never supplies this value.
+   * It is committed in the same W5 batch as the required deterministic AI
+   * actions, so the public request does not execute the legacy human write
+   * path and then read the same authority again for AI convergence.
+   */
+  humanAction: SubmitOrchestratedActionCommandV1 | null;
+  /** HTTP may reuse the snapshot already consumed by its command compiler. */
+  authoritySnapshot?: DecisionConvergenceAuthoritySnapshotV1 | null;
 }
 
 export interface DecisionConvergenceStageTimingsV1 {
@@ -347,6 +419,11 @@ export interface DecisionConvergenceResultV1 {
   outcome: DecisionAutomationOutcomeKindV1;
   actionIds: string[];
   chapter: ChapterOrchestratorStateV1 | null;
+  committedAuthority: {
+    chapter: ChapterOrchestratorStateV1;
+    workingProjection: WorkingLedgerProjectionV1;
+    chapterDescriptor: AuthoredChapterRuntimeV1;
+  } | null;
   metrics: DecisionConvergenceDiagnosticsV1;
 }
 
@@ -387,7 +464,10 @@ export interface DecisionConvergenceDependenciesV1 {
   policy: PublishedContentOwnedAiDecisionPolicyPortV1;
   compiler: DecisionAutomationCommandCompilerPortV1;
   preparedActions: PreparedAutomationActionSubmissionPortV1;
-  runtime: Pick<DecisionAutomationRuntimePortV1, "resume">;
+  runtime: Pick<
+    DecisionAutomationRuntimePortV1,
+    "resume" | "resumeFromCommittedSettlementAuthority"
+  >;
   deadlineDefaults: PressureDeadlineDefaultCoordinatorPortV1;
   diagnostics: DecisionConvergenceDiagnosticsPortV1;
   clock: DecisionAutomationClockPortV1;

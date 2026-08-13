@@ -54,7 +54,12 @@ export function assertLocalAuthFixtureScope({ testEnvironment, runtimeEnvironmen
   assert.match(String(runtimeEnvironment.PRESSURE_CHAPTER_ALLOWED_SUPABASE_PROJECT_SHA256 || ''), /^[0-9a-f]{64}$/iu, 'PRESSURE_CHAPTER_ALLOWED_SUPABASE_PROJECT_SHA256 is required');
   assert.equal(fingerprint, runtimeEnvironment.PRESSURE_CHAPTER_ALLOWED_SUPABASE_PROJECT_SHA256.toLowerCase(), 'Supabase project is not explicitly allowlisted');
 
-  const apiPort = positivePort(testEnvironment.API_PORT);
+  // An explicit runtime-only port allows an isolated candidate API to run
+  // beside a developer's existing server without weakening any DB scope gate.
+  const apiPort = positivePort(
+    runtimeEnvironment.PRESSURE_CHAPTER_TEST_API_PORT
+      || testEnvironment.API_PORT,
+  );
   const apiBase = `http://127.0.0.1:${apiPort}/api`;
   const mailSink = resolveMailSink(testEnvironment);
   return { apiBase, databaseUrl, mailSink, projectFingerprint: fingerprint };
@@ -153,7 +158,9 @@ export async function runSoloN1Smoke({ apiBase, cookie, identity, userId, timeou
     method: 'POST',
     cookie,
     body: command,
-    expectedStatuses: [200],
+    // Nest POST handlers default to 201 when the controller does not override
+    // the transport status. The response schema remains the acceptance fence.
+    expectedStatuses: [200, 201],
     timeoutMs,
   });
   assert.equal(submitted.body?.schemaVersion, 'pressure_chapter_submit_decision_http_response_v1');

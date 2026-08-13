@@ -8,6 +8,7 @@ import {
   type PressureChapterSubmitDecisionCommandV1,
 } from "@ai-story/shared";
 import type { PressureDecisionConvergencePortV1 } from "../decision-automation/contracts";
+import type { PressureSql7FirstSubmitServiceV1 } from "../sql7-fast-path/service";
 import { computePressureChatRequestFingerprint } from "../interaction/chat.service";
 import {
   canonicalizeWorkingActionIntentV1,
@@ -79,6 +80,7 @@ export class PressureChapterHttpFacade {
     @Inject(TOKEN.CLOCK)
     private readonly clock: PressureChapterHttpClockPort,
     private readonly convergence: PressureDecisionConvergencePortV1 | undefined = undefined,
+    private readonly sql7: Pick<PressureSql7FirstSubmitServiceV1, "submit"> | undefined = undefined,
   ) {}
 
   getGame(
@@ -123,24 +125,56 @@ export class PressureChapterHttpFacade {
       const endToEndStartedAt = performance.now();
       const principal = parsePrincipal(principalValue);
       const roomId = requiredString(roomIdValue, "roomId");
-      const context = await this.resolveContext(principal, roomId, "ACTION");
       const command = parseSubmitDecisionCommand(bodyValue);
+      if (this.sql7 && command.chapterId === "N1") {
+        const sql7NowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
+        const sql7 = await this.sql7.submit({
+          principal: structuredClone(principal),
+          roomId,
+          command: structuredClone(command),
+          nowMs: sql7NowMs,
+        });
+        if (sql7.status === "COMMITTED") return sql7.response;
+        if (sql7.status === "REPLAYED") {
+          const replayContext = await this.resolveContext(principal, roomId, "ACTION");
+          assertPublicDecisionScope(command, replayContext.access, replayContext.stored);
+          const projection = await this.game.read({
+            runId: replayContext.access.runId,
+            subjectId: replayContext.access.subjectId,
+          });
+          return {
+            schemaVersion: "pressure_chapter_submit_decision_http_response_v1",
+            idempotencyKey: sql7.idempotencyKey,
+            projection,
+          };
+        }
+      }
+      const context = await this.resolveContext(principal, roomId, "ACTION");
       assertPublicDecisionScope(command, context.access, context.stored);
       const nowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
+      const compilerInput = {
+        access: structuredClone(context.access),
+        storedRoute: structuredClone(context.stored),
+        command: structuredClone(command),
+        nowMs,
+      };
+      const compilation = this.decisionCompiler.compileWithSnapshot
+        ? await this.decisionCompiler.compileWithSnapshot(compilerInput)
+        : {
+            command: await this.decisionCompiler.compile(compilerInput),
+            snapshot: null,
+          };
       const compiled = validateCompiledDecisionCommand(
-        await this.decisionCompiler.compile({
-          access: structuredClone(context.access),
-          storedRoute: structuredClone(context.stored),
-          command: structuredClone(command),
-          nowMs,
-        }),
+        compilation.command,
         context.access,
         context.stored,
         command,
         nowMs,
       );
       const humanSubmitStartedAt = performance.now();
-      await this.actions.submitAction(compiled);
+      if (!this.convergence) {
+        await this.actions.submitAction(compiled);
+      }
       const humanSubmitMs = elapsed(humanSubmitStartedAt);
       const postSubmitNowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
       const convergence = this.convergence
@@ -155,13 +189,36 @@ export class PressureChapterHttpFacade {
             },
             nowMs: postSubmitNowMs,
             humanSubmitMs,
+            humanAction: structuredClone(compiled),
+            authoritySnapshot: compilation.snapshot
+              ? structuredClone(compilation.snapshot.authority)
+              : null,
           })
         : null;
       const projectionStartedAt = performance.now();
-      const projection = await this.game.read({
-        runId: context.access.runId,
-        subjectId: context.access.subjectId,
-      });
+      const projection = convergence?.committedAuthority
+        && compilation.snapshot
+        && this.game.readFromCommittedAuthority
+        ? await this.game.readFromCommittedAuthority({
+            runId: context.access.runId,
+            subjectId: context.access.subjectId,
+            roomId: compilation.snapshot.viewer.roomId,
+            routeSnapshot: structuredClone(
+              compilation.snapshot.authority.routeSnapshot,
+            ),
+            viewerSeatId: compilation.snapshot.viewer.seatId,
+            chapter: structuredClone(convergence.committedAuthority.chapter),
+            workingProjection: structuredClone(
+              convergence.committedAuthority.workingProjection,
+            ),
+            chapterDescriptor: structuredClone(
+              convergence.committedAuthority.chapterDescriptor,
+            ),
+          })
+        : await this.game.read({
+            runId: context.access.runId,
+            subjectId: context.access.subjectId,
+          });
       const projectionMs = elapsed(projectionStartedAt);
       if (this.convergence && convergence) {
         try {

@@ -11,13 +11,14 @@ const source = readFileSync(
 test("prepared W5 append is one bounded Serializable transaction", () => {
   assert.match(source, /TransactionIsolationLevel\.Serializable/u);
   assert.match(source, /maxWait:\s*500/u);
-  assert.match(source, /timeout:\s*2_000/u);
+  assert.match(source, /timeout:\s*10_000/u);
   assert.equal((source.match(/pressureFastSerializableTransaction\(/gu) ?? []).length >= 2, true);
 });
 
-test("prepared W5 transaction writes only DecisionAction, Ledger event and runtime projection/head", () => {
+test("prepared W5 batch writes actions, ledger events, orchestrator state and one runtime CAS", () => {
   assert.match(source, /pressureDecisionAction\.create/u);
-  assert.match(source, /storyEvent\.create/u);
+  assert.match(source, /storyEvent\.createMany/u);
+  assert.match(source, /PRESSURE_CHAPTER_ORCHESTRATOR_STATE/u);
   assert.match(source, /pressureChapterRuntime\.updateMany/u);
   assert.doesNotMatch(source, /storyRun\.updateMany/u);
   assert.doesNotMatch(source, /pressureChapterSettlement\.create/u);

@@ -5,13 +5,17 @@ import type {
   SangtianPressureResultEnvelopeV1,
   SeatIdV1,
 } from "@ai-story/shared";
-import type { PressureChapterGameProjectionV1 } from "../game-projection";
+import type {
+  PressureChapterGameProjectionV1,
+  ReadPressureChapterGameProjectionFromAuthorityV1,
+} from "../game-projection";
 import type {
   ChatVisibilityV1,
   PressureChatMessageV1,
   SubmitPressureChatCommandV1,
 } from "../interaction/contracts";
 import type { SubmitOrchestratedActionCommandV1 } from "../orchestrator/contracts";
+import type { DecisionSubmitSnapshotV1 } from "../decision-automation/contracts";
 import type {
   StoredRunRouteDispatchV1,
   StoredRunRouteRecordV1,
@@ -72,6 +76,9 @@ export interface PressureChapterHttpGamePort {
     feedCursor?: string | null;
     feedLimit?: number;
   }): Promise<PressureChapterGameProjectionV1>;
+  readFromCommittedAuthority?(
+    input: ReadPressureChapterGameProjectionFromAuthorityV1,
+  ): Promise<PressureChapterGameProjectionV1>;
 }
 
 /** Command surface implemented by PressureChapterRuntimeFacade. */
@@ -97,6 +104,15 @@ export interface PressureChapterHttpDecisionCompilerPort {
     command: PressureChapterSubmitDecisionCommandV1;
     nowMs: number;
   }): Promise<SubmitOrchestratedActionCommandV1>;
+  compileWithSnapshot?(input: {
+    access: PressureChapterHttpAccessV1;
+    storedRoute: StoredRunRouteRecordV1;
+    command: PressureChapterSubmitDecisionCommandV1;
+    nowMs: number;
+  }): Promise<Readonly<{
+    command: SubmitOrchestratedActionCommandV1;
+    snapshot: DecisionSubmitSnapshotV1;
+  }>>;
 }
 
 /** Command surface implemented by PressureChapterChatService. */

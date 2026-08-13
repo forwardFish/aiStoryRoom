@@ -9,6 +9,7 @@ import type {
   DecisionAutomationRouteReaderPortV1,
   DecisionAutomationSeatAuthorityReaderPortV1,
   DecisionConvergenceDependenciesV1,
+  DecisionConvergenceSnapshotReaderPortV1,
 } from "./contracts";
 import { PressureAiDecisionCommandCompilerV1 } from "./compiler";
 import { PressureDecisionConvergenceServiceV1 } from "./convergence.service";
@@ -40,6 +41,7 @@ extends Omit<
 
 export interface PressureDecisionAutomationProductionBundleV1 {
   scanner: PrismaActivePressureDecisionScannerV1;
+  snapshots: DecisionConvergenceSnapshotReaderPortV1;
   policy: PublishedSangtianAiDecisionPolicyAdapterV1;
   compiler: PressureAiDecisionCommandCompilerV1;
   service: PressureDecisionConvergenceServiceV1;
@@ -80,6 +82,7 @@ export function createPressureDecisionAutomationProductionV1(
   }, input.config);
   return {
     scanner,
+    snapshots,
     policy,
     compiler,
     service,

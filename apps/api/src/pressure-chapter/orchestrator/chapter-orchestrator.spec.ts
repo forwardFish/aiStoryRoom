@@ -43,7 +43,11 @@ import type {
 } from "../working-ledger/contracts";
 import { projectWorkingLedger } from "../working-ledger/working-ledger";
 import { WorkingLedgerService } from "../working-ledger/working-ledger.service";
-import { PressureChapterOrchestratorService } from "./chapter-orchestrator.service";
+import {
+  PressureChapterOrchestratorService,
+  planBeatProgressionV1,
+  planRecordedActionsV1,
+} from "./chapter-orchestrator.service";
 import type {
   AuthoredChapterContentPort,
   AuthoredChapterRuntimeV1,
@@ -74,6 +78,7 @@ const POINT_COUNTS: Record<ChapterIdV1, number> = {
 
 class MemoryOrchestratorStates implements ChapterOrchestratorStatePort {
   private readonly records = new Map<string, ChapterOrchestratorStateV1>();
+  compareAndSwapCalls = 0;
 
   async read(runId: string) {
     return structuredClone(this.records.get(runId) ?? null);
@@ -84,6 +89,7 @@ class MemoryOrchestratorStates implements ChapterOrchestratorStatePort {
     expectedRevision: number | null;
     next: ChapterOrchestratorStateV1;
   }) {
+    this.compareAndSwapCalls += 1;
     const current = this.records.get(input.runId) ?? null;
     if ((current?.revision ?? null) !== input.expectedRevision) {
       return { status: "CONFLICT" as const, current: structuredClone(current) };
@@ -133,7 +139,22 @@ class AuthoredContent implements AuthoredChapterContentPort {
 }
 
 class WorkingSeed implements ChapterWorkingSeedPort {
+  loadCalls = 0;
+  authorityCalls = 0;
+
   async load(input: Parameters<ChapterWorkingSeedPort["load"]>[0]) {
+    this.loadCalls += 1;
+    return this.seed(input);
+  }
+
+  async loadFromAuthority(
+    input: Parameters<NonNullable<ChapterWorkingSeedPort["loadFromAuthority"]>>[0],
+  ) {
+    this.authorityCalls += 1;
+    return this.seed(input);
+  }
+
+  private seed(input: Parameters<ChapterWorkingSeedPort["load"]>[0]) {
     return createChapterWorkingState({
       runId: input.routeSnapshot.runId,
       chapterId: input.chapter.chapterId,
@@ -178,6 +199,7 @@ class W5Harness {
   private readonly opening = new WorkingLedgerService(this.ledger);
   private readonly formalService: FormalPressureInteractionService;
   private readonly beatService = new WorkingBeatApplicationService(this.ledger);
+  projectionLoads = 0;
 
   constructor(private readonly content: AuthoredContent) {
     this.formalService = new FormalPressureInteractionService(
@@ -195,7 +217,10 @@ class W5Harness {
   };
 
   readonly projectionPort: WorkingProjectionReaderPort = {
-    load: async (input) => projectWorkingLedger(await this.ledger.read(input)),
+    load: async (input) => {
+      this.projectionLoads += 1;
+      return projectWorkingLedger(await this.ledger.read(input));
+    },
   };
 
   readonly formalPort: FormalActionSubmissionPort = {
@@ -328,13 +353,14 @@ function environment(counts: Record<ChapterIdV1, number> = POINT_COUNTS) {
   const close = new AllRequiredClosed();
   const settlement = new IdempotentSettlement();
   const finale = new IdempotentFinale();
+  const seed = new WorkingSeed();
   const create = (
     beat: DecisionBeatResolutionPort = w5.beatPort,
     formal: FormalActionSubmissionPort = w5.formalPort,
   ) => new PressureChapterOrchestratorService(
     states,
     content,
-    new WorkingSeed(),
+    seed,
     w5.openingPort,
     w5.projectionPort,
     formal,
@@ -344,7 +370,7 @@ function environment(counts: Record<ChapterIdV1, number> = POINT_COUNTS) {
     settlement,
     finale,
   );
-  return { content, w5, states, close, settlement, finale, create };
+  return { content, w5, states, close, settlement, finale, seed, create };
 }
 
 test("orchestrator runs N1-N7 with content-authored 1/4/7/dynamic point counts and no N8", async () => {
@@ -383,6 +409,8 @@ test("orchestrator runs N1-N7 with content-authored 1/4/7/dynamic point counts a
   assert.equal(state.authorityBase.baseWorldSequence, 7);
   assert.equal(env.settlement.commitCount, 7);
   assert.equal(env.settlement.inputs.length, 7);
+  assert.equal(env.seed.loadCalls, 1, "only N1 start reads frozen authority from persistence");
+  assert.equal(env.seed.authorityCalls, 6, "N2-N7 reuse each just-committed frozen bundle");
   assert.equal(env.finale.requests.size, 1);
   assert.equal(env.content.loads.includes("N7"), true);
   assert.equal((env.content.loads as string[]).includes("N8"), false);
@@ -568,6 +596,7 @@ test("ACTIVE recovery reconciles a W5-sealed action after a crash before orchest
   assert.equal(recovered.phase, "ACTIVE");
   assert.notEqual(recovered.activeDecision?.decisionPointId, initial.activeDecision?.decisionPointId);
   assert.equal(recovered.authorityBase.baseWorldSequence, 0);
+  assert.equal(env.states.compareAndSwapCalls, 3, "recovery folds W5 reconciliation and Beat claim into one CAS");
 });
 
 test("REQUIRED seats block together while NOT_REQUIRED seats never block a multi-seat point", async () => {
@@ -728,6 +757,82 @@ test("expired actions are rejected and FAIL_CLOSED deadlines never invent a defa
     chapterRuntimeId: state.chapterRuntimeId,
   });
   assert.equal(projection.acceptedActions.size, 0);
+});
+
+test("committed settlement authority skips the duplicate N1 state, content and projection reads", async () => {
+  const env = environment();
+  const service = env.create();
+  const routeSnapshot = route();
+  const active = await service.start({
+    routeSnapshot,
+    genesisWorldStateHash: digest("genesis-world"),
+    genesisHash: digest("genesis"),
+    nowMs: 0,
+  });
+  const command = await humanAction(env, routeSnapshot, active, 0);
+  await env.w5.formalPort.submit(command);
+  const descriptor = structuredClone(env.content.descriptors.get("N1")!);
+  const decision = descriptor.decisions.find(
+    (candidate) => candidate.decisionPointId === active.activeDecision!.decisionPointId,
+  )!;
+  const resolving = planRecordedActionsV1(active, [{
+    seatId: command.action.seatId,
+    actionId: command.action.actionId,
+    defaultCode: null,
+    actionBudget: decision.execution.perSeatActionBudget[command.action.seatId]!,
+  }], true);
+  assert.equal((await env.states.compareAndSwap({
+    runId: active.runId,
+    expectedRevision: active.revision,
+    next: resolving,
+  })).status, "COMMITTED");
+  const beat = await env.w5.beatPort.resolve({
+    routeSnapshot,
+    chapterRuntimeId: resolving.chapterRuntimeId,
+    chapterDefinition: descriptor.definition,
+    actionIds: [command.action.actionId],
+    resolverVersion: "pressure_orchestrated_beat_v1",
+  });
+  const progression = planBeatProgressionV1({
+    state: resolving,
+    descriptor,
+    projection: beat.projection,
+    resolution: beat.resolution,
+    nowMs: 1,
+  });
+  assert.ok(progression.settlementInput);
+  assert.equal((await env.states.compareAndSwap({
+    runId: resolving.runId,
+    expectedRevision: resolving.revision,
+    next: progression.nextState,
+  })).status, "COMMITTED");
+  const n1LoadsBefore = env.content.loads.filter((chapterId) => chapterId === "N1").length;
+  const projectionLoadsBefore = env.w5.projectionLoads;
+
+  await assert.rejects(
+    () => service.resumeFromCommittedSettlementAuthority(routeSnapshot, {
+      state: progression.nextState,
+      chapterDescriptor: descriptor,
+      workingProjection: { ...beat.projection, routeHash: digest("wrong-route") },
+      settlementInput: progression.settlementInput!,
+    }, 2),
+    (error: unknown) => error instanceof ChapterOrchestratorError
+      && error.code === "CHAPTER_ORCHESTRATOR_STATE_CORRUPT",
+  );
+  assert.equal(env.settlement.commitCount, 0, "mismatched request authority fails before W6");
+
+  const resumed = await service.resumeFromCommittedSettlementAuthority(routeSnapshot, {
+    state: progression.nextState,
+    chapterDescriptor: descriptor,
+    workingProjection: beat.projection,
+    settlementInput: progression.settlementInput,
+  }, 2);
+
+  assert.equal(resumed.phase, "ACTIVE");
+  assert.equal(resumed.currentChapterId, "N2");
+  assert.equal(env.content.loads.filter((chapterId) => chapterId === "N1").length, n1LoadsBefore);
+  assert.equal(env.w5.projectionLoads, projectionLoadsBefore);
+  assert.equal(env.settlement.commitCount, 1);
 });
 
 async function humanAction(

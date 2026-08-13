@@ -532,7 +532,10 @@ export function applyChapterSettlementToWorldV1(
   for (const mutation of settlement.worldDelta.factMutations) {
     if (seenFacts.has(mutation.factRef)) deltaInvalid(mutation.factRef, "DUPLICATE_FACT");
     seenFacts.add(mutation.factRef);
-    if (factValues[mutation.factRef] !== mutation.before) {
+    // Content policy represents an absent authored fact as canonical null.
+    // Normalize the sparse world-state lookup to the same representation so
+    // the first chapter assignment can pass its compare-and-set fence.
+    if ((factValues[mutation.factRef] ?? null) !== mutation.before) {
       deltaInvalid(mutation.factRef, "FACT_BEFORE_MISMATCH");
     }
     factValues[mutation.factRef] = mutation.after;

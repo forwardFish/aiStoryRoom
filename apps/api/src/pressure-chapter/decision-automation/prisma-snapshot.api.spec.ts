@@ -6,17 +6,41 @@ import { resolve } from "node:path";
 const source = readFileSync(resolve(__dirname, "prisma-snapshot.ts"), "utf8");
 
 test("Prisma convergence snapshot captures route, W4, W5 and SeatControl in one bounded transaction", () => {
-  assert.equal((source.match(/pressureFastSerializableTransaction\(/gu) ?? []).length, 1);
-  // One definition call and exactly one capture call.
-  assert.equal((source.match(/return pressureFastSerializableTransaction\(this\.prisma/gu) ?? []).length, 1);
+  // One submit capture plus one post-transition single-row projection-cache
+  // read. Each public operation is still bounded by exactly one transaction.
+  assert.equal((source.match(/pressureFastSerializableTransaction\(/gu) ?? []).length, 2);
+  assert.equal((source.match(/return pressureFastSerializableTransaction\(this\.prisma/gu) ?? []).length, 2);
+  assert.match(
+    source,
+    /loadWorkingProjection[\s\S]*?return pressureFastSerializableTransaction\(this\.prisma/gu,
+  );
+  assert.match(
+    source,
+    /private async captureInternal[\s\S]*?return pressureFastSerializableTransaction\(this\.prisma/gu,
+  );
   assert.match(source, /pressureRunRouteSnapshot\.findUnique/u);
   assert.match(source, /readCurrentOrchestratorState\(tx/u);
   assert.match(source, /pressureChapterRuntime\.findUnique/u);
   assert.match(source, /pressureSeatControlSnapshot\.findUnique/u);
-  assert.match(source, /type:\s*LEDGER_EVENT_TYPE/u);
+  assert.match(source, /captureSubmit/u);
+  assert.match(source, /storyPlayer\.findUnique/u);
+  assert.match(source, /STALE_OR_NOT_AUTHORIZED/u);
+  assert.match(source, /ledgerProjectionJson:\s*true/u);
+  assert.match(source, /decodeWorkingLedgerProjectionCacheV1/u);
+  assert.doesNotMatch(source, /projectWorkingLedger|readLedgerEvents/u);
   assert.match(source, /TransactionIsolationLevel\.Serializable/u);
   assert.match(source, /maxWait:\s*500/u);
   assert.match(source, /timeout:\s*2_000/u);
+});
+
+test("HTTP submit membership is joined inside the same snapshot transaction", () => {
+  assert.match(
+    source,
+    /private async captureInternal[\s\S]*?return pressureFastSerializableTransaction\(this\.prisma[\s\S]*?runId_userId/gu,
+  );
+  assert.match(source, /runId_userId/u);
+  assert.match(source, /seat\.submissionFenceToken !== submit\.expectedSubmissionFenceToken/u);
+  assert.match(source, /withDecisionSubmitSnapshotHashV1/u);
 });
 
 test("snapshot transaction performs no policy, content, Provider or write operation", () => {

@@ -3,10 +3,12 @@ import {
   compareCanonicalText,
   isSha256,
   sha256Canonical,
+  validateDecisionActionV1,
   validateRunRouteSnapshotV1,
   type SeatIdV1,
 } from "@ai-story/shared";
 import {
+  readPressureDecisionCommittedAuthorityV1,
   runWithPressureDecisionConvergenceTimingV1,
 } from "../observability/decision-convergence-timing";
 import {
@@ -15,12 +17,26 @@ import {
 } from "../orchestrator/validation";
 import type {
   ChapterOrchestratorStateV1,
+  CommittedSettlementResumeAuthorityV1,
 } from "../orchestrator/contracts";
+import {
+  planBeatProgressionV1,
+  planRecordedActionsV1,
+} from "../orchestrator/chapter-orchestrator.service";
 import type {
   SeatAuthorityRecordV1,
   SeatControlSnapshotV1,
 } from "../seat-control/types";
-import { workingStateHash } from "../working-ledger/working-ledger";
+import {
+  appendBeatEventToWorkingLedgerProjection,
+  workingStateHash,
+} from "../working-ledger/working-ledger";
+import type { WorkingLedgerProjectionV1 } from "../working-ledger/contracts";
+import {
+  SangtianAuthoritativeBeatCompilerV1,
+  planSynchronizedDecisionBeatV1,
+} from "../integration/working-ledger.adapters";
+import { planBeatAuthorityDownstreamV1 } from "../projection-plan/authority-downstream";
 import {
   DECISION_AUTOMATION_ERROR_CODES as ERROR,
   DecisionAutomationError,
@@ -45,7 +61,11 @@ import type {
   DecisionConvergenceStageTimingsV1,
   PreparedAutomationActionStaleReasonV1,
 } from "./contracts";
-import { createPreparedAutomationActionBatchV1 } from "./prepared-action-batch";
+import {
+  canonicalizePreparedAutomationActionsV1,
+  createPreparedAutomationActionBatchV1,
+  planPreparedActionLedgerV1,
+} from "./prepared-action-batch";
 
 const DEFAULT_CONFIG: DecisionAutomationConfigV1 = Object.freeze({
   retryMs: 1_000,
@@ -128,6 +148,7 @@ export class PressureDecisionConvergenceServiceV1 {
         },
         nowMs,
         humanSubmitMs: 0,
+        humanAction: null,
       });
       return {
         kind: "ACKNOWLEDGED",
@@ -171,18 +192,20 @@ export class PressureDecisionConvergenceServiceV1 {
     const metrics = createMetrics(command);
     const snapshotStartedAt = performance.now();
     metrics.snapshotReadCount = 1;
-    const snapshotRaw = await this.ports.snapshots.capture({
-      runId: command.runId,
-      expectedRouteHash: command.expectedRouteHash,
-      aiPolicyArtifactHash: this.ports.policy.artifactSha256,
-      capturedAtMs: command.nowMs,
-    });
+    const snapshotRaw = command.authoritySnapshot
+      ? structuredClone(command.authoritySnapshot)
+      : await this.ports.snapshots.capture({
+          runId: command.runId,
+          expectedRouteHash: command.expectedRouteHash,
+          aiPolicyArtifactHash: this.ports.policy.artifactSha256,
+          capturedAtMs: command.nowMs,
+        });
     metrics.timings.snapshotMs = elapsed(snapshotStartedAt);
     if (!snapshotRaw) {
       metrics.staleRouteCount += 1;
       return this.finish(command, metrics, "STALE_SKIPPED", [], null, endToEndStartedAt);
     }
-    const snapshot = validateSnapshot(
+    const snapshot = validateDecisionConvergenceSnapshotV1(
       snapshotRaw,
       command.runId,
       command.expectedRouteHash,
@@ -207,7 +230,7 @@ export class PressureDecisionConvergenceServiceV1 {
       return this.finish(command, metrics, "ALREADY_PROGRESSED", [], chapter, endToEndStartedAt);
     }
 
-    const classified = classifyPendingSeats(snapshot);
+    const classified = classifyPendingDecisionSeatsV1(snapshot);
     metrics.pendingHumanCount = classified.humans.length;
     metrics.pendingAiCount = classified.ai.length;
 
@@ -232,12 +255,18 @@ export class PressureDecisionConvergenceServiceV1 {
       );
     }
 
-    if (classified.humans.length > 0) {
+    const preparedHuman = command.humanAction
+      ? prepareDecisionHumanActionV1(snapshot, classified.humans, command.humanAction)
+      : null;
+    const unresolvedHumans = classified.humans.filter((item) => (
+      item.seat.seatId !== preparedHuman?.command.action.seatId
+    ));
+    if (unresolvedHumans.length > 0) {
       // Frozen product rule: ordinary AI work never runs ahead of a required human.
       return this.finish(command, metrics, "WAITING_FOR_HUMANS", [], chapter, endToEndStartedAt);
     }
 
-    if (classified.ai.length === 0) {
+    if (classified.ai.length === 0 && !preparedHuman) {
       const allRequiredComplete = active.seats
         .filter((seat) => seat.requirement === "REQUIRED")
         .every((seat) => seat.completion !== "PENDING");
@@ -245,7 +274,7 @@ export class PressureDecisionConvergenceServiceV1 {
         return this.finish(command, metrics, "NO_PENDING_AI", [], chapter, endToEndStartedAt);
       }
       const resumed = await this.resumeOnce(snapshot, metrics, command.nowMs);
-      return this.finish(command, metrics, "NO_PENDING_AI", [], resumed, endToEndStartedAt);
+      return this.finish(command, metrics, "NO_PENDING_AI", [], resumed.state, endToEndStartedAt);
     }
 
     const descriptor = validateAuthoredChapterRuntimeV1(await this.ports.content.load({
@@ -273,7 +302,9 @@ export class PressureDecisionConvergenceServiceV1 {
 
     const compileStartedAt = performance.now();
     const actionIds: string[] = [];
-    const prepared: AppendPreparedAutomationActionCommandV1[] = [];
+    const prepared: AppendPreparedAutomationActionCommandV1[] = preparedHuman
+      ? [preparedHuman]
+      : [];
     for (const item of classified.ai) {
       if (decision.seatRequirements[item.seat.seatId] !== "REQUIRED") {
         mismatch(ERROR.CONTENT_MISMATCH, "content.seatRequirement", item.seat.seatId);
@@ -294,7 +325,7 @@ export class PressureDecisionConvergenceServiceV1 {
       let compiled: ReturnType<DecisionConvergenceDependenciesV1["compiler"]["compile"]>;
       try {
         metrics.policyCallCount += 1;
-        selection = validateSelection(
+        selection = validateAiDecisionPolicySelectionV1(
           await this.ports.policy.select(policyInput),
           policyInput,
           route.contentPackageVersion,
@@ -334,10 +365,11 @@ export class PressureDecisionConvergenceServiceV1 {
         metrics.replayCount += 1;
         continue;
       }
-      assertCompiledCommand(snapshot, item.authority, selection, compiled.command);
+      assertCompiledAiDecisionCommandV1(snapshot, item.authority, selection, compiled.command);
       prepared.push({
         command: compiled.command,
         authority: {
+          actorKind: "AI",
           snapshotHash: snapshot.snapshotHash,
           expectedOrchestratorRevision: chapter.revision,
           expectedOrchestratorHash: chapter.orchestratorHash,
@@ -356,10 +388,81 @@ export class PressureDecisionConvergenceServiceV1 {
     }
     metrics.timings.compileAllMs = elapsed(compileStartedAt);
 
+    // Every pending seat may already have been durably accepted while the
+    // cached projection still lags (for example after an interrupted resume).
+    // Do not manufacture an empty write batch: let the idempotent runtime
+    // recovery reconcile the accepted actions and continue from W4.
+    if (prepared.length === 0) {
+      const resumed = await this.resumeOnce(snapshot, metrics, command.nowMs);
+      return this.finish(
+        command,
+        metrics,
+        "BATCH_COMPLETED",
+        canonicalStrings(actionIds),
+        resumed.state,
+        endToEndStartedAt,
+      );
+    }
+
     let complete = true;
     let batchConflict = false;
+    let committedBatchState: ChapterOrchestratorStateV1 | null = null;
+    let committedBatchProjection: WorkingLedgerProjectionV1 | null = null;
+    let committedSettlementAuthority: CommittedSettlementResumeAuthorityV1 | null = null;
     const appendStartedAt = performance.now();
     if (this.ports.preparedActions.submitPreparedBatch) {
+      // The human command is assembled before AI commands, but the ledger
+      // chain and persisted batch must both follow frozen route seat order.
+      const canonicalPrepared = canonicalizePreparedAutomationActionsV1(
+        route,
+        prepared,
+      );
+      const recordedState = planRecordedActionsV1(
+        chapter,
+        canonicalPrepared.map((item) => ({
+          seatId: item.command.action.seatId,
+          actionId: item.command.action.actionId,
+          defaultCode: null,
+          actionBudget: decision.execution.perSeatActionBudget[item.command.action.seatId]!,
+        })),
+        true,
+      );
+      const actionPlan = planPreparedActionLedgerV1({
+        projection: snapshot.projection,
+        actions: canonicalPrepared,
+      });
+      const allActionIds = [...new Set(
+        recordedState.activeDecision?.seats.flatMap((seat) => seat.actionIds) ?? [],
+      )].sort(compareCanonicalText);
+      const beat = planSynchronizedDecisionBeatV1({
+        routeSnapshot: route,
+        chapterDefinition: descriptor.definition,
+        chapterRuntimeId: chapter.chapterRuntimeId,
+        actionIds: allActionIds,
+        resolverVersion: "pressure_orchestrated_beat_v1",
+        projection: actionPlan.projection,
+        decisionPolicy: new SangtianAuthoritativeBeatCompilerV1(),
+      });
+      if (beat.status !== "PLANNED") {
+        mismatch(ERROR.AUTHORITY_MISMATCH, "beatPlan", "UNEXPECTED_REPLAY");
+      }
+      const postBeatProjection = appendBeatEventToWorkingLedgerProjection(
+        actionPlan.projection,
+        beat.event,
+      );
+      const progression = planBeatProgressionV1({
+        state: recordedState,
+        descriptor,
+        projection: postBeatProjection,
+        resolution: beat.resolution,
+        nowMs: command.nowMs,
+      });
+      const downstream = planBeatAuthorityDownstreamV1({
+        projection: postBeatProjection,
+        beatEvent: beat.event,
+        contentPackageSha256: route.contentPackageSha256,
+        committedAt: new Date(command.nowMs).toISOString(),
+      });
       const batch = createPreparedAutomationActionBatchV1({
         batchId: metrics.batchId,
         snapshotHash: snapshot.snapshotHash,
@@ -373,16 +476,46 @@ export class PressureDecisionConvergenceServiceV1 {
         expectedWorkingStateHash: snapshot.projection.stateHash,
         expectedLedgerHeadHash: snapshot.projection.headHash,
         expectedSeatAuthorityStateHash: snapshot.seatAuthority.stateHash,
-        actions: prepared,
+        actions: canonicalPrepared,
+        chapterDescriptor: descriptor,
+        nextOrchestratorState: recordedState,
+        beatPlan: {
+          event: beat.event,
+          resolution: beat.resolution,
+          postBeatOrchestratorState: progression.nextState,
+          settlementInput: progression.settlementInput,
+          narrativeJobs: downstream.narrativeJobs,
+          aEmotionEmissions: downstream.aEmotionEmissions,
+          downstreamManifest: downstream.manifest,
+        },
       });
       metrics.appendTxCount = 1;
       const result = await this.ports.preparedActions.submitPreparedBatch(batch);
       if (
         result.batchId !== batch.batchId
         || !isSha256(result.ledgerHeadHash)
+        || result.orchestratorState.orchestratorHash
+          !== batch.beatPlan.postBeatOrchestratorState.orchestratorHash
         || result.actionIds.some((actionId) => !prepared.some((item) => item.command.action.actionId === actionId))
       ) mismatch(ERROR.PORT_RESULT_INVALID, "preparedBatch.result", "INVALID_BINDING");
       actionIds.push(...result.actionIds);
+      committedBatchState = structuredClone(result.orchestratorState);
+      committedBatchProjection = result.projection
+        ? structuredClone(result.projection)
+        : null;
+      if (
+        result.status !== "CONFLICT"
+        && result.orchestratorState.phase === "SETTLING"
+        && result.projection
+        && batch.beatPlan.settlementInput
+      ) {
+        committedSettlementAuthority = {
+          state: structuredClone(result.orchestratorState),
+          chapterDescriptor: structuredClone(descriptor),
+          workingProjection: structuredClone(result.projection),
+          settlementInput: structuredClone(batch.beatPlan.settlementInput),
+        };
+      }
       metrics.replayCount += result.replayedActionIds.length;
       if (result.status === "CONFLICT") {
         complete = false;
@@ -435,7 +568,45 @@ export class PressureDecisionConvergenceServiceV1 {
       );
     }
 
-    const resumed = await this.resumeOnce(snapshot, metrics, command.nowMs);
+    const resumedResult = committedBatchState?.phase === "ACTIVE"
+      ? { state: committedBatchState, committedAuthority: null }
+      : await this.resumeOnce(
+          snapshot,
+          metrics,
+          command.nowMs,
+          committedSettlementAuthority,
+        );
+    const resumed = resumedResult.state;
+    let finalProjection = resumedResult.committedAuthority?.workingProjection
+      ?? committedBatchProjection;
+    const finalDescriptor = resumedResult.committedAuthority?.chapterDescriptor
+      ?? (resumed.currentChapterId === descriptor.chapterId
+      ? descriptor
+      : validateAuthoredChapterRuntimeV1(await this.ports.content.load({
+          routeSnapshot: route,
+          chapterId: resumed.currentChapterId,
+        })));
+    if (
+      resumed.phase === "ACTIVE"
+      && !projectionMatchesChapter(finalProjection, resumed)
+      && this.ports.snapshots.loadWorkingProjection
+    ) {
+      finalProjection = await this.ports.snapshots.loadWorkingProjection({
+        runId: resumed.runId,
+        routeHash: resumed.routeHash,
+        chapterRuntimeId: resumed.chapterRuntimeId,
+        chapterId: resumed.currentChapterId,
+      });
+    }
+    const committedAuthority = resumed.phase === "ACTIVE"
+      && finalDescriptor.descriptorHash === resumed.descriptorHash
+      && projectionMatchesChapter(finalProjection, resumed)
+      ? {
+          chapter: structuredClone(resumed),
+          workingProjection: structuredClone(finalProjection),
+          chapterDescriptor: structuredClone(finalDescriptor),
+        }
+      : null;
     const outcome: DecisionAutomationOutcomeKindV1 = complete
       ? "BATCH_COMPLETED"
       : actionIds.length > 0
@@ -448,6 +619,7 @@ export class PressureDecisionConvergenceServiceV1 {
       canonicalStrings(actionIds),
       resumed,
       endToEndStartedAt,
+      committedAuthority,
     );
   }
 
@@ -466,23 +638,42 @@ export class PressureDecisionConvergenceServiceV1 {
     snapshot: DecisionConvergenceAuthoritySnapshotV1,
     metrics: DecisionConvergenceDiagnosticsV1,
     nowMs: number,
-  ): Promise<ChapterOrchestratorStateV1> {
+    committedSettlementAuthority: CommittedSettlementResumeAuthorityV1 | null = null,
+  ): Promise<{
+    state: ChapterOrchestratorStateV1;
+    committedAuthority: DecisionConvergenceResultV1["committedAuthority"];
+  }> {
     if (metrics.resumeCount !== 0) {
       mismatch(ERROR.PORT_RESULT_INVALID, "runtime.resume", "AT_MOST_ONCE");
     }
     metrics.resumeCount = 1;
     const startedAt = performance.now();
+    let committedAuthority: DecisionConvergenceResultV1["committedAuthority"] = null;
     const state = await runWithPressureDecisionConvergenceTimingV1(
       metrics.timings,
       () => { metrics.w4ConflictCount += 1; },
-      () => this.ports.runtime.resume(snapshot.routeSnapshot, nowMs),
+      async () => {
+        const resumed = committedSettlementAuthority
+          && this.ports.runtime.resumeFromCommittedSettlementAuthority
+          ? await this.ports.runtime.resumeFromCommittedSettlementAuthority(
+              snapshot.routeSnapshot,
+              committedSettlementAuthority,
+              nowMs,
+            )
+          : await this.ports.runtime.resume(snapshot.routeSnapshot, nowMs);
+        committedAuthority = readPressureDecisionCommittedAuthorityV1();
+        return resumed;
+      },
     );
     metrics.timings.orchestratorTotalMs = elapsed(startedAt);
-    return validateRuntimeState(
-      state,
-      snapshot.routeSnapshot.runId,
-      snapshot.routeSnapshot.routeHash,
-    );
+    return {
+      state: validateRuntimeState(
+        state,
+        snapshot.routeSnapshot.runId,
+        snapshot.routeSnapshot.routeHash,
+      ),
+      committedAuthority,
+    };
   }
 
   private async finish(
@@ -492,6 +683,7 @@ export class PressureDecisionConvergenceServiceV1 {
     actionIds: string[],
     chapter: ChapterOrchestratorStateV1 | null,
     endToEndStartedAt: number,
+    committedAuthority: DecisionConvergenceResultV1["committedAuthority"] = null,
   ): Promise<DecisionConvergenceResultV1> {
     metrics.outcome = outcome;
     metrics.timings.endToEndMs = elapsed(endToEndStartedAt);
@@ -501,6 +693,9 @@ export class PressureDecisionConvergenceServiceV1 {
       outcome,
       actionIds: canonicalStrings(actionIds),
       chapter: chapter ? structuredClone(chapter) : null,
+      committedAuthority: committedAuthority
+        ? structuredClone(committedAuthority)
+        : null,
       metrics: structuredClone(metrics),
     };
     if (command.trigger === "RECOVERY") {
@@ -508,6 +703,26 @@ export class PressureDecisionConvergenceServiceV1 {
     }
     return result;
   }
+}
+
+function projectionMatchesChapter(
+  projection: WorkingLedgerProjectionV1 | null,
+  chapter: ChapterOrchestratorStateV1,
+): projection is WorkingLedgerProjectionV1 {
+  return Boolean(
+    projection
+    && projection.key.runId === chapter.runId
+    && projection.key.chapterRuntimeId === chapter.chapterRuntimeId
+    && projection.chapterId === chapter.currentChapterId
+    && projection.routeHash === chapter.routeHash
+    && projection.state.revision >= 0
+    && projection.stateHash === workingStateHash(projection.state)
+    && (
+      chapter.activeDecision === null
+      || projection.nextDecisionPin?.decisionPointId
+        === chapter.activeDecision.decisionPointId
+    ),
+  );
 }
 
 function validateConvergenceCommand(
@@ -527,6 +742,12 @@ function validateConvergenceCommand(
   if (value.source) {
     text(value.source.chapterRuntimeId, "convergence.source.chapterRuntimeId", ERROR.CLAIM_INVALID);
     text(value.source.decisionPointId, "convergence.source.decisionPointId", ERROR.CLAIM_INVALID);
+  }
+  if (value.trigger === "RECOVERY" && value.humanAction !== null) {
+    mismatch(ERROR.CLAIM_INVALID, "convergence.humanAction", "RECOVERY_MUST_BE_NULL");
+  }
+  if (value.trigger === "RECOVERY" && value.authoritySnapshot) {
+    mismatch(ERROR.CLAIM_INVALID, "convergence.authoritySnapshot", "RECOVERY_MUST_READ_CURRENT");
   }
   return structuredClone(value);
 }
@@ -591,7 +812,7 @@ function bindMetricsToSnapshot(
   metrics.decisionPointId = snapshot.chapter.activeDecision?.decisionPointId ?? null;
 }
 
-function validateSnapshot(
+export function validateDecisionConvergenceSnapshotV1(
   raw: DecisionConvergenceAuthoritySnapshotV1,
   runId: string,
   routeHash: string,
@@ -640,7 +861,7 @@ function validateSnapshot(
   return expected;
 }
 
-function classifyPendingSeats(snapshot: DecisionConvergenceAuthoritySnapshotV1) {
+export function classifyPendingDecisionSeatsV1(snapshot: DecisionConvergenceAuthoritySnapshotV1) {
   const active = snapshot.chapter.activeDecision;
   if (!active) return { humans: [], ai: [] };
   const routeOrder = new Map(
@@ -677,7 +898,7 @@ function classifyPendingSeats(snapshot: DecisionConvergenceAuthoritySnapshotV1) 
   return { humans, ai };
 }
 
-function assertCompiledCommand(
+export function assertCompiledAiDecisionCommandV1(
   snapshot: DecisionConvergenceAuthoritySnapshotV1,
   authority: SeatAuthorityRecordV1,
   selection: AiDecisionPolicySelectionV1,
@@ -704,6 +925,66 @@ function assertCompiledCommand(
   ) {
     mismatch(ERROR.COMPILER_INVALID, "compiler.command", "AUTHORITY_BINDING_MISMATCH");
   }
+}
+
+export function prepareDecisionHumanActionV1(
+  snapshot: DecisionConvergenceAuthoritySnapshotV1,
+  pendingHumans: ReadonlyArray<{
+    seat: NonNullable<ChapterOrchestratorStateV1["activeDecision"]>["seats"][number];
+    authority: SeatAuthorityRecordV1;
+  }>,
+  raw: NonNullable<DecisionConvergenceCommandV1["humanAction"]>,
+): AppendPreparedAutomationActionCommandV1 | null {
+  const command = structuredClone(raw);
+  const action = validateDecisionActionV1(command.action);
+  const route = snapshot.routeSnapshot;
+  const chapter = snapshot.chapter;
+  const active = chapter.activeDecision;
+  if (!active) {
+    mismatch(ERROR.AUTHORITY_MISMATCH, "humanAction", "NO_ACTIVE_DECISION");
+  }
+  const prior = snapshot.projection.acceptedActions.get(action.actionId)
+    ?? snapshot.projection.actionsByIdempotencyKey.get(action.idempotencyKey);
+  if (prior) {
+    if (
+      prior.action.actionId !== action.actionId
+      || prior.inputFingerprint !== command.inputFingerprint
+      || prior.action.sealedHash !== action.sealedHash
+    ) mismatch(ERROR.AUTHORITY_MISMATCH, "humanAction", "IDEMPOTENCY_MISMATCH");
+    return null;
+  }
+  const pending = pendingHumans.find((item) => item.seat.seatId === action.seatId);
+  if (
+    !pending
+    || pending.authority.mode !== "HUMAN_ACTIVE"
+    || pending.authority.activeControllerId !== command.subjectId
+    || command.routeSnapshot.routeHash !== route.routeHash
+    || action.runId !== route.runId
+    || action.chapterRuntimeId !== chapter.chapterRuntimeId
+    || action.chapterId !== chapter.currentChapterId
+    || action.decisionPointId !== active.decisionPointId
+    || action.controlEpoch !== pending.authority.controlEpoch
+    || action.expectedWorkingRevision !== snapshot.projection.state.revision
+  ) mismatch(ERROR.AUTHORITY_MISMATCH, "humanAction", "AUTHORITY_BINDING_MISMATCH");
+  return {
+    command,
+    authority: {
+      actorKind: "HUMAN",
+      snapshotHash: snapshot.snapshotHash,
+      expectedOrchestratorRevision: chapter.revision,
+      expectedOrchestratorHash: chapter.orchestratorHash,
+      expectedDescriptorHash: chapter.descriptorHash,
+      expectedDecisionPolicyHash: active.policyHash,
+      expectedWorkingRevision: snapshot.projection.state.revision,
+      expectedWorkingStateHash: snapshot.projection.stateHash,
+      expectedLedgerHeadHash: snapshot.projection.headHash,
+      expectedSeatAuthorityStateHash: snapshot.seatAuthority.stateHash,
+      expectedControllerId: pending.authority.activeControllerId,
+      expectedControlEpoch: pending.authority.controlEpoch,
+      expectedSubmissionFenceToken: pending.authority.submissionFenceToken,
+      expectedAiPolicyHash: null,
+    },
+  };
 }
 
 function validateSeatSnapshot(
@@ -748,7 +1029,7 @@ function validateSeatAuthority(seat: SeatAuthorityRecordV1): void {
   }
 }
 
-function validateSelection(
+export function validateAiDecisionPolicySelectionV1(
   selection: AiDecisionPolicySelectionV1,
   input: AiDecisionPolicyInputV1,
   contentPackageVersion: string,

@@ -19,6 +19,8 @@ import type {
   SubmitPressureChatCommandV1,
 } from "../interaction/contracts";
 import type { SubmitOrchestratedActionCommandV1 } from "../orchestrator/contracts";
+import { PressureSql7CommitErrorV1 } from "../sql7-fast-path/commit-contract";
+import type { PressureSql7SubmitResultV1 } from "../sql7-fast-path/service";
 import type {
   StoredRunRouteDispatchV1,
   StoredRunRouteRecordV1,
@@ -134,6 +136,151 @@ test("public decision is server-compiled and same-key replay writes once", async
     knowledgeGrants: [],
     seatArcProgress: [],
   });
+});
+
+test("production convergence receives the player action without invoking the legacy action writer", async () => {
+  const harness = createHarness({ convergence: true });
+  const body = decisionCommand(harness.stored.snapshot.routeHash);
+
+  await harness.facade.submitDecision(harness.principal, ROOM_ID, body);
+
+  assert.equal(harness.actionWrites, 0);
+  assert.equal(harness.convergenceCommands.length, 1);
+  assert.equal(
+    harness.convergenceCommands[0]?.humanAction?.action.idempotencyKey,
+    body.idempotencyKey,
+  );
+  assert.doesNotMatch(harness.calls.join(","), /action-write/u);
+});
+
+test("HTTP compiler snapshot is reused by convergence without a second authority read", async () => {
+  const harness = createHarness({ convergence: true, sharedSnapshot: true });
+  const body = decisionCommand(harness.stored.snapshot.routeHash);
+
+  await harness.facade.submitDecision(harness.principal, ROOM_ID, body);
+
+  assert.equal(harness.convergenceCommands.length, 1);
+  assert.equal(
+    harness.convergenceCommands[0]?.authoritySnapshot?.snapshotHash,
+    sha256Canonical("shared-http-authority"),
+  );
+  assert.match(harness.calls.join(","), /decision-compile-with-snapshot/u);
+  assert.doesNotMatch(harness.calls.join(","), /decision-compile,/u);
+});
+
+test("committed authority projection skips the full post-submit game read", async () => {
+  const harness = createHarness({
+    convergence: true,
+    sharedSnapshot: true,
+    committedAuthority: true,
+  });
+  await harness.facade.submitDecision(
+    harness.principal,
+    ROOM_ID,
+    decisionCommand(harness.stored.snapshot.routeHash),
+  );
+  assert.equal(harness.gameReads, 0);
+  assert.equal(harness.seededGameReads, 1);
+  assert.doesNotMatch(harness.calls.join(","), /game-read(?:,|$)/u);
+  assert.match(harness.calls.join(","), /game-read-committed/u);
+});
+
+test("SQL7 COMMITTED returns directly without legacy authorization or reads", async () => {
+  const harness = createHarness({ sql7: "COMMITTED" });
+  const response = await harness.facade.submitDecision(
+    harness.principal,
+    ROOM_ID,
+    decisionCommand(harness.stored.snapshot.routeHash),
+  );
+
+  assert.equal(response.projection.runId, RUN_ID);
+  assert.deepEqual(harness.calls, ["sql7"]);
+  assert.equal(harness.sql7Submits, 1);
+  assert.equal(harness.gameReads, 0);
+  assert.equal(harness.actionWrites, 0);
+  assert.equal(harness.compilerInputs.length, 0);
+});
+
+test("SQL7 NOT_APPLICABLE falls back through the complete legacy path", async () => {
+  const harness = createHarness({ sql7: "NOT_APPLICABLE" });
+  const response = await harness.facade.submitDecision(
+    harness.principal,
+    ROOM_ID,
+    decisionCommand(harness.stored.snapshot.routeHash),
+  );
+
+  assert.equal(response.projection.runId, RUN_ID);
+  assert.equal(harness.sql7Submits, 1);
+  assert.deepEqual(harness.calls.slice(0, 4), [
+    "sql7",
+    "access",
+    "route:ACTION",
+    "stored-route",
+  ]);
+  assert.match(harness.calls.join(","), /decision-compile,action-write,game-read/u);
+  assert.equal(harness.actionWrites, 1);
+  assert.equal(harness.gameReads, 1);
+});
+
+test("SQL7 REPLAYED performs no write and returns the currently authorized projection", async () => {
+  const harness = createHarness({ sql7: "REPLAYED" });
+  const response = await harness.facade.submitDecision(
+    harness.principal,
+    ROOM_ID,
+    decisionCommand(harness.stored.snapshot.routeHash),
+  );
+
+  assert.equal(response.idempotencyKey, "action-http-key-1");
+  assert.equal(response.projection.runId, RUN_ID);
+  assert.deepEqual(harness.calls, [
+    "sql7",
+    "access",
+    "route:ACTION",
+    "stored-route",
+    "game-read",
+  ]);
+  assert.equal(harness.actionWrites, 0);
+  assert.equal(harness.gameReads, 1);
+});
+
+test("SQL7 authority fence mismatch is a public command conflict without legacy fallback", async () => {
+  const harness = createHarness({ sql7: "AUTHORITY_FENCE_MISMATCH" });
+  await expectHttpCode(
+    () => harness.facade.submitDecision(
+      harness.principal,
+      ROOM_ID,
+      decisionCommand(harness.stored.snapshot.routeHash),
+    ),
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.COMMAND_REJECTED,
+    409,
+  );
+
+  assert.deepEqual(harness.calls, ["sql7"]);
+  assert.equal(harness.actionWrites, 0);
+  assert.equal(harness.gameReads, 0);
+});
+
+test("SQL7 infrastructure errors and Prisma unique conflicts have stable public mappings", async () => {
+  for (const code of [
+    "INVALID_PLAN",
+    "PERSISTED_COUNT_MISMATCH",
+    "QUERY_BUDGET_EXCEEDED",
+  ] as const) {
+    await expectHttpCode(
+      () => pressureHttpBoundary(async () => {
+        throw new PressureSql7CommitErrorV1(code, "private SQL7 detail");
+      }),
+      PRESSURE_CHAPTER_HTTP_ERROR_CODES.DEPENDENCY_FAILURE,
+      500,
+    );
+  }
+  await expectHttpCode(
+    () => pressureHttpBoundary(async () => {
+      throw Object.assign(new Error("private unique detail"), { code: "P2002" });
+    }),
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.IDEMPOTENCY_CONFLICT,
+    409,
+  );
 });
 
 test("changed public input conflicts and client authority or intent fields fail closed", async () => {
@@ -369,6 +516,10 @@ function createHarness(options: {
   dispatchRouteHash?: string;
   compilerSeatId?: typeof SEAT_ID | "qingliu_law";
   compilerErrorCode?: string;
+  convergence?: boolean;
+  sharedSnapshot?: boolean;
+  committedAuthority?: boolean;
+  sql7?: "COMMITTED" | "REPLAYED" | "NOT_APPLICABLE" | "AUTHORITY_FENCE_MISMATCH";
 } = {}) {
   const calls: string[] = [];
   const stored = storedRoute();
@@ -376,12 +527,15 @@ function createHarness(options: {
   let chatWrites = 0;
   let replayWrites = 0;
   let gameReads = 0;
+  let seededGameReads = 0;
   let resultReads = 0;
+  let sql7Submits = 0;
   const actionCommands: SubmitOrchestratedActionCommandV1[] = [];
   const compilerInputs: Parameters<PressureChapterHttpDecisionCompilerPort["compile"]>[0][] = [];
   const chatCommands: SubmitPressureChatCommandV1[] = [];
   const replayCommands: unknown[] = [];
   const replayViewerIds: string[] = [];
+  const convergenceCommands: Array<Record<string, any>> = [];
   const actionByKey = new Map<string, string>();
 
   const access: PressureChapterHttpAccessPort = {
@@ -433,6 +587,15 @@ function createHarness(options: {
         roomId: ROOM_ID,
       } as unknown as PressureChapterGameProjectionV1;
     },
+    async readFromCommittedAuthority() {
+      calls.push("game-read-committed");
+      seededGameReads += 1;
+      return {
+        schemaVersion: "pressure_chapter_game_projection_v1",
+        runId: RUN_ID,
+        roomId: ROOM_ID,
+      } as unknown as PressureChapterGameProjectionV1;
+    },
   };
   const decisionCompiler: PressureChapterHttpDecisionCompilerPort = {
     async compile(input) {
@@ -450,6 +613,24 @@ function createHarness(options: {
       );
     },
   };
+  if (options.sharedSnapshot) {
+    decisionCompiler.compileWithSnapshot = async (input) => {
+      calls.push("decision-compile-with-snapshot");
+      compilerInputs.push(structuredClone(input));
+      return {
+        command: compiledDecisionCommand(input, options.compilerSeatId ?? input.command.seatId),
+        snapshot: {
+          schemaVersion: "pressure_decision_submit_snapshot_v1",
+          authority: {
+            snapshotHash: sha256Canonical("shared-http-authority"),
+            routeSnapshot: structuredClone(stored.snapshot),
+          },
+          viewer: { seatId: SEAT_ID },
+          submitSnapshotHash: sha256Canonical("shared-http-submit"),
+        } as any,
+      };
+    };
+  }
   const actions: PressureChapterHttpActionPort = {
     async submitAction(command) {
       calls.push("action-write");
@@ -505,6 +686,45 @@ function createHarness(options: {
       } satisfies ReplayCreationReceiptV1;
     },
   };
+  const sql7 = options.sql7 ? {
+    async submit(): Promise<PressureSql7SubmitResultV1> {
+      calls.push("sql7");
+      sql7Submits += 1;
+      if (options.sql7 === "AUTHORITY_FENCE_MISMATCH") {
+        throw new PressureSql7CommitErrorV1(
+          "AUTHORITY_FENCE_MISMATCH",
+          "private stale authority detail",
+        );
+      }
+      if (options.sql7 === "NOT_APPLICABLE") {
+        return { status: "NOT_APPLICABLE", reason: "SNAPSHOT_UNAVAILABLE" };
+      }
+      if (options.sql7 === "REPLAYED") {
+        return {
+          status: "REPLAYED",
+          idempotencyKey: "action-http-key-1",
+          applicationSqlCount: 1,
+        };
+      }
+      return {
+        status: "COMMITTED",
+        response: {
+          schemaVersion: "pressure_chapter_submit_decision_http_response_v1",
+          idempotencyKey: "action-http-key-1",
+          projection: {
+            schemaVersion: "pressure_chapter_game_projection_v1",
+            runId: RUN_ID,
+            roomId: ROOM_ID,
+          } as unknown as PressureChapterGameProjectionV1,
+        },
+        authority: {} as Extract<
+          PressureSql7SubmitResultV1,
+          { status: "COMMITTED" }
+        >["authority"],
+        applicationSqlCount: 6,
+      } as PressureSql7SubmitResultV1;
+    },
+  } : undefined;
   const facade = new PressureChapterHttpFacade(
     access,
     routes,
@@ -515,6 +735,29 @@ function createHarness(options: {
     result,
     replay,
     { nowMs: () => 1_700_000_000_000 },
+    options.convergence ? {
+      async converge(command) {
+        calls.push("convergence");
+        convergenceCommands.push(structuredClone(command));
+        return {
+          schemaVersion: "pressure_decision_convergence_result_v1",
+          batchId: "test-batch",
+          outcome: "BATCH_COMPLETED",
+          actionIds: [command.humanAction!.action.actionId],
+          chapter: null,
+          committedAuthority: options.committedAuthority
+            ? {
+                chapter: { runId: RUN_ID },
+                workingProjection: { key: { runId: RUN_ID } },
+                chapterDescriptor: { chapterId: "N1" },
+              }
+            : null,
+          metrics: {},
+        } as any;
+      },
+      async recordHttpCompletion() {},
+    } : undefined,
+    sql7,
   );
   return {
     facade,
@@ -526,11 +769,14 @@ function createHarness(options: {
     chatCommands,
     replayCommands,
     replayViewerIds,
+    convergenceCommands,
     get actionWrites() { return actionWrites; },
     get chatWrites() { return chatWrites; },
     get replayWrites() { return replayWrites; },
     get gameReads() { return gameReads; },
+    get seededGameReads() { return seededGameReads; },
     get resultReads() { return resultReads; },
+    get sql7Submits() { return sql7Submits; },
   };
 }
 

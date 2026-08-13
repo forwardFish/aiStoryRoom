@@ -48,62 +48,62 @@ export async function pressureHttpBoundary<T>(
 ): Promise<T> {
   return withPressureDbRequestMetricsV1(async () => {
     try {
-    return await operation();
-  } catch (error) {
-    if (error instanceof PressureChapterHttpException) throw error;
-    if (process.env.PRESSURE_CHAPTER_DIAGNOSTIC_ERRORS === "1") {
-      const diagnostic = error && typeof error === "object"
-        ? {
-            name: "name" in error ? String(error.name) : "UNKNOWN",
-            code: "code" in error ? String(error.code) : "UNKNOWN",
-            path: "path" in error ? String(error.path) : "pressureChapter",
-            message: "message" in error
-              ? String(error.message).replace(/[\r\n]+/g, " ").slice(0, 1_000)
-              : "UNKNOWN",
-          }
-        : { name: typeof error, code: "UNKNOWN", path: "pressureChapter", message: "UNKNOWN" };
-      console.error("Pressure chapter dependency failure", diagnostic);
-    }
-    if (error instanceof HttpException) {
-      const status = error.getStatus();
-      if (status === HttpStatus.UNAUTHORIZED || status === HttpStatus.FORBIDDEN) {
+      return await operation();
+    } catch (error) {
+      if (error instanceof PressureChapterHttpException) throw error;
+      if (process.env.PRESSURE_CHAPTER_DIAGNOSTIC_ERRORS === "1") {
+        const diagnostic = error && typeof error === "object"
+          ? {
+              name: "name" in error ? String(error.name) : "UNKNOWN",
+              code: "code" in error ? String(error.code) : "UNKNOWN",
+              path: "path" in error ? String(error.path) : "pressureChapter",
+              message: "message" in error
+                ? String(error.message).replace(/[\r\n]+/g, " ").slice(0, 1_000)
+                : "UNKNOWN",
+            }
+          : { name: typeof error, code: "UNKNOWN", path: "pressureChapter", message: "UNKNOWN" };
+        console.error("Pressure chapter dependency failure", diagnostic);
+      }
+      if (error instanceof HttpException) {
+        const status = error.getStatus();
+        if (status === HttpStatus.UNAUTHORIZED || status === HttpStatus.FORBIDDEN) {
+          throw new PressureChapterHttpException(
+            PRESSURE_CHAPTER_HTTP_ERROR_CODES.ACCESS_DENIED,
+            HttpStatus.FORBIDDEN,
+            "pressureChapter",
+          );
+        }
+        if (status === HttpStatus.NOT_FOUND) {
+          throw new PressureChapterHttpException(
+            PRESSURE_CHAPTER_HTTP_ERROR_CODES.ROUTE_NOT_FOUND,
+            HttpStatus.NOT_FOUND,
+            "pressureChapter",
+          );
+        }
+        if (status === HttpStatus.BAD_REQUEST) {
+          throw new PressureChapterHttpException(
+            PRESSURE_CHAPTER_HTTP_ERROR_CODES.INPUT_INVALID,
+            HttpStatus.BAD_REQUEST,
+            "pressureChapter",
+          );
+        }
+        if (
+          status === HttpStatus.CONFLICT ||
+          status === HttpStatus.UNPROCESSABLE_ENTITY
+        ) {
+          throw new PressureChapterHttpException(
+            PRESSURE_CHAPTER_HTTP_ERROR_CODES.COMMAND_REJECTED,
+            status,
+            "pressureChapter",
+          );
+        }
         throw new PressureChapterHttpException(
-          PRESSURE_CHAPTER_HTTP_ERROR_CODES.ACCESS_DENIED,
-          HttpStatus.FORBIDDEN,
+          PRESSURE_CHAPTER_HTTP_ERROR_CODES.DEPENDENCY_FAILURE,
+          HttpStatus.INTERNAL_SERVER_ERROR,
           "pressureChapter",
         );
       }
-      if (status === HttpStatus.NOT_FOUND) {
-        throw new PressureChapterHttpException(
-          PRESSURE_CHAPTER_HTTP_ERROR_CODES.ROUTE_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
-          "pressureChapter",
-        );
-      }
-      if (status === HttpStatus.BAD_REQUEST) {
-        throw new PressureChapterHttpException(
-          PRESSURE_CHAPTER_HTTP_ERROR_CODES.INPUT_INVALID,
-          HttpStatus.BAD_REQUEST,
-          "pressureChapter",
-        );
-      }
-      if (
-        status === HttpStatus.CONFLICT ||
-        status === HttpStatus.UNPROCESSABLE_ENTITY
-      ) {
-        throw new PressureChapterHttpException(
-          PRESSURE_CHAPTER_HTTP_ERROR_CODES.COMMAND_REJECTED,
-          status,
-          "pressureChapter",
-        );
-      }
-      throw new PressureChapterHttpException(
-        PRESSURE_CHAPTER_HTTP_ERROR_CODES.DEPENDENCY_FAILURE,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        "pressureChapter",
-      );
-    }
-    throw mapPressureDependencyError(error);
+      throw mapPressureDependencyError(error);
     }
   }, (metrics) => {
     if (process.env.PRESSURE_CHAPTER_DIAGNOSTIC_ERRORS !== "1") return;
@@ -144,7 +144,26 @@ function mapPressureDependencyError(error: unknown): PressureChapterHttpExceptio
       path,
     );
   }
+  if (code === "AUTHORITY_FENCE_MISMATCH") {
+    return new PressureChapterHttpException(
+      PRESSURE_CHAPTER_HTTP_ERROR_CODES.COMMAND_REJECTED,
+      HttpStatus.CONFLICT,
+      path,
+    );
+  }
   if (
+    code === "INVALID_PLAN" ||
+    code === "PERSISTED_COUNT_MISMATCH" ||
+    code === "QUERY_BUDGET_EXCEEDED"
+  ) {
+    return new PressureChapterHttpException(
+      PRESSURE_CHAPTER_HTTP_ERROR_CODES.DEPENDENCY_FAILURE,
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      path,
+    );
+  }
+  if (
+    code === "P2002" ||
     code.includes("IDEMPOTENCY") ||
     code.includes("FINGERPRINT_MISMATCH")
   ) {

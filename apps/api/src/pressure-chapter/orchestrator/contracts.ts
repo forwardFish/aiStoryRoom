@@ -104,6 +104,18 @@ export interface ChapterOrchestratorStateV1 {
   orchestratorHash: string;
 }
 
+/**
+ * Request-scoped authority returned by the transaction that atomically sealed
+ * the final Beat and moved W4 into SETTLING. It is never a recovery source:
+ * callers must fall back to the durable resume path when any binding is absent.
+ */
+export interface CommittedSettlementResumeAuthorityV1 {
+  state: ChapterOrchestratorStateV1;
+  chapterDescriptor: AuthoredChapterRuntimeV1;
+  workingProjection: WorkingLedgerProjectionV1;
+  settlementInput: SealedChapterSettlementInputV1;
+}
+
 export interface ChapterOrchestratorStatePort {
   read(runId: string): Promise<ChapterOrchestratorStateV1 | null>;
   compareAndSwap(input: {
@@ -129,12 +141,24 @@ export interface ChapterWorkingSeedPort {
     chapter: AuthoredChapterRuntimeV1;
     authorityBase: ChapterAuthorityBaseV1;
   }): Promise<ChapterWorkingState>;
+  /** Fast chapter-boundary path over the just-committed frozen authority. */
+  loadFromAuthority?(input: {
+    routeSnapshot: RunRouteSnapshotV1;
+    chapter: AuthoredChapterRuntimeV1;
+    authorityBase: ChapterAuthorityBaseV1;
+    source: {
+      routeHash: string;
+      sourceFrozenHash: string;
+      worldState: FrozenChapterBundleV1["frozenWorldState"];
+    };
+  }): Promise<ChapterWorkingState>;
 }
 
 export interface WorkingLedgerOpeningPort {
   open(command: OpenWorkingLedgerCommandV1): Promise<{
     status: "OPENED" | "REPLAYED";
     event: unknown;
+    projection: WorkingLedgerProjectionV1;
   }>;
 }
 

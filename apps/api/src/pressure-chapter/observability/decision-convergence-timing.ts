@@ -1,6 +1,11 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { performance } from "node:perf_hooks";
-import type { DecisionConvergenceStageTimingsV1 } from "../decision-automation/contracts";
+import type {
+  DecisionConvergenceResultV1,
+  DecisionConvergenceStageTimingsV1,
+} from "../decision-automation/contracts";
+
+type CommittedAuthorityV1 = NonNullable<DecisionConvergenceResultV1["committedAuthority"]>;
 
 export type PressureDecisionTimedStageV1 =
   | "orchestratorReconcileMs"
@@ -11,6 +16,7 @@ export type PressureDecisionTimedStageV1 =
 interface PressureDecisionTimingContextV1 {
   timings: DecisionConvergenceStageTimingsV1;
   onW4Conflict: () => void;
+  committedAuthority: CommittedAuthorityV1 | null;
 }
 
 const storage = new AsyncLocalStorage<PressureDecisionTimingContextV1>();
@@ -24,7 +30,7 @@ export async function runWithPressureDecisionConvergenceTimingV1<T>(
   onW4Conflict: () => void,
   operation: () => Promise<T>,
 ): Promise<T> {
-  return storage.run({ timings, onW4Conflict }, operation);
+  return storage.run({ timings, onW4Conflict, committedAuthority: null }, operation);
 }
 
 export async function measurePressureDecisionStageV1<T>(
@@ -43,4 +49,17 @@ export async function measurePressureDecisionStageV1<T>(
 
 export function recordPressureDecisionW4ConflictV1(): void {
   storage.getStore()?.onW4Conflict();
+}
+
+/** Keeps a just-committed chapter opening inside this request only. */
+export function recordPressureDecisionCommittedAuthorityV1(
+  authority: Readonly<CommittedAuthorityV1>,
+): void {
+  const active = storage.getStore();
+  if (active) active.committedAuthority = structuredClone(authority);
+}
+
+export function readPressureDecisionCommittedAuthorityV1(): CommittedAuthorityV1 | null {
+  const authority = storage.getStore()?.committedAuthority ?? null;
+  return authority ? structuredClone(authority) : null;
 }

@@ -26,6 +26,7 @@ import {
 } from "../replay-production";
 import {
   ContentBoundSeatPrivateProjectionPortV1,
+  compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1,
   FailClosedSangtianAEmotionObserverResolverV1,
   FrozenAEmotionPresentationAdapterV1,
   FrozenSangtianFinaleConfigurationResolverV1,
@@ -398,6 +399,14 @@ test("content-bound seat projection is viewer-scoped and uses only frozen resour
   const seatId = "zhejiang_governor" as const;
   const projection = await new ContentBoundSeatPrivateProjectionPortV1(prisma)
     .readForSeat({ runId: route.runId, seatId, sourceAuthorityHash: authorityHash });
+  const capturedProjection = compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1({
+    runId: route.runId,
+    seatId,
+    routeSnapshot: route.snapshot,
+    seatAuthority: seatSnapshot,
+    world,
+  });
+  assert.deepEqual(capturedProjection, projection);
   const payload = projection.payload as {
     resources: Array<{ resourceId: string; value: number }>;
     tokens: unknown[];

@@ -180,6 +180,78 @@ function isAfterCursor(
   return compareAEmotionCanonicalText(row.aggregate.aggregationKey, cursor.aggregationKey) > 0;
 }
 
+/**
+ * Read-free equivalent of FeedService.list for callers that already captured
+ * the exact aggregate and viewer-delivery authority in one database snapshot.
+ */
+export function projectAEmotionFeedPageV1(
+  input: Readonly<{
+    roomId: string;
+    runId: string;
+    viewerSeatId: SeatIdV1;
+    cursor?: string | null;
+    limit?: number;
+  }>,
+  sourceRows: ReadonlyArray<Readonly<{
+    aggregate: AEmotionAggregateRecordV1;
+    delivery: AEmotionDeliveryRecordV1;
+  }>>,
+) {
+  const limit = Math.min(10, Math.max(1, input.limit ?? 10));
+  const rows = sourceRows.map(({ aggregate, delivery }) => ({
+    aggregate: structuredClone(aggregate),
+    delivery: structuredClone(delivery),
+  }));
+  for (const { aggregate, delivery } of rows) {
+    if (
+      aggregate.roomId !== input.roomId
+      || aggregate.runId !== input.runId
+      || aggregate.viewerSeatId !== input.viewerSeatId
+      || delivery.roomId !== input.roomId
+      || delivery.runId !== input.runId
+      || delivery.viewerSeatId !== input.viewerSeatId
+      || delivery.eventId !== aggregate.projection.eventId
+      || delivery.projectionVersion !== aggregate.projection.projectionVersion
+    ) {
+      failAEmotionProjection(ERROR.REPOSITORY_CONFLICT, "SNAPSHOT_FEED_SCOPE_MISMATCH");
+    }
+  }
+  rows.sort(compareFeedRows);
+  const unreadCount = rows.filter((row) => row.delivery.seenAt === null).length;
+  const cursor = input.cursor ? decodeCursor(input.cursor, input) : null;
+  const eligible = cursor ? rows.filter((row) => isAfterCursor(row, cursor)) : rows;
+  const selected = eligible.slice(0, limit);
+  const hasMore = eligible.length > selected.length;
+  const last = selected.at(-1);
+  return {
+    schemaVersion: "a_emotion_feed_page_v1" as const,
+    roomId: input.roomId,
+    runId: input.runId,
+    viewerSeatId: input.viewerSeatId,
+    items: selected.map(({ aggregate, delivery }) => ({
+      ...structuredClone(aggregate.projection),
+      isUnread: delivery.seenAt === null,
+      isAcknowledged: delivery.acknowledgedAt !== null,
+      isResolved: delivery.resolvedAt !== null,
+    })),
+    unreadCount,
+    nextCursor: hasMore && last ? encodeCursor({
+      v: 1,
+      roomId: input.roomId,
+      runId: input.runId,
+      viewerSeatId: input.viewerSeatId,
+      priority: priorityRank(last.aggregate, last.delivery),
+      eventSequence: last.aggregate.projection.eventSequence,
+      projectionVersion: last.aggregate.projection.projectionVersion,
+      aggregationKey: last.aggregate.aggregationKey,
+    }) : null,
+    serverSequence: rows.reduce(
+      (maximum, row) => Math.max(maximum, row.aggregate.projection.eventSequence),
+      0,
+    ),
+  };
+}
+
 export class AEmotionFeedServiceV1 {
   constructor(private readonly repository: AEmotionFeedRepositoryPortV1) {}
 
@@ -274,39 +346,10 @@ export class AEmotionFeedServiceV1 {
     if (missingDelivery) {
       failAEmotionProjection(ERROR.REPOSITORY_CONFLICT, `${missingDelivery.aggregate.aggregationKey}:DELIVERY_MISSING`);
     }
-    rows.sort(compareFeedRows);
-    const unreadCount = rows.filter((row) => row.delivery?.seenAt === null).length;
-    const cursor = input.cursor ? decodeCursor(input.cursor, input) : null;
-    const eligible = cursor ? rows.filter((row) => isAfterCursor(row, cursor)) : rows;
-    const selected = eligible.slice(0, limit);
-    const hasMore = eligible.length > selected.length;
-    const last = selected.at(-1);
-    const items = selected.map(({ aggregate, delivery }) => ({
-      ...structuredClone(aggregate.projection),
-      isUnread: delivery?.seenAt === null,
-      isAcknowledged: delivery?.acknowledgedAt !== null && delivery?.acknowledgedAt !== undefined,
-      isResolved: delivery?.resolvedAt !== null && delivery?.resolvedAt !== undefined,
-    }));
-    const nextCursor = hasMore && last ? encodeCursor({
-      v: 1,
-      roomId: input.roomId,
-      runId: input.runId,
-      viewerSeatId: input.viewerSeatId,
-      priority: priorityRank(last.aggregate, last.delivery),
-      eventSequence: last.aggregate.projection.eventSequence,
-      projectionVersion: last.aggregate.projection.projectionVersion,
-      aggregationKey: last.aggregate.aggregationKey,
-    }) : null;
-    return {
-      schemaVersion: "a_emotion_feed_page_v1",
-      roomId: input.roomId,
-      runId: input.runId,
-      viewerSeatId: input.viewerSeatId,
-      items,
-      unreadCount,
-      nextCursor,
-      serverSequence: rows.reduce((maximum, row) => Math.max(maximum, row.aggregate.projection.eventSequence), 0),
-    };
+    return projectAEmotionFeedPageV1({ ...input, limit }, rows.map((row) => ({
+      aggregate: row.aggregate,
+      delivery: row.delivery!,
+    })));
   }
 
   async listAfterSequence(input: {

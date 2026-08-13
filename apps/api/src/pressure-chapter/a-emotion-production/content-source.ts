@@ -67,6 +67,14 @@ export interface CompileAEmotionBeatAuthorityInputV1 {
   ledgerEvents: WorkingLedgerEventV1[];
 }
 
+export interface CompileAEmotionBeatProjectionInputV1 {
+  sourceKind: "BEAT_COMMITTED";
+  roomId: string;
+  committedAt: string;
+  projection: WorkingLedgerProjectionV1;
+  beatEvent: WorkingLedgerEventV1;
+}
+
 export interface CompileAEmotionFormalCommitmentAuthorityInputV1 {
   sourceKind: "FORMAL_COMMITMENT_COMMITTED";
   roomId: string;
@@ -84,6 +92,15 @@ export interface CompileAEmotionChapterAuthorityInputV1 {
   record: AtomicChapterCommitRecordV1;
   /** Complete committed chapter ledger whose head is record.sealedInput.decisionLedgerHash. */
   ledgerEvents: WorkingLedgerEventV1[];
+}
+
+export interface CompileAEmotionChapterProjectionInputV1 {
+  sourceKind: "CHAPTER_SETTLEMENT_COMMITTED";
+  roomId: string;
+  committedAt: string;
+  record: AtomicChapterCommitRecordV1;
+  /** Authority-validated committed cache whose head matches the settlement. */
+  projection: WorkingLedgerProjectionV1;
 }
 
 export interface AEmotionFinaleChapterAuthorityV1 {
@@ -142,6 +159,31 @@ export class SangtianAEmotionContentSourceCompilerV1 {
     ) {
       invalid("input.ledgerEvents", "BEAT_CONTEXT_MISMATCH");
     }
+    return this.compileBeatProjection({
+      sourceKind: "BEAT_COMMITTED",
+      roomId: input.roomId,
+      committedAt: input.committedAt,
+      projection,
+      beatEvent: event,
+    });
+  }
+
+  /** Same deterministic compiler over an already authority-validated cache. */
+  compileBeatProjection(rawInput: CompileAEmotionBeatProjectionInputV1): AEmotionAuthorityEmissionV1[] {
+    const input = rawInput;
+    const projection = input.projection;
+    const event = input.beatEvent;
+    if (
+      input.sourceKind !== "BEAT_COMMITTED"
+      || !input.roomId.trim()
+      || !input.committedAt.trim()
+      || event.payload.eventType !== "BEAT_APPLIED"
+      || event.eventHash !== projection.headHash
+      || projection.key.runId !== event.runId
+      || projection.key.chapterRuntimeId !== event.chapterRuntimeId
+      || projection.chapterId !== event.chapterId
+    ) invalid("input.beatProjection", "AUTHORITY_BINDING_MISMATCH");
+    const beat = event.payload.beatResolution;
     // Each action may produce two disclosure cohorts (authority-proven
     // CONFIRMED and conservative HIDDEN), both inside the Beat's 1,000-slot
     // sequence range.
@@ -312,8 +354,26 @@ export class SangtianAEmotionContentSourceCompilerV1 {
 
   compileChapter(rawInput: unknown): AEmotionAuthorityEmissionV1[] {
     const input = chapterInput(rawInput);
-    const record = validateAtomicChapterCommitRecordV1(input.record);
     const projection = projectWorkingLedger(input.ledgerEvents);
+    return this.compileChapterProjection({
+      sourceKind: input.sourceKind,
+      roomId: input.roomId,
+      committedAt: input.committedAt,
+      record: input.record,
+      projection,
+    });
+  }
+
+  /** Same deterministic compiler over an already authority-validated cache. */
+  compileChapterProjection(
+    input: Readonly<CompileAEmotionChapterProjectionInputV1>,
+  ): AEmotionAuthorityEmissionV1[] {
+    if (input.sourceKind !== "CHAPTER_SETTLEMENT_COMMITTED") {
+      invalid("input.sourceKind", "LITERAL_CHAPTER_SETTLEMENT_COMMITTED");
+    }
+    common(input.roomId, input.committedAt);
+    const record = validateAtomicChapterCommitRecordV1(input.record);
+    const projection = input.projection;
     assertChapterLedger(record, projection);
     this.assertReleasedChapterPolicy(record);
     const outcome = chapterOutcome(record);

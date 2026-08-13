@@ -11,6 +11,7 @@ import type {
 } from "../genesis/types";
 import type {
   ChapterOrchestratorStateV1,
+  CommittedSettlementResumeAuthorityV1,
   StartChapterRunCommandV1,
   SubmitOrchestratedActionCommandV1,
 } from "../orchestrator/contracts";
@@ -46,6 +47,11 @@ export interface RuntimeChapterHandoffStartPortV1 {
 export interface RuntimeChapterOrchestratorPortV1 {
   resume(
     routeSnapshot: RunRouteSnapshotV1,
+    nowMs: number,
+  ): Promise<ChapterOrchestratorStateV1>;
+  resumeFromCommittedSettlementAuthority?(
+    routeSnapshot: RunRouteSnapshotV1,
+    authority: Readonly<CommittedSettlementResumeAuthorityV1>,
     nowMs: number,
   ): Promise<ChapterOrchestratorStateV1>;
   submitAction(

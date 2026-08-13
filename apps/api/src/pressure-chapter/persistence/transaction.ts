@@ -1,4 +1,10 @@
 import { Prisma } from "@prisma/client";
+import {
+  recordPressureDbTransactionAttemptV1,
+  recordPressureDbTransactionCommitV1,
+  recordPressureDbTransactionRetryV1,
+  recordPressureDbTransactionRollbackV1,
+} from "../observability/pressure-db-metrics";
 
 export interface PressureSerializableClient<TTransaction> {
   $transaction<T>(
@@ -20,11 +26,16 @@ export async function pressureSerializableTransaction<TTransaction, TResult>(
 ): Promise<TResult> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= retries; attempt += 1) {
+    recordPressureDbTransactionAttemptV1();
     try {
-      return await prisma.$transaction(operation, PRESSURE_TRANSACTION_OPTIONS);
+      const result = await prisma.$transaction(operation, PRESSURE_TRANSACTION_OPTIONS);
+      recordPressureDbTransactionCommitV1();
+      return result;
     } catch (error) {
+      recordPressureDbTransactionRollbackV1();
       lastError = error;
       if (!isSerializableRetry(error) || attempt === retries) throw error;
+      recordPressureDbTransactionRetryV1();
     }
   }
   throw lastError;

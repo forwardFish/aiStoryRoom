@@ -1,0 +1,8 @@
+{
+  "goalId": "pressure-performance-v1",
+  "status": "active",
+  "phase": "p4-sql7-fast-path",
+  "branch": "codex/pressure-phased-performance-v1",
+  "baseHead": "b5c3b95afc6b9994332cf6aed7928e9ce5a76ffd",
+  "finalVerdict": null
+}

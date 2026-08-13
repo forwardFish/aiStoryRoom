@@ -152,13 +152,22 @@ test("Beat evidence disclosure is split into authorized confirmed and safe hidde
 
 test("real Sangtian N1 ChapterSettlement emits six viewer-safe seat outcomes", () => {
   const fixture = realN1ChapterRecord();
-  const emissions = compiler().compileChapter({
+  const sourceCompiler = compiler();
+  const emissions = sourceCompiler.compileChapter({
     sourceKind: "CHAPTER_SETTLEMENT_COMMITTED",
     roomId: ROOM_ID,
     committedAt: COMMITTED_AT,
     record: fixture.record,
     ledgerEvents: fixture.ledger.events,
   });
+  const projectionEmissions = sourceCompiler.compileChapterProjection({
+    sourceKind: "CHAPTER_SETTLEMENT_COMMITTED",
+    roomId: ROOM_ID,
+    committedAt: COMMITTED_AT,
+    record: fixture.record,
+    projection: projectWorkingLedger(fixture.ledger.events),
+  });
+  assert.deepEqual(projectionEmissions, emissions);
   assert.equal(emissions.length, PRESSURE_CHAPTER_SEAT_IDS_V1.length);
   assert.deepEqual(
     emissions.map((item) => item.source.sourceSeatId),

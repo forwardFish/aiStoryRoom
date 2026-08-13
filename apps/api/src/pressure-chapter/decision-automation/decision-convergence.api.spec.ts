@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   PRESSURE_CHAPTER_ROUTE_V1,
   PRESSURE_CHAPTER_SEAT_IDS_V1,
+  computeDecisionActionRequestFingerprint,
   sha256Canonical,
   withRunRouteHash,
   type ParticipantModeV1,
@@ -10,10 +11,14 @@ import {
   type SeatIdV1,
 } from "@ai-story/shared";
 import {
+  buildChapterWorkingSet,
   createChapterWorkingState,
+  loadPublishedSangtianActionReleaseV1,
   loadSangtianPressureChapterPackageV1,
+  pinChapterWorkingSet,
 } from "@ai-story/templates";
 import { SangtianAuthoredChapterContentAdapterV1 } from "../integration/content.adapters";
+import { computeFormalInteractionInputFingerprint } from "../interaction/formal-interaction.service";
 import type {
   AuthoredChapterRuntimeV1,
   ChapterOrchestratorStateV1,
@@ -22,7 +27,11 @@ import type {
 import { withOrchestratorHashV1 } from "../orchestrator/validation";
 import type { SeatAuthorityRecordV1, SeatControlSnapshotV1 } from "../seat-control/types";
 import type { WorkingLedgerProjectionV1 } from "../working-ledger/contracts";
-import { workingStateHash } from "../working-ledger/working-ledger";
+import {
+  appendBeatEventToWorkingLedgerProjection,
+  workingStateHash,
+} from "../working-ledger/working-ledger";
+import { recordPressureDecisionCommittedAuthorityV1 } from "../observability/decision-convergence-timing";
 import type {
   AiDecisionPolicyInputV1,
   AiDecisionPolicySelectionV1,
@@ -40,6 +49,7 @@ import {
   withAiDecisionPolicySelectionHashV1,
   withDecisionAutomationTaskHashV1,
 } from "./service";
+import { planPreparedActionLedgerV1 } from "./prepared-action-batch";
 
 const NOW = 1_900_000_000_000;
 const POLICY_HASH = digest("published-ai-policy");
@@ -84,8 +94,8 @@ test("the recovery worker groups all seat discoveries into one decision batch", 
   assert.equal(harness.appendedSeatIds.length, 5);
 });
 
-test("production batch port reduces five prepared AI appends to one submission", async () => {
-  const harness = await Harness.create(1, false);
+test("production batch port commits one HUMAN plus five AI actions in one submission", async () => {
+  const harness = await Harness.create(1, true);
   const legacy = harness.dependencies.preparedActions.submitPrepared;
   harness.dependencies.preparedActions.submitPreparedBatch = async (
     batch: PreparedAutomationActionBatchV1,
@@ -99,6 +109,137 @@ test("production batch port reduces five prepared AI appends to one submission",
       replayedActionIds: results.filter((item) => item.status === "REPLAYED").map((item) => item.actionId),
       eventHashes: results.flatMap((item) => item.eventHash ?? []),
       ledgerHeadHash: results.at(-1)!.ledgerHeadHash,
+      orchestratorState: structuredClone(batch.beatPlan.postBeatOrchestratorState),
+      projection: null,
+      conflictReason: null,
+    };
+  };
+
+  const result = await harness.service.converge({
+    ...harness.command("HTTP_POST_SUBMIT"),
+    humanAction: humanCommand(harness),
+  });
+
+  assert.equal(result.outcome, "BATCH_COMPLETED");
+  assert.equal(result.metrics.appendTxCount, 1);
+  assert.equal(harness.appendedSeatIds.length, 6);
+});
+
+test("committed SETTLING authority uses request-scoped resume without durable rereads", async () => {
+  const harness = await Harness.create(1, true);
+  const legacy = harness.dependencies.preparedActions.submitPrepared;
+  harness.dependencies.preparedActions.submitPreparedBatch = async (batch) => {
+    const results = [];
+    for (const item of batch.actions) results.push(await legacy(item));
+    const actionProjection = planPreparedActionLedgerV1({
+      projection: harness.projection,
+      actions: batch.actions,
+    }).projection;
+    const projection = appendBeatEventToWorkingLedgerProjection(
+      actionProjection,
+      batch.beatPlan.event,
+    );
+    return {
+      status: "COMMITTED" as const,
+      batchId: batch.batchId,
+      actionIds: results.map((item) => item.actionId),
+      replayedActionIds: [],
+      eventHashes: results.flatMap((item) => item.eventHash ?? []),
+      ledgerHeadHash: projection.headHash,
+      orchestratorState: structuredClone(batch.beatPlan.postBeatOrchestratorState),
+      projection,
+      conflictReason: null,
+    };
+  };
+
+  const result = await harness.service.converge({
+    ...harness.command("HTTP_POST_SUBMIT"),
+    humanAction: humanCommand(harness),
+  });
+
+  assert.equal(result.outcome, "BATCH_COMPLETED");
+  assert.equal(harness.fastSettlementResumeCalls, 1);
+  assert.equal(harness.resumeCalls, 0);
+});
+
+test("all already-accepted actions resume without submitting an empty batch", async () => {
+  const harness = await Harness.create(1, false);
+  harness.allCompilesAlreadyAccepted = true;
+  let batchCalls = 0;
+  harness.dependencies.preparedActions.submitPreparedBatch = async () => {
+    batchCalls += 1;
+    throw new Error("empty batch must not be submitted");
+  };
+
+  const result = await harness.service.converge(harness.command("HTTP_POST_SUBMIT"));
+
+  assert.equal(result.outcome, "BATCH_COMPLETED");
+  assert.equal(result.actionIds.length, 5);
+  assert.equal(result.metrics.replayCount, 5);
+  assert.equal(result.metrics.appendTxCount, 0);
+  assert.equal(result.metrics.resumeCount, 1);
+  assert.equal(batchCalls, 0);
+});
+
+test("request-scoped committed opening authority skips the post-resume projection reread", async () => {
+  const harness = await Harness.create(1, false);
+  harness.recordRuntimeAuthority = true;
+
+  const result = await harness.service.converge(harness.command("HTTP_POST_SUBMIT"));
+
+  assert.ok(result.committedAuthority);
+  assert.equal(harness.projectionReloads, 0);
+});
+
+test("HTTP convergence commits one pending human and five AI actions in one batch", async () => {
+  const harness = await Harness.create(1, true);
+  const legacy = harness.dependencies.preparedActions.submitPrepared;
+  harness.dependencies.preparedActions.submitPreparedBatch = async (batch) => {
+    const results = [];
+    for (const item of batch.actions) results.push(await legacy(item));
+    return {
+      status: "COMMITTED" as const,
+      batchId: batch.batchId,
+      actionIds: results.map((item) => item.actionId),
+      replayedActionIds: [],
+      eventHashes: results.flatMap((item) => item.eventHash ?? []),
+      ledgerHeadHash: results.at(-1)!.ledgerHeadHash,
+      orchestratorState: structuredClone(batch.beatPlan.postBeatOrchestratorState),
+      projection: null,
+      conflictReason: null,
+    };
+  };
+  const command = {
+    ...harness.command("HTTP_POST_SUBMIT"),
+    humanAction: humanCommand(harness),
+  };
+
+  const result = await harness.service.converge(command);
+
+  assert.equal(result.outcome, "BATCH_COMPLETED");
+  assert.equal(result.metrics.pendingHumanCount, 1);
+  assert.equal(result.metrics.appendTxCount, 1);
+  assert.deepEqual(harness.appendedSeatIds, PRESSURE_CHAPTER_SEAT_IDS_V1);
+});
+
+test("production batch port reduces five prepared AI appends to one submission", async () => {
+  const harness = await Harness.create(1, false);
+  harness.seedCompletedHumanAction();
+  const legacy = harness.dependencies.preparedActions.submitPrepared;
+  harness.dependencies.preparedActions.submitPreparedBatch = async (batch) => {
+    const results = [];
+    for (const item of batch.actions) results.push(await legacy(item));
+    return {
+      status: "COMMITTED" as const,
+      batchId: batch.batchId,
+      actionIds: results.map((item) => item.actionId),
+      replayedActionIds: results
+        .filter((item) => item.status === "REPLAYED")
+        .map((item) => item.actionId),
+      eventHashes: results.flatMap((item) => item.eventHash ?? []),
+      ledgerHeadHash: results.at(-1)!.ledgerHeadHash,
+      orchestratorState: structuredClone(batch.beatPlan.postBeatOrchestratorState),
+      projection: null,
       conflictReason: null,
     };
   };
@@ -194,8 +335,12 @@ class Harness {
   policyCalls = 0;
   compileCalls = 0;
   resumeCalls = 0;
+  fastSettlementResumeCalls = 0;
   deadlineCalls = 0;
   replayCount = 0;
+  projectionReloads = 0;
+  recordRuntimeAuthority = false;
+  allCompilesAlreadyAccepted = false;
   headConflictAt: number | null = null;
   policyHashOverride: string | null = null;
   deadlineAtMs: number | null = NOW + 300_000;
@@ -234,6 +379,10 @@ class Harness {
             capturedAtMs: NOW,
           });
         },
+        loadWorkingProjection: async () => {
+          this.projectionReloads += 1;
+          return cloneProjection(this.projection);
+        },
       },
       content: { load: async () => structuredClone(this.descriptor) },
       policy: {
@@ -246,9 +395,18 @@ class Harness {
       compiler: {
         compile: (input) => {
           this.compileCalls += 1;
+          const command = compiledCommand(input, this.route);
+          if (this.allCompilesAlreadyAccepted) {
+            return {
+              kind: "ALREADY_ACCEPTED" as const,
+              actionId: command.action.actionId,
+              idempotencyKey: command.action.idempotencyKey,
+              inputFingerprint: command.inputFingerprint,
+            };
+          }
           return {
             kind: "COMMAND" as const,
-            command: compiledCommand(input, this.route),
+            command,
           };
         },
       },
@@ -258,6 +416,17 @@ class Harness {
       runtime: {
         resume: async () => {
           this.resumeCalls += 1;
+          if (this.recordRuntimeAuthority) {
+            recordPressureDecisionCommittedAuthorityV1({
+              chapter: structuredClone(this.chapter),
+              workingProjection: cloneProjection(this.projection),
+              chapterDescriptor: structuredClone(this.descriptor),
+            });
+          }
+          return structuredClone(this.chapter);
+        },
+        resumeFromCommittedSettlementAuthority: async () => {
+          this.fastSettlementResumeCalls += 1;
           return structuredClone(this.chapter);
         },
       },
@@ -285,10 +454,21 @@ class Harness {
       PRESSURE_CHAPTER_SEAT_IDS_V1.every((seatId) => item.seatRequirements[seatId] === "REQUIRED"),
     );
     assert.ok(decision, "N1 fixture must expose an all-seat decision");
-    const working = createChapterWorkingState({ runId: route.runId, chapterId: "N1" });
+    const working = createChapterWorkingState({
+      runId: route.runId,
+      chapterId: "N1",
+      facts: loadPublishedSangtianActionReleaseV1().compileChapterActionEffects({
+        chapterId: "N1",
+        confirmedActions: [],
+        defaultEvents: [],
+      }).settlementFacts,
+    });
     const point = descriptor.definition.decisionPoints.find(
       (item) => item.decisionPointId === decision.decisionPointId,
     )!;
+    const workingSet = buildChapterWorkingSet(descriptor.definition, working);
+    assert.ok(workingSet);
+    assert.equal(workingSet.decisionPoint.decisionPointId, point.decisionPointId);
     const stateHash = workingStateHash(working);
     const activeSeats = PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId, index) => {
       const human = index < humanCount;
@@ -339,20 +519,12 @@ class Harness {
       key: { runId: route.runId, chapterRuntimeId: chapter.chapterRuntimeId },
       chapterId: "N1",
       routeHash: route.routeHash,
-      chapterDefinitionHash: descriptor.descriptorHash,
+      chapterDefinitionHash: sha256Canonical(descriptor.definition),
       headHash: digest("opening-ledger-head"),
       headSequence: 0,
       state: working,
       stateHash,
-      nextDecisionPin: {
-        schemaVersion: "pressure_decision_pin_v1",
-        chapterId: "N1",
-        stateRevision: working.revision,
-        stateFingerprint: stateHash,
-        decisionPointId: point.decisionPointId,
-        kernelId: point.kernelId,
-        optionIds: point.options.map((option) => option.optionId),
-      },
+      nextDecisionPin: pinChapterWorkingSet(workingSet),
       acceptedActions: new Map(),
       actionsByIdempotencyKey: new Map(),
       commitmentActionsByIdempotencyKey: new Map(),
@@ -378,6 +550,7 @@ class Harness {
       },
       nowMs: NOW,
       humanSubmitMs: trigger === "HTTP_POST_SUBMIT" ? 2 : 0,
+      humanAction: null,
     } as const;
   }
 
@@ -402,6 +575,35 @@ class Harness {
           expectedSeatAuthorityStateHash: this.seatAuthority.stateHash,
         });
       });
+  }
+
+  seedCompletedHumanAction(): void {
+    const original = humanCommand(this);
+    const actionId = this.chapter.activeDecision!.seats
+      .find((seat) => seat.seatId === original.action.seatId)!
+      .actionIds[0]!;
+    const { sealedHash: _oldSealedHash, ...unsealedAction } = structuredClone(original.action);
+    const actionBody = {
+      ...unsealedAction,
+      actionId,
+    };
+    const requestFingerprint = computeDecisionActionRequestFingerprint(actionBody);
+    const sealedBody = { ...actionBody, requestFingerprint };
+    const action = { ...sealedBody, sealedHash: digest(sealedBody) };
+    const commandBody = {
+      ...structuredClone(original),
+      action,
+    };
+    const command = {
+      ...commandBody,
+      inputFingerprint: computeFormalInteractionInputFingerprint(commandBody),
+    };
+    const planned = planPreparedActionLedgerV1({
+      projection: this.projection,
+      actions: [{ command, authority: {} } as AppendPreparedAutomationActionCommandV1],
+    });
+    Object.assign(this.projection, planned.projection);
+    this.head = planned.projection.headHash;
   }
 
   private async append(input: AppendPreparedAutomationActionCommandV1) {
@@ -546,46 +748,108 @@ function compiledCommand(
   const seatId = input.seatAuthority.seatId;
   const idempotencyKey = `pressure-ai-action-v1:${route.runId}:${input.chapter.chapterRuntimeId}:${input.chapter.activeDecision!.decisionPointId}:${seatId}:${input.seatAuthority.controlEpoch}`;
   const actionId = `action_${digest(idempotencyKey)}`;
-  return {
+  const payload = {
+    source: "CONTENT_OWNED_AI_POLICY",
+    policyRef: input.selection.policyRef,
+    policyVersion: input.selection.policyVersion,
+    policyHash: input.selection.policyHash,
+    selectionHash: input.selection.selectionHash,
+  };
+  const actionBase = {
+    schemaVersion: "sangtian_decision_action_v1" as const,
+    actionId,
+    runId: route.runId,
+    chapterRuntimeId: input.chapter.chapterRuntimeId,
+    chapterId: input.chapter.currentChapterId,
+    decisionPointId: input.chapter.activeDecision!.decisionPointId,
+    seatId,
+    actionOrdinal: 1,
+    actionRevision: 1,
+    controlEpoch: input.seatAuthority.controlEpoch,
+    expectedWorkingRevision: input.projection.state.revision,
+    status: "SEALED" as const,
+    actionType: input.selection.actionType,
+    payload,
+    payloadHash: digest(payload),
+    idempotencyKey,
+  };
+  const withRequest = {
+    ...actionBase,
+    requestFingerprint: computeDecisionActionRequestFingerprint(actionBase),
+  };
+  const action = { ...withRequest, sealedHash: digest(withRequest) };
+  const intent = {
+    visibility: "PRIVATE" as const,
+    targetSeatIds: [],
+    evidenceRefs: [],
+    resourceReservations: [],
+    commitmentMutations: [],
+    knowledgeGrants: [],
+    seatArcProgress: [],
+  };
+  const command = {
     routeSnapshot: route,
     subjectId: input.seatAuthority.activeControllerId,
-    action: {
-      schemaVersion: "sangtian_decision_action_v1",
-      actionId,
-      runId: route.runId,
-      chapterRuntimeId: input.chapter.chapterRuntimeId,
-      chapterId: input.chapter.currentChapterId,
-      decisionPointId: input.chapter.activeDecision!.decisionPointId,
-      seatId,
-      actionOrdinal: 1,
-      actionRevision: 1,
-      controlEpoch: input.seatAuthority.controlEpoch,
-      expectedWorkingRevision: input.projection.state.revision,
-      status: "SEALED",
-      actionType: input.selection.actionType,
-      payload: {
-        source: "CONTENT_OWNED_AI_POLICY",
-        policyRef: input.selection.policyRef,
-        policyVersion: input.selection.policyVersion,
-        policyHash: input.selection.policyHash,
-        selectionHash: input.selection.selectionHash,
-      },
-      payloadHash: digest({ seatId, selection: input.selection.selectionHash }),
-      idempotencyKey,
-      requestFingerprint: digest(`request:${actionId}`),
-      sealedHash: digest(`sealed:${actionId}`),
-    },
-    intent: {
-      visibility: "PRIVATE",
-      targetSeatIds: [],
-      evidenceRefs: [],
-      resourceReservations: [],
-      commitmentMutations: [],
-      knowledgeGrants: [],
-      seatArcProgress: [],
-    },
-    inputFingerprint: digest(`input:${actionId}`),
+    action,
+    intent,
     nowMs: NOW,
+  };
+  return {
+    ...command,
+    inputFingerprint: computeFormalInteractionInputFingerprint(command),
+  };
+}
+
+function humanCommand(harness: Harness): SubmitOrchestratedActionCommandV1 {
+  const seatId = harness.route.humanSeatIdsAtStart[0]! as SeatIdV1;
+  const authority = harness.seatAuthority.seatControls.find((item) => item.seatId === seatId)!;
+  const authored = harness.descriptor.decisions.find(
+    (item) => item.decisionPointId === harness.chapter.activeDecision!.decisionPointId,
+  )!;
+  const actionType = authored.execution.allowedActionTypes[0]!;
+  const idempotencyKey = `human-action:${harness.route.runId}:${seatId}`;
+  const actionId = `action_${digest(idempotencyKey)}`;
+  const payload = { optionCode: actionType, customText: null };
+  const actionBase = {
+    schemaVersion: "sangtian_decision_action_v1" as const,
+    actionId,
+    runId: harness.route.runId,
+    chapterRuntimeId: harness.chapter.chapterRuntimeId,
+    chapterId: harness.chapter.currentChapterId,
+    decisionPointId: harness.chapter.activeDecision!.decisionPointId,
+    seatId,
+    actionOrdinal: 1,
+    actionRevision: 1,
+    controlEpoch: authority.controlEpoch,
+    expectedWorkingRevision: harness.projection.state.revision,
+    status: "SEALED" as const,
+    actionType,
+    payload,
+    payloadHash: digest(payload),
+    idempotencyKey,
+  };
+  const requestFingerprint = computeDecisionActionRequestFingerprint(actionBase);
+  const sealedBase = { ...actionBase, requestFingerprint };
+  const action = { ...sealedBase, sealedHash: digest(sealedBase) };
+  const intent = {
+    visibility: "PRIVATE" as const,
+    targetSeatIds: [],
+    evidenceRefs: [],
+    resourceReservations: [],
+    commitmentMutations: [],
+    knowledgeGrants: [],
+    seatArcProgress: [],
+  };
+  const command = {
+    routeSnapshot: structuredClone(harness.route),
+    subjectId: authority.activeControllerId,
+    action,
+    intent,
+    nowMs: NOW,
+  };
+  return {
+    ...command,
+    inputFingerprint: computeFormalInteractionInputFingerprint(command),
   };
 }
 

@@ -41,6 +41,15 @@ test('fixture scope requires explicit non-production Supabase and allow flags', 
   const scope = assertLocalAuthFixtureScope({ testEnvironment, runtimeEnvironment, operation: 'smoke' });
   assert.equal(scope.projectFingerprint, projectFingerprint);
   assert.match(scope.apiBase, /^http:\/\/127\.0\.0\.1:3102\/api$/u);
+  const isolated = assertLocalAuthFixtureScope({
+    testEnvironment,
+    runtimeEnvironment: {
+      ...runtimeEnvironment,
+      PRESSURE_CHAPTER_TEST_API_PORT: '3199',
+    },
+    operation: 'smoke',
+  });
+  assert.equal(isolated.apiBase, 'http://127.0.0.1:3199/api');
   assert.throws(() => assertLocalAuthFixtureScope({
     testEnvironment,
     runtimeEnvironment: { ...runtimeEnvironment, PRESSURE_CHAPTER_ALLOW_AUTH_FIXTURE: '0' },

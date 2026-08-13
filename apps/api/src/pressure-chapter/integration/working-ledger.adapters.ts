@@ -36,10 +36,11 @@ import type {
   WorkingLedgerProjectionV1,
 } from "../working-ledger/contracts";
 import {
-  buildWorkingLedgerEvents,
+  buildWorkingLedgerEventsFromProjection,
   projectWorkingLedger,
   workingStateHash,
 } from "../working-ledger/working-ledger";
+import { workingLedgerProjectionCacheHashV1 } from "../working-ledger/projection-cache";
 import { optionIdForActionTypeV1 } from "./content.adapters";
 import { failPressureChapterIntegration } from "./errors";
 
@@ -75,6 +76,37 @@ implements WorkingProjectionReaderPort {
     input: Parameters<WorkingProjectionReaderPort["load"]>[0],
   ): Promise<WorkingLedgerProjectionV1> {
     return projectWorkingLedger(await this.ledger.read(input));
+  }
+}
+
+export class SelectiveWorkingProjectionReaderV1
+implements WorkingProjectionReaderPort {
+  constructor(
+    private readonly fast: WorkingProjectionReaderPort,
+    private readonly replay: WorkingProjectionReaderPort,
+    private readonly mode: "FAST" | "SHADOW" | "REPLAY" = "FAST",
+  ) {}
+
+  async load(
+    input: Parameters<WorkingProjectionReaderPort["load"]>[0],
+  ): Promise<WorkingLedgerProjectionV1> {
+    if (this.mode === "REPLAY") return this.replay.load(input);
+    if (this.mode === "FAST") return this.fast.load(input);
+    const [fast, replay] = await Promise.all([
+      this.fast.load(input),
+      this.replay.load(input),
+    ]);
+    if (
+      workingLedgerProjectionCacheHashV1(fast)
+      !== workingLedgerProjectionCacheHashV1(replay)
+    ) {
+      failPressureChapterIntegration(
+        "INTEGRATION_AUTHORITY_SOURCE_MISMATCH",
+        "workingProjection.shadow",
+        "FAST_REPLAY_MISMATCH",
+      );
+    }
+    return replay;
   }
 }
 
@@ -355,178 +387,33 @@ implements DecisionBeatResolutionPort {
     };
     const events = await this.ledger.read(key);
     const projection = projectWorkingLedger(events);
-    assertProjectionBindings(route.routeHash, definition, projection);
-    const accepted = actionIds.map((actionId) => {
-      const item = projection.acceptedActions.get(actionId);
-      if (!item) invalid(`beat.actions.${actionId}`, "NOT_ACCEPTED");
-      return item;
-    });
-    const decisionPointIds = new Set(
-      accepted.map((item) => item.action.decisionPointId),
-    );
-    if (decisionPointIds.size !== 1) {
-      invalid("beat.actions", "MULTIPLE_DECISION_POINTS");
-    }
-    const decisionPointId = accepted[0]!.action.decisionPointId;
-    const workingSet = projection.nextDecisionPin
-      ? recoverPinnedChapterWorkingSet(
-          definition,
-          projection.state,
-          projection.nextDecisionPin,
-        )
-      : buildChapterWorkingSet(definition, projection.state);
-    if (!workingSet || workingSet.decisionPoint.decisionPointId !== decisionPointId) {
-      invalid("beat.activeDecision", "PIN_MISMATCH");
-    }
-
-    const actionInputFingerprint = sha256Canonical({
-      schemaVersion: "pressure_synchronized_action_inputs_v1",
-      actions: accepted.map((item) => ({
-        actionId: item.action.actionId,
-        actionType: item.action.actionType,
-        inputFingerprint: item.inputFingerprint,
-        sealedHash: item.action.sealedHash,
-      })),
-    });
-    const authorityBeat = this.compiler.compile({
-      routeHash: route.routeHash,
-      contentPackageVersion: route.contentPackageVersion,
-      contentPackageHash: route.contentPackageSha256,
+    const plan = planSynchronizedDecisionBeatV1({
+      routeSnapshot: route,
       chapterDefinition: definition,
       chapterRuntimeId: input.chapterRuntimeId,
-      decisionPointId,
-      baseState: projection.state,
-      baseStateFingerprint: workingSet.stateFingerprint,
-      actions: accepted.map((item) => ({
-        actionId: item.action.actionId,
-        actionType: item.action.actionType,
-        sealedHash: item.action.sealedHash,
-      })),
-    });
-    const commandFingerprint = sha256Canonical({
-      schemaVersion: "pressure_synchronized_beat_command_v1",
-      routeHash: route.routeHash,
-      chapterDefinitionHash: projection.chapterDefinitionHash,
-      chapterRuntimeId: input.chapterRuntimeId,
-      decisionPointId,
-      actionIds,
-      actionInputFingerprint,
       resolverVersion: input.resolverVersion,
-      contentPolicyVersion: authorityBeat.contentPolicyVersion,
-      contentPolicyHash: authorityBeat.contentPolicyHash,
-      beatResolutionPolicy: authorityBeat.beatResolutionPolicy,
-      beatPolicyHash: authorityBeat.beatPolicyHash,
-      actionSetHash: authorityBeat.actionSetHash,
-      authorityBeatArtifactHash: authorityBeat.artifactHash,
-    });
-    const replay = replayedBeat(
-      projection,
-      events,
       actionIds,
-      commandFingerprint,
-      actionInputFingerprint,
-    );
-    if (replay) {
+      previousEvents: events,
+      projection,
+      decisionPolicy: this.compiler,
+    });
+    if (plan.status === "REPLAYED") {
       return {
         status: "REPLAYED",
-        resolution: replay.resolution,
+        resolution: plan.resolution,
         projection,
       };
     }
-    if (actionIds.some((actionId) => projection.appliedBeats.has(actionId))) {
-      failPressureChapterIntegration(
-        "INTEGRATION_BEAT_REPLAY_MISMATCH",
-        "beat.actions",
-        "PARTIALLY_APPLIED_SET",
-      );
-    }
-
-    const authoredBeatResult = authorityBeat.authoredBeatResult;
-    const transition = completePressureBeat(
-      definition,
-      projection.state,
-      authoredBeatResult,
-    );
-    const workingDelta = compileAggregateWorkingDelta(
-      projection.state,
-      transition.state,
-      accepted.map((item) => ({
-        actionId: item.action.actionId,
-        seatId: item.action.seatId,
-        intent: item.intent,
-      })),
-    );
-    const reservationMutations = accepted
-      .flatMap((item) => item.intent.resourceReservations.map((reservation) => ({
-        ...structuredClone(reservation),
-        seatId: item.action.seatId,
-        operation: "RESERVE" as const,
-        sourceActionId: item.action.actionId,
-      })))
-      .sort((left, right) => compareCanonicalText(
-        left.reservationKey,
-        right.reservationKey,
-      ));
-    assertUnique(
-      reservationMutations.map((item) => item.reservationKey),
-      "beat.reservations",
-    );
-    const resolutionBody = {
-      schemaVersion: "sangtian_beat_resolution_v1" as const,
-      runId: route.runId,
-      chapterRuntimeId: input.chapterRuntimeId,
-      decisionPointId,
-      baseWorkingRevision: projection.state.revision,
-      committedWorkingRevision: transition.state.revision,
-      inputWorkingStateHash: projection.stateHash,
-      sealedActionIds: actionIds,
-      sealedActionsHash: computeSealedActionsHash(
-        accepted.map((item) => item.action),
-      ),
-      resolverVersion: input.resolverVersion,
-      workingDelta,
-      reservationMutations,
-      reactionContextRef: transition.currentReaction
-        ? { sourceHash: sha256Canonical(transition.currentReaction) }
-        : null,
-      nextDecisionContextRef: transition.nextDecisionPin
-        ? { sourceHash: sha256Canonical(transition.nextDecisionPin) }
-        : null,
-    };
-    const resolution = validateBeatResolutionV1(
-      {
-        ...resolutionBody,
-        resolutionHash: sha256Canonical(resolutionBody),
-      },
-      accepted.map((item) => item.action),
-    );
-    const payload: BeatAppliedPayloadV1 = {
-      eventType: "BEAT_APPLIED",
-      routeHash: route.routeHash,
-      commandFingerprint,
-      actionInputFingerprint,
-      beatResolution: resolution,
-      authoredBeatResult,
-      stateAfter: transition.state,
-      stateAfterHash: workingStateHash(transition.state),
-      nextDecisionPin: transition.nextDecisionPin,
-    };
-    const [event] = buildWorkingLedgerEvents({
-      key,
-      chapterId: projection.chapterId,
-      previousEvents: events,
-      payloads: [payload],
-    });
     const appended = await this.ledger.append({
       key,
       expectedHeadHash: projection.headHash,
-      events: [event!],
+      events: [plan.event],
     });
     if (appended.status === "APPENDED") {
       return {
         status: "APPLIED",
-        resolution,
-        projection: projectWorkingLedger([...events, event!]),
+        resolution: plan.resolution,
+        projection: projectWorkingLedger([...events, plan.event]),
       };
     }
     const concurrentEvents = await this.ledger.read(key);
@@ -535,8 +422,8 @@ implements DecisionBeatResolutionPort {
       concurrentProjection,
       concurrentEvents,
       actionIds,
-      commandFingerprint,
-      actionInputFingerprint,
+      plan.commandFingerprint,
+      plan.actionInputFingerprint,
     );
     if (!concurrentReplay) {
       failPressureChapterIntegration(
@@ -550,6 +437,221 @@ implements DecisionBeatResolutionPort {
       projection: concurrentProjection,
     };
   }
+}
+
+export interface PlanSynchronizedDecisionBeatV1Input {
+  routeSnapshot: Parameters<DecisionBeatResolutionPort["resolve"]>[0]["routeSnapshot"];
+  chapterDefinition: Parameters<DecisionBeatResolutionPort["resolve"]>[0]["chapterDefinition"];
+  chapterRuntimeId: string;
+  actionIds: readonly string[];
+  resolverVersion: string;
+  previousEvents?: readonly WorkingLedgerEventV1[];
+  projection: WorkingLedgerProjectionV1;
+  decisionPolicy: SangtianAuthoritativeBeatCompilerPort;
+}
+
+export interface SynchronizedDecisionBeatPlanV1 {
+  status: "PLANNED" | "REPLAYED";
+  commandFingerprint: string;
+  actionInputFingerprint: string;
+  resolution: BeatResolutionV1;
+  payload: BeatAppliedPayloadV1;
+  event: WorkingLedgerEventV1;
+}
+
+/**
+ * Pure deterministic Beat planning boundary. The caller supplies an already
+ * loaded ledger projection and the content-owned deterministic decision policy;
+ * this function performs no persistence and returns the exact payload/event to
+ * append, or the existing event when the same command has already been applied.
+ */
+export function planSynchronizedDecisionBeatV1(
+  input: Readonly<PlanSynchronizedDecisionBeatV1Input>,
+): SynchronizedDecisionBeatPlanV1 {
+  const route = validateRunRouteSnapshotV1(input.routeSnapshot);
+  const definition = assertPressureChapterDefinition(input.chapterDefinition);
+  const actionIds = canonicalActionIds(input.actionIds);
+  if (!input.chapterRuntimeId.trim() || !input.resolverVersion.trim()) {
+    invalid("beat.command", "NON_EMPTY_RUNTIME_AND_RESOLVER");
+  }
+  assertProjectionBindings(route.routeHash, definition, input.projection);
+  const accepted = actionIds.map((actionId) => {
+    const item = input.projection.acceptedActions.get(actionId);
+    if (!item) invalid(`beat.actions.${actionId}`, "NOT_ACCEPTED");
+    return item;
+  });
+  const decisionPointIds = new Set(
+    accepted.map((item) => item.action.decisionPointId),
+  );
+  if (decisionPointIds.size !== 1) {
+    invalid("beat.actions", "MULTIPLE_DECISION_POINTS");
+  }
+  const decisionPointId = accepted[0]!.action.decisionPointId;
+  const workingSet = input.projection.nextDecisionPin
+    ? recoverPinnedChapterWorkingSet(
+        definition,
+        input.projection.state,
+        input.projection.nextDecisionPin,
+      )
+    : buildChapterWorkingSet(definition, input.projection.state);
+  if (!workingSet || workingSet.decisionPoint.decisionPointId !== decisionPointId) {
+    invalid("beat.activeDecision", "PIN_MISMATCH");
+  }
+
+  const actionInputFingerprint = sha256Canonical({
+    schemaVersion: "pressure_synchronized_action_inputs_v1",
+    actions: accepted.map((item) => ({
+      actionId: item.action.actionId,
+      actionType: item.action.actionType,
+      inputFingerprint: item.inputFingerprint,
+      sealedHash: item.action.sealedHash,
+    })),
+  });
+  const authorityBeat = input.decisionPolicy.compile({
+    routeHash: route.routeHash,
+    contentPackageVersion: route.contentPackageVersion,
+    contentPackageHash: route.contentPackageSha256,
+    chapterDefinition: definition,
+    chapterRuntimeId: input.chapterRuntimeId,
+    decisionPointId,
+    baseState: input.projection.state,
+    baseStateFingerprint: workingSet.stateFingerprint,
+    actions: accepted.map((item) => ({
+      actionId: item.action.actionId,
+      actionType: item.action.actionType,
+      sealedHash: item.action.sealedHash,
+    })),
+  });
+  const commandFingerprint = sha256Canonical({
+    schemaVersion: "pressure_synchronized_beat_command_v1",
+    routeHash: route.routeHash,
+    chapterDefinitionHash: input.projection.chapterDefinitionHash,
+    chapterRuntimeId: input.chapterRuntimeId,
+    decisionPointId,
+    actionIds,
+    actionInputFingerprint,
+    resolverVersion: input.resolverVersion,
+    contentPolicyVersion: authorityBeat.contentPolicyVersion,
+    contentPolicyHash: authorityBeat.contentPolicyHash,
+    beatResolutionPolicy: authorityBeat.beatResolutionPolicy,
+    beatPolicyHash: authorityBeat.beatPolicyHash,
+    actionSetHash: authorityBeat.actionSetHash,
+    authorityBeatArtifactHash: authorityBeat.artifactHash,
+  });
+  const replay = replayedBeat(
+    input.projection,
+    input.previousEvents ?? [],
+    actionIds,
+    commandFingerprint,
+    actionInputFingerprint,
+  );
+  if (replay) {
+    if (replay.event.payload.eventType !== "BEAT_APPLIED") {
+      failPressureChapterIntegration(
+        "INTEGRATION_BEAT_REPLAY_MISMATCH",
+        "beat.replay.event",
+        "PAYLOAD_TYPE",
+      );
+    }
+    return {
+      status: "REPLAYED",
+      commandFingerprint,
+      actionInputFingerprint,
+      resolution: replay.resolution,
+      payload: replay.event.payload,
+      event: replay.event,
+    };
+  }
+  if (actionIds.some((actionId) => input.projection.appliedBeats.has(actionId))) {
+    failPressureChapterIntegration(
+      "INTEGRATION_BEAT_REPLAY_MISMATCH",
+      "beat.actions",
+      "PARTIALLY_APPLIED_SET",
+    );
+  }
+
+  const authoredBeatResult = authorityBeat.authoredBeatResult;
+  const transition = completePressureBeat(
+    definition,
+    input.projection.state,
+    authoredBeatResult,
+  );
+  const workingDelta = compileAggregateWorkingDelta(
+    input.projection.state,
+    transition.state,
+    accepted.map((item) => ({
+      actionId: item.action.actionId,
+      seatId: item.action.seatId,
+      intent: item.intent,
+    })),
+  );
+  const reservationMutations = accepted
+    .flatMap((item) => item.intent.resourceReservations.map((reservation) => ({
+      ...structuredClone(reservation),
+      seatId: item.action.seatId,
+      operation: "RESERVE" as const,
+      sourceActionId: item.action.actionId,
+    })))
+    .sort((left, right) => compareCanonicalText(
+      left.reservationKey,
+      right.reservationKey,
+    ));
+  assertUnique(
+    reservationMutations.map((item) => item.reservationKey),
+    "beat.reservations",
+  );
+  const resolutionBody = {
+    schemaVersion: "sangtian_beat_resolution_v1" as const,
+    runId: route.runId,
+    chapterRuntimeId: input.chapterRuntimeId,
+    decisionPointId,
+    baseWorkingRevision: input.projection.state.revision,
+    committedWorkingRevision: transition.state.revision,
+    inputWorkingStateHash: input.projection.stateHash,
+    sealedActionIds: actionIds,
+    sealedActionsHash: computeSealedActionsHash(
+      accepted.map((item) => item.action),
+    ),
+    resolverVersion: input.resolverVersion,
+    workingDelta,
+    reservationMutations,
+    reactionContextRef: transition.currentReaction
+      ? { sourceHash: sha256Canonical(transition.currentReaction) }
+      : null,
+    nextDecisionContextRef: transition.nextDecisionPin
+      ? { sourceHash: sha256Canonical(transition.nextDecisionPin) }
+      : null,
+  };
+  const resolution = validateBeatResolutionV1(
+    {
+      ...resolutionBody,
+      resolutionHash: sha256Canonical(resolutionBody),
+    },
+    accepted.map((item) => item.action),
+  );
+  const payload: BeatAppliedPayloadV1 = {
+    eventType: "BEAT_APPLIED",
+    routeHash: route.routeHash,
+    commandFingerprint,
+    actionInputFingerprint,
+    beatResolution: resolution,
+    authoredBeatResult,
+    stateAfter: transition.state,
+    stateAfterHash: workingStateHash(transition.state),
+    nextDecisionPin: transition.nextDecisionPin,
+  };
+  const [event] = buildWorkingLedgerEventsFromProjection({
+    projection: input.projection,
+    payloads: [payload],
+  });
+  return {
+    status: "PLANNED",
+    commandFingerprint,
+    actionInputFingerprint,
+    resolution,
+    payload,
+    event: event!,
+  };
 }
 
 function compileAggregateWorkingDelta(
@@ -666,7 +768,7 @@ function compileAggregateWorkingDelta(
 
 function replayedBeat(
   projection: WorkingLedgerProjectionV1,
-  events: WorkingLedgerEventV1[],
+  events: readonly WorkingLedgerEventV1[],
   actionIds: string[],
   commandFingerprint: string,
   actionInputFingerprint: string,
@@ -724,7 +826,7 @@ function assertProjectionBindings(
   }
 }
 
-function canonicalActionIds(values: string[]): string[] {
+function canonicalActionIds(values: readonly string[]): string[] {
   if (!Array.isArray(values) || values.length === 0) {
     invalid("beat.actionIds", "NON_EMPTY_ARRAY");
   }

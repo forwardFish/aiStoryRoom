@@ -3,11 +3,17 @@ import type {
   NarrativeSourceAuthorityV1,
   NarrativeStatusV1,
   ParticipantModeV1,
+  RunRouteSnapshotV1,
   SeatIdV1,
   TrackIdV1,
 } from "@ai-story/shared";
 import type { StoredRunRouteReaderPort } from "../run-router";
 import type { AEmotionViewerProjectionPortV1 } from "../a-emotion/ports";
+import type {
+  AuthoredChapterRuntimeV1,
+  ChapterOrchestratorStateV1,
+} from "../orchestrator/contracts";
+import type { WorkingLedgerProjectionV1 } from "../working-ledger/contracts";
 
 export const PRESSURE_CHAPTER_GAME_PROJECTION_SCHEMA_V1 =
   "pressure_chapter_game_projection_v1" as const;
@@ -210,6 +216,15 @@ export interface PressureGameChapterReaderPort {
     routeHash: string;
     viewerSeatId: SeatIdV1;
   }): Promise<PressureGameChapterSourceV1 | null>;
+  /** Pure projection over an already committed W4/W5 authority pair. */
+  projectCurrent?(input: Readonly<{
+    runId: string;
+    routeHash: string;
+    viewerSeatId: SeatIdV1;
+    state: ChapterOrchestratorStateV1;
+    projection: WorkingLedgerProjectionV1;
+    chapter: AuthoredChapterRuntimeV1;
+  }>): PressureGameChapterSourceV1;
 }
 
 /** Must be backed by W7's seat-scoped Audience Projector. */
@@ -262,6 +277,25 @@ export interface ReadPressureChapterGameProjectionQueryV1 {
   subjectId: string;
   feedCursor?: string | null;
   feedLimit?: number;
+}
+
+export interface ReadPressureChapterGameProjectionFromAuthorityV1
+  extends ReadPressureChapterGameProjectionQueryV1 {
+  roomId: string;
+  routeSnapshot: RunRouteSnapshotV1;
+  viewerSeatId: SeatIdV1;
+  chapter: ChapterOrchestratorStateV1;
+  workingProjection: WorkingLedgerProjectionV1;
+  chapterDescriptor: AuthoredChapterRuntimeV1;
+}
+
+/** Fully resolved, request-scoped sources returned by the SQL7 commit plan. */
+export interface ProjectPressureChapterGameProjectionFromSourcesV1
+  extends ReadPressureChapterGameProjectionFromAuthorityV1 {
+  viewerSource: PressureGameViewerSourceV1;
+  worldSource: PressureGameWorldSourceV1;
+  narrativeSource: PressureGameNarrativeSourceV1;
+  feedPage: AEmotionFeedPagePortV1;
 }
 
 export type PressureGameRouteReaderPort = StoredRunRouteReaderPort;

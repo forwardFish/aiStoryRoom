@@ -419,9 +419,14 @@ test("first N1 read selects the committed Genesis seat artifact without exposing
     audienceKey: seatId,
   });
   const serializedQueries = JSON.stringify(calls);
-  assert.match(serializedQueries, /commitManifestJson/u);
+  // The committed Genesis manifest is the server-side authority used to bind
+  // route/hash identity. It may be read, but must never cross the projection
+  // boundary or be confused with Provider/outbox payloads.
   assert.doesNotMatch(serializedQueries, /payloadJson|lastError|provider/i);
-  assert.doesNotMatch(JSON.stringify(result), /peer|rawAuthority|providerResponse/i);
+  assert.doesNotMatch(
+    JSON.stringify(result),
+    /commitManifestJson|peer|rawAuthority|providerResponse/i,
+  );
 });
 
 test("Genesis narrative fallback is N1-only and fails closed on route or commit binding mismatches", async () => {
@@ -500,6 +505,95 @@ test("Genesis narrative fallback is N1-only and fails closed on route or commit 
     makeReader({ projectionCommitHash: digest("foreign-genesis-commit") }).readCurrent(scope),
     (error: unknown) => liveError(error, PRESSURE_LIVE_ADAPTER_ERROR_CODES.AUTHORITY_MISMATCH),
   );
+});
+
+test("new chapter opening reads the prior frozen chapter PENDING narrative without waiting for Provider", async () => {
+  const seatId = PRESSURE_CHAPTER_SEAT_IDS_V1[0];
+  const previousFrozenHash = digest("N1-frozen-bundle");
+  const calls: Array<{ method: string; query?: any }> = [];
+  const reader = new PrismaPressureGameNarrativeReaderV1({
+    $transaction: async <T>(operation: (transaction: PressureNarrativeReadTransactionV1) => Promise<T>) => (
+      operation({
+        pressureChapterRuntime: {
+          findUnique: async (query) => {
+            calls.push({ method: "pressureChapterRuntime.findUnique", query });
+            return {
+              id: "chapter-runtime-N2",
+              runId: RUN_ID,
+              chapterId: "N2",
+              routeHash: ROUTE_HASH,
+              state: "DECISION_POINT_OPEN",
+              previousFrozenHash,
+            };
+          },
+        },
+        pressureRunRouteSnapshot: {
+          findUnique: async (query) => {
+            calls.push({ method: "pressureRunRouteSnapshot.findUnique", query });
+            return {
+              runId: RUN_ID,
+              routeHash: ROUTE_HASH,
+              narrativeProfileVersion: "narrative-v1",
+            };
+          },
+        },
+        pressureGenesisCommit: {
+          findUnique: async () => {
+            throw new Error("N2 opening must not read Genesis narrative");
+          },
+        },
+        pressureNarrativeProjection: {
+          findMany: async (query) => {
+            calls.push({ method: "pressureNarrativeProjection.findMany", query });
+            return [{
+              id: "projection-N1-frozen-seat",
+              runId: RUN_ID,
+              projectionKind: "CHAPTER_NARRATIVE",
+              sourceAuthority: "CHAPTER_FROZEN",
+              sourceId: previousFrozenHash,
+              sourceCommitHash: previousFrozenHash,
+              sourceContentHash: digest("N1-frozen-world"),
+              narrativeProfileVersion: "narrative-v1",
+              projectorVersion: "projector-v1",
+              audienceKind: "SEAT",
+              audienceSeatId: seatId,
+              audienceKey: seatId,
+              status: "PENDING",
+              artifactJson: null,
+              artifactContentHash: null,
+            }];
+          },
+        },
+      })
+    ),
+  });
+
+  const result = await reader.readCurrent({
+    runId: RUN_ID,
+    routeHash: ROUTE_HASH,
+    viewerSeatId: seatId,
+    chapterRuntimeId: "chapter-runtime-N2",
+  });
+
+  assert.deepEqual(result, {
+    runId: RUN_ID,
+    routeHash: ROUTE_HASH,
+    viewerSeatId: seatId,
+    chapterRuntimeId: "chapter-runtime-N2",
+    status: "PENDING",
+    projectionKind: "CHAPTER_NARRATIVE",
+    sourceAuthority: "CHAPTER_FROZEN",
+    sourceId: previousFrozenHash,
+    sourceCommitHash: previousFrozenHash,
+    text: null,
+    contentHash: null,
+    renderMode: null,
+  });
+  const projectionQuery = calls.find(
+    (call) => call.method === "pressureNarrativeProjection.findMany",
+  )?.query;
+  assert.deepEqual(projectionQuery.where.sourceId, previousFrozenHash);
+  assert.deepEqual(projectionQuery.where.audienceSeatId, seatId);
 });
 
 test("narrative reader selects one exact seat-bound W9 artifact and performs zero business writes", async () => {

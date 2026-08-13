@@ -164,13 +164,15 @@ test("first OPEN atomically creates the missing ChapterRuntime from frozen autho
     initialState: initial,
   });
   assert.equal(opened.status, "OPENED");
+  assert.equal(opened.projection.headHash, opened.event.eventHash);
+  assert.equal(opened.projection.stateHash, sha256Canonical(initial));
   assert.equal(fake.runtime?.state, "CHAPTER_ACTIVE");
   assert.equal(fake.runtime?.baseWorldSequence, 0);
   assert.equal(fake.runtime?.baseWorldStateHash, world.stateHash);
   assert.equal(fake.runtime?.routeHash, route.routeHash);
   assert.equal(fake.storyEvents.length, 1);
   assert(fake.calls.indexOf("runtime.create") < fake.calls.indexOf("event.create"));
-  assert.equal(fake.transactionCommits, 2, "one read transaction plus one atomic OPEN transaction");
+  assert.equal(fake.transactionCommits, 1, "OPEN returns its projection from the atomic append transaction");
   assert.equal(fake.worldWriteCalls, 0);
 });
 
@@ -305,7 +307,7 @@ test("chat idempotency replays only the same request fingerprint and message has
   assert.equal(fake.storyEvents.length, 1);
 });
 
-test("interaction access keeps human actions on RoleControl and ordinary chat does not require default authority", async () => {
+test("interaction access keeps human actions on committed SeatControl and ordinary chat needs no default authority", async () => {
   const fake = new InteractionAccessFake({
     subjectId: "user-human",
     mode: "HUMAN",
@@ -835,12 +837,13 @@ class InteractionAccessFake {
           controlEpoch: input.snapshotControlEpoch ?? 7,
         })
       : null;
-    this.seatControlSnapshot = input.systemDefault
+    this.seatControlSnapshot = input.systemDefault || input.mode === "HUMAN"
       ? seatControlSnapshotFixture({
           routeHash: input.snapshotRouteHash ?? this.runtime.routeHash,
           controllerId: input.snapshotControllerId ?? input.subjectId,
           controlEpoch: input.snapshotControlEpoch ?? 7,
           stateHash: this.directive?.authorityStateHash ?? digest("seat-control-access"),
+          mode: input.mode === "HUMAN" ? "HUMAN_ACTIVE" : "AI_ACTIVE",
         })
       : null;
     this.client = {
@@ -848,8 +851,20 @@ class InteractionAccessFake {
         pressureChapterRuntime: {
           findUnique: async () => structuredClone(this.runtime),
         },
-        roleControl: {
-          findMany: async () => structuredClone(this.controlRows),
+        storyPlayer: {
+          findUnique: async () => input.mode === "HUMAN"
+            ? {
+                id: "player-access",
+                runId: this.runtime.runId,
+                userId: input.subjectId,
+                playerType: "human",
+                status: "active",
+                role: {
+                  roleKey: ACTOR,
+                  knownInfoJson: { evidenceRefs: ["evidence-ledger"] },
+                },
+              }
+            : null,
         },
         storyRun: {
           findUnique: async () => ({
@@ -1135,15 +1150,20 @@ function seatControlSnapshotFixture(input: {
   controllerId: string;
   controlEpoch: number;
   stateHash: string;
+  mode?: "HUMAN_ACTIVE" | "AI_ACTIVE";
 }): SeatControlSnapshotV1 {
   const controls = PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId, index) => {
     const isActor = seatId === ACTOR;
     const controllerId = isActor ? input.controllerId : `human-${index + 1}`;
     return {
       seatId,
-      mode: isActor ? "AI_ACTIVE" as const : "HUMAN_ACTIVE" as const,
-      originalHumanControllerId: `human-${index}`,
-      designatedAiControllerId: isActor ? input.controllerId : `ai-${index}`,
+      mode: isActor ? input.mode ?? "AI_ACTIVE" as const : "HUMAN_ACTIVE" as const,
+      originalHumanControllerId: isActor && input.mode === "HUMAN_ACTIVE"
+        ? input.controllerId
+        : `human-${index}`,
+      designatedAiControllerId: isActor && input.mode !== "HUMAN_ACTIVE"
+        ? input.controllerId
+        : `ai-${index}`,
       activeControllerId: controllerId,
       controlEpoch: isActor ? input.controlEpoch : 1,
       submissionFenceToken: digest(`${seatId}:submit:${controllerId}`),

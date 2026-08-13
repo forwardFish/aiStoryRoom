@@ -3,7 +3,9 @@ import {
   PRESSURE_CHAPTER_SEAT_IDS_V1,
   compareCanonicalText,
   sha256Canonical,
+  type RunRouteSnapshotV1,
   type SeatIdV1,
+  type WorldStateV1,
 } from "@ai-story/shared";
 import {
   loadPublishedSangtianActionReleaseV1,
@@ -12,6 +14,7 @@ import {
 import type { PrismaService } from "../../prisma.service";
 import { validateCommittedGenesis } from "../genesis";
 import type {
+  SeatControlSnapshotV1,
   SeatPrivateProjectionPort,
   SeatPrivateProjectionRecordV1,
 } from "../seat-control";
@@ -49,8 +52,6 @@ const PRIVATE_PROJECTION_VERSION_V1 =
  */
 export class ContentBoundSeatPrivateProjectionPortV1
 implements SeatPrivateProjectionPort {
-  private readonly content = loadSangtianPressureChapterPackageV1();
-
   constructor(private readonly prisma: PrismaService) {
     assertPublishedTokenPolicyV1();
   }
@@ -98,50 +99,88 @@ implements SeatPrivateProjectionPort {
       ) {
         return failPressureProductAdapterV1(ERROR.AUTHORITY_MISMATCH, "SeatPrivateProjection.authority", "ROUTE_GENESIS_CONTROL");
       }
-      const world = genesis.record.snapshot.initialWorldState;
-      const knowledge = world.knowledgeBySeat[input.seatId];
-      const seat = this.content.content.genesis.seats.find((candidate) => candidate.seatId === input.seatId);
-      if (!knowledge || !seat) {
-        return failPressureProductAdapterV1(ERROR.AUTHORITY_NOT_FOUND, "SeatPrivateProjection.seat", input.seatId);
-      }
-      if (
-        route.snapshot.contentPackageVersion !== this.content.manifest.packageVersion
-        || route.snapshot.contentPackageSha256 !== this.content.manifest.contentSha256
-        || knowledge.seatId !== input.seatId
-      ) {
-        return failPressureProductAdapterV1(ERROR.AUTHORITY_MISMATCH, "SeatPrivateProjection.content", "PACKAGE_OR_SEAT");
-      }
-      const resourceKeys = Object.keys(world.resources).sort(compareCanonicalText);
-      if (sha256Canonical(resourceKeys) !== sha256Canonical(RESOURCE_IDS_V1)) {
-        return failPressureProductAdapterV1(ERROR.AUTHORITY_MISMATCH, "SeatPrivateProjection.resources", "UNPUBLISHED_RESOURCE_CATALOG");
-      }
-      const payload = {
-        schemaVersion: "pressure_game_viewer_private_payload_v1" as const,
-        situation: {
-          goal: seat.institutionalMission,
-          risk: this.content.content.genesis.pressure,
-          judgment: [...knowledge.knownFactRefs].sort(compareCanonicalText).join("；"),
-        },
-        resources: RESOURCE_IDS_V1.map((resourceId) => {
-          const value = world.resources[resourceId];
-          if (!Number.isFinite(value)) {
-            return failPressureProductAdapterV1(ERROR.RECORD_INVALID, `WorldState.resources.${resourceId}`);
-          }
-          return { resourceId, value, displayValue: String(value) };
-        }),
-        tokens: [],
-      };
-      return {
-        schemaVersion: "pressure_seat_private_projection_record_v1",
+      return compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1({
         runId: input.runId,
         seatId: input.seatId,
-        sourceAuthorityHash: input.sourceAuthorityHash,
-        projectionVersion: PRIVATE_PROJECTION_VERSION_V1,
-        payload,
-        payloadHash: sha256Canonical(payload),
-      };
+        routeSnapshot: route.snapshot,
+        seatAuthority: seatControl,
+        world: genesis.record.snapshot.initialWorldState,
+      });
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
+}
+
+/** Package-only compiler for callers that already captured all durable authorities. */
+export function compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1(input: Readonly<{
+  runId: string;
+  seatId: SeatIdV1;
+  routeSnapshot: RunRouteSnapshotV1;
+  seatAuthority: SeatControlSnapshotV1;
+  world: WorldStateV1;
+}>): SeatPrivateProjectionRecordV1 {
+  assertSeat(input.seatId);
+  assertPublishedTokenPolicyV1();
+  const content = loadSangtianPressureChapterPackageV1();
+  const knowledge = input.world.knowledgeBySeat[input.seatId];
+  const seat = content.content.genesis.seats.find(
+    (candidate) => candidate.seatId === input.seatId,
+  );
+  if (!knowledge || !seat) {
+    return failPressureProductAdapterV1(
+      ERROR.AUTHORITY_NOT_FOUND,
+      "SeatPrivateProjection.seat",
+      input.seatId,
+    );
+  }
+  if (
+    input.seatAuthority.runId !== input.runId
+    || input.seatAuthority.routeHash !== input.routeSnapshot.routeHash
+    || input.routeSnapshot.contentPackageVersion !== content.manifest.packageVersion
+    || input.routeSnapshot.contentPackageSha256 !== content.manifest.contentSha256
+    || knowledge.seatId !== input.seatId
+  ) {
+    return failPressureProductAdapterV1(
+      ERROR.AUTHORITY_MISMATCH,
+      "SeatPrivateProjection.content",
+      "PACKAGE_OR_SEAT",
+    );
+  }
+  const resourceKeys = Object.keys(input.world.resources).sort(compareCanonicalText);
+  if (sha256Canonical(resourceKeys) !== sha256Canonical(RESOURCE_IDS_V1)) {
+    return failPressureProductAdapterV1(
+      ERROR.AUTHORITY_MISMATCH,
+      "SeatPrivateProjection.resources",
+      "UNPUBLISHED_RESOURCE_CATALOG",
+    );
+  }
+  const payload = {
+    schemaVersion: "pressure_game_viewer_private_payload_v1" as const,
+    situation: {
+      goal: seat.institutionalMission,
+      risk: content.content.genesis.pressure,
+      judgment: [...knowledge.knownFactRefs].sort(compareCanonicalText).join("；"),
+    },
+    resources: RESOURCE_IDS_V1.map((resourceId) => {
+      const value = input.world.resources[resourceId];
+      if (!Number.isFinite(value)) {
+        return failPressureProductAdapterV1(
+          ERROR.RECORD_INVALID,
+          `WorldState.resources.${resourceId}`,
+        );
+      }
+      return { resourceId, value, displayValue: String(value) };
+    }),
+    tokens: [],
+  };
+  return {
+    schemaVersion: "pressure_seat_private_projection_record_v1",
+    runId: input.runId,
+    seatId: input.seatId,
+    sourceAuthorityHash: input.seatAuthority.stateHash,
+    projectionVersion: PRIVATE_PROJECTION_VERSION_V1,
+    payload,
+    payloadHash: sha256Canonical(payload),
+  };
 }
 
 /** Frozen labels for the exact content-bound viewer payload above. */
@@ -160,24 +199,47 @@ implements PressureSeatViewerPresentationCatalogPortV1 {
     assertSeat(input.seatId);
     return this.prisma.$transaction(async (tx) => {
       const route = await readPinnedPressureRouteV1(tx, input.runId);
-      if (
-        route.snapshot.contentPackageVersion !== this.content.manifest.packageVersion
-        || route.snapshot.contentPackageSha256 !== this.content.manifest.contentSha256
-      ) {
-        return failPressureProductAdapterV1(ERROR.AUTHORITY_MISMATCH, "SeatPresentationCatalog.content", "PACKAGE");
-      }
-      const roleNames = Object.fromEntries(
-        this.content.content.genesis.seats.map((seat) => [seat.seatId, seat.displayName]),
-      );
-      if (!roleNames[input.seatId]?.trim()) {
-        return failPressureProductAdapterV1(ERROR.AUTHORITY_NOT_FOUND, "SeatPresentationCatalog.seat", input.seatId);
-      }
-      return {
-        roleNames: Object.freeze(roleNames),
-        resources: RESOURCE_PRESENTATION_V1,
-        tokens: Object.freeze({}),
-      };
+      return this.readCatalogFromRoute({
+        routeSnapshot: route.snapshot,
+        seatId: input.seatId,
+      });
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
+
+  /** Package-only projection for callers that already captured the route authority. */
+  readCatalogFromRoute(input: {
+    routeSnapshot: Readonly<{
+      contentPackageVersion: string;
+      contentPackageSha256: string;
+    }>;
+    seatId: SeatIdV1;
+  }): PressureSeatViewerPresentationCatalogV1 {
+    assertSeat(input.seatId);
+    if (
+      input.routeSnapshot.contentPackageVersion !== this.content.manifest.packageVersion
+      || input.routeSnapshot.contentPackageSha256 !== this.content.manifest.contentSha256
+    ) {
+      return failPressureProductAdapterV1(
+        ERROR.AUTHORITY_MISMATCH,
+        "SeatPresentationCatalog.content",
+        "PACKAGE",
+      );
+    }
+    const roleNames = Object.fromEntries(
+      this.content.content.genesis.seats.map((seat) => [seat.seatId, seat.displayName]),
+    );
+    if (!roleNames[input.seatId]?.trim()) {
+      return failPressureProductAdapterV1(
+        ERROR.AUTHORITY_NOT_FOUND,
+        "SeatPresentationCatalog.seat",
+        input.seatId,
+      );
+    }
+    return {
+      roleNames: Object.freeze(roleNames),
+      resources: RESOURCE_PRESENTATION_V1,
+      tokens: Object.freeze({}),
+    };
   }
 }
 

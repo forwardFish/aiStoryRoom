@@ -21,6 +21,7 @@ import {
   validateChapterSettlementSourceV1,
 } from "../chapter-settlement/chapter-commit-record";
 import type {
+  AtomicChapterCommitRecordV1,
   ChapterSettlementKeyV1,
   ChapterSettlementSourcePort,
   ChapterSettlementSourceV1,
@@ -33,7 +34,7 @@ import {
   canonicalSeatParticipationV1,
   computeDurableChapterSettlementPreparationFingerprintV1,
   type DurableChapterSettlementSourcePreparationPort,
-  type DurableChapterSettlementSourcePreparationReceiptV1,
+  type DurableChapterSettlementSourcePreparationResultV1,
   type DurableChapterSettlementSourcePreparationV1,
 } from "../integration/chapter-settlement.adapter";
 import type { WorkingLedgerEventV1 } from "../working-ledger/contracts";
@@ -147,7 +148,7 @@ implements ChapterSettlementSourcePort, DurableChapterSettlementSourcePreparatio
 
   async prepareSource(
     inputValue: Readonly<DurableChapterSettlementSourcePreparationV1>,
-  ): Promise<DurableChapterSettlementSourcePreparationReceiptV1> {
+  ): Promise<DurableChapterSettlementSourcePreparationResultV1> {
     const input = validatePreparation(inputValue);
     const { runId, chapterRuntimeId, chapterId } = input.settlementInput;
     const expectedFingerprint = computeDurableChapterSettlementPreparationFingerprintV1(input);
@@ -161,7 +162,14 @@ implements ChapterSettlementSourcePort, DurableChapterSettlementSourcePreparatio
           select: sourceEventSelect(),
         });
         if (existing) {
-          return replayReceipt(decodeSourceEnvelope(existing), input);
+          const envelope = decodeSourceEnvelope(existing);
+          const committed = await tx.pressureChapterSettlement.findUnique({
+            where: { chapterRuntimeId },
+            select: { runId: true, commitManifestJson: true },
+          });
+          return committed
+            ? committedReceipt(envelope, input, committed)
+            : replayReceipt(envelope, input);
         }
 
         const [runtime, route, run, lineage, orchestrator, ledgerEvents] = await Promise.all([
@@ -235,7 +243,7 @@ implements ChapterSettlementSourcePort, DurableChapterSettlementSourcePreparatio
               settlementContractHashAtClose: input.settlementInput.settlementContractHash,
             }),
             sealedInput: input.settlementInput,
-            settlementMaterial: buildSettlementMaterial(
+            settlementMaterial: buildChapterSettlementMaterialV1(
               input.seatParticipation,
               projection,
               world,
@@ -526,7 +534,7 @@ function derivePersistedSeatParticipation(
   });
 }
 
-function buildSettlementMaterial(
+export function buildChapterSettlementMaterialV1(
   seats: ChapterSettlementSeatParticipationV1,
   projection: ReturnType<typeof projectWorkingLedger>,
   world: WorldStateV1,
@@ -606,7 +614,7 @@ function decodeSourceEnvelope(row: SourceEventRow): StoredSettlementSourceEnvelo
 function replayReceipt(
   envelope: StoredSettlementSourceEnvelopeV1,
   input: DurableChapterSettlementSourcePreparationV1,
-): DurableChapterSettlementSourcePreparationReceiptV1 {
+): DurableChapterSettlementSourcePreparationResultV1 {
   if (
     envelope.preparationFingerprint !== input.preparationFingerprint
     || envelope.chapterDescriptorHash !== input.chapterDescriptorHash
@@ -618,7 +626,7 @@ function replayReceipt(
 function receipt(
   status: "PREPARED" | "REPLAYED",
   envelope: StoredSettlementSourceEnvelopeV1,
-): DurableChapterSettlementSourcePreparationReceiptV1 {
+): DurableChapterSettlementSourcePreparationResultV1 {
   const source = envelope.source;
   return {
     schemaVersion: "pressure_chapter_settlement_preparation_receipt_v1",
@@ -629,6 +637,33 @@ function receipt(
     sealedInputHash: source.sealedInput.inputHash,
     closeFenceHash: source.closeFence.closeFenceHash,
     sourceHash: source.sourceHash,
+    source: structuredClone(source),
+    committedRecord: null,
+  };
+}
+
+function committedReceipt(
+  envelope: StoredSettlementSourceEnvelopeV1,
+  input: DurableChapterSettlementSourcePreparationV1,
+  row: { runId: string; commitManifestJson: unknown },
+): DurableChapterSettlementSourcePreparationResultV1 {
+  const prepared = replayReceipt(envelope, input);
+  const record = validateAtomicChapterCommitRecordV1(row.commitManifestJson);
+  if (
+    row.runId !== input.settlementInput.runId
+    || record.runId !== input.settlementInput.runId
+    || record.chapterRuntimeId !== input.settlementInput.chapterRuntimeId
+    || record.chapterId !== input.settlementInput.chapterId
+    || record.sealedInput.inputHash !== input.settlementInput.inputHash
+    || record.sourceHash !== envelope.source.sourceHash
+    || record.commitFence.closeFenceHash !== envelope.source.closeFence.closeFenceHash
+  ) {
+    throw fingerprint("Committed chapter settlement does not match prepared source", input);
+  }
+  return {
+    ...prepared,
+    source: null,
+    committedRecord: structuredClone(record),
   };
 }
 

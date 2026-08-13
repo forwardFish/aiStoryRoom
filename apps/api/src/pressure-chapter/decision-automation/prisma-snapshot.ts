@@ -1,15 +1,21 @@
 import { Prisma } from "@prisma/client";
 import {
-  chapterSequence,
   isSha256,
+  sha256Canonical,
   validateRunRouteSnapshotV1,
   type ChapterIdV1,
+  type SeatIdV1,
 } from "@ai-story/shared";
 import { readCurrentOrchestratorState } from "../persistence/orchestrator-state.prisma-adapter";
 import { assertStoredRunRouteRecord } from "../run-router";
 import { decodeSeatEnvelope } from "../seat-control-persistence/envelope";
-import type { WorkingLedgerEventV1 } from "../working-ledger/contracts";
-import { projectWorkingLedger, workingStateHash } from "../working-ledger/working-ledger";
+import { decodeWorkingLedgerProjectionCacheV1 } from "../working-ledger/projection-cache";
+import { workingStateHash } from "../working-ledger/working-ledger";
+import {
+  recordPressureDbTransactionAttemptV1,
+  recordPressureDbTransactionCommitV1,
+  recordPressureDbTransactionRollbackV1,
+} from "../observability/pressure-db-metrics";
 import {
   DECISION_AUTOMATION_ERROR_CODES as ERROR,
   failDecisionAutomation,
@@ -17,10 +23,9 @@ import {
 import type {
   DecisionConvergenceAuthoritySnapshotV1,
   DecisionConvergenceSnapshotReaderPortV1,
+  DecisionSubmitSnapshotV1,
 } from "./contracts";
 import { withDecisionConvergenceSnapshotHashV1 } from "./convergence.service";
-
-const LEDGER_EVENT_TYPE = "PRESSURE_WORKING_LEDGER_EVENT";
 
 interface SnapshotRouteRowV1 {
   runId: string;
@@ -34,7 +39,18 @@ interface SnapshotRuntimeRowV1 {
   chapterId: string;
   routeHash: string;
   workingRevision: number;
+  workingStateJson: unknown;
   workingStateHash: string;
+  ledgerProjectionJson: unknown;
+  state: string;
+}
+
+interface SnapshotViewerRowV1 {
+  runId: string;
+  userId: string | null;
+  playerType: string;
+  status: string;
+  role: { roleKey: string } | null;
 }
 
 interface SnapshotSeatRowV1 {
@@ -45,7 +61,7 @@ interface SnapshotSeatRowV1 {
   version: number;
 }
 
-interface SnapshotEventRowV1 {
+interface SnapshotOrchestratorEventRowV1 {
   id: string;
   runId: string;
   type: string;
@@ -64,9 +80,18 @@ interface DecisionConvergenceSnapshotTransactionV1 {
     findUnique(input: Record<string, unknown>): Promise<SnapshotSeatRowV1 | null>;
   };
   storyEvent: {
-    findMany(input: Record<string, unknown>): Promise<SnapshotEventRowV1[]>;
+    findMany(input: Record<string, unknown>): Promise<SnapshotOrchestratorEventRowV1[]>;
+    findUnique(input: Record<string, unknown>): Promise<unknown>;
+  };
+  storyPlayer: {
+    findUnique(input: Record<string, unknown>): Promise<SnapshotViewerRowV1 | null>;
   };
 }
+
+type CaptureInputV1 = Parameters<DecisionConvergenceSnapshotReaderPortV1["capture"]>[0];
+type CaptureSubmitInputV1 = Parameters<
+  NonNullable<DecisionConvergenceSnapshotReaderPortV1["captureSubmit"]>
+>[0];
 
 export interface DecisionConvergenceSnapshotPrismaClientV1 {
   $transaction<TResult>(
@@ -81,11 +106,19 @@ const FAST_TRANSACTION_OPTIONS = Object.freeze({
   timeout: 2_000,
 });
 
-function pressureFastSerializableTransaction<TResult>(
+async function pressureFastSerializableTransaction<TResult>(
   prisma: DecisionConvergenceSnapshotPrismaClientV1,
   operation: (tx: DecisionConvergenceSnapshotTransactionV1) => Promise<TResult>,
 ): Promise<TResult> {
-  return prisma.$transaction(operation, FAST_TRANSACTION_OPTIONS);
+  recordPressureDbTransactionAttemptV1();
+  try {
+    const result = await prisma.$transaction(operation, FAST_TRANSACTION_OPTIONS);
+    recordPressureDbTransactionCommitV1();
+    return result;
+  } catch (error) {
+    recordPressureDbTransactionRollbackV1();
+    throw error;
+  }
 }
 
 /**
@@ -98,9 +131,71 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
     private readonly prisma: DecisionConvergenceSnapshotPrismaClientV1,
   ) {}
 
-  async capture(
-    input: Parameters<DecisionConvergenceSnapshotReaderPortV1["capture"]>[0],
-  ): Promise<DecisionConvergenceAuthoritySnapshotV1 | null> {
+  async capture(input: CaptureInputV1): Promise<DecisionConvergenceAuthoritySnapshotV1 | null> {
+    const result = await this.captureInternal(input, null);
+    return result as DecisionConvergenceAuthoritySnapshotV1 | null;
+  }
+
+  async captureSubmit(input: CaptureSubmitInputV1): Promise<DecisionSubmitSnapshotV1 | null> {
+    if (
+      !input.roomId?.trim()
+      || input.roomId !== input.runId
+      || !input.subjectId?.trim()
+      || !input.chapterRuntimeId?.trim()
+      || !input.decisionPointId?.trim()
+      || !Number.isSafeInteger(input.expectedWorkingRevision)
+      || input.expectedWorkingRevision < 0
+      || !Number.isSafeInteger(input.expectedControlEpoch)
+      || input.expectedControlEpoch < 0
+      || !isSha256(input.expectedSubmissionFenceToken)
+    ) invalid("submit.command", "INVALID_INPUT", input.runId);
+    const result = await this.captureInternal(input, input);
+    return result as DecisionSubmitSnapshotV1 | null;
+  }
+
+  async loadWorkingProjection(input: Readonly<{
+    runId: string;
+    routeHash: string;
+    chapterRuntimeId: string;
+    chapterId: ChapterIdV1;
+  }>): Promise<ReturnType<NonNullable<
+    DecisionConvergenceSnapshotReaderPortV1["loadWorkingProjection"]
+  >> extends Promise<infer TValue> ? TValue : never> {
+    if (
+      !input.runId?.trim()
+      || !isSha256(input.routeHash)
+      || !input.chapterRuntimeId?.trim()
+    ) invalid("projection.command", "INVALID_INPUT", input.runId);
+    return pressureFastSerializableTransaction(this.prisma, async (tx) => {
+      const runtime = await tx.pressureChapterRuntime.findUnique({
+        where: { id: input.chapterRuntimeId },
+        select: {
+          id: true,
+          runId: true,
+          chapterId: true,
+          routeHash: true,
+          workingRevision: true,
+          workingStateJson: true,
+          workingStateHash: true,
+          ledgerProjectionJson: true,
+          state: true,
+        },
+      });
+      if (!runtime) return null;
+      if (
+        runtime.id !== input.chapterRuntimeId
+        || runtime.runId !== input.runId
+        || runtime.chapterId !== input.chapterId
+        || runtime.routeHash !== input.routeHash
+      ) invalid("projection.runtime", "SOURCE_BINDING_MISMATCH", input.runId);
+      return decodeBoundProjection(runtime, input.runId);
+    });
+  }
+
+  private async captureInternal(
+    input: CaptureInputV1,
+    submit: CaptureSubmitInputV1 | null,
+  ): Promise<DecisionConvergenceAuthoritySnapshotV1 | DecisionSubmitSnapshotV1 | null> {
     if (
       !input.runId?.trim()
       || !isSha256(input.expectedRouteHash)
@@ -130,7 +225,7 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
         || chapter.routeHash !== input.expectedRouteHash
       ) invalid("snapshot.route", "ROUTE_BINDING_MISMATCH", input.runId);
 
-      const [runtime, seatRow, ledgerRows] = await Promise.all([
+      const [runtime, seatRow, viewerRow] = await Promise.all([
         tx.pressureChapterRuntime.findUnique({
           where: { id: chapter.chapterRuntimeId },
           select: {
@@ -139,7 +234,10 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
             chapterId: true,
             routeHash: true,
             workingRevision: true,
+            workingStateJson: true,
             workingStateHash: true,
+            ledgerProjectionJson: true,
+            state: true,
           },
         }),
         tx.pressureSeatControlSnapshot.findUnique({
@@ -152,21 +250,18 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
             version: true,
           },
         }),
-        tx.storyEvent.findMany({
-          where: {
-            runId: input.runId,
-            type: LEDGER_EVENT_TYPE,
-            day: chapterSequence(chapter.currentChapterId),
-          },
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-          select: {
-            id: true,
-            runId: true,
-            type: true,
-            payloadJson: true,
-            dedupeKey: true,
-          },
-        }),
+        submit
+          ? tx.storyPlayer.findUnique({
+              where: { runId_userId: { runId: input.runId, userId: submit.subjectId } },
+              select: {
+                runId: true,
+                userId: true,
+                playerType: true,
+                status: true,
+                role: { select: { roleKey: true } },
+              },
+            })
+          : Promise.resolve(null),
       ]);
       if (!runtime || !seatRow) return null;
       if (
@@ -176,30 +271,7 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
         || runtime.routeHash !== input.expectedRouteHash
       ) invalid("snapshot.runtime", "W4_W5_BINDING_MISMATCH", input.runId);
 
-      const ledgerEvents = ledgerRows
-        .filter((row) => row.runId === input.runId && row.type === LEDGER_EVENT_TYPE)
-        .map((row) => {
-          const event = structuredClone(row.payloadJson) as WorkingLedgerEventV1;
-          if (
-            event.schemaVersion !== "pressure_working_ledger_event_v1"
-            || row.dedupeKey !== ledgerDedupeKey(event)
-          ) invalid("snapshot.ledgerRow", "ROW_BINDING_MISMATCH", input.runId);
-          return event;
-        })
-        .filter((event) => event.chapterRuntimeId === runtime.id)
-        .sort((left, right) => left.sequence - right.sequence);
-      if (!ledgerEvents.length) return null;
-      const projection = projectWorkingLedger(ledgerEvents);
-      if (
-        projection.key.runId !== input.runId
-        || projection.key.chapterRuntimeId !== runtime.id
-        || projection.chapterId !== (runtime.chapterId as ChapterIdV1)
-        || projection.routeHash !== runtime.routeHash
-        || !isSha256(projection.headHash)
-        || projection.state.revision !== runtime.workingRevision
-        || projection.stateHash !== runtime.workingStateHash
-        || projection.stateHash !== workingStateHash(projection.state)
-      ) invalid("snapshot.working", "RUNTIME_LEDGER_MISMATCH", input.runId);
+      const projection = decodeBoundProjection(runtime, input.runId);
 
       const seatAuthority = decodeSeatEnvelope(seatRow).snapshot;
       if (
@@ -209,7 +281,7 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
         || seatAuthority.stateRevision !== seatRow.stateRevision
       ) invalid("snapshot.seatAuthority", "ROW_BINDING_MISMATCH", input.runId);
 
-      return withDecisionConvergenceSnapshotHashV1({
+      const authority = withDecisionConvergenceSnapshotHashV1({
         schemaVersion: "pressure_decision_convergence_authority_snapshot_v1",
         routeSnapshot: route,
         chapter,
@@ -218,8 +290,93 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
         aiPolicyArtifactHash: input.aiPolicyArtifactHash,
         capturedAtMs: input.capturedAtMs,
       });
+      if (!submit) return authority;
+
+      const active = chapter.activeDecision;
+      const activeSeat = active?.seats.find((seat) => seat.seatId === submit.seatId);
+      const seat = seatAuthority.seatControls.find((item) => item.seatId === submit.seatId);
+      if (
+        !viewerRow
+        || viewerRow.runId !== submit.runId
+        || viewerRow.userId !== submit.subjectId
+        || viewerRow.playerType !== "human"
+        || viewerRow.status !== "active"
+        || viewerRow.role?.roleKey !== submit.seatId
+        || chapter.phase !== "ACTIVE"
+        || chapter.chapterRuntimeId !== submit.chapterRuntimeId
+        || active?.decisionPointId !== submit.decisionPointId
+        || activeSeat?.requirement !== "REQUIRED"
+        || activeSeat.completion !== "PENDING"
+        || projection.state.revision !== submit.expectedWorkingRevision
+        || runtime.state !== "DECISION_POINT_OPEN" && runtime.state !== "ACTION_DRAFTING"
+        || !seat
+        || seat.mode !== "HUMAN_ACTIVE"
+        || seat.activeControllerId !== submit.subjectId
+        || seat.controlEpoch !== submit.expectedControlEpoch
+        || seat.submissionFenceToken !== submit.expectedSubmissionFenceToken
+      ) invalid("submit.authority", "STALE_OR_NOT_AUTHORIZED", input.runId);
+
+      return withDecisionSubmitSnapshotHashV1({
+        schemaVersion: "pressure_decision_submit_snapshot_v1",
+        authority,
+        viewer: {
+          roomId: submit.roomId,
+          runId: submit.runId,
+          subjectId: submit.subjectId,
+          seatId: submit.seatId as SeatIdV1,
+          humanControllerId: submit.subjectId,
+        },
+      });
     });
   }
+}
+
+function decodeBoundProjection(
+  runtime: SnapshotRuntimeRowV1,
+  runId: string,
+) {
+  const projection = decodeWorkingLedgerProjectionCacheV1(
+    runtime.ledgerProjectionJson,
+    {
+      runId: runtime.runId,
+      chapterRuntimeId: runtime.id,
+      chapterId: runtime.chapterId,
+      routeHash: runtime.routeHash,
+      workingRevision: runtime.workingRevision,
+      workingState: runtime.workingStateJson,
+      workingStateHash: runtime.workingStateHash,
+    },
+  );
+  if (
+    projection.key.runId !== runId
+    || projection.key.chapterRuntimeId !== runtime.id
+    || projection.chapterId !== (runtime.chapterId as ChapterIdV1)
+    || projection.routeHash !== runtime.routeHash
+    || !isSha256(projection.headHash)
+    || projection.state.revision !== runtime.workingRevision
+    || projection.stateHash !== runtime.workingStateHash
+    || projection.stateHash !== workingStateHash(projection.state)
+  ) invalid("snapshot.working", "RUNTIME_LEDGER_MISMATCH", runId);
+  return projection;
+}
+
+export function withDecisionSubmitSnapshotHashV1(
+  input: Omit<DecisionSubmitSnapshotV1, "submitSnapshotHash">,
+): DecisionSubmitSnapshotV1 {
+  const body = structuredClone(input);
+  // The authority snapshot already binds the full Working Projection through
+  // snapshotHash. Hashing the whole envelope again would send its in-memory
+  // Map indexes through canonical JSON, which intentionally rejects Maps.
+  // Bind the outer submit envelope to that verified authority identity plus
+  // the viewer authorization instead.
+  return {
+    ...body,
+    submitSnapshotHash: sha256Canonical({
+      schemaVersion: body.schemaVersion,
+      authoritySnapshotHash: body.authority.snapshotHash,
+      viewer: body.viewer,
+    }),
+  };
 }
 
 export function createPrismaDecisionConvergenceSnapshotReaderV1(
@@ -228,10 +385,6 @@ export function createPrismaDecisionConvergenceSnapshotReaderV1(
   return new PrismaDecisionConvergenceSnapshotReaderV1(
     prisma as DecisionConvergenceSnapshotPrismaClientV1,
   );
-}
-
-function ledgerDedupeKey(event: WorkingLedgerEventV1): string {
-  return `pressure-ledger:${event.runId}:${event.chapterRuntimeId}:${event.eventHash}`;
 }
 
 function invalid(path: string, detail: string, runId: string): never {

@@ -14,9 +14,12 @@ import type {
 } from "../game-projection/contracts";
 import type {
   AuthoredChapterContentPort,
+  AuthoredChapterRuntimeV1,
   ChapterOrchestratorStatePort,
+  ChapterOrchestratorStateV1,
   WorkingProjectionReaderPort,
 } from "../orchestrator/contracts";
+import type { WorkingLedgerProjectionV1 } from "../working-ledger/contracts";
 import { validateOrchestratorStateV1 } from "../orchestrator/validation";
 import {
   assertStoredRunRouteRecord,
@@ -46,6 +49,17 @@ implements PressureGameChapterReaderPort {
     routeHash: string;
     viewerSeatId: SeatIdV1;
   }): Promise<PressureGameChapterSourceV1 | null> {
+    return (await this.readCurrentWithProjection(input))?.chapter ?? null;
+  }
+
+  async readCurrentWithProjection(input: {
+    runId: string;
+    routeHash: string;
+    viewerSeatId: SeatIdV1;
+  }): Promise<Readonly<{
+    chapter: PressureGameChapterSourceV1;
+    projection: WorkingLedgerProjectionV1;
+  }> | null> {
     if (!input.runId.trim() || !/^[a-f0-9]{64}$/.test(input.routeHash)) {
       invalid("gameChapter.query", "INVALID_BINDING");
     }
@@ -74,8 +88,34 @@ implements PressureGameChapterReaderPort {
         chapterId: state.currentChapterId,
       }),
     ]);
+    return {
+      chapter: this.projectCurrent({
+        runId: input.runId,
+        routeHash: input.routeHash,
+        viewerSeatId: input.viewerSeatId,
+        state,
+        projection,
+        chapter,
+      }),
+      projection,
+    };
+  }
+
+  projectCurrent(input: Readonly<{
+    runId: string;
+    routeHash: string;
+    viewerSeatId: SeatIdV1;
+    state: ChapterOrchestratorStateV1;
+    projection: WorkingLedgerProjectionV1;
+    chapter: AuthoredChapterRuntimeV1;
+  }>): PressureGameChapterSourceV1 {
+    const state = validateOrchestratorStateV1(input.state);
+    const projection = input.projection;
+    const chapter = input.chapter;
     if (
-      projection.key.runId !== input.runId
+      state.runId !== input.runId
+      || state.routeHash !== input.routeHash
+      || projection.key.runId !== input.runId
       || projection.key.chapterRuntimeId !== state.chapterRuntimeId
       || projection.routeHash !== input.routeHash
       || projection.chapterId !== state.currentChapterId

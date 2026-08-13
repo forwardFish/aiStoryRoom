@@ -43,7 +43,7 @@ export interface ViewerScopedChapterReaderDependenciesV1 {
 /** Wires the current viewerSeatId-bearing ChapterReader; no run-only shim. */
 export function createViewerScopedPressureGameChapterReaderV1(
   dependencies: ViewerScopedChapterReaderDependenciesV1,
-): PressureGameChapterReaderPort {
+): SangtianPressureGameChapterReaderAdapterV1 {
   return new SangtianPressureGameChapterReaderAdapterV1(
     dependencies.routes,
     dependencies.states,

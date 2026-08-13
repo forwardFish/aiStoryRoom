@@ -186,7 +186,12 @@ function compileB0Draft(
     });
   }
   const availableEvidence = new Set(
-    input.settlementMaterial.actions.flatMap((action) => action.evidenceRefs),
+    [
+      ...input.settlementMaterial.actions.flatMap((action) => action.evidenceRefs),
+      ...evaluation.objectKnowledgeEvidenceResponsibilityDelta.evidenceStates
+        .filter((evidence) => evidence.status === "SEALED")
+        .map((evidence) => evidence.evidenceId),
+    ],
   );
   const causalEdges = evaluation.causalEdges.map((edge) => {
     const mutationId = mutationIdsByEffect.get(edge.effectRef);

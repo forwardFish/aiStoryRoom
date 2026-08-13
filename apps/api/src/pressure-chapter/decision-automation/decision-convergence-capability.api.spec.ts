@@ -71,6 +71,13 @@ test("Phase 1 contains neither appendMany nor five concurrent old submitAction w
   assert.doesNotMatch(convergence, /Promise\.all\s*\([^)]*submitAction/su);
 });
 
+test("Beat planning and batch persistence share the frozen route seat order", () => {
+  const convergence = readFileSync(resolve(__dirname, "convergence.service.ts"), "utf8");
+  assert.match(convergence, /canonicalPrepared\s*=\s*canonicalizePreparedAutomationActionsV1/u);
+  assert.match(convergence, /planPreparedActionLedgerV1\(\{[\s\S]*?actions:\s*canonicalPrepared/u);
+  assert.match(convergence, /createPreparedAutomationActionBatchV1\(\{[\s\S]*?actions:\s*canonicalPrepared/u);
+});
+
 test("ProductRoot shares one convergence service between HTTP and recovery", () => {
   const root = readFileSync(resolve(__dirname, "../product/product-root.ts"), "utf8");
   assert.match(root, /decision:\s*decisionAutomation\.workerLane/u);
@@ -78,16 +85,18 @@ test("ProductRoot shares one convergence service between HTTP and recovery", () 
   assert.equal((root.match(/createPressureDecisionAutomationProductionV1\s*\(/gu) ?? []).length, 1);
 });
 
-test("HTTP waits only for authority convergence and final projection, not Narrative or A-Emotion", () => {
+test("HTTP waits only for authority convergence and viewer-safe final projection assembly", () => {
   const http = readFileSync(
     resolve(__dirname, "../http/pressure-chapter-http.facade.ts"),
     "utf8",
   );
   const submitIndex = http.indexOf("await this.actions.submitAction(compiled)");
   const convergeIndex = http.indexOf("await this.convergence.converge");
-  const projectionIndex = http.indexOf("const projection = await this.game.read");
+  const projectionIndex = http.indexOf("const projection = convergence?.committedAuthority");
   assert.ok(submitIndex >= 0 && convergeIndex > submitIndex && projectionIndex > convergeIndex);
   assert.doesNotMatch(http.slice(submitIndex, projectionIndex), /narrative|aEmotion|provider/iu);
+  assert.match(http.slice(projectionIndex), /readFromCommittedAuthority/u);
+  assert.match(http.slice(projectionIndex), /: await this\.game\.read/u);
 });
 
 test("public submit-decision response remains schemaVersion/idempotencyKey/projection", () => {
@@ -95,38 +104,46 @@ test("public submit-decision response remains schemaVersion/idempotencyKey/proje
     resolve(__dirname, "../http/pressure-chapter-http.facade.ts"),
     "utf8",
   );
-  const { sourceFile, response } = findSubmitDecisionResponseObject(http);
-  const properties = new Map<string, ts.ObjectLiteralElementLike>();
-  for (const property of response.properties) {
-    const name = objectPropertyName(property);
-    if (name) properties.set(name, property);
+  const { sourceFile, responses } = findSubmitDecisionResponseObjects(http);
+  assert.equal(responses.length, 2, "expected SQL7 and legacy submitDecision responses");
+  const idempotencyInitializers: string[] = [];
+  for (const response of responses) {
+    const properties = new Map<string, ts.ObjectLiteralElementLike>();
+    for (const property of response.properties) {
+      const name = objectPropertyName(property);
+      if (name) properties.set(name, property);
+    }
+
+    assert.deepEqual(
+      [...properties.keys()].sort(),
+      ["idempotencyKey", "projection", "schemaVersion"],
+    );
+
+    const schemaVersion = properties.get("schemaVersion");
+    assert.ok(schemaVersion && ts.isPropertyAssignment(schemaVersion));
+    assert.ok(ts.isStringLiteral(schemaVersion.initializer));
+    assert.equal(
+      schemaVersion.initializer.text,
+      "pressure_chapter_submit_decision_http_response_v1",
+    );
+
+    const idempotencyKey = properties.get("idempotencyKey");
+    assert.ok(idempotencyKey && ts.isPropertyAssignment(idempotencyKey));
+    idempotencyInitializers.push(idempotencyKey.initializer.getText(sourceFile));
+
+    const projection = properties.get("projection");
+    assert.ok(projection && ts.isShorthandPropertyAssignment(projection));
+    assert.equal(projection.name.text, "projection");
   }
-
   assert.deepEqual(
-    [...properties.keys()].sort(),
-    ["idempotencyKey", "projection", "schemaVersion"],
+    idempotencyInitializers.sort(),
+    ["command.idempotencyKey", "sql7.idempotencyKey"],
   );
-
-  const schemaVersion = properties.get("schemaVersion");
-  assert.ok(schemaVersion && ts.isPropertyAssignment(schemaVersion));
-  assert.ok(ts.isStringLiteral(schemaVersion.initializer));
-  assert.equal(
-    schemaVersion.initializer.text,
-    "pressure_chapter_submit_decision_http_response_v1",
-  );
-
-  const idempotencyKey = properties.get("idempotencyKey");
-  assert.ok(idempotencyKey && ts.isPropertyAssignment(idempotencyKey));
-  assert.equal(idempotencyKey.initializer.getText(sourceFile), "command.idempotencyKey");
-
-  const projection = properties.get("projection");
-  assert.ok(projection && ts.isShorthandPropertyAssignment(projection));
-  assert.equal(projection.name.text, "projection");
 });
 
-function findSubmitDecisionResponseObject(source: string): {
+function findSubmitDecisionResponseObjects(source: string): {
   sourceFile: ts.SourceFile;
-  response: ts.ObjectLiteralExpression;
+  responses: ts.ObjectLiteralExpression[];
 } {
   const sourceFile = ts.createSourceFile(
     "pressure-chapter-http.facade.ts",
@@ -159,8 +176,7 @@ function findSubmitDecisionResponseObject(source: string): {
     ts.forEachChild(node, collectResponses);
   };
   collectResponses(method.body);
-  assert.equal(responses.length, 1, "expected exactly one submitDecision response object");
-  return { sourceFile, response: responses[0]! };
+  return { sourceFile, responses };
 }
 
 function objectPropertyName(property: ts.ObjectLiteralElementLike): string | null {

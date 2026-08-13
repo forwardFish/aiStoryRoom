@@ -90,7 +90,13 @@ test("resume folds five missing W5 actions into one W4 CAS", async () => {
     },
     content,
     { load: async () => working },
-    { open: async () => ({ status: "OPENED" as const, event: null }) },
+    {
+      open: async () => ({
+        status: "OPENED" as const,
+        event: null,
+        projection: structuredClone(projection),
+      }),
+    },
     { load: async () => projection },
     { submit: async () => { throw new Error("formal submit not used"); } },
     { resolve: async () => { throw new Error("Beat must not run when close evaluator is false"); } },

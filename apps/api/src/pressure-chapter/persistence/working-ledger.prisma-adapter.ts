@@ -42,6 +42,7 @@ import type {
   WorkingLedgerPort,
 } from "../working-ledger/contracts";
 import { projectWorkingLedger } from "../working-ledger/working-ledger";
+import { withWorkingLedgerProjectionCacheHashV1 } from "../working-ledger/projection-cache";
 import {
   PRESSURE_PERSISTENCE_ERROR_CODES as ERROR,
   PressurePersistenceError,
@@ -117,9 +118,11 @@ interface WorkingLedgerTransaction {
   };
   pressureNarrativeProjection: {
     create(input: { data: Record<string, unknown> }): Promise<{ id: string }>;
+    createMany?(input: { data: Record<string, unknown>[] }): Promise<{ count: number }>;
   };
   pressureOutboxTask: {
     create(input: { data: Record<string, unknown> }): Promise<unknown>;
+    createMany?(input: { data: Record<string, unknown>[] }): Promise<{ count: number }>;
   };
   pressureRunRouteSnapshot: {
     findUnique(input: Record<string, unknown>): Promise<RuntimeRouteRow | null>;
@@ -803,7 +806,7 @@ function serializeLedgerProjection(
   projection: ReturnType<typeof projectWorkingLedger>,
   beatDownstreamManifest: unknown = null,
 ): Record<string, unknown> {
-  return {
+  return withWorkingLedgerProjectionCacheHashV1({
     schemaVersion: "pressure_mvp_ledger_projection_v1",
     key: projection.key,
     chapterId: projection.chapterId,
@@ -825,7 +828,7 @@ function serializeLedgerProjection(
     knowledgeBySeat: mapEntries(projection.knowledgeBySeat),
     seatArcProgressBySeat: mapEntries(projection.seatArcProgressBySeat),
     beatDownstreamManifest,
-  };
+  });
 }
 
 function mapEntries<T>(value: ReadonlyMap<string, T>): Array<[string, T]> {

@@ -48,6 +48,7 @@ interface NarrativeRuntimeRowV1 {
   chapterId: string;
   routeHash: string;
   state: string;
+  previousFrozenHash?: string;
   // Test/legacy read-model compatibility only. Production selects neither
   // retired relation and resolves authority from Settlement/StoryEvent.
   frozenBundle?: {
@@ -166,6 +167,7 @@ implements PressureGameNarrativeReaderPort {
             chapterId: true,
             routeHash: true,
             state: true,
+            previousFrozenHash: true,
           },
         }),
         tx.pressureRunRouteSnapshot.findUnique({
@@ -313,7 +315,29 @@ function resolveCurrentNarrativeSource(
     .find((candidate) => candidate !== null)
     ?? runtime.beatResolutions?.[0]
     ?? null;
-  if (!beat) return null;
+  if (!beat) {
+    // At the opening of N2-N7, the current chapter has no Beat yet. The
+    // player-visible transition narrative is the preceding chapter's frozen
+    // authority, whose seven seat/public PENDING rows were committed atomically
+    // with Settlement. Reading that durable row keeps Narrative asynchronous
+    // without inventing text or weakening audience isolation.
+    if (runtime.chapterId === "N1" || runtime.previousFrozenHash === undefined) {
+      return null;
+    }
+    if (!isSha256(runtime.previousFrozenHash)) {
+      return failLiveAdapter(
+        ERROR.AUTHORITY_MISMATCH,
+        "PressureChapterRuntime.previousFrozenHash",
+        "HEAD",
+      );
+    }
+    return {
+      projectionKind: "CHAPTER_NARRATIVE",
+      sourceAuthority: "CHAPTER_FROZEN",
+      sourceId: runtime.previousFrozenHash,
+      expectedSourceCommitHash: runtime.previousFrozenHash,
+    };
+  }
   if (!isSha256(beat.resolutionHash)) {
     return failLiveAdapter(ERROR.AUTHORITY_MISMATCH, "StoryEvent", "BEAT_HEAD");
   }

@@ -7,7 +7,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private databaseConnected = false;
 
   constructor() {
-    super();
+    super({
+      log: [{ emit: "event", level: "query" }],
+    });
     const queryEvents = this as unknown as {
       $on(event: "query", listener: (event: { query: string; duration: number }) => void): void;
     };

@@ -4,6 +4,7 @@ import {
   compareCanonicalText,
   isSha256,
   sha256Canonical,
+  validateRunRouteSnapshotV1,
   type SeatIdV1,
 } from "@ai-story/shared";
 import { assertStoredRunRouteRecord } from "../run-router";
@@ -25,6 +26,8 @@ import {
   type PressureGameTokenProjectionV1,
   type PressureGameViewerReaderPort,
   type PressureGameWorldReaderPort,
+  type ProjectPressureChapterGameProjectionFromSourcesV1,
+  type ReadPressureChapterGameProjectionFromAuthorityV1,
   type ReadPressureChapterGameProjectionQueryV1,
 } from "./contracts";
 import {
@@ -61,6 +64,76 @@ export class PressureChapterGameProjectionService {
   async read(
     query: ReadPressureChapterGameProjectionQueryV1,
   ): Promise<PressureChapterGameProjectionV1> {
+    validateQuery(query);
+    let stored;
+    try {
+      stored = assertStoredRunRouteRecord(
+        await this.routes.readStoredRoute(query.runId),
+      );
+    } catch {
+      failPressureGameProjection(ERROR.ROUTE_NOT_FOUND, query.runId);
+    }
+    same(query.runId, stored.runId, "route.runId");
+    return this.readResolved(query, stored.snapshot, null);
+  }
+
+  async readFromCommittedAuthority(
+    query: ReadPressureChapterGameProjectionFromAuthorityV1,
+  ): Promise<PressureChapterGameProjectionV1> {
+    validateQuery(query);
+    if (!this.chapters.projectCurrent) {
+      failPressureGameProjection(
+        ERROR.INVALID_SOURCE,
+        "chapterReader.projectCurrent",
+        "CAPABILITY_REQUIRED",
+      );
+    }
+    const routeSnapshot = validateRunRouteSnapshotV1(query.routeSnapshot);
+    return this.readResolved(
+      query,
+      routeSnapshot,
+      { ...query, routeSnapshot },
+    );
+  }
+
+  /** SQL7 post-commit projection: all sources are already authority-bound. */
+  async projectFromResolvedSources(
+    query: ProjectPressureChapterGameProjectionFromSourcesV1,
+  ): Promise<PressureChapterGameProjectionV1> {
+    validateQuery(query);
+    if (!this.chapters.projectCurrent) {
+      failPressureGameProjection(
+        ERROR.INVALID_SOURCE,
+        "chapterReader.projectCurrent",
+        "CAPABILITY_REQUIRED",
+      );
+    }
+    const routeSnapshot = validateRunRouteSnapshotV1(query.routeSnapshot);
+    const chapter = this.chapters.projectCurrent({
+      runId: query.runId,
+      routeHash: routeSnapshot.routeHash,
+      viewerSeatId: query.viewerSeatId,
+      state: query.chapter,
+      projection: query.workingProjection,
+      chapter: query.chapterDescriptor,
+    });
+    return this.projectResolvedSources({
+      query,
+      routeSnapshot,
+      viewer: query.viewerSource,
+      chapter,
+      world: query.worldSource,
+      narrativeSource: query.narrativeSource,
+      feedPage: query.feedPage,
+      capabilities: null,
+    });
+  }
+
+  private async readResolved(
+    query: ReadPressureChapterGameProjectionQueryV1,
+    routeSnapshot: ReadPressureChapterGameProjectionFromAuthorityV1["routeSnapshot"],
+    seeded: ReadPressureChapterGameProjectionFromAuthorityV1 | null,
+  ): Promise<PressureChapterGameProjectionV1> {
     string(query.runId, "query.runId");
     string(query.subjectId, "query.subjectId");
     const limit = query.feedLimit ?? 10;
@@ -69,56 +142,132 @@ export class PressureChapterGameProjectionService {
       string(query.feedCursor, "query.feedCursor");
     }
 
-    let route;
-    try {
-      route = assertStoredRunRouteRecord(
-        await this.routes.readStoredRoute(query.runId),
-      );
-    } catch {
-      failPressureGameProjection(ERROR.ROUTE_NOT_FOUND, query.runId);
-    }
-    same(query.runId, route.runId, "route.runId");
+    same(query.runId, routeSnapshot.runId, "route.runId");
     // Resolve and validate the audience authority before asking for a chapter
     // decision. Decision requirement/options are seat-scoped and must never be
     // materialized from a run-only read.
-    const viewer = await this.viewers.readViewer({
+    const viewerPromise = this.viewers.readViewer({
       runId: query.runId,
       subjectId: query.subjectId,
     });
+    const routeHash = routeSnapshot.routeHash;
+    const seededChapter = seeded
+      ? this.chapters.projectCurrent!({
+          runId: query.runId,
+          routeHash,
+          viewerSeatId: seeded.viewerSeatId,
+          state: seeded.chapter,
+          projection: seeded.workingProjection,
+          chapter: seeded.chapterDescriptor,
+        })
+      : null;
+    const seededReads = seeded && seededChapter
+      ? Promise.all([
+          viewerPromise,
+          this.worlds.readWorld(query.runId),
+          this.narratives.readCurrent({
+            runId: query.runId,
+            routeHash,
+            viewerSeatId: seeded.viewerSeatId,
+            chapterRuntimeId: seededChapter.chapter.chapterRuntimeId,
+          }),
+          this.feed.list({
+            roomId: seeded.roomId,
+            runId: query.runId,
+            viewerSeatId: seeded.viewerSeatId,
+            cursor: query.feedCursor ?? null,
+            limit,
+          }),
+        ] as const)
+      : null;
+    const seededResults = seededReads ? await seededReads : null;
+    const viewer = seededResults ? seededResults[0] : await viewerPromise;
     if (!viewer) failPressureGameProjection(ERROR.VIEWER_NOT_FOUND, query.subjectId);
     same(query.runId, viewer.runId, "viewer.runId");
     same(query.subjectId, viewer.subjectId, "viewer.subjectId");
-    same(route.snapshot.routeHash, viewer.routeHash, "viewer.routeHash");
+    same(routeSnapshot.routeHash, viewer.routeHash, "viewer.routeHash");
     validateViewer(viewer.viewer);
     validateSituation(viewer.situation);
+    if (seeded) same(seeded.roomId, viewer.roomId, "seeded.roomId");
 
-    const routeHash = route.snapshot.routeHash;
-    const [chapter, world] = await Promise.all([
-      this.chapters.readCurrent({
-        runId: query.runId,
-        routeHash,
-        viewerSeatId: viewer.viewer.seatId,
-      }),
-      this.worlds.readWorld(query.runId),
-    ]);
+    const [chapter, world] = seededResults
+      ? [seededChapter, seededResults[1]] as const
+      : await Promise.all([
+          this.chapters.readCurrent({
+            runId: query.runId,
+            routeHash,
+            viewerSeatId: viewer.viewer.seatId,
+          }),
+          this.worlds.readWorld(query.runId),
+        ]);
     if (!chapter) failPressureGameProjection(ERROR.CHAPTER_NOT_FOUND, query.runId);
     if (!world) failPressureGameProjection(ERROR.WORLD_NOT_FOUND, query.runId);
 
+    const narrativeSource = seededResults
+      ? seededResults[2]
+      : await this.narratives.readCurrent({
+          runId: query.runId,
+          routeHash,
+          viewerSeatId: viewer.viewer.seatId,
+          chapterRuntimeId: chapter.chapter.chapterRuntimeId,
+        });
+    if (!narrativeSource) {
+      failPressureGameProjection(ERROR.NARRATIVE_NOT_FOUND, chapter.chapter.chapterRuntimeId);
+    }
+    const rawCapabilities = seeded
+      ? null
+      : await this.capabilities.readCapabilities({
+          runId: query.runId,
+          routeHash,
+          subjectId: query.subjectId,
+          viewerSeatId: viewer.viewer.seatId,
+          chapterRuntimeId: chapter.chapter.chapterRuntimeId,
+          decisionPointId: chapter.decision?.decisionPointId ?? null,
+        });
+    const rawFeedPage = seededResults
+        ? seededResults[3]
+        : await this.feed.list({
+            roomId: viewer.roomId,
+            runId: query.runId,
+            viewerSeatId: viewer.viewer.seatId,
+            cursor: query.feedCursor ?? null,
+            limit,
+          });
+    return this.projectResolvedSources({
+      query,
+      routeSnapshot,
+      viewer,
+      chapter,
+      world,
+      narrativeSource,
+      feedPage: rawFeedPage,
+      capabilities: rawCapabilities,
+    });
+  }
+
+  private async projectResolvedSources(input: Readonly<{
+    query: ReadPressureChapterGameProjectionQueryV1;
+    routeSnapshot: ReadPressureChapterGameProjectionFromAuthorityV1["routeSnapshot"];
+    viewer: NonNullable<Awaited<ReturnType<PressureGameViewerReaderPort["readViewer"]>>>;
+    chapter: NonNullable<Awaited<ReturnType<PressureGameChapterReaderPort["readCurrent"]>>>;
+    world: NonNullable<Awaited<ReturnType<PressureGameWorldReaderPort["readWorld"]>>>;
+    narrativeSource: NonNullable<Awaited<ReturnType<PressureGameNarrativeReaderPort["readCurrent"]>>>;
+    feedPage: AEmotionFeedPagePortV1;
+    capabilities: PressureGameCapabilitiesV1 | null;
+  }>): Promise<PressureChapterGameProjectionV1> {
+    const { query, routeSnapshot, viewer, chapter, world, narrativeSource } = input;
+    const routeHash = routeSnapshot.routeHash;
+    same(query.runId, viewer.runId, "viewer.runId");
+    same(query.subjectId, viewer.subjectId, "viewer.subjectId");
+    same(routeHash, viewer.routeHash, "viewer.routeHash");
+    validateViewer(viewer.viewer);
+    validateSituation(viewer.situation);
     same(query.runId, chapter.runId, "chapter.runId");
     same(query.runId, world.runId, "world.runId");
     same(routeHash, chapter.routeHash, "chapter.routeHash");
     same(routeHash, world.routeHash, "world.routeHash");
     same(viewer.viewer.seatId, chapter.viewerSeatId, "chapter.viewerSeatId");
     validateChapter(chapter.chapter, chapter.projectionVersion);
-    const narrativeSource = await this.narratives.readCurrent({
-      runId: query.runId,
-      routeHash,
-      viewerSeatId: viewer.viewer.seatId,
-      chapterRuntimeId: chapter.chapter.chapterRuntimeId,
-    });
-    if (!narrativeSource) {
-      failPressureGameProjection(ERROR.NARRATIVE_NOT_FOUND, chapter.chapter.chapterRuntimeId);
-    }
     same(query.runId, narrativeSource.runId, "narrative.runId");
     same(routeHash, narrativeSource.routeHash, "narrative.routeHash");
     same(viewer.viewer.seatId, narrativeSource.viewerSeatId, "narrative.viewerSeatId");
@@ -150,16 +299,12 @@ export class PressureChapterGameProjectionService {
           decision: structuredClone(fallbackDecision),
         })
       : fallbackDecision;
-
     const resolvedCapabilities = sanitizeCapabilities(
-      await this.capabilities.readCapabilities({
-        runId: query.runId,
-        routeHash,
-        subjectId: query.subjectId,
-        viewerSeatId: viewer.viewer.seatId,
-        chapterRuntimeId: chapter.chapter.chapterRuntimeId,
-        decisionPointId: decision?.decisionPointId ?? null,
-      }),
+      input.capabilities ?? capabilitiesFromCommittedAuthority(
+        viewer.viewer.control,
+        chapter.chapter.phase,
+        decision,
+      ),
     );
     assertCapabilitiesMatch(
       resolvedCapabilities,
@@ -169,21 +314,11 @@ export class PressureChapterGameProjectionService {
       decision,
       tokens,
     );
-
-    const feedPage = sanitizeFeedPage(
-      await this.feed.list({
-        roomId: viewer.roomId,
-        runId: query.runId,
-        viewerSeatId: viewer.viewer.seatId,
-        cursor: query.feedCursor ?? null,
-        limit,
-      }),
-      {
-        roomId: viewer.roomId,
-        runId: query.runId,
-        viewerSeatId: viewer.viewer.seatId,
-      },
-    );
+    const feedPage = sanitizeFeedPage(input.feedPage, {
+      roomId: viewer.roomId,
+      runId: query.runId,
+      viewerSeatId: viewer.viewer.seatId,
+    });
     const base = {
       schemaVersion: PRESSURE_CHAPTER_GAME_PROJECTION_SCHEMA_V1,
       projectionVersion: chapter.projectionVersion,
@@ -191,10 +326,10 @@ export class PressureChapterGameProjectionService {
       runId: query.runId,
       route: {
         routeHash,
-        participantMode: route.snapshot.participantMode,
-        runtimeProfile: route.snapshot.route.runtimeProfile,
-        contentPackageVersion: route.snapshot.contentPackageVersion,
-        controlTopologyVersion: route.snapshot.controlTopologyVersion,
+        participantMode: routeSnapshot.participantMode,
+        runtimeProfile: routeSnapshot.route.runtimeProfile,
+        contentPackageVersion: routeSnapshot.contentPackageVersion,
+        controlTopologyVersion: routeSnapshot.controlTopologyVersion,
       },
       chapter: structuredClone(chapter.chapter),
       viewer: structuredClone(viewer.viewer),
@@ -208,6 +343,16 @@ export class PressureChapterGameProjectionService {
       feedPage,
     };
     return { ...base, projectionHash: sha256Canonical(base) };
+  }
+}
+
+function validateQuery(query: ReadPressureChapterGameProjectionQueryV1): void {
+  string(query.runId, "query.runId");
+  string(query.subjectId, "query.subjectId");
+  const limit = query.feedLimit ?? 10;
+  integer(limit, "query.feedLimit", 1, 10);
+  if (query.feedCursor !== undefined && query.feedCursor !== null) {
+    string(query.feedCursor, "query.feedCursor");
   }
 }
 
@@ -394,6 +539,29 @@ function sanitizeCapabilities(value: PressureGameCapabilitiesV1): PressureGameCa
   assertUnique(allowedActionTypes, "capabilities.allowedActionTypes");
   allowedActionTypes.sort(compareCanonicalText);
   return { ...value, allowedActionTypes };
+}
+
+function capabilitiesFromCommittedAuthority(
+  control: PressureChapterGameProjectionV1["viewer"]["control"],
+  phase: PressureChapterGameProjectionV1["chapter"]["phase"],
+  decision: PressureGameDecisionProjectionV1 | null,
+): PressureGameCapabilitiesV1 {
+  return {
+    canSubmitDecision: Boolean(
+      control.canSubmit
+      && phase === "ACTIVE"
+      && decision?.requirement === "REQUIRED"
+    ),
+    canTalk: false,
+    canInvestigate: false,
+    canUseToken: false,
+    canPlan: false,
+    canReclaimControl: control.canReclaim,
+    allowedActionTypes: decision
+      ? [...new Set(decision.options.map((option) => option.actionType))]
+          .sort(compareCanonicalText)
+      : [],
+  };
 }
 
 function assertCapabilitiesMatch(

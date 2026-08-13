@@ -92,6 +92,73 @@ test("chapter decisions are read with the trusted viewer seat and isolate REQUIR
   ]);
 });
 
+test("authority-seeded read is byte-equivalent and skips route/state/Working chapter reads", async () => {
+  const harness = await createHarness({
+    runId: "game-projection-seeded",
+    metricSeed: 31,
+    goal: "Keep the committed projection authoritative.",
+    resourceValue: 8,
+    tokenLabel: "Seeded token",
+  });
+  const ordinary = await harness.service.read({
+    runId: harness.runId,
+    subjectId: "user-viewer",
+  });
+  const chapterReadsBefore = harness.chapterReadScopes.length;
+  const capabilityReadsBefore = harness.readCounts.capabilities;
+  const seeded = await harness.service.readFromCommittedAuthority({
+    runId: harness.runId,
+    subjectId: "user-viewer",
+    roomId: harness.runId,
+    routeSnapshot: structuredClone(harness.route.snapshot),
+    viewerSeatId: VIEWER_SEAT,
+    chapter: {} as any,
+    workingProjection: {} as any,
+    chapterDescriptor: {} as any,
+  });
+  assert.deepEqual(seeded, ordinary);
+  assert.equal(harness.chapterReadScopes.length, chapterReadsBefore);
+  assert.equal(harness.readCounts.capabilities, capabilityReadsBefore);
+});
+
+test("authority-seeded next chapter remains playable while frozen narrative is PENDING", async () => {
+  const harness = await createHarness({
+    runId: "game-projection-pending-narrative",
+    metricSeed: 37,
+    goal: "Open the next decision without waiting for narrative enrichment.",
+    resourceValue: 9,
+    tokenLabel: "Pending narrative token",
+  });
+  Object.assign(harness.narrativeSource, {
+    status: "PENDING",
+    projectionKind: "CHAPTER_NARRATIVE",
+    sourceAuthority: "CHAPTER_FROZEN",
+    sourceId: digest("prior-frozen-chapter"),
+    sourceCommitHash: digest("prior-frozen-chapter"),
+    text: null,
+    contentHash: null,
+    renderMode: null,
+  });
+
+  const projection = await harness.service.readFromCommittedAuthority({
+    runId: harness.runId,
+    subjectId: "user-viewer",
+    roomId: harness.runId,
+    routeSnapshot: structuredClone(harness.route.snapshot),
+    viewerSeatId: VIEWER_SEAT,
+    chapter: {} as any,
+    workingProjection: {} as any,
+    chapterDescriptor: {} as any,
+  });
+
+  assert.equal(projection.narrative.status, "PENDING");
+  assert.equal(projection.narrative.text, null);
+  assert.equal(projection.narrative.contentHash, null);
+  assert.equal(projection.narrative.renderMode, null);
+  assert.equal(projection.decision?.requirement, "REQUIRED");
+  assert.equal(projection.capabilities.canSubmitDecision, true);
+});
+
 test("two authoritative read models produce different real metrics, situation, resources, and tokens", async () => {
   const first = await createHarness({
     runId: "game-projection-a",
@@ -529,10 +596,10 @@ async function createHarness(input: {
   };
   const capabilities: PressureGameCapabilitiesV1 = {
     canSubmitDecision: true,
-    canTalk: true,
-    canInvestigate: true,
-    canUseToken: true,
-    canPlan: true,
+    canTalk: false,
+    canInvestigate: false,
+    canUseToken: false,
+    canPlan: false,
     canReclaimControl: false,
     allowedActionTypes: ["PUBLIC_QUESTION", "SEAL_AND_REVIEW"],
   };
@@ -565,6 +632,7 @@ async function createHarness(input: {
     routeHash: string;
     viewerSeatId: SeatIdV1;
   }> = [];
+  const readCounts = { capabilities: 0 };
   const service = new PressureChapterGameProjectionService(
     { readStoredRoute: async () => structuredClone(route) },
     {
@@ -572,15 +640,20 @@ async function createHarness(input: {
         chapterReadScopes.push(structuredClone(scope));
         return structuredClone(chapterSource);
       },
+      projectCurrent: () => structuredClone(chapterSource),
     },
     { readViewer: async () => structuredClone(viewerSource) },
     { readWorld: async () => structuredClone(worldSource) },
     { readCurrent: async () => structuredClone(narrativeSource) },
     { list: async () => structuredClone(feedPage) },
-    { readCapabilities: async () => structuredClone(capabilities) },
+    { readCapabilities: async () => {
+      readCounts.capabilities += 1;
+      return structuredClone(capabilities);
+    } },
   );
   return {
     runId: input.runId,
+    route,
     service,
     chapterSource,
     viewerSource,
@@ -589,6 +662,7 @@ async function createHarness(input: {
     capabilities,
     feedPage,
     chapterReadScopes,
+    readCounts,
   };
 }
 

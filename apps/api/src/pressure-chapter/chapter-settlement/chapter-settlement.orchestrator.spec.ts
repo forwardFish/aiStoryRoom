@@ -4,6 +4,7 @@ import {
   PRESSURE_CHAPTER_SEAT_IDS_V1,
   TRACK_IDS_V1,
   chapterSequence,
+  compileB0ChapterSettlementInputV1,
   nextChapterId,
   sha256Canonical,
   type B0ChapterPolicyEvaluationDraftV1,
@@ -17,11 +18,15 @@ import {
   type WorldStateV1,
 } from "@ai-story/shared";
 import {
+  applyChapterSettlementToWorldV1,
   computeChapterSettlementRequestFingerprintV1,
   sealChapterCloseFenceV1,
   sealChapterSettlementSourceV1,
 } from "./chapter-commit-record";
-import { ChapterSettlementOrchestrator } from "./chapter-settlement.orchestrator";
+import {
+  ChapterSettlementOrchestrator,
+  planChapterSettlementV1,
+} from "./chapter-settlement.orchestrator";
 import {
   CHAPTER_SETTLEMENT_ERROR_CODES,
   ChapterSettlementError,
@@ -578,6 +583,96 @@ test("PC-W6 authority hashes are invariant to source and policy array permutatio
   );
   assert.equal(right.record.receipt.commitHash, left.record.receipt.commitHash);
   assert.equal(right.record.atomicRecordHash, left.record.atomicRecordHash);
+});
+
+test("planChapterSettlementV1 is deterministic and seals its atomic hash", async () => {
+  const source = fixture("N2");
+  const command = commandFor(source);
+  const policy = new DeterministicContentPolicy([]);
+  const policyEvaluation = await policy.evaluateChapter({
+    b0Input: compileB0ChapterSettlementInputV1({
+      wireInput: source.sealedInput,
+      settlementMaterial: source.settlementMaterial,
+    }),
+    baseWorldState: source.baseWorldState,
+  });
+
+  const first = planChapterSettlementV1({
+    command,
+    source,
+    policyEvaluation,
+  });
+  const second = planChapterSettlementV1({
+    command: structuredClone(command),
+    source: structuredClone(source),
+    policyEvaluation: structuredClone(policyEvaluation),
+  });
+  const { atomicRecordHash, ...atomicRecordBody } = first;
+
+  assert.deepEqual(second, first);
+  assert.equal(atomicRecordHash, sha256Canonical(atomicRecordBody));
+});
+
+test("first authored fact assignment treats a sparse world fact as canonical null", async () => {
+  const source = fixture("N2");
+  const command = commandFor(source);
+  const policy = new DeterministicContentPolicy([]);
+  const policyEvaluation = await policy.evaluateChapter({
+    b0Input: compileB0ChapterSettlementInputV1({
+      wireInput: source.sealedInput,
+      settlementMaterial: source.settlementMaterial,
+    }),
+    baseWorldState: source.baseWorldState,
+  });
+  const outcomeFactRef = "chapter.N2.outcome_band";
+  policyEvaluation.mutations[0] = {
+    ...policyEvaluation.mutations[0]!,
+    entityId: outcomeFactRef,
+    value: { before: null, after: "steady" },
+  };
+  const record = planChapterSettlementV1({ command, source, policyEvaluation });
+
+  const world = applyChapterSettlementToWorldV1(
+    source.baseWorldState,
+    record.settlement,
+  );
+
+  assert.equal(world.factValues[outcomeFactRef], "steady");
+});
+
+test("planChapterSettlementV1 fails closed on fingerprint and policy hash drift", async () => {
+  const source = fixture("N3");
+  const command = commandFor(source);
+  const policy = new DeterministicContentPolicy([]);
+  const policyEvaluation = await policy.evaluateChapter({
+    b0Input: compileB0ChapterSettlementInputV1({
+      wireInput: source.sealedInput,
+      settlementMaterial: source.settlementMaterial,
+    }),
+    baseWorldState: source.baseWorldState,
+  });
+
+  assert.throws(
+    () => planChapterSettlementV1({
+      command: {
+        ...command,
+        requestFingerprint: digest("drifted-request-fingerprint"),
+      },
+      source,
+      policyEvaluation,
+    }),
+    hasCode(CHAPTER_SETTLEMENT_ERROR_CODES.REQUEST_FINGERPRINT_MISMATCH),
+  );
+  assert.throws(
+    () => planChapterSettlementV1({
+      command,
+      source,
+      policyEvaluation: {
+        ...policyEvaluation,
+        b0InputHash: digest("drifted-policy-input"),
+      },
+    }),
+  );
 });
 
 function worldState(chapterId: ChapterIdV1): WorldStateV1 {

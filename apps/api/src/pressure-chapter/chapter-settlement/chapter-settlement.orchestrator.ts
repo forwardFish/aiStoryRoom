@@ -5,6 +5,7 @@ import {
   isSha256,
   sealB0ChapterPolicyEvaluationV1,
   settleB0ChapterV1,
+  type B0ChapterPolicyEvaluationDraftV1,
 } from "@ai-story/shared";
 import { adaptB0SettlementToCanonicalV1 } from "./b0-to-canonical.adapter";
 import {
@@ -21,6 +22,7 @@ import type {
   AtomicChapterCommitRecordV1,
   AtomicChapterCommitterPort,
   ChapterSettlementSourcePort,
+  ChapterSettlementSourceV1,
   ContentOwnedChapterPolicyPort,
   SettleChapterCommandV1,
   SettleChapterResultV1,
@@ -33,6 +35,37 @@ const COMMAND_KEYS = [
   "idempotencyKey",
   "requestFingerprint",
 ] as const;
+
+/**
+ * Deterministic, side-effect-free settlement planning over already-read
+ * authority inputs. Ports remain exclusively owned by the orchestrator.
+ */
+export function planChapterSettlementV1(input: Readonly<{
+  command: Readonly<SettleChapterCommandV1>;
+  source: Readonly<ChapterSettlementSourceV1>;
+  policyEvaluation: Readonly<B0ChapterPolicyEvaluationDraftV1>;
+}>): AtomicChapterCommitRecordV1 {
+  const { command, source, b0Input } = prepareChapterSettlementPlanInputsV1(
+    input.command,
+    input.source,
+  );
+  const b0Evaluation = sealB0ChapterPolicyEvaluationV1(
+    input.policyEvaluation,
+  );
+  const b0Command = createB0ChapterSettlementCommandV1({
+    idempotencyKey: command.idempotencyKey,
+    sealedInput: b0Input,
+    evaluation: b0Evaluation,
+  });
+  const b0Result = settleB0ChapterV1(b0Command);
+  const settlement = adaptB0SettlementToCanonicalV1(b0Input, b0Result);
+  return buildAtomicChapterCommitRecordV1({
+    command,
+    source,
+    settlement,
+    b0SettlementId: b0Result.receipt.settlementId,
+  });
+}
 
 /**
  * Thin application coordinator. It owns no repository primitive and gives the
@@ -72,52 +105,30 @@ export class ChapterSettlementOrchestrator {
         `${command.runId}:${command.chapterRuntimeId}`,
       );
     }
-    const source = assertChapterSettlementSourceReadyV1(rawSource);
-    if (
-      source.sealedInput.runId !== command.runId ||
-      source.sealedInput.chapterRuntimeId !== command.chapterRuntimeId
-    ) {
-      failChapterSettlement(
-        ERROR.SOURCE_REFERENCE_MISMATCH,
-        "source.sealedInput",
-        "COMMAND_CONTEXT_MISMATCH",
-      );
-    }
-    const expectedFingerprint = computeChapterSettlementRequestFingerprintV1({
-      runId: command.runId,
-      chapterRuntimeId: command.chapterRuntimeId,
-      idempotencyKey: command.idempotencyKey,
-      sealedInputHash: source.sealedInput.inputHash,
-    });
-    if (command.requestFingerprint !== expectedFingerprint) {
-      failChapterSettlement(
-        ERROR.REQUEST_FINGERPRINT_MISMATCH,
-        "command.requestFingerprint",
-        `EXPECTED_${expectedFingerprint}`,
-      );
-    }
+    return this.settlePrepared(command, rawSource);
+  }
 
-    const b0Input = compileB0ChapterSettlementInputV1({
-      wireInput: source.sealedInput,
-      settlementMaterial: source.settlementMaterial,
-    });
+  /**
+   * Fast production path for a source returned by the transaction that sealed
+   * it.  commitOnce still owns the durable replay check and the complete W6
+   * atomic write; this method only removes redundant read transactions.
+   */
+  async settlePrepared(
+    rawCommand: SettleChapterCommandV1,
+    rawSource: ChapterSettlementSourceV1,
+  ): Promise<SettleChapterResultV1> {
+    const { command, source, b0Input } = prepareChapterSettlementPlanInputsV1(
+      rawCommand,
+      rawSource,
+    );
     const policyDraft = await this.contentPolicy.evaluateChapter({
       b0Input,
       baseWorldState: source.baseWorldState,
     });
-    const b0Evaluation = sealB0ChapterPolicyEvaluationV1(policyDraft);
-    const b0Command = createB0ChapterSettlementCommandV1({
-      idempotencyKey: command.idempotencyKey,
-      sealedInput: b0Input,
-      evaluation: b0Evaluation,
-    });
-    const b0Result = settleB0ChapterV1(b0Command);
-    const settlement = adaptB0SettlementToCanonicalV1(b0Input, b0Result);
-    const candidate = buildAtomicChapterCommitRecordV1({
+    const candidate = planChapterSettlementV1({
       command,
       source,
-      settlement,
-      b0SettlementId: b0Result.receipt.settlementId,
+      policyEvaluation: policyDraft,
     });
     const committed = await this.atomicCommitter.commitOnce(candidate);
     const record = this.assertMatchingCommitted(
@@ -165,6 +176,45 @@ export class ChapterSettlementOrchestrator {
     }
     return structuredClone(record);
   }
+}
+
+function prepareChapterSettlementPlanInputsV1(
+  commandValue: unknown,
+  sourceValue: unknown,
+) {
+  const command = validateCommand(commandValue);
+  const source = assertChapterSettlementSourceReadyV1(sourceValue);
+  if (
+    source.sealedInput.runId !== command.runId ||
+    source.sealedInput.chapterRuntimeId !== command.chapterRuntimeId
+  ) {
+    failChapterSettlement(
+      ERROR.SOURCE_REFERENCE_MISMATCH,
+      "source.sealedInput",
+      "COMMAND_CONTEXT_MISMATCH",
+    );
+  }
+  const expectedFingerprint = computeChapterSettlementRequestFingerprintV1({
+    runId: command.runId,
+    chapterRuntimeId: command.chapterRuntimeId,
+    idempotencyKey: command.idempotencyKey,
+    sealedInputHash: source.sealedInput.inputHash,
+  });
+  if (command.requestFingerprint !== expectedFingerprint) {
+    failChapterSettlement(
+      ERROR.REQUEST_FINGERPRINT_MISMATCH,
+      "command.requestFingerprint",
+      `EXPECTED_${expectedFingerprint}`,
+    );
+  }
+  return {
+    command,
+    source,
+    b0Input: compileB0ChapterSettlementInputV1({
+      wireInput: source.sealedInput,
+      settlementMaterial: source.settlementMaterial,
+    }),
+  };
 }
 
 function validateCommand(value: unknown): SettleChapterCommandV1 {

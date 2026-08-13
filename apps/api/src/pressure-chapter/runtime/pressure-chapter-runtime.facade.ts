@@ -14,6 +14,7 @@ import {
 import type { InitializeGenesisResultV1 } from "../genesis/types";
 import type {
   ChapterOrchestratorStateV1,
+  CommittedSettlementResumeAuthorityV1,
   SubmitOrchestratedActionCommandV1,
 } from "../orchestrator/contracts";
 import { validateOrchestratorStateV1 } from "../orchestrator/validation";
@@ -118,6 +119,20 @@ export class PressureChapterRuntimeFacade {
     const route = validateRunRouteSnapshotV1(routeSnapshot);
     return assertChapterState(
       await this.ports.chapters.resume(route, nowMs),
+      route,
+    );
+  }
+
+  async resumeFromCommittedSettlementAuthority(
+    routeSnapshot: RunRouteSnapshotV1,
+    authority: Readonly<CommittedSettlementResumeAuthorityV1>,
+    nowMs: number,
+  ): Promise<ChapterOrchestratorStateV1> {
+    const route = validateRunRouteSnapshotV1(routeSnapshot);
+    const fastResume = this.ports.chapters.resumeFromCommittedSettlementAuthority;
+    if (!fastResume) return this.resume(route, nowMs);
+    return assertChapterState(
+      await fastResume.call(this.ports.chapters, route, authority, nowMs),
       route,
     );
   }

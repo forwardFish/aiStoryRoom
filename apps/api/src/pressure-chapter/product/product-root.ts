@@ -63,6 +63,7 @@ import {
   W5FormalActionSubmissionAdapterV1,
   W5WorkingLedgerOpeningAdapterV1,
   W5WorkingProjectionReaderAdapterV1,
+  SelectiveWorkingProjectionReaderV1,
   createPublishedSangtianRouteRegistryPortV1,
 } from "../integration";
 import {
@@ -104,6 +105,8 @@ import {
   type ResultViewerPrismaClient,
   type RunRoutePrismaClient,
   type WorkingLedgerPrismaClient,
+  WorkingProjectionFastReaderV1,
+  type WorkingProjectionFastReaderPrismaClientV1,
 } from "../persistence";
 import {
   composePressureProductionCoreV1,
@@ -113,6 +116,7 @@ import {
 } from "../production-prisma";
 import {
   createPressureChapterInternalProductionPortsV1,
+  SangtianFrozenSeatPresentationCatalogV1,
 } from "../product-adapters";
 import type { PressureNarrativeProviderReadinessV1 } from "../production-config";
 import {
@@ -144,6 +148,17 @@ import {
   type PressureSeatControlPersistenceDependenciesV1,
 } from "../seat-control-persistence";
 import { WorkingLedgerService } from "../working-ledger/working-ledger.service";
+import {
+  createPrismaDecisionToNextProjectionSnapshotReaderV1,
+  planPressureSql7PreparedAutomationActionBatchV1,
+  PressureSql7CommandCompilerAdapterV1,
+  PressureSql7FirstSubmitServiceV1,
+  PressureSql7PreparedInputsAdapterV1,
+  PressureSql7ReceiptProjectionAdapterV1,
+  PressureSql7SettlementN2PlanBuilderV1,
+  PrismaPressureSql7CommitRepositoryV1,
+  type PressureSql7PrismaClientV1,
+} from "../sql7-fast-path";
 import {
   DefaultPressureWorkerSchedulerV1,
   PressureWorkerRuntimeServiceV1,
@@ -283,6 +298,13 @@ export async function createPressureChapterProductRootV1(input: {
   );
   const formalActions = new W5FormalActionSubmissionAdapterV1(formalInteraction);
   const projections = new W5WorkingProjectionReaderAdapterV1(ledgerRepository);
+  const onlineProjections = new SelectiveWorkingProjectionReaderV1(
+    new WorkingProjectionFastReaderV1(
+      asPrisma<WorkingProjectionFastReaderPrismaClientV1>(input.prisma),
+    ),
+    projections,
+    workingProjectionReadMode(process.env.PRESSURE_WORKING_PROJECTION_READ_MODE),
+  );
   const workingOpening = new W5WorkingLedgerOpeningAdapterV1(
     new WorkingLedgerService(ledgerRepository),
   );
@@ -293,9 +315,10 @@ export async function createPressureChapterProductRootV1(input: {
   const settlementSource = new PrismaDurableChapterSettlementSourceRepository(
     asPrisma<ChapterSettlementSourcePrismaClient>(input.prisma),
   );
+  const settlementPolicy = new SangtianContentOwnedChapterPolicyAdapterV1(release);
   const settlementOrchestrator = new ChapterSettlementOrchestrator(
     settlementSource,
-    new SangtianContentOwnedChapterPolicyAdapterV1(release),
+    settlementPolicy,
     new PrismaAtomicChapterCommitter(
       asPrisma<ChapterSettlementPrismaClient>(input.prisma),
     ),
@@ -373,6 +396,9 @@ export async function createPressureChapterProductRootV1(input: {
   let productionAdapters: ReturnType<
     typeof createPrismaPressureProductionAdaptersV1
   > | null = null;
+  const workingSeeds = new SangtianChapterWorkingSeedAdapterV1(
+    internal.authoritativeChapterWorld,
+  );
   const runtime = composePressureChapterRuntimeV1({
     genesis,
     n1Handoff(starter) {
@@ -387,9 +413,7 @@ export async function createPressureChapterProductRootV1(input: {
     chapter: {
       states: orchestratorStates,
       content,
-      seeds: new SangtianChapterWorkingSeedAdapterV1(
-        internal.authoritativeChapterWorld,
-      ),
+      seeds: workingSeeds,
       ledgerOpening: workingOpening,
       projections,
       formalActions,
@@ -462,12 +486,13 @@ export async function createPressureChapterProductRootV1(input: {
   const actionPresentations = new SangtianReleaseActionPresentationCatalogAdapterV1(
     release,
   );
+  const gameContentMapper = new SangtianPressureGameContentMapperV1(actionPresentations);
   const gameChapterReader = createViewerScopedPressureGameChapterReaderV1({
     routes,
     states: orchestratorStates,
-    working: projections,
+    working: onlineProjections,
     content,
-    mapper: new SangtianPressureGameContentMapperV1(actionPresentations),
+    mapper: gameContentMapper,
   });
   const gameProjection = new PressureChapterGameProjectionService(
     routes,
@@ -483,17 +508,6 @@ export async function createPressureChapterProductRootV1(input: {
   );
   const runtimeFacets = pressureHttpRuntimeFacetsV1(runtime);
   const httpRoutes = pressureHttpRouteReadPortV1(routes);
-  const decisionCompiler = new PressureDecisionCommandCompilerV1(
-    gameProjection,
-    projections,
-    content,
-    new SangtianServerDecisionWorkingIntentCompilerV1(release),
-    {
-      chapter: gameChapterReader,
-      viewer: seatViewer,
-      capabilities: internal.gameCapabilities,
-    },
-  );
   const chat = new PressureChapterChatService(
     interactionAccess,
     new PrismaPressureChatRepository(
@@ -538,6 +552,48 @@ export async function createPressureChapterProductRootV1(input: {
     deadlineDefaults,
     config: options.decisionAutomation,
   });
+  const decisionCompiler = new PressureDecisionCommandCompilerV1(
+    gameProjection,
+    onlineProjections,
+    content,
+    new SangtianServerDecisionWorkingIntentCompilerV1(release),
+    {
+      chapter: gameChapterReader,
+      viewer: seatViewer,
+      capabilities: internal.gameCapabilities,
+    },
+    decisionAutomation.snapshots,
+    decisionAutomation.policy.artifactSha256,
+  );
+  const sql7PreparedInputs = new PressureSql7PreparedInputsAdapterV1(
+    settlementPolicy,
+    content,
+    workingSeeds,
+    gameContentMapper,
+    new SangtianFrozenSeatPresentationCatalogV1(input.prisma),
+  );
+  const sql7FirstSubmit = new PressureSql7FirstSubmitServiceV1(
+    createPrismaDecisionToNextProjectionSnapshotReaderV1(input.prisma),
+    new PressureSql7CommandCompilerAdapterV1(
+      decisionCompiler,
+      decisionAutomation.policy.artifactSha256,
+    ),
+    {
+      plan: (sql7Input) => planPressureSql7PreparedAutomationActionBatchV1(
+        sql7Input,
+        {
+          content,
+          policy: decisionAutomation.policy,
+          compiler: decisionAutomation.compiler,
+        },
+      ),
+    },
+    new PressureSql7SettlementN2PlanBuilderV1(sql7PreparedInputs),
+    new PrismaPressureSql7CommitRepositoryV1(
+      input.prisma as unknown as PressureSql7PrismaClientV1,
+    ),
+    new PressureSql7ReceiptProjectionAdapterV1(gameProjection),
+  );
   const narrativeLane: PressureWorkerLanePortV1 = Object.freeze({
     tick: (workerId: string) => narrative.consumeNext(workerId),
   });
@@ -613,6 +669,7 @@ export async function createPressureChapterProductRootV1(input: {
     httpPorts.replay,
     httpPorts.clock,
     decisionAutomation.service,
+    sql7FirstSubmit,
   );
   const roomsGateway = new PressureChapterRoomsGatewayV1(production.bridge);
   return Object.freeze({
@@ -645,6 +702,13 @@ export async function createPressureChapterProductRootV1(input: {
 
 function asPrisma<T>(prisma: PrismaService): T {
   return prisma as unknown as T;
+}
+
+function workingProjectionReadMode(
+  value: string | undefined,
+): "FAST" | "SHADOW" | "REPLAY" {
+  if (value === "SHADOW" || value === "REPLAY") return value;
+  return value === "FAST" ? "FAST" : "REPLAY";
 }
 
 function normalizeOptions(

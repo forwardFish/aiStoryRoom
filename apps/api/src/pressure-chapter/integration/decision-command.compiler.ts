@@ -2,6 +2,7 @@ import {
   PRESSURE_CHAPTER_GAME_COMMAND_SCHEMA_V1,
   compareCanonicalText,
   computeDecisionActionRequestFingerprint,
+  isSha256,
   sha256Canonical,
   validateDecisionActionV1,
   validateRunRouteSnapshotV1,
@@ -18,6 +19,7 @@ import type {
   PressureChapterGameProjectionV1,
   PressureGameCapabilitiesV1,
   PressureGameChapterReaderPort,
+  PressureGameDecisionOptionV1,
   PressureGameViewerReaderPort,
 } from "../game-projection/contracts";
 import type {
@@ -31,14 +33,21 @@ import {
 } from "../interaction/formal-interaction.service";
 import type {
   AuthoredChapterContentPort,
+  AuthoredDecisionRuntimeV1,
   SubmitOrchestratedActionCommandV1,
   WorkingProjectionReaderPort,
 } from "../orchestrator/contracts";
+import type {
+  DecisionConvergenceSnapshotReaderPortV1,
+  DecisionSubmitSnapshotV1,
+} from "../decision-automation/contracts";
+import { withDecisionSubmitSnapshotHashV1 } from "../decision-automation/prisma-snapshot";
+import { withDecisionConvergenceSnapshotHashV1 } from "../decision-automation/convergence.service";
 import { assertStoredRunRouteRecord } from "../run-router";
 import type { StoredRunRouteRecordV1 } from "../run-router/types";
 import type { WorkingActionIntentV1 } from "../working-ledger/contracts";
-import { failPressureChapterIntegration } from "./errors";
 import { PressureCatalogCustomActionGuardV1 } from "./custom-action.guard";
+import { failPressureChapterIntegration } from "./errors";
 
 export interface ServerDecisionWorkingIntentCompilerPortV1 {
   compile(input: Readonly<{
@@ -52,7 +61,16 @@ export interface ServerDecisionWorkingIntentCompilerPortV1 {
 }
 
 export interface PressureDecisionAuthorityReaderV1 {
-  chapter: Pick<PressureGameChapterReaderPort, "readCurrent">;
+  chapter: {
+    readCurrentWithProjection(input: {
+      runId: string;
+      routeHash: string;
+      viewerSeatId: SeatIdV1;
+    }): Promise<Readonly<{
+      chapter: NonNullable<Awaited<ReturnType<PressureGameChapterReaderPort["readCurrent"]>>>;
+      projection: Awaited<ReturnType<WorkingProjectionReaderPort["load"]>>;
+    }> | null>;
+  };
   viewer: Pick<PressureGameViewerReaderPort, "readViewer">;
   capabilities: {
     readCapabilities(input: Parameters<PressureGameCapabilitiesReaderV1["readCapabilities"]>[0]): ReturnType<PressureGameCapabilitiesReaderV1["readCapabilities"]>;
@@ -137,6 +155,8 @@ implements PressureChapterHttpDecisionCompilerPort {
     private readonly content: AuthoredChapterContentPort,
     private readonly intents: ServerDecisionWorkingIntentCompilerPortV1,
     private readonly authority?: PressureDecisionAuthorityReaderV1,
+    private readonly submitSnapshots?: DecisionConvergenceSnapshotReaderPortV1,
+    private readonly aiPolicyArtifactHash?: string,
     private readonly customActions = new PressureCatalogCustomActionGuardV1(),
   ) {}
 
@@ -146,6 +166,88 @@ implements PressureChapterHttpDecisionCompilerPort {
     command: PressureChapterSubmitDecisionCommandV1;
     nowMs: number;
   }>): Promise<SubmitOrchestratedActionCommandV1> {
+    return this.compileInternal(input, null);
+  }
+
+  async compileWithSnapshot(input: Readonly<{
+    access: PressureChapterHttpAccessV1;
+    storedRoute: StoredRunRouteRecordV1;
+    command: PressureChapterSubmitDecisionCommandV1;
+    nowMs: number;
+  }>): Promise<Readonly<{
+    command: SubmitOrchestratedActionCommandV1;
+    snapshot: DecisionSubmitSnapshotV1;
+  }>> {
+    const access = validateAccess(input.access);
+    const storedRoute = assertStoredRunRouteRecord(input.storedRoute);
+    const route = validateRunRouteSnapshotV1(storedRoute.snapshot);
+    const publicCommand = validatePublicCommand(input.command);
+    if (
+      !this.submitSnapshots?.captureSubmit
+      || !this.aiPolicyArtifactHash
+      || storedRoute.runId !== route.runId
+      || access.runId !== route.runId
+      || publicCommand.runId !== route.runId
+      || publicCommand.routeHash !== route.routeHash
+    ) mismatch("decision.submitSnapshot", "UNAVAILABLE_OR_ROUTE_MISMATCH");
+    const snapshot = await this.submitSnapshots.captureSubmit({
+      runId: route.runId,
+      expectedRouteHash: route.routeHash,
+      aiPolicyArtifactHash: this.aiPolicyArtifactHash,
+      capturedAtMs: input.nowMs,
+      roomId: access.roomId,
+      subjectId: access.subjectId,
+      seatId: publicCommand.seatId,
+      chapterRuntimeId: publicCommand.chapterRuntimeId,
+      decisionPointId: publicCommand.decisionPointId,
+      expectedWorkingRevision: publicCommand.expectedWorkingRevision,
+      expectedControlEpoch: publicCommand.controlEpoch,
+      expectedSubmissionFenceToken: publicCommand.submissionFenceToken,
+    });
+    if (!snapshot) mismatch("decision.submitSnapshot", "NOT_FOUND");
+    const validatedSnapshot = validateSubmitSnapshot(
+      snapshot,
+      access,
+      publicCommand,
+      this.aiPolicyArtifactHash,
+    );
+    const command = await this.compileInternal(input, validatedSnapshot);
+    return { command, snapshot: structuredClone(validatedSnapshot) };
+  }
+
+  /** SQL7 bridge: compiles from the already captured one-statement snapshot. */
+  async compileFromCapturedSnapshot(input: Readonly<{
+    access: PressureChapterHttpAccessV1;
+    storedRoute: StoredRunRouteRecordV1;
+    command: PressureChapterSubmitDecisionCommandV1;
+    nowMs: number;
+    snapshot: DecisionSubmitSnapshotV1;
+  }>): Promise<SubmitOrchestratedActionCommandV1> {
+    if (!this.aiPolicyArtifactHash) {
+      mismatch("decision.submitSnapshot", "AI_POLICY_ARTIFACT_UNAVAILABLE");
+    }
+    const access = validateAccess(input.access);
+    const publicCommand = validatePublicCommand(input.command);
+    const validatedSnapshot = validateSubmitSnapshot(
+      input.snapshot,
+      access,
+      publicCommand,
+      this.aiPolicyArtifactHash,
+    );
+    return this.compileInternal({
+      access,
+      storedRoute: assertStoredRunRouteRecord(input.storedRoute),
+      command: publicCommand,
+      nowMs: input.nowMs,
+    }, validatedSnapshot);
+  }
+
+  private async compileInternal(input: Readonly<{
+    access: PressureChapterHttpAccessV1;
+    storedRoute: StoredRunRouteRecordV1;
+    command: PressureChapterSubmitDecisionCommandV1;
+    nowMs: number;
+  }>, submitSnapshot: DecisionSubmitSnapshotV1 | null): Promise<SubmitOrchestratedActionCommandV1> {
     const access = validateAccess(input.access);
     const storedRoute = assertStoredRunRouteRecord(input.storedRoute);
     const route = validateRunRouteSnapshotV1(storedRoute.snapshot);
@@ -165,17 +267,18 @@ implements PressureChapterHttpDecisionCompilerPort {
     ) {
       mismatch("decision.route", "STORED_ROUTE_BINDING_MISMATCH");
     }
-    const authority = this.authority
+    const authority = !submitSnapshot && this.authority
       ? await this.readDecisionAuthority(route, access, publicCommand)
       : null;
-    const game = authority
+    const game = authority || submitSnapshot
       ? null
       : await this.games.read({
           runId: route.runId,
           subjectId: access.subjectId,
         });
-    const decision = authority?.decision ?? requireViewerDecision(game!);
-    const projection = await this.working.load({
+    const projection = submitSnapshot?.authority.projection
+      ?? authority?.projection
+      ?? await this.working.load({
       runId: route.runId,
       chapterRuntimeId: publicCommand.chapterRuntimeId,
     });
@@ -199,6 +302,9 @@ implements PressureChapterHttpDecisionCompilerPort {
     if (!authored || authored.seatRequirements[publicCommand.seatId] !== "REQUIRED") {
       mismatch("decision.authored", "SEAT_OR_DECISION_NOT_ALLOWED");
     }
+    const decision: DecisionCompilationViewV1 = submitSnapshot
+      ? decisionFromSubmittedAuthority(authored, projection.state.revision)
+      : authority?.decision ?? requireViewerDecision(game!);
     const option = publicCommand.optionCode === null
       ? null
       : decision.options.find((candidate) => candidate.code === publicCommand.optionCode);
@@ -345,9 +451,10 @@ implements PressureChapterHttpDecisionCompilerPort {
     command: PressureChapterSubmitDecisionCommandV1,
   ): Promise<{
     decision: NonNullable<Awaited<ReturnType<PressureGameChapterReaderPort["readCurrent"]>>>["decision"];
+    projection: Awaited<ReturnType<WorkingProjectionReaderPort["load"]>>;
   }> {
-    const [chapter, viewer] = await Promise.all([
-      this.authority!.chapter.readCurrent({
+    const [authorityChapter, viewer] = await Promise.all([
+      this.authority!.chapter.readCurrentWithProjection({
         runId: route.runId,
         routeHash: route.routeHash,
         viewerSeatId: command.seatId,
@@ -357,7 +464,10 @@ implements PressureChapterHttpDecisionCompilerPort {
         subjectId: access.subjectId,
       }),
     ]);
+    const chapter = authorityChapter?.chapter ?? null;
+    const projection = authorityChapter?.projection ?? null;
     if (!chapter || !viewer) mismatch("decision.authority", "NOT_FOUND");
+    if (!projection) mismatch("decision.authority", "WORKING_PROJECTION_MISSING");
     if (
       chapter.runId !== command.runId
       || chapter.routeHash !== command.routeHash
@@ -365,6 +475,12 @@ implements PressureChapterHttpDecisionCompilerPort {
       || chapter.chapter.chapterRuntimeId !== command.chapterRuntimeId
       || chapter.chapter.chapterId !== command.chapterId
       || chapter.chapter.workingRevision !== command.expectedWorkingRevision
+      || projection.key.runId !== command.runId
+      || projection.key.chapterRuntimeId !== command.chapterRuntimeId
+      || projection.routeHash !== command.routeHash
+      || projection.chapterId !== command.chapterId
+      || projection.state.revision !== command.expectedWorkingRevision
+      || projection.nextDecisionPin?.decisionPointId !== command.decisionPointId
       || viewer.runId !== command.runId
       || viewer.roomId !== access.roomId
       || viewer.routeHash !== command.routeHash
@@ -386,8 +502,75 @@ implements PressureChapterHttpDecisionCompilerPort {
       decisionPointId: command.decisionPointId,
     });
     if (!capabilities.canSubmitDecision) mismatch("decision.capabilities", "NOT_ALLOWED");
-    return { decision: chapter.decision };
+    return { decision: chapter.decision, projection };
   }
+}
+
+interface DecisionCompilationViewV1 {
+  options: PressureGameDecisionOptionV1[];
+  customActionAllowed: boolean;
+}
+
+function decisionFromSubmittedAuthority(
+  authored: AuthoredDecisionRuntimeV1,
+  workingRevision: number,
+): DecisionCompilationViewV1 {
+  if (!Number.isSafeInteger(workingRevision) || workingRevision < 0) {
+    mismatch("decision.workingRevision", "NON_NEGATIVE_SAFE_INTEGER");
+  }
+  return {
+    options: authored.execution.allowedActionTypes.map((actionType) => ({
+      code: actionType,
+      label: actionType,
+      description: actionType,
+      actionType,
+      preferredEntry: "DEFER",
+    })),
+    customActionAllowed: true,
+  };
+}
+
+function validateSubmitSnapshot(
+  raw: DecisionSubmitSnapshotV1,
+  access: PressureChapterHttpAccessV1,
+  command: PressureChapterSubmitDecisionCommandV1,
+  aiPolicyArtifactHash: string,
+): DecisionSubmitSnapshotV1 {
+  if (
+    raw.schemaVersion !== "pressure_decision_submit_snapshot_v1"
+    || !isSha256(raw.submitSnapshotHash)
+    || raw.viewer.roomId !== access.roomId
+    || raw.viewer.runId !== access.runId
+    || raw.viewer.subjectId !== access.subjectId
+    || raw.viewer.humanControllerId !== access.subjectId
+    || raw.viewer.seatId !== command.seatId
+    || raw.authority.routeSnapshot.runId !== command.runId
+    || raw.authority.routeSnapshot.routeHash !== command.routeHash
+    || raw.authority.aiPolicyArtifactHash !== aiPolicyArtifactHash
+    || raw.authority.chapter.chapterRuntimeId !== command.chapterRuntimeId
+    || raw.authority.chapter.currentChapterId !== command.chapterId
+    || raw.authority.chapter.activeDecision?.decisionPointId !== command.decisionPointId
+    || raw.authority.projection.state.revision !== command.expectedWorkingRevision
+  ) mismatch("decision.submitSnapshot", "INVALID_BINDING");
+  const expectedAuthority = withDecisionConvergenceSnapshotHashV1({
+    schemaVersion: raw.authority.schemaVersion,
+    routeSnapshot: raw.authority.routeSnapshot,
+    chapter: raw.authority.chapter,
+    projection: raw.authority.projection,
+    seatAuthority: raw.authority.seatAuthority,
+    aiPolicyArtifactHash: raw.authority.aiPolicyArtifactHash,
+    capturedAtMs: raw.authority.capturedAtMs,
+  });
+  const expectedSubmit = withDecisionSubmitSnapshotHashV1({
+    schemaVersion: raw.schemaVersion,
+    authority: expectedAuthority,
+    viewer: raw.viewer,
+  });
+  if (
+    expectedAuthority.snapshotHash !== raw.authority.snapshotHash
+    || expectedSubmit.submitSnapshotHash !== raw.submitSnapshotHash
+  ) mismatch("decision.submitSnapshot", "SELF_HASH_MISMATCH");
+  return expectedSubmit;
 }
 
 function compileCommand(input: {

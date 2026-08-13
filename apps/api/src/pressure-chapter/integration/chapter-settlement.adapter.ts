@@ -12,6 +12,10 @@ import {
   computeChapterSettlementRequestFingerprintV1,
   validateAtomicChapterCommitRecordV1,
 } from "../chapter-settlement/chapter-commit-record";
+import type {
+  AtomicChapterCommitRecordV1,
+  ChapterSettlementSourceV1,
+} from "../chapter-settlement/types";
 import type { ChapterSettlementPort } from "../orchestrator/contracts";
 import { failPressureChapterIntegration } from "./errors";
 
@@ -40,6 +44,18 @@ export interface DurableChapterSettlementSourcePreparationReceiptV1 {
 }
 
 /**
+ * The source snapshot is returned by the transaction that sealed it, so the
+ * normal settlement path never opens a second transaction merely to reread
+ * the same immutable event.  A durable commit wins on recovery and bypasses
+ * content-policy evaluation exactly as the legacy readCommitted-first path did.
+ */
+export interface DurableChapterSettlementSourcePreparationResultV1
+  extends DurableChapterSettlementSourcePreparationReceiptV1 {
+  source: ChapterSettlementSourceV1 | null;
+  committedRecord: AtomicChapterCommitRecordV1 | null;
+}
+
+/**
  * W1 persistence seam. The implementation must CAS the durable chapter into
  * CHAPTER_SETTLING and persist close fence + settlement source atomically.
  * It has no World/Frozen commit authority; that remains solely in W6.
@@ -47,7 +63,7 @@ export interface DurableChapterSettlementSourcePreparationReceiptV1 {
 export interface DurableChapterSettlementSourcePreparationPort {
   prepareSource(
     input: Readonly<DurableChapterSettlementSourcePreparationV1>,
-  ): Promise<DurableChapterSettlementSourcePreparationReceiptV1>;
+  ): Promise<DurableChapterSettlementSourcePreparationResultV1>;
 }
 
 export function computeDurableChapterSettlementPreparationFingerprintV1(
@@ -158,13 +174,22 @@ export class W4ToW6ChapterSettlementAdapterV1 implements ChapterSettlementPort {
       idempotencyKey,
       sealedInputHash: settlementInput.inputHash,
     });
-    const result = await this.orchestrator.settle({
+    const command = {
       authorityTrigger: "CHAPTER_CLOSE",
       runId: settlementInput.runId,
       chapterRuntimeId: settlementInput.chapterRuntimeId,
       idempotencyKey,
       requestFingerprint,
-    });
+    } as const;
+    const result = prepared.committedRecord
+      ? {
+          status: "REPLAYED" as const,
+          record: structuredClone(prepared.committedRecord),
+        }
+      : await this.orchestrator.settlePrepared(
+          command,
+          requirePreparedSource(prepared),
+        );
     const record = validateAtomicChapterCommitRecordV1(result.record);
     if (
       record.runId !== settlementInput.runId
@@ -187,6 +212,18 @@ export class W4ToW6ChapterSettlementAdapterV1 implements ChapterSettlementPort {
       frozenBundle: structuredClone(record.frozenChapterBundle),
     };
   }
+}
+
+function requirePreparedSource(
+  result: DurableChapterSettlementSourcePreparationResultV1,
+): ChapterSettlementSourceV1 {
+  if (!result.source || result.committedRecord) {
+    failPressureChapterIntegration(
+      "INTEGRATION_AUTHORITY_SOURCE_MISMATCH",
+      "settlement.preparedSource",
+    );
+  }
+  return structuredClone(result.source);
 }
 
 export function canonicalSeatParticipationV1(
@@ -236,7 +273,7 @@ export function canonicalSeatParticipationV1(
 }
 
 function validatePreparationReceipt(
-  receipt: DurableChapterSettlementSourcePreparationReceiptV1,
+  receipt: DurableChapterSettlementSourcePreparationResultV1,
   expected: Readonly<{
     settlementInput: SettlementRequestV1["settlementInput"];
     preparationFingerprint: string;
@@ -257,6 +294,37 @@ function validatePreparationReceipt(
   }
   hash(receipt.closeFenceHash, "settlement.preparationReceipt.closeFenceHash");
   hash(receipt.sourceHash, "settlement.preparationReceipt.sourceHash");
+  if ((receipt.source === null) === (receipt.committedRecord === null)) {
+    failPressureChapterIntegration(
+      "INTEGRATION_AUTHORITY_SOURCE_MISMATCH",
+      "settlement.preparationReceipt.authority",
+    );
+  }
+  if (receipt.source) {
+    if (
+      receipt.source.sourceHash !== receipt.sourceHash
+      || receipt.source.closeFence.closeFenceHash !== receipt.closeFenceHash
+    ) {
+      failPressureChapterIntegration(
+        "INTEGRATION_AUTHORITY_SOURCE_MISMATCH",
+        "settlement.preparationReceipt.source",
+      );
+    }
+  } else {
+    const record = validateAtomicChapterCommitRecordV1(receipt.committedRecord);
+    if (
+      record.runId !== expected.settlementInput.runId
+      || record.chapterRuntimeId !== expected.settlementInput.chapterRuntimeId
+      || record.sealedInput.inputHash !== expected.settlementInput.inputHash
+      || record.sourceHash !== receipt.sourceHash
+      || record.commitFence.closeFenceHash !== receipt.closeFenceHash
+    ) {
+      failPressureChapterIntegration(
+        "INTEGRATION_AUTHORITY_SOURCE_MISMATCH",
+        "settlement.preparationReceipt.committedRecord",
+      );
+    }
+  }
 }
 
 function hash(value: string, path: string): void {

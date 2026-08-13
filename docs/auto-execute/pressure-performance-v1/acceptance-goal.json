@@ -1,0 +1,16 @@
+{
+  "goalId": "pressure-performance-v1",
+  "branch": "codex/pressure-phased-performance-v1",
+  "baseHead": "b5c3b95afc6b9994332cf6aed7928e9ce5a76ffd",
+  "required": [
+    "application SQL statement count is less than or equal to 7 in the comparable successful N1 to N2 scenario",
+    "functional behavior remains correct",
+    "authority, idempotency, concurrency and recovery fences remain intact",
+    "no player UI or Prisma schema/migration changes"
+  ],
+  "notRequiredThisRound": [
+    "warm p50 or p95 latency SLO",
+    "production enablement of Fast Reader"
+  ],
+  "verdict": "IN_PROGRESS"
+}

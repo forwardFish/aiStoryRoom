@@ -8,6 +8,7 @@ import {
 } from "@ai-story/shared";
 import { createPreparedAutomationActionBatchV1 } from "./prepared-action-batch";
 import type { AppendPreparedAutomationActionCommandV1 } from "./contracts";
+import { PrismaPreparedAutomationActionSubmissionV1 } from "../persistence/prepared-automation-action.prisma-adapter";
 
 const route = withRunRouteHash({
   schemaVersion: "pressure_run_route_snapshot_v1",
@@ -57,6 +58,7 @@ function action(seatId: SeatIdV1, hash: string): AppendPreparedAutomationActionC
       nowMs: 1_900_000_000_000,
     },
     authority: {
+      actorKind: "AI",
       snapshotHash: hash,
       expectedOrchestratorRevision: 3,
       expectedOrchestratorHash: hash,
@@ -89,6 +91,9 @@ test("prepared AI batch canonicalizes route seat order and hash", () => {
     expectedWorkingStateHash: snapshotHash,
     expectedLedgerHeadHash: snapshotHash,
     expectedSeatAuthorityStateHash: snapshotHash,
+    nextOrchestratorState: { orchestratorHash: snapshotHash } as never,
+    chapterDescriptor: { descriptorHash: snapshotHash } as never,
+    beatPlan: { postBeatOrchestratorState: { orchestratorHash: snapshotHash } } as never,
   };
   const left = createPreparedAutomationActionBatchV1({
     ...input,
@@ -105,4 +110,40 @@ test("prepared AI batch canonicalizes route seat order and hash", () => {
   );
   assert.equal(left.batchHash, right.batchHash);
   assert.equal(left.actions[0]?.command.action.seatId, "cabinet_finance");
+});
+
+test("prepared AI batch rejects post-hash command tampering before opening a transaction", async () => {
+  const snapshotHash = sha256Canonical("snapshot-tamper");
+  const batch = createPreparedAutomationActionBatchV1({
+    batchId: "batch-tamper",
+    snapshotHash,
+    routeSnapshot: route,
+    chapterRuntimeId: "runtime-1",
+    chapterId: "N1",
+    decisionPointId: "decision-1",
+    expectedOrchestratorRevision: 3,
+    expectedOrchestratorHash: snapshotHash,
+    expectedWorkingRevision: 0,
+    expectedWorkingStateHash: snapshotHash,
+    expectedLedgerHeadHash: snapshotHash,
+    expectedSeatAuthorityStateHash: snapshotHash,
+    nextOrchestratorState: { orchestratorHash: snapshotHash } as never,
+    chapterDescriptor: { descriptorHash: snapshotHash } as never,
+    beatPlan: { postBeatOrchestratorState: { orchestratorHash: snapshotHash } } as never,
+    actions: [action("cabinet_finance", snapshotHash)],
+  });
+  batch.actions[0]!.command.nowMs += 1;
+  let transactionCalls = 0;
+  const adapter = new PrismaPreparedAutomationActionSubmissionV1({
+    $transaction: async () => {
+      transactionCalls += 1;
+      throw new Error("TRANSACTION_MUST_NOT_OPEN");
+    },
+  } as never);
+
+  await assert.rejects(
+    () => adapter.submitPreparedBatch(batch),
+    /Prepared automation batch binding is invalid/u,
+  );
+  assert.equal(transactionCalls, 0);
 });

@@ -213,6 +213,43 @@ implements AuthoredChapterContentPort {
       descriptorHash: sha256Canonical(body),
     });
   }
+
+  /**
+   * SQL7/open-next seam. Content is package-owned and local, while the
+   * authority arguments prove that N2 is being derived from the world just
+   * frozen by the same in-memory settlement plan. No repository read occurs.
+   */
+  async loadFromAuthority(input: {
+    routeSnapshot: RunRouteSnapshotV1;
+    chapterId: "N2";
+    authorityBase: ChapterAuthorityBaseV1;
+    source: {
+      routeHash: string;
+      sourceFrozenHash: string;
+      worldState: WorldStateV1;
+    };
+  }): Promise<AuthoredChapterRuntimeV1> {
+    const route = assertAcceptedContentRoute(
+      input.routeSnapshot,
+      this.loaded.manifest,
+    );
+    const world = validateWorldStateV1(input.source.worldState);
+    if (
+      input.source.routeHash !== route.routeHash
+      || input.source.sourceFrozenHash !== input.authorityBase.previousFrozenHash
+      || world.worldSequence !== input.authorityBase.baseWorldSequence
+      || world.stateHash !== input.authorityBase.baseWorldStateHash
+    ) {
+      failPressureChapterIntegration(
+        "INTEGRATION_AUTHORITY_SOURCE_MISMATCH",
+        "authoredChapter.authorityBase",
+      );
+    }
+    return this.load({
+      routeSnapshot: route,
+      chapterId: input.chapterId,
+    });
+  }
 }
 
 /**
@@ -254,6 +291,30 @@ implements ChapterWorkingSeedPort {
         "workingSeed.authorityBase",
       );
     }
+    return this.loadFromAuthority({ ...input, source });
+  }
+
+  async loadFromAuthority(input: {
+    routeSnapshot: RunRouteSnapshotV1;
+    chapter: AuthoredChapterRuntimeV1;
+    authorityBase: ChapterAuthorityBaseV1;
+    source: {
+      routeHash: string;
+      sourceFrozenHash: string;
+      worldState: Parameters<typeof validateWorldStateV1>[0];
+    };
+  }): Promise<ChapterWorkingState> {
+    const route = assertAcceptedContentRoute(
+      input.routeSnapshot,
+      this.loaded.manifest,
+    );
+    if (input.authorityBase.baseWorldSequence !== chapterNumber(input.chapter.chapterId) - 1) {
+      failPressureChapterIntegration(
+        "INTEGRATION_AUTHORITY_SOURCE_MISMATCH",
+        "workingSeed.baseWorldSequence",
+      );
+    }
+    const source = input.source;
     const world = validateWorldStateV1(source.worldState);
     if (
       source.routeHash !== route.routeHash

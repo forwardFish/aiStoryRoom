@@ -588,10 +588,26 @@ test("content-owned policy compiles sealed identities and ignores payload rule f
   assert.equal(chapterInputs[0]!.defaultEvents.length, 0);
   assert.equal(aggregationModes[0], "ACTION_CONTRIBUTIONS");
 
+  const policySealedEvidence = b0Input(
+    world.stateHash,
+    world.worldSequence,
+    "MIXED",
+    false,
+  );
+  const policySealedDraft = await adapter.evaluateChapter({
+    b0Input: policySealedEvidence,
+    baseWorldState: world,
+  });
+  assert.deepEqual(
+    policySealedDraft.causalEdges[0]?.evidenceRefs,
+    ["evidence.N1.breach_chain"],
+  );
+  assert.doesNotThrow(() => sealB0ChapterPolicyEvaluationV1(policySealedDraft));
+
   const allDefault = b0Input(world.stateHash, world.worldSequence, "ALL_DEFAULT");
   await adapter.evaluateChapter({ b0Input: allDefault, baseWorldState: world });
-  assert.equal(chapterInputs[1]!.defaultEvents.length, 1);
-  assert.equal(aggregationModes[1], "DEFAULT_TRAJECTORY_ONCE");
+  assert.equal(chapterInputs[2]!.defaultEvents.length, 1);
+  assert.equal(aggregationModes[2], "DEFAULT_TRAJECTORY_ONCE");
 
   const unknown = b0Input(world.stateHash, world.worldSequence, "UNKNOWN_ACTION");
   await assert.rejects(
@@ -856,6 +872,7 @@ function b0Input(
   baseWorldStateHash: string,
   baseWorldSequence: number,
   mode: "MIXED" | "ALL_DEFAULT" | "UNKNOWN_ACTION",
+  includeActionEvidence = true,
 ) {
   const loaded = loadSangtianPressureChapterPackageV1();
   const evidenceRef = "evidence.N1.breach_chain";
@@ -897,7 +914,7 @@ function b0Input(
         // only the sealed identity above reaches the policy compiler.
         payload,
         resourceCommitments: [],
-        evidenceRefs: [evidenceRef],
+        evidenceRefs: includeActionEvidence ? [evidenceRef] : [],
       };
     });
   const wireBase = {

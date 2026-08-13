@@ -10,15 +10,20 @@ import {
   validateRunRouteSnapshotV1,
   validateSealedChapterSettlementInputV1,
   type ChapterIdV1,
+  type FrozenChapterBundleV1,
   type RunRouteSnapshotV1,
   type SeatIdV1,
 } from "@ai-story/shared";
 import {
   buildChapterWorkingSet,
   createChapterWorkingState,
+  type ChapterWorkingState,
 } from "@ai-story/templates";
+import { planWorkingLedgerOpeningV1 } from "../working-ledger/working-ledger.service";
+import { workingLedgerProjectionCacheHashV1 } from "../working-ledger/projection-cache";
 import {
   measurePressureDecisionStageV1,
+  recordPressureDecisionCommittedAuthorityV1,
   recordPressureDecisionW4ConflictV1,
 } from "../observability/decision-convergence-timing";
 import type {
@@ -32,6 +37,7 @@ import type {
   ChapterOrchestratorStateV1,
   ChapterSeatSummaryV1,
   ChapterSettlementPort,
+  CommittedSettlementResumeAuthorityV1,
   ChapterWorkingSeedPort,
   DecisionBeatResolutionPort,
   DecisionCloseEvaluatorPort,
@@ -126,6 +132,44 @@ export class PressureChapterOrchestratorService {
       case "FINALE_REQUESTED":
         return state;
     }
+  }
+
+  /**
+   * Continues a just-committed SETTLING transition without rereading the W4
+   * state, authored descriptor, or Working projection. Durable settlement
+   * source preparation and all of its fences remain unchanged.
+   */
+  async resumeFromCommittedSettlementAuthority(
+    routeSnapshot: RunRouteSnapshotV1,
+    authorityValue: Readonly<CommittedSettlementResumeAuthorityV1>,
+    nowMs: number,
+  ): Promise<ChapterOrchestratorStateV1> {
+    const route = validateRunRouteSnapshotV1(routeSnapshot);
+    assertNow(nowMs);
+    const state = validateOrchestratorStateV1(authorityValue.state);
+    assertRoute(state, route);
+    if (state.phase !== "SETTLING") {
+      failChapterOrchestrator(ERROR.INVALID_PHASE, state.phase);
+    }
+    const descriptor = validateAuthoredChapterRuntimeV1(authorityValue.chapterDescriptor);
+    if (
+      descriptor.chapterId !== state.currentChapterId
+      || descriptor.descriptorHash !== state.descriptorHash
+    ) failChapterOrchestrator(ERROR.SETTLEMENT_MISMATCH, "descriptor");
+    const projection = structuredClone(authorityValue.workingProjection);
+    assertProjectionContext(state, projection);
+    assertChapterClose(descriptor, projection.state.completedDecisionPointIds);
+    const suppliedInput = validateSealedChapterSettlementInputV1(authorityValue.settlementInput);
+    const expectedInput = compileSettlementInputV1(state, descriptor, projection);
+    if (
+      state.settlementInputHash !== suppliedInput.inputHash
+      || expectedInput.inputHash !== suppliedInput.inputHash
+    ) failChapterOrchestrator(ERROR.SETTLEMENT_MISMATCH, "sealed-input");
+    return this.driveSettlement(route, state, nowMs, {
+      chapterDescriptor: descriptor,
+      workingProjection: projection,
+      settlementInput: suppliedInput,
+    });
   }
 
   async submitAction(
@@ -340,7 +384,7 @@ export class PressureChapterOrchestratorService {
       );
     }
     assertChapterClose(descriptor, result.projection.state.completedDecisionPointIds);
-    const settlementInput = compileSettlementInput(state, descriptor, result.projection);
+    const settlementInput = compileSettlementInputV1(state, descriptor, result.projection);
     const settling = nextState(state, {
       phase: "SETTLING",
       activeDecision: null,
@@ -352,20 +396,40 @@ export class PressureChapterOrchestratorService {
       next: settling,
     });
     if (saved.status === "CONFLICT") return this.resume(route, nowMs);
-    return this.driveSettlement(route, settling, nowMs);
+    return this.driveSettlement(route, settling, nowMs, {
+      chapterDescriptor: descriptor,
+      workingProjection: result.projection,
+      settlementInput,
+    });
   }
 
   private async driveSettlement(
     route: RunRouteSnapshotV1,
     state: ChapterOrchestratorStateV1,
     nowMs: number,
+    committedAuthority?: Omit<CommittedSettlementResumeAuthorityV1, "state">,
   ): Promise<ChapterOrchestratorStateV1> {
     if (state.phase !== "SETTLING") failChapterOrchestrator(ERROR.INVALID_PHASE, state.phase);
-    const descriptor = await this.loadDescriptor(route, state.currentChapterId, state.descriptorHash);
-    const projection = await this.loadProjection(state);
+    const descriptor = committedAuthority
+      ? validateAuthoredChapterRuntimeV1(committedAuthority.chapterDescriptor)
+      : await this.loadDescriptor(route, state.currentChapterId, state.descriptorHash);
+    if (
+      descriptor.chapterId !== state.currentChapterId
+      || descriptor.descriptorHash !== state.descriptorHash
+    ) failChapterOrchestrator(ERROR.SETTLEMENT_MISMATCH, "descriptor");
+    const projection = committedAuthority
+      ? structuredClone(committedAuthority.workingProjection)
+      : await this.loadProjection(state);
+    assertProjectionContext(state, projection);
     assertChapterClose(descriptor, projection.state.completedDecisionPointIds);
-    const settlementInput = compileSettlementInput(state, descriptor, projection);
-    if (state.settlementInputHash !== settlementInput.inputHash) {
+    const expectedSettlementInput = compileSettlementInputV1(state, descriptor, projection);
+    const settlementInput = committedAuthority
+      ? validateSealedChapterSettlementInputV1(committedAuthority.settlementInput)
+      : expectedSettlementInput;
+    if (
+      state.settlementInputHash !== settlementInput.inputHash
+      || expectedSettlementInput.inputHash !== settlementInput.inputHash
+    ) {
       failChapterOrchestrator(ERROR.SETTLEMENT_MISMATCH, "sealed-input");
     }
     const result = await measurePressureDecisionStageV1(
@@ -374,7 +438,7 @@ export class PressureChapterOrchestratorService {
         routeSnapshot: route,
         settlementInput,
         chapterDescriptorHash: descriptor.descriptorHash,
-        seatParticipation: compileSeatParticipation(state.chapterSeatSummaries),
+        seatParticipation: compileSeatParticipationV1(state.chapterSeatSummaries),
       }),
     );
     const bundle = validateFrozenChapterBundleV1(
@@ -404,13 +468,14 @@ export class PressureChapterOrchestratorService {
       next: frozen,
     });
     if (saved.status === "CONFLICT") return this.resume(route, nowMs);
-    return this.driveFrozen(route, frozen, nowMs);
+    return this.driveFrozen(route, frozen, nowMs, bundle);
   }
 
   private async driveFrozen(
     route: RunRouteSnapshotV1,
     state: ChapterOrchestratorStateV1,
     nowMs: number,
+    committedBundle: FrozenChapterBundleV1 | null = null,
   ): Promise<ChapterOrchestratorStateV1> {
     if (state.phase !== "FROZEN") failChapterOrchestrator(ERROR.INVALID_PHASE, state.phase);
     if (!state.frozenBundleHash) failChapterOrchestrator(ERROR.STATE_CORRUPT, "frozen-hash");
@@ -434,6 +499,7 @@ export class PressureChapterOrchestratorService {
         authorityBase: state.authorityBase,
         expected: state,
         nowMs,
+        committedBundle,
       }),
     );
   }
@@ -444,6 +510,7 @@ export class PressureChapterOrchestratorService {
     authorityBase: ChapterAuthorityBaseV1;
     expected: ChapterOrchestratorStateV1 | null;
     nowMs: number;
+    committedBundle?: FrozenChapterBundleV1 | null;
   }): Promise<ChapterOrchestratorStateV1> {
     if (input.authorityBase.baseWorldSequence !== chapterSequence(input.chapterId) - 1) {
       failChapterOrchestrator(ERROR.STATE_CORRUPT, "base-world-sequence");
@@ -454,54 +521,61 @@ export class PressureChapterOrchestratorService {
       input.chapterId,
       input.authorityBase.previousFrozenHash,
     );
-    const seed = await this.seeds.load({
+    const seedInput = {
       routeSnapshot: input.route,
       chapter: descriptor,
       authorityBase: input.authorityBase,
-    });
+    };
+    const seed = input.committedBundle && this.seeds.loadFromAuthority
+      ? await this.seeds.loadFromAuthority({
+          ...seedInput,
+          source: {
+            routeHash: input.route.routeHash,
+            sourceFrozenHash: input.committedBundle.bundleHash,
+            worldState: structuredClone(input.committedBundle.frozenWorldState),
+          },
+        })
+      : await this.seeds.load(seedInput);
     if (
       seed.runId !== input.route.runId
       || seed.chapterId !== input.chapterId
       || seed.revision !== 0
     ) failChapterOrchestrator(ERROR.CONTENT_INVALID, "working-seed");
-    await this.ledgerOpening.open({
+    const planned = planChapterOpeningV1({
+      routeSnapshot: input.route,
+      chapter: descriptor,
+      authorityBase: input.authorityBase,
+      expected: input.expected,
+      seed,
+      nowMs: input.nowMs,
+    });
+    const opening = await this.ledgerOpening.open({
       routeSnapshot: input.route,
       chapterRuntimeId,
       chapterDefinition: descriptor.definition,
       initialState: seed,
     });
-    const projection = await this.projections.load({
-      runId: input.route.runId,
-      chapterRuntimeId,
-    });
-    const workingSet = buildChapterWorkingSet(descriptor.definition, seed);
     if (
-      !workingSet
-      || projection.nextDecisionPin?.decisionPointId !== workingSet.decisionPoint.decisionPointId
-      || projection.state.revision !== 0
+      chapterRuntimeId !== planned.chapterRuntimeId
+      || sha256Canonical(opening.event) !== sha256Canonical(planned.event)
+      || workingLedgerProjectionCacheHashV1(opening.projection)
+        !== workingLedgerProjectionCacheHashV1(planned.projection)
     ) failChapterOrchestrator(ERROR.CONTENT_INVALID, "initial-kernel-pin");
-    const active = buildActiveDecision(descriptor, workingSet.decisionPoint.decisionPointId, input.nowMs);
-    const next = withOrchestratorHashV1({
-      schemaVersion: "pressure_chapter_orchestrator_state_v1",
-      runId: input.route.runId,
-      routeHash: input.route.routeHash,
-      revision: input.expected ? input.expected.revision + 1 : 0,
-      phase: "ACTIVE",
-      currentChapterId: input.chapterId,
-      chapterRuntimeId,
-      descriptorHash: descriptor.descriptorHash,
-      authorityBase: structuredClone(input.authorityBase),
-      activeDecision: active,
-      chapterSeatSummaries: initialSeatSummaries(),
-      settlementInputHash: null,
-      frozenBundleHash: null,
-    });
+    const projection = opening.projection;
+    const next = planned.state;
     const saved = await this.states.compareAndSwap({
       runId: input.route.runId,
       expectedRevision: input.expected?.revision ?? null,
       next,
     });
-    if (saved.status === "COMMITTED") return next;
+    if (saved.status === "COMMITTED") {
+      recordPressureDecisionCommittedAuthorityV1({
+        chapter: next,
+        workingProjection: projection,
+        chapterDescriptor: descriptor,
+      });
+      return next;
+    }
     return this.resume(input.route, input.nowMs);
   }
 
@@ -578,8 +652,7 @@ export class PressureChapterOrchestratorService {
       .sort((left, right) => compareCanonicalText(left.action.actionId, right.action.actionId));
     if (!missing.length) return state;
 
-    const nextActive = structuredClone(active);
-    const nextSummaries = structuredClone(state.chapterSeatSummaries);
+    const recordedInputs: Array<Parameters<typeof planRecordedActionsV1>[1][number]> = [];
     for (const accepted of missing) {
       const seatId = accepted.action.seatId;
       const budget = decision.execution.perSeatActionBudget[seatId];
@@ -590,17 +663,25 @@ export class PressureChapterOrchestratorService {
       if (accepted.action.expectedWorkingRevision !== projection.state.revision) {
         failChapterOrchestrator(ERROR.STALE_ACTION, accepted.action.actionId);
       }
-      foldRecordedAction(nextActive, nextSummaries, {
+      recordedInputs.push({
         seatId,
         actionId: accepted.action.actionId,
         defaultCode: recoveredDefaultCode(accepted.action.idempotencyKey, decision),
         actionBudget: budget,
       });
     }
-    const next = nextState(state, {
-      activeDecision: nextActive,
-      chapterSeatSummaries: nextSummaries,
+    const candidate = planRecordedActionsV1(state, recordedInputs, false);
+    const requiredComplete = candidate.activeDecision!.seats
+      .filter((seat) => seat.requirement === "REQUIRED")
+      .every((seat) => seat.completion !== "PENDING");
+    const closeInSameCas = requiredComplete && await this.decisionClose.isClosed({
+      decision,
+      active: candidate.activeDecision!,
+      projection,
     });
+    const next = closeInSameCas
+      ? planRecordedActionsV1(state, recordedInputs, true)
+      : candidate;
     const saved = await this.states.compareAndSwap({
       runId: state.runId,
       expectedRevision: state.revision,
@@ -708,6 +789,172 @@ function foldRecordedAction(
   }
 }
 
+export interface PlannedChapterOpeningV1 {
+  chapterRuntimeId: string;
+  state: ChapterOrchestratorStateV1;
+  event: ReturnType<typeof planWorkingLedgerOpeningV1>["event"];
+  projection: ReturnType<typeof planWorkingLedgerOpeningV1>["projection"];
+}
+
+/** Pure N1-N7 opening authority shared by ordinary W4 and the SQL7 boundary. */
+export function planChapterOpeningV1(input: Readonly<{
+  routeSnapshot: RunRouteSnapshotV1;
+  chapter: AuthoredChapterRuntimeV1;
+  authorityBase: ChapterAuthorityBaseV1;
+  expected: ChapterOrchestratorStateV1 | null;
+  seed: ChapterWorkingState;
+  nowMs: number;
+}>): PlannedChapterOpeningV1 {
+  const route = validateRunRouteSnapshotV1(input.routeSnapshot);
+  const chapter = validateAuthoredChapterRuntimeV1(input.chapter);
+  const expected = input.expected
+    ? validateOrchestratorStateV1(input.expected)
+    : null;
+  assertNow(input.nowMs);
+  if (
+    input.authorityBase.baseWorldSequence !== chapterSequence(chapter.chapterId) - 1
+    || (expected !== null && (
+      expected.runId !== route.runId
+      || expected.routeHash !== route.routeHash
+      || expected.phase !== "FROZEN"
+      || expected.authorityBase.previousFrozenHash
+        !== input.authorityBase.previousFrozenHash
+    ))
+  ) failChapterOrchestrator(ERROR.STATE_CORRUPT, "opening-authority");
+  const chapterRuntimeId = deterministicChapterRuntimeId(
+    route.runId,
+    chapter.chapterId,
+    input.authorityBase.previousFrozenHash,
+  );
+  const opening = planWorkingLedgerOpeningV1({
+    routeSnapshot: route,
+    chapterRuntimeId,
+    chapterDefinition: chapter.definition,
+    initialState: input.seed,
+  });
+  const workingSet = buildChapterWorkingSet(chapter.definition, opening.projection.state);
+  if (
+    !workingSet
+    || opening.projection.nextDecisionPin?.decisionPointId
+      !== workingSet.decisionPoint.decisionPointId
+    || opening.projection.state.revision !== 0
+  ) failChapterOrchestrator(ERROR.CONTENT_INVALID, "initial-kernel-pin");
+  const active = buildActiveDecision(
+    chapter,
+    workingSet.decisionPoint.decisionPointId,
+    input.nowMs,
+  );
+  const state = withOrchestratorHashV1({
+    schemaVersion: "pressure_chapter_orchestrator_state_v1",
+    runId: route.runId,
+    routeHash: route.routeHash,
+    revision: expected ? expected.revision + 1 : 0,
+    phase: "ACTIVE",
+    currentChapterId: chapter.chapterId,
+    chapterRuntimeId,
+    descriptorHash: chapter.descriptorHash,
+    authorityBase: structuredClone(input.authorityBase),
+    activeDecision: active,
+    chapterSeatSummaries: initialSeatSummaries(),
+    settlementInputHash: null,
+    frozenBundleHash: null,
+  });
+  return {
+    chapterRuntimeId,
+    state,
+    event: opening.event,
+    projection: opening.projection,
+  };
+}
+
+/**
+ * Pure W4 fold shared by the ordinary batch writer and recovery.  It records
+ * a complete set of already-authorized W5 actions and optionally claims Beat
+ * resolution in that same W4 revision.
+ */
+export function planRecordedActionsV1(
+  stateValue: ChapterOrchestratorStateV1,
+  inputs: ReadonlyArray<Readonly<{
+    seatId: SeatIdV1;
+    actionId: string;
+    defaultCode: string | null;
+    actionBudget: number;
+  }>>,
+  claimResolutionWhenComplete: boolean,
+): ChapterOrchestratorStateV1 {
+  const state = validateOrchestratorStateV1(stateValue);
+  if (state.phase !== "ACTIVE" || !state.activeDecision) {
+    failChapterOrchestrator(ERROR.INVALID_PHASE, state.phase);
+  }
+  const active = structuredClone(state.activeDecision);
+  const summaries = structuredClone(state.chapterSeatSummaries);
+  for (const input of inputs) foldRecordedAction(active, summaries, input);
+  const complete = active.seats
+    .filter((seat) => seat.requirement === "REQUIRED")
+    .every((seat) => seat.completion !== "PENDING");
+  return nextState(state, {
+    phase: claimResolutionWhenComplete && complete ? "RESOLVING_BEAT" : "ACTIVE",
+    activeDecision: active,
+    chapterSeatSummaries: summaries,
+  });
+}
+
+/** Pure W4 transition after a deterministic Beat has already been planned. */
+export function planBeatProgressionV1(input: Readonly<{
+  state: ChapterOrchestratorStateV1;
+  descriptor: AuthoredChapterRuntimeV1;
+  projection: Awaited<ReturnType<WorkingProjectionReaderPort["load"]>>;
+  resolution: Parameters<typeof validateBeatResolutionV1>[0];
+  nowMs: number;
+}>): Readonly<{
+  nextState: ChapterOrchestratorStateV1;
+  settlementInput: ReturnType<typeof compileSettlementInputV1> | null;
+}> {
+  const state = validateOrchestratorStateV1(input.state);
+  const descriptor = validateAuthoredChapterRuntimeV1(input.descriptor);
+  assertNow(input.nowMs);
+  if (
+    state.phase !== "RESOLVING_BEAT"
+    || !state.activeDecision
+    || descriptor.chapterId !== state.currentChapterId
+    || descriptor.descriptorHash !== state.descriptorHash
+  ) failChapterOrchestrator(ERROR.INVALID_PHASE, state.phase);
+  const actionIds = [...new Set(state.activeDecision.seats.flatMap((seat) => seat.actionIds))]
+    .sort(compareCanonicalText);
+  if (!actionIds.length) failChapterOrchestrator(ERROR.CLOSE_POLICY_NOT_MET, "no-actions");
+  const actions = actionIds.map((actionId) => {
+    const accepted = input.projection.acceptedActions.get(actionId);
+    if (!accepted) failChapterOrchestrator(ERROR.DECISION_MISMATCH, `missing-action:${actionId}`);
+    return accepted.action;
+  });
+  const resolution = validateBeatResolutionV1(input.resolution, actions);
+  if (!sameStrings([...resolution.sealedActionIds].sort(compareCanonicalText), actionIds)) {
+    failChapterOrchestrator(ERROR.DECISION_MISMATCH, "beat-action-set");
+  }
+  assertProjectionContext(state, input.projection);
+  const nextPin = input.projection.nextDecisionPin;
+  if (nextPin) {
+    assertKernelPin(descriptor, input.projection, nextPin.decisionPointId);
+    return {
+      nextState: nextState(state, {
+        phase: "ACTIVE",
+        activeDecision: buildActiveDecision(descriptor, nextPin.decisionPointId, input.nowMs),
+      }),
+      settlementInput: null,
+    };
+  }
+  assertChapterClose(descriptor, input.projection.state.completedDecisionPointIds);
+  const settlementInput = compileSettlementInputV1(state, descriptor, input.projection);
+  return {
+    nextState: nextState(state, {
+      phase: "SETTLING",
+      activeDecision: null,
+      settlementInputHash: settlementInput.inputHash,
+    }),
+    settlementInput,
+  };
+}
+
 function buildActiveDecision(
   descriptor: AuthoredChapterRuntimeV1,
   decisionPointId: string,
@@ -744,7 +991,7 @@ function initialSeatSummaries(): ChapterSeatSummaryV1[] {
   }));
 }
 
-function compileSettlementInput(
+export function compileSettlementInputV1(
   state: ChapterOrchestratorStateV1,
   descriptor: AuthoredChapterRuntimeV1,
   projection: Awaited<ReturnType<WorkingProjectionReaderPort["load"]>>,
@@ -776,7 +1023,7 @@ function compileSettlementInput(
   });
 }
 
-function compileSeatParticipation(summaries: ChapterSeatSummaryV1[]) {
+export function compileSeatParticipationV1(summaries: ChapterSeatSummaryV1[]) {
   return summaries.map((summary) => {
     if (summary.requirement === "NOT_REQUIRED") {
       return {

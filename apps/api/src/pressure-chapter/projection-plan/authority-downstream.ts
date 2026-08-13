@@ -10,6 +10,8 @@ import {
   type OpenNovelNarrativeProjectionJobV1,
 } from "@ai-story/shared";
 import type { AEmotionAuthorityEmissionV1 } from "../a-emotion-production/content-source";
+import { createSangtianAEmotionContentSourceCompilerV1 } from "../a-emotion-production/content-source";
+import type { WorkingLedgerEventV1, WorkingLedgerProjectionV1 } from "../working-ledger/contracts";
 import {
   SANGTIAN_NARRATIVE_AUTHORITY_TARGET_V1 as TARGET,
 } from "../narrative-authority/catalog";
@@ -52,9 +54,100 @@ export interface NarrativeProjectionPlanInputV1 {
 export interface DownstreamInsertTransactionV1 {
   pressureNarrativeProjection: {
     create(input: { data: Record<string, unknown> }): Promise<{ id: string }>;
+    createMany?(input: { data: Record<string, unknown>[] }): Promise<{ count: number }>;
   };
   pressureOutboxTask: {
     create(input: { data: Record<string, unknown> }): Promise<unknown>;
+    createMany?(input: { data: Record<string, unknown>[] }): Promise<{ count: number }>;
+  };
+}
+
+export function planBeatAuthorityDownstreamV1(input: Readonly<{
+  projection: WorkingLedgerProjectionV1;
+  beatEvent: WorkingLedgerEventV1;
+  contentPackageSha256: string;
+  committedAt: string;
+}>): Readonly<{
+  narrativeJobs: OpenNovelNarrativeProjectionJobV1[];
+  aEmotionEmissions: AEmotionAuthorityEmissionV1[];
+  manifest: AuthorityDownstreamManifestV1;
+}> {
+  if (input.beatEvent.payload.eventType !== "BEAT_APPLIED") {
+    throw invalid("Beat downstream plan requires BEAT_APPLIED");
+  }
+  const event = input.beatEvent;
+  const payload = input.beatEvent.payload;
+  if (payload.eventType !== "BEAT_APPLIED") {
+    throw invalid("Beat downstream payload changed after validation");
+  }
+  const beat = payload.beatResolution;
+  const sealedActions = beat.sealedActionIds.map((actionId) => {
+    const accepted = input.projection.acceptedActions.get(actionId);
+    if (!accepted) throw invalid("Beat downstream plan is missing a sealed action");
+    return accepted.action;
+  });
+  const sealedActionAudiences = beat.sealedActionIds.map((actionId) => {
+    const accepted = input.projection.acceptedActions.get(actionId);
+    if (!accepted) {
+      throw invalid("Beat downstream plan is missing a sealed action audience");
+    }
+    return {
+      actionId,
+      audienceSeatIds: [...accepted.audienceSeatIds].sort(),
+    };
+  });
+  const workingDeltaHash = sha256Canonical(beat.workingDelta);
+  const rawAuthority = {
+    schemaVersion: "pressure_committed_beat_narrative_authority_v1" as const,
+    runId: event.runId,
+    chapterRuntimeId: event.chapterRuntimeId,
+    chapterId: event.chapterId,
+    decisionPointId: beat.decisionPointId,
+    decisionPointKey: beat.decisionPointId,
+    baseWorkingRevision: beat.baseWorkingRevision,
+    committedWorkingRevision: beat.committedWorkingRevision,
+    inputWorkingStateHash: beat.inputWorkingStateHash,
+    sealedActionIds: [...beat.sealedActionIds],
+    sealedActionsHash: beat.sealedActionsHash,
+    sealedActions,
+    sealedActionAudiences,
+    resolverVersion: beat.resolverVersion,
+    workingDelta: beat.workingDelta,
+    workingDeltaHash,
+    stateAfter: payload.stateAfter,
+    stateAfterHash: payload.stateAfterHash,
+    reservationMutations: beat.reservationMutations,
+    reactionContextRef: beat.reactionContextRef,
+    nextDecisionContextRef: beat.nextDecisionContextRef,
+    nextDecisionPin: payload.nextDecisionPin,
+    resolutionHash: beat.resolutionHash,
+    contentPackageSha256: input.contentPackageSha256,
+  };
+  const narrativeJobs = planNarrativeProjectionJobsV1({
+    runId: event.runId,
+    projectionKind: "BEAT_NARRATIVE",
+    sourceAuthority: "CHAPTER_WORKING",
+    sourceId: beat.resolutionHash,
+    sourceCommitHash: beat.resolutionHash,
+    sourceContentHash: workingDeltaHash,
+  }, rawAuthority);
+  const aEmotionEmissions = createSangtianAEmotionContentSourceCompilerV1()
+    .compileBeatProjection({
+      sourceKind: "BEAT_COMMITTED",
+      roomId: event.runId,
+      committedAt: input.committedAt,
+      projection: input.projection,
+      beatEvent: event,
+    });
+  return {
+    narrativeJobs,
+    aEmotionEmissions,
+    manifest: buildAuthorityDownstreamManifestV1({
+      authorityKind: "BEAT",
+      sourceId: beat.resolutionHash,
+      sourceCommitHash: beat.resolutionHash,
+      dedupeKeys: downstreamDedupeKeysV1({ narrativeJobs, aEmotionEmissions }),
+    }),
   };
 }
 
@@ -114,12 +207,13 @@ export async function insertNarrativeProjectionPlanV1(
   projectorVersion: string = PRESSURE_NARRATIVE_PRODUCTION_RELEASE_V1.projectorVersion,
 ): Promise<void> {
   assertSevenNarrativeJobs(jobs);
+  const projectionRows: Record<string, unknown>[] = [];
+  const outboxRows: Record<string, unknown>[] = [];
   for (const jobValue of jobs) {
     const job = validateOpenNovelNarrativeProjectionJobV1(jobValue);
     const audienceKey = job.audience.kind === "PUBLIC" ? "public" : job.audience.seatId!;
     const fingerprint = computeNarrativeProjectionFingerprint(job, projectorVersion);
-    await tx.pressureNarrativeProjection.create({
-      data: {
+    projectionRows.push({
         runId: job.runId,
         projectionKind: job.projectionKind,
         sourceAuthority: job.sourceAuthority,
@@ -138,22 +232,35 @@ export async function insertNarrativeProjectionPlanV1(
           logicalProjectionKey: fingerprint,
           jobId: job.jobId,
         }),
-      },
     });
-    await tx.pressureOutboxTask.create({
-      data: {
-        runId: job.runId,
-        taskType,
-        status: "PENDING",
-        checkpoint: "PERSISTED",
-        dedupeKey: job.idempotencyKey,
-        sourceAuthority: job.sourceAuthority,
-        sourceId: job.sourceId,
-        sourceCommitHash: job.sourceCommitHash,
-        payloadJson: json(job),
-        payloadHash: sha256Canonical(job),
-      },
+    outboxRows.push({
+      runId: job.runId,
+      taskType,
+      status: "PENDING",
+      checkpoint: "PERSISTED",
+      dedupeKey: job.idempotencyKey,
+      sourceAuthority: job.sourceAuthority,
+      sourceId: job.sourceId,
+      sourceCommitHash: job.sourceCommitHash,
+      payloadJson: json(job),
+      payloadHash: sha256Canonical(job),
     });
+  }
+  if (tx.pressureNarrativeProjection.createMany && tx.pressureOutboxTask.createMany) {
+    const [projections, outbox] = await Promise.all([
+      tx.pressureNarrativeProjection.createMany({ data: projectionRows }),
+      tx.pressureOutboxTask.createMany({ data: outboxRows }),
+    ]);
+    if (projections.count !== projectionRows.length || outbox.count !== outboxRows.length) {
+      throw invalid("Narrative projection batch insert count mismatch");
+    }
+    return;
+  }
+  for (const data of projectionRows) {
+    await tx.pressureNarrativeProjection.create({ data });
+  }
+  for (const data of outboxRows) {
+    await tx.pressureOutboxTask.create({ data });
   }
 }
 
@@ -163,12 +270,12 @@ export async function insertAEmotionAuthorityEmissionsV1(
   emissions: readonly AEmotionAuthorityEmissionV1[],
 ): Promise<void> {
   const ordered = [...emissions].sort((left, right) => compare(left.dedupeKey, right.dedupeKey));
+  const rows: Record<string, unknown>[] = [];
   for (const emission of ordered) {
     if (emission.dedupeKey !== `aemotion:${emission.job.jobHash}`) {
       throw invalid("A-Emotion emission dedupe key is not bound to jobHash");
     }
-    await tx.pressureOutboxTask.create({
-      data: {
+    rows.push({
         runId: emission.job.runId,
         taskType: "INTERACTION_COMPILE_REQUESTED",
         status: "PENDING",
@@ -179,8 +286,17 @@ export async function insertAEmotionAuthorityEmissionsV1(
         sourceCommitHash: emission.job.sourceCommitHash,
         payloadJson: json(emission.job),
         payloadHash: sha256Canonical(emission.job),
-      },
     });
+  }
+  if (tx.pressureOutboxTask.createMany) {
+    const inserted = await tx.pressureOutboxTask.createMany({ data: rows });
+    if (inserted.count !== rows.length) {
+      throw invalid("A-Emotion outbox batch insert count mismatch");
+    }
+    return;
+  }
+  for (const data of rows) {
+    await tx.pressureOutboxTask.create({ data });
   }
 }
 
