@@ -14,16 +14,12 @@ concurrency:
 
 jobs:
   repair-and-verify:
-    if: github.event.head_commit.message == 'chore(ci): stage main startup gate repair'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       BASE_SHA: b1315004ef836fb3a625c8201d362a395284b0dc
       WORKFLOW_PATH: .github/workflows/main-startup-gates-repair.yml
-      TARGET_TEST: apps/api/src/pressure-chapter/seat-control-persistence/seat-control-persistence.spec.ts
-      EXPECTED_TARGET_SHA256: eb8c8a8496d5b2a12df815831cf3b3a2f0cb02c9fe7ea8853283708eb12bb5da
-      OLD_TARGET_SHA256: cbf471ed910510731987b8046919d44e281da2a3648de7761076014fe303db7a
-      OLD_SOURCE_MANIFEST_SHA256: d3764c96d04ca2938b34d1413c04a04b19e2afb9ce2241a002d06da1a89980c1
+      HELPER_PATH: .github/scripts/main-startup-gates-repair.cjs
       SOURCE_MANIFEST: packages/templates/config/sangtian/pressure-chapter-v1/release/source-regression-manifest.json
       RELEASE_MANIFEST: packages/templates/config/sangtian/pressure-chapter-v1/release/release-manifest.json
     steps:
@@ -36,10 +32,13 @@ jobs:
       - name: Verify exclusive starting point
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$BASE_SHA" HEAD
           test -z "$(git status --porcelain)"
-          git show -s --format='HEAD=%H%nTREE=%T%nPARENT=%P%nSUBJECT=%s' HEAD
+          staged_paths="$(git diff --name-only "$BASE_SHA" HEAD | sort)"
+          expected=$'.github/scripts/main-startup-gates-repair.cjs\n.github/workflows/main-startup-gates-repair.yml'
+          test "$staged_paths" = "$expected"
+          git show -s --format='HEAD=%H%nTREE=%T%nPARENTS=%P%nSUBJECT=%s' HEAD
 
       - name: Set up repository pnpm major
         uses: pnpm/action-setup@v4
@@ -56,63 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm install --lockfile-only --no-frozen-lockfile
-          node <<'NODE'
-          const { createHash } = require('node:crypto');
-          const { readFileSync, writeFileSync } = require('node:fs');
-
-          const targetPath = process.env.TARGET_TEST;
-          const expectedTarget = process.env.EXPECTED_TARGET_SHA256;
-          const oldTarget = process.env.OLD_TARGET_SHA256;
-          const oldSourceManifest = process.env.OLD_SOURCE_MANIFEST_SHA256;
-          const sourcePath = process.env.SOURCE_MANIFEST;
-          const releasePath = process.env.RELEASE_MANIFEST;
-
-          const rawSha256 = (path) => createHash('sha256').update(readFileSync(path)).digest('hex');
-          const canonical = (value) => {
-            if (value === null) return 'null';
-            if (typeof value === 'string' || typeof value === 'boolean') return JSON.stringify(value);
-            if (typeof value === 'number') {
-              if (!Number.isFinite(value)) throw new Error('NON_FINITE_NUMBER');
-              return Object.is(value, -0) ? '0' : JSON.stringify(value);
-            }
-            if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-            if (!value || typeof value !== 'object') throw new Error(`UNSUPPORTED:${typeof value}`);
-            return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
-          };
-          const canonicalSha256 = (value) => createHash('sha256').update(canonical(value), 'utf8').digest('hex');
-
-          const targetActual = rawSha256(targetPath);
-          if (targetActual !== expectedTarget) {
-            throw new Error(`TARGET_SHA_DRIFT:${targetActual}`);
-          }
-
-          const source = JSON.parse(readFileSync(sourcePath, 'utf8'));
-          const sourceEntries = source.entries.flatMap((entry) => entry.targetTests ?? []);
-          const targetRefs = sourceEntries.filter((entry) => entry.path === targetPath);
-          if (targetRefs.length !== 1) throw new Error(`TARGET_REFERENCE_COUNT:${targetRefs.length}`);
-          if (targetRefs[0].sha256RawBytes !== oldTarget) {
-            throw new Error(`UNEXPECTED_OLD_TARGET_SHA:${targetRefs[0].sha256RawBytes}`);
-          }
-          targetRefs[0].sha256RawBytes = targetActual;
-          writeFileSync(sourcePath, `${JSON.stringify(source, null, 2)}\n`);
-
-          const sourceActual = canonicalSha256(source);
-          const release = JSON.parse(readFileSync(releasePath, 'utf8'));
-          const sourceArtifacts = release.artifacts.filter(
-            (artifact) => artifact.artifactId === 'source_regression_manifest',
-          );
-          if (sourceArtifacts.length !== 1) {
-            throw new Error(`SOURCE_ARTIFACT_COUNT:${sourceArtifacts.length}`);
-          }
-          if (sourceArtifacts[0].sha256 !== oldSourceManifest) {
-            throw new Error(`UNEXPECTED_OLD_SOURCE_SHA:${sourceArtifacts[0].sha256}`);
-          }
-          sourceArtifacts[0].sha256 = sourceActual;
-          writeFileSync(releasePath, `${JSON.stringify(release, null, 2)}\n`);
-
-          console.log(`TARGET_SHA256=${targetActual}`);
-          console.log(`SOURCE_REGRESSION_MANIFEST_SHA256=${sourceActual}`);
-          NODE
+          node "$HELPER_PATH"
           git diff --check
           git diff --stat
 
@@ -153,15 +96,16 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
-          git rm "$WORKFLOW_PATH"
+          git rm "$WORKFLOW_PATH" "$HELPER_PATH"
           changed="$(git diff --name-only "$BASE_SHA" | sort)"
           printf '%s\n' "$changed" | tee .startup-gate-evidence/changed-paths.txt
           expected=$'packages/templates/config/sangtian/pressure-chapter-v1/release/release-manifest.json\npackages/templates/config/sangtian/pressure-chapter-v1/release/source-regression-manifest.json\npnpm-lock.yaml'
           test "$changed" = "$expected"
-          if printf '%s\n' "$changed" | grep -E '^(apps/web/|prisma/schema\.prisma$|prisma/migrations/|apps/openovel-runtime/|release/)' ; then
+          if printf '%s\n' "$changed" | grep -E '^(apps/web/|prisma/schema\.prisma$|prisma/migrations/|apps/openovel-runtime/)' ; then
             echo 'Forbidden path changed' >&2
             exit 1
           fi
+          git diff --exit-code "$BASE_SHA" -- apps/api/package.json
           git diff --check
           git config user.name "ChatGPT Pro"
           git config user.email "chatgpt-pro@users.noreply.github.com"
