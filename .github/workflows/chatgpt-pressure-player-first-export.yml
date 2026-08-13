@@ -17,20 +17,26 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Archive source without generated dependencies
+      - name: Archive only the buildable Pressure/API source set
         run: |
           set -euo pipefail
-          tar \
-            --exclude=.git \
-            --exclude=node_modules \
-            --exclude='**/node_modules' \
-            -czf /tmp/aiStoryRoom-source.tar.gz .
+          tar -czf /tmp/aiStoryRoom-source.tar.gz \
+            AGENTS.md \
+            package.json \
+            pnpm-lock.yaml \
+            pnpm-workspace.yaml \
+            tsconfig.base.json \
+            prisma/schema.prisma \
+            apps/api \
+            apps/openovel-runtime \
+            packages/shared \
+            packages/templates
           git rev-parse HEAD > /tmp/source-head.txt
           git rev-parse HEAD^{tree} > /tmp/source-tree.txt
       - name: Upload source archive
         uses: actions/upload-artifact@v4
         with:
-          name: aiStoryRoom-main-source
+          name: aiStoryRoom-main-source-small
           path: |
             /tmp/aiStoryRoom-source.tar.gz
             /tmp/source-head.txt
