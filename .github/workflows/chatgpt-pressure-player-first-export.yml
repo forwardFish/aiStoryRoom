@@ -31,9 +31,14 @@ jobs:
           set -euo pipefail
           CI=true pnpm install --frozen-lockfile
           pnpm db:generate
-      - name: Archive dependency tree
+      - name: Archive exact source and dependency tree
         run: |
           set -euo pipefail
+          tar --zstd -cf /tmp/aiStoryRoom-source.tar.zst \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude='*/node_modules' \
+            .
           tar --zstd -cf /tmp/aiStoryRoom-node-modules.tar.zst \
             node_modules \
             apps/api/node_modules \
@@ -41,12 +46,15 @@ jobs:
             packages/shared/node_modules \
             packages/templates/node_modules
           git rev-parse HEAD > /tmp/deps-head.txt
-      - name: Upload dependency archive
+          git rev-parse HEAD^{tree} > /tmp/deps-tree.txt
+      - name: Upload exact source and dependencies
         uses: actions/upload-artifact@v4
         with:
-          name: aiStoryRoom-main-dependencies
+          name: aiStoryRoom-main-source-and-dependencies
           path: |
+            /tmp/aiStoryRoom-source.tar.zst
             /tmp/aiStoryRoom-node-modules.tar.zst
             /tmp/deps-head.txt
+            /tmp/deps-tree.txt
           if-no-files-found: error
           retention-days: 1
