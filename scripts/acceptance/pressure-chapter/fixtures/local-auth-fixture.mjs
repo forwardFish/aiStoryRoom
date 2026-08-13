@@ -132,9 +132,7 @@ export async function runSoloN1Smoke({ apiBase, cookie, identity, userId, timeou
   assert.ok(decision?.decisionPointId, 'N1 decision point is missing');
   const option = decision.options?.[0];
   assert.ok(option?.code, 'N1 has no legal option');
-  const command = {
-    schemaVersion: 'pressure_chapter_game_command_v1',
-    commandType: 'SUBMIT_DECISION',
+  const command = buildSoloN1DecisionCommandV1({
     runId,
     routeHash: n1.route.routeHash,
     chapterRuntimeId: n1.chapter.chapterRuntimeId,
@@ -146,8 +144,7 @@ export async function runSoloN1Smoke({ apiBase, cookie, identity, userId, timeou
     submissionFenceToken: n1.viewer.control.submissionFenceToken,
     idempotencyKey: `pc-action:${identity.marker}`,
     optionCode: option.code,
-    customText: null,
-  };
+  });
   const submitted = await apiRequest(apiBase, `/v4/rooms/${encodeURIComponent(runId)}/game/action`, {
     method: 'POST',
     cookie,
@@ -180,6 +177,27 @@ export async function runSoloN1Smoke({ apiBase, cookie, identity, userId, timeou
       workingRevisionAfter: readback.chapter?.workingRevision ?? null,
       decisionPointChanged: readback.decision?.decisionPointId !== decision.decisionPointId,
     },
+  };
+}
+
+export function buildSoloN1DecisionCommandV1(input) {
+  return {
+    schemaVersion: 'pressure_chapter_game_command_v1',
+    commandType: 'SUBMIT_DECISION',
+    runId: input.runId,
+    routeHash: input.routeHash,
+    chapterRuntimeId: input.chapterRuntimeId,
+    chapterId: input.chapterId,
+    decisionPointId: input.decisionPointId,
+    seatId: input.seatId,
+    controlEpoch: input.controlEpoch,
+    expectedWorkingRevision: input.expectedWorkingRevision,
+    submissionFenceToken: input.submissionFenceToken,
+    idempotencyKey: input.idempotencyKey,
+    optionCode: input.optionCode,
+    customText: null,
+    sourceEventId: null,
+    responseActionCode: null,
   };
 }
 

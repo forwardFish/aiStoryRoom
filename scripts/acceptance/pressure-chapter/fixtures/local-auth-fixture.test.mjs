@@ -7,6 +7,7 @@ import test from 'node:test';
 import {
   assertCleanupFixture,
   assertLocalAuthFixtureScope,
+  buildSoloN1DecisionCommandV1,
   classifySafeDatabaseError,
   createFixtureIdentity,
   pressureSoloRunId,
@@ -56,6 +57,41 @@ test('fixture scope requires explicit non-production Supabase and allow flags', 
     runtimeEnvironment,
     operation: 'smoke',
   }), /file-sink/u);
+});
+
+test('Solo N1 fixture submits the exact public decision body including nullable response fields', () => {
+  const command = buildSoloN1DecisionCommandV1({
+    runId: 'solo-fixture-run',
+    routeHash: 'route-hash',
+    chapterRuntimeId: 'chapter-runtime-n1',
+    chapterId: 'N1',
+    decisionPointId: 'N1.weir_crisis',
+    seatId: 'cabinet_finance',
+    controlEpoch: 1,
+    expectedWorkingRevision: 0,
+    submissionFenceToken: 'submission-fence',
+    idempotencyKey: 'pc-action:fixture',
+    optionCode: 'EVACUATE_WEIRS',
+  });
+  assert.deepEqual(command, {
+    schemaVersion: 'pressure_chapter_game_command_v1',
+    commandType: 'SUBMIT_DECISION',
+    runId: 'solo-fixture-run',
+    routeHash: 'route-hash',
+    chapterRuntimeId: 'chapter-runtime-n1',
+    chapterId: 'N1',
+    decisionPointId: 'N1.weir_crisis',
+    seatId: 'cabinet_finance',
+    controlEpoch: 1,
+    expectedWorkingRevision: 0,
+    submissionFenceToken: 'submission-fence',
+    idempotencyKey: 'pc-action:fixture',
+    optionCode: 'EVACUATE_WEIRS',
+    customText: null,
+    sourceEventId: null,
+    responseActionCode: null,
+  });
+  assert.equal(Object.keys(command).length, 16);
 });
 
 test('database diagnostics classify pool exhaustion without persisting raw connection details', () => {

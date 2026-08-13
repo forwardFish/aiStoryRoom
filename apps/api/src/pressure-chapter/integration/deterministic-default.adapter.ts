@@ -1,5 +1,6 @@
 import {
   computeDecisionActionRequestFingerprint,
+  isSha256,
   sha256Canonical,
   validateDecisionActionV1,
   validateDeterministicDefaultPolicyV1,
@@ -31,9 +32,14 @@ export interface DeterministicDefaultAuthorityPortV1 {
     decisionPointId: string;
     seatId: SeatIdV1;
     reason: "DEADLINE" | "AI_FAILURE";
+    idempotencyKey: string;
+    canonicalActionPayloadHash: string;
   }>): Promise<Readonly<{
     subjectId: string;
     controlEpoch: number;
+    defaultPolicyRef: string;
+    defaultPolicyHash: string;
+    canonicalActionPayloadHash: string;
   }> | null>;
 }
 
@@ -115,6 +121,7 @@ implements DeterministicDefaultActionPort {
     if (!budget || actionOrdinal > budget) {
       invalid("default.actionOrdinal", "BUDGET_EXCEEDED");
     }
+    const canonicalActionPayloadHash = sha256Canonical(policy.payload);
     const system = await this.authority.authorize({
       runId: route.runId,
       routeHash: route.routeHash,
@@ -122,12 +129,17 @@ implements DeterministicDefaultActionPort {
       decisionPointId: input.decisionPointId,
       seatId: input.seatId,
       reason: input.reason,
+      idempotencyKey: input.idempotencyKey,
+      canonicalActionPayloadHash,
     });
     if (
       !system
       || !system.subjectId.trim()
       || !Number.isSafeInteger(system.controlEpoch)
       || system.controlEpoch < 1
+      || !system.defaultPolicyRef.trim()
+      || !isSha256(system.defaultPolicyHash)
+      || system.canonicalActionPayloadHash !== canonicalActionPayloadHash
     ) {
       invalid("default.authority", "SYSTEM_ACTOR_NOT_AUTHORIZED");
     }
@@ -157,7 +169,7 @@ implements DeterministicDefaultActionPort {
       status: "SEALED" as const,
       actionType: policy.actionType,
       payload,
-      payloadHash: sha256Canonical(payload),
+      payloadHash: canonicalActionPayloadHash,
       idempotencyKey: input.idempotencyKey,
     };
     const withRequest = {
@@ -190,9 +202,9 @@ implements DeterministicDefaultActionPort {
       inputFingerprint,
       authorizationContext: {
         reason: input.reason,
-        defaultPolicyRef: policy.policyRef,
-        defaultPolicyHash: policy.policyHash,
-        canonicalActionPayloadHash: action.payloadHash,
+        defaultPolicyRef: system.defaultPolicyRef,
+        defaultPolicyHash: system.defaultPolicyHash,
+        canonicalActionPayloadHash: system.canonicalActionPayloadHash,
       },
     });
     if (

@@ -185,15 +185,25 @@ function compileB0Draft(
       originActionIds,
     });
   }
-  const availableEvidence = new Set(
+  const actionEvidence = new Set(
     input.settlementMaterial.actions.flatMap((action) => action.evidenceRefs),
+  );
+  const sealedContentEvidence = new Map(
+    evaluation.objectKnowledgeEvidenceResponsibilityDelta.evidenceStates
+      .filter((state) => state.status === "SEALED")
+      .map((state) => [state.evidenceId, state] as const),
   );
   const causalEdges = evaluation.causalEdges.map((edge) => {
     const mutationId = mutationIdsByEffect.get(edge.effectRef);
     if (!mutationId) {
       invalid(`contentPolicy.causalEdges.${edge.effectRef}`, "UNKNOWN_EFFECT");
     }
-    if (edge.evidenceRefs.some((ref) => !availableEvidence.has(ref))) {
+    if (edge.evidenceRefs.some((ref) => {
+      if (actionEvidence.has(ref)) return false;
+      const contentEvidence = sealedContentEvidence.get(ref);
+      return !contentEvidence
+        || !contentEvidence.supportsFactRefs.includes(edge.effectRef);
+    })) {
       invalid(`contentPolicy.causalEdges.${edge.effectRef}`, "UNSEALED_EVIDENCE_REF");
     }
     const body = {

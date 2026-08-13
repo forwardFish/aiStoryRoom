@@ -29,13 +29,28 @@ test("deterministic default submits formal interaction with action-bound system 
   const decision = descriptor.decisions[0]!;
   const projection = projectionFixture(routeSnapshot.routeHash);
   const captured: SubmitFormalInteractionCommandV1[] = [];
+  const authorityInputs: Parameters<DeterministicDefaultAuthorityPortV1["authorize"]>[0][] = [];
+  const directivePolicyRef = "seat-control.default.v1";
+  const directivePolicyHash = digest("seat-control-default-policy");
+  const canonicalActionPayloadHash = sha256Canonical(
+    decision.execution.absenceDefaultPolicy.payload,
+  );
   const adapter = new SangtianDeterministicDefaultActionAdapterV1(
     content,
     {
       load: async () => cloneProjection(projection),
     } as WorkingProjectionReaderPort,
     {
-      authorize: async () => ({ subjectId: "pressure-ai:seat", controlEpoch: 7 }),
+      authorize: async (input) => {
+        authorityInputs.push(structuredClone(input));
+        return {
+          subjectId: "pressure-ai:seat",
+          controlEpoch: 7,
+          defaultPolicyRef: directivePolicyRef,
+          defaultPolicyHash: directivePolicyHash,
+          canonicalActionPayloadHash,
+        };
+      },
     } as DeterministicDefaultAuthorityPortV1,
     {
       submit: async (command) => {
@@ -78,11 +93,21 @@ test("deterministic default submits formal interaction with action-bound system 
   assert.equal(result.status, "ACCEPTED");
   assert.equal(captured.length, 1);
   assert.equal(captured[0]!.subjectId, "pressure-ai:seat");
+  assert.deepEqual(authorityInputs, [{
+    runId: routeSnapshot.runId,
+    routeHash: routeSnapshot.routeHash,
+    chapterRuntimeId: "runtime-n1",
+    decisionPointId: decision.decisionPointId,
+    seatId: ACTOR,
+    reason: "DEADLINE",
+    idempotencyKey: "default-idem-1",
+    canonicalActionPayloadHash,
+  }]);
   assert.deepEqual(captured[0]!.authorizationContext, {
     reason: "DEADLINE",
-    defaultPolicyRef: decision.execution.absenceDefaultPolicy.policyRef,
-    defaultPolicyHash: decision.execution.absenceDefaultPolicy.policyHash,
-    canonicalActionPayloadHash: captured[0]!.action.payloadHash,
+    defaultPolicyRef: directivePolicyRef,
+    defaultPolicyHash: directivePolicyHash,
+    canonicalActionPayloadHash,
   });
 });
 

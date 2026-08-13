@@ -593,7 +593,17 @@ test("frozen content default submits one server-authored formal action", async (
   const adapter = new SangtianDeterministicDefaultActionAdapterV1(
     content,
     { load: async () => cloneProjection(projection) },
-    { authorize: async () => ({ subjectId: "pressure-system-default", controlEpoch: 1 }) },
+    {
+      authorize: async () => ({
+        subjectId: "pressure-system-default",
+        controlEpoch: 1,
+        defaultPolicyRef: "seat-control.default.v1",
+        defaultPolicyHash: digest("seat-control-default-policy"),
+        canonicalActionPayloadHash: sha256Canonical(
+          decision.execution.absenceDefaultPolicy.payload,
+        ),
+      }),
+    },
     {
       submit: async (command) => {
         captured.push(structuredClone(command));
@@ -636,6 +646,12 @@ test("frozen content default submits one server-authored formal action", async (
   assert.equal(captured[0]!.action.actionType, "DEFAULT_PASS");
   assert.deepEqual(captured[0]!.action.payload, { reason: "ABSENT" });
   assert.equal(captured[0]!.action.controlEpoch, 1);
+  assert.deepEqual(captured[0]!.authorizationContext, {
+    reason: "DEADLINE",
+    defaultPolicyRef: "seat-control.default.v1",
+    defaultPolicyHash: digest("seat-control-default-policy"),
+    canonicalActionPayloadHash: captured[0]!.action.payloadHash,
+  });
 });
 
 test("content-owned policy compiles sealed identities and ignores payload rule fields", async () => {
@@ -658,6 +674,14 @@ test("content-owned policy compiles sealed identities and ignores payload rule f
   const first = b0Input(world.stateHash, world.worldSequence, "MIXED");
   const draft = await adapter.evaluateChapter({ b0Input: first, baseWorldState: world });
   const sealed = sealB0ChapterPolicyEvaluationV1(draft);
+  assert.deepEqual(
+    first.settlementMaterial.actions.flatMap((action) => action.evidenceRefs),
+    [],
+    "the real ordinary-decision path does not fabricate action evidence",
+  );
+  assert.deepEqual(sealed.causalEdges[0]?.evidenceRefs, [
+    "evidence.N1.breach_chain",
+  ], "the hash-bound content policy supplies the sealed outcome evidence");
   assert.equal(sealed.b0InputHash, first.b0InputHash);
   assert.equal(sealed.contentPolicyVersion, first.wireInput.contentPolicyVersion);
   const outcomeMutation = sealed.mutations.find(
@@ -942,7 +966,6 @@ function b0Input(
   mode: "MIXED" | "ALL_DEFAULT" | "UNKNOWN_ACTION",
 ) {
   const loaded = loadSangtianPressureChapterPackageV1();
-  const evidenceRef = "evidence.N1.breach_chain";
   const mixedActionTypes = [
     "EVACUATE_WEIRS",
     "SUPPORT_WEIR",
@@ -981,7 +1004,7 @@ function b0Input(
         // only the sealed identity above reaches the policy compiler.
         payload,
         resourceCommitments: [],
-        evidenceRefs: [evidenceRef],
+        evidenceRefs: [],
       };
     });
   const wireBase = {

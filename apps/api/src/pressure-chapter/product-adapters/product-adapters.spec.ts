@@ -223,7 +223,7 @@ test("deterministic default authority returns only the current designated AI con
     seatId: "zhejiang_governor" as const,
     controlEpoch: 2,
     trigger: "HUMAN_DEADLINE" as const,
-    defaultPolicyRef: "sangtian.default.absence.v1",
+    defaultPolicyRef: "default-policy",
     defaultPolicyHash: sha256Canonical("default-policy"),
     canonicalActionPayloadHash: sha256Canonical("default-payload"),
     sourceProofHash: sha256Canonical("default-proof"),
@@ -306,9 +306,14 @@ test("deterministic default authority returns only the current designated AI con
     decisionPointId: directive.decisionPointId,
     seatId: directive.seatId,
     reason: "DEADLINE",
+    idempotencyKey: directive.idempotencyKey,
+    canonicalActionPayloadHash: directive.canonicalActionPayloadHash,
   }), {
     subjectId: "ai:run-product-adapters:zhejiang-governor",
     controlEpoch: 2,
+    defaultPolicyRef: directive.defaultPolicyRef,
+    defaultPolicyHash: directive.defaultPolicyHash,
+    canonicalActionPayloadHash: directive.canonicalActionPayloadHash,
   });
 
   activeControllerId = "spoofed-controller";
@@ -320,6 +325,8 @@ test("deterministic default authority returns only the current designated AI con
       decisionPointId: directive.decisionPointId,
       seatId: directive.seatId,
       reason: "DEADLINE",
+      idempotencyKey: directive.idempotencyKey,
+      canonicalActionPayloadHash: directive.canonicalActionPayloadHash,
     }),
     /PRESSURE_PRODUCT_AUTHORITY_MISMATCH.*CURRENT_AI_AUTHORITY/,
   );
@@ -348,6 +355,8 @@ test("deterministic default authority returns only the current designated AI con
       decisionPointId: directive.decisionPointId,
       seatId: directive.seatId,
       reason: "DEADLINE",
+      idempotencyKey: directive.idempotencyKey,
+      canonicalActionPayloadHash: directive.canonicalActionPayloadHash,
     }),
     /PRESSURE_PRODUCT_AUTHORITY_MISMATCH.*CURRENT_AI_AUTHORITY/,
   );

@@ -30,9 +30,21 @@ implements DeterministicDefaultAuthorityPortV1 {
     decisionPointId: string;
     seatId: SeatIdV1;
     reason: "DEADLINE" | "AI_FAILURE";
-  }>): Promise<Readonly<{ subjectId: string; controlEpoch: number }> | null> {
-    if (!PRESSURE_CHAPTER_SEAT_IDS_V1.includes(input.seatId)) {
-      return failPressureProductAdapterV1(ERROR.RECORD_INVALID, "seatId");
+    idempotencyKey: string;
+    canonicalActionPayloadHash: string;
+  }>): Promise<Readonly<{
+    subjectId: string;
+    controlEpoch: number;
+    defaultPolicyRef: string;
+    defaultPolicyHash: string;
+    canonicalActionPayloadHash: string;
+  }> | null> {
+    if (
+      !PRESSURE_CHAPTER_SEAT_IDS_V1.includes(input.seatId)
+      || !input.idempotencyKey.trim()
+      || !/^[a-f0-9]{64}$/.test(input.canonicalActionPayloadHash)
+    ) {
+      return failPressureProductAdapterV1(ERROR.RECORD_INVALID, "defaultAuthorizationInput");
     }
     const trigger = input.reason === "DEADLINE" ? "HUMAN_DEADLINE" : "AI_FAILURE";
     return this.prisma.$transaction(async (tx) => {
@@ -57,7 +69,9 @@ implements DeterministicDefaultAuthorityPortV1 {
         && entry.decisionPointId === input.decisionPointId
         && entry.trigger === trigger
         && entry.authorityStateHash === snapshot.stateHash
-        && entry.controlEpoch === seat?.controlEpoch,
+        && entry.controlEpoch === seat?.controlEpoch
+        && entry.idempotencyKey === input.idempotencyKey
+        && entry.canonicalActionPayloadHash === input.canonicalActionPayloadHash,
       );
       if (!seat || !directive) return null;
       decodeDirective(directive);
@@ -77,6 +91,10 @@ implements DeterministicDefaultAuthorityPortV1 {
         || directive.decisionPointId !== input.decisionPointId
         || directive.seatId !== input.seatId
         || directive.trigger !== trigger
+        || directive.defaultPolicyRef !== snapshot.frozenPolicy.deterministicDefaultPolicyRef
+        || directive.defaultPolicyHash !== snapshot.frozenPolicy.deterministicDefaultPolicyHash
+        || directive.canonicalActionPayloadHash !== input.canonicalActionPayloadHash
+        || directive.idempotencyKey !== input.idempotencyKey
         || directive.authorityStateHash !== snapshot.stateHash
         || directive.controlEpoch !== seat.controlEpoch
       ) {
@@ -86,7 +104,13 @@ implements DeterministicDefaultAuthorityPortV1 {
           "CURRENT_AI_AUTHORITY",
         );
       }
-      return { subjectId: seat.designatedAiControllerId, controlEpoch: seat.controlEpoch };
+      return {
+        subjectId: seat.designatedAiControllerId,
+        controlEpoch: seat.controlEpoch,
+        defaultPolicyRef: directive.defaultPolicyRef,
+        defaultPolicyHash: directive.defaultPolicyHash,
+        canonicalActionPayloadHash: directive.canonicalActionPayloadHash,
+      };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 }
