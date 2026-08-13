@@ -1,4 +1,5 @@
 import { getGameDefinition, type GameRoleDefinition } from "@ai-story/templates";
+import { publicWorldRolePresentation } from "./public-world-role-presentation";
 
 function gameplayProfile(role: GameRoleDefinition, locale: "en" | "zh-CN") {
   if (role.gameplayProfile) return role.gameplayProfile;
@@ -14,7 +15,7 @@ function gameplayProfile(role: GameRoleDefinition, locale: "en" | "zh-CN") {
   };
 }
 
-export function gamePageProjection(worldId: string) {
+export function gamePageProjection(worldId: string, viewerRoleKey?: string) {
   const game = getGameDefinition(worldId);
   const locale = game.presentation.locale || "en";
   return {
@@ -32,20 +33,45 @@ export function gamePageProjection(worldId: string) {
       accentSoft: game.presentation.accentSoft,
       statusMetrics: game.presentation.statusMetrics || []
     },
-    roles: game.roles.map((role) => ({
-      roleKey: role.roleKey,
-      roleName: role.roleName,
-      identity: role.identity,
-      publicInfo: role.publicInfo,
-      personalGoal: role.personalGoal,
-      currentState: role.currentState,
-      abilityText: role.abilityText,
-      arcText: role.arcText,
-      knownInfo: role.knownInfo,
-      cannotDo: role.cannotDo,
-      portrait: role.portrait,
-      gameplayProfile: gameplayProfile(role, locale)
-    }))
+    roles: game.roles.map((role) => {
+      const canReadPrivateRoleProfile = role.roleKey === viewerRoleKey;
+      const presentation = publicWorldRolePresentation(game.worldId, role.roleKey, {
+        name: role.roleName,
+        identity: role.identity,
+        publicInfo: role.publicInfo,
+        portrait: role.portrait,
+      });
+      const canonicalProfile = gameplayProfile(role, locale);
+      const profile = presentation.name === role.roleName
+        && presentation.identity === role.identity
+        && presentation.portrait === role.portrait
+        ? canonicalProfile
+        : {
+            ...canonicalProfile,
+            characterName: presentation.name,
+            rank: presentation.identity,
+          };
+      return {
+        roleKey: role.roleKey,
+        roleName: presentation.name,
+        identity: presentation.identity,
+        publicInfo: presentation.publicInfo,
+        personalGoal: canReadPrivateRoleProfile ? role.personalGoal : "",
+        currentState: role.currentState,
+        abilityText: role.abilityText,
+        arcText: role.arcText,
+        knownInfo: canReadPrivateRoleProfile ? role.knownInfo : [],
+        cannotDo: role.cannotDo,
+        portrait: presentation.portrait,
+        gameplayProfile: canReadPrivateRoleProfile ? profile : {
+          ...profile,
+          fateQuestion: "",
+          goals: [],
+          resources: [],
+          leverage: []
+        }
+      };
+    })
   };
 }
 
