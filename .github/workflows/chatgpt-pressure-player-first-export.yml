@@ -17,22 +17,30 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Archive exact source
+      - name: Archive exact backend source
         run: |
           set -euo pipefail
-          tar --zstd -cf /tmp/aiStoryRoom-source.tar.zst \
-            --exclude=.git \
-            --exclude=node_modules \
-            --exclude='*/node_modules' \
-            .
+          tar --zstd -cf /tmp/aiStoryRoom-backend-source.tar.zst \
+            AGENTS.md \
+            package.json \
+            pnpm-lock.yaml \
+            pnpm-workspace.yaml \
+            tsconfig.base.json \
+            apps/api \
+            apps/openovel-runtime \
+            packages/shared \
+            packages/templates \
+            prisma \
+            scripts \
+            .github/workflows
           git rev-parse HEAD > /tmp/source-head.txt
           git rev-parse HEAD^{tree} > /tmp/source-tree.txt
-      - name: Upload exact source archive
+      - name: Upload exact backend source archive
         uses: actions/upload-artifact@v4
         with:
-          name: aiStoryRoom-main-source
+          name: aiStoryRoom-main-backend-source
           path: |
-            /tmp/aiStoryRoom-source.tar.zst
+            /tmp/aiStoryRoom-backend-source.tar.zst
             /tmp/source-head.txt
             /tmp/source-tree.txt
           if-no-files-found: error
