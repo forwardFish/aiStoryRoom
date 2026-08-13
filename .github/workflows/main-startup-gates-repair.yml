@@ -36,6 +36,7 @@ jobs:
           git merge-base --is-ancestor "$BASE_SHA" HEAD
           test -z "$(git status --porcelain)"
           staged_paths="$(git diff --name-only "$BASE_SHA" HEAD | sort)"
+          printf '%s\n' "$staged_paths"
           expected=$'.github/scripts/main-startup-gates-repair.cjs\n.github/workflows/main-startup-gates-repair.yml'
           test "$staged_paths" = "$expected"
           git show -s --format='HEAD=%H%nTREE=%T%nPARENTS=%P%nSUBJECT=%s' HEAD
