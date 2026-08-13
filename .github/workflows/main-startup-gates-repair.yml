@@ -69,8 +69,10 @@ jobs:
       - name: Generate Prisma client without migration
         run: pnpm db:generate
 
-      - name: Build shared package for source tests
-        run: pnpm --filter @ai-story/shared build
+      - name: Build source-imported workspace packages
+        run: |
+          pnpm --filter @ai-story/shared build
+          pnpm --filter @ai-story/templates build
 
       - name: Run release-artifacts gate
         run: |
