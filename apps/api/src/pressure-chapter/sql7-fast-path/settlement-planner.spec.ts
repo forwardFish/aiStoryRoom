@@ -435,6 +435,7 @@ async function buildFixture(): Promise<{
     beatEvent: beat.event,
     contentPackageSha256: route.contentPackageSha256,
     committedAt: new Date(NOW).toISOString(),
+    humanSeatIds: route.humanSeatIdsAtStart,
   });
   const batch = createPreparedAutomationActionBatchV1({
     batchId: "batch-sql7-n1",

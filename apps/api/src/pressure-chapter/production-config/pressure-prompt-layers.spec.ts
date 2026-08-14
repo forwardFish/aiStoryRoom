@@ -26,7 +26,8 @@ test("decision prompt binds copy to three legal contracts and forbids invented c
   assert.match(prompt, /不得遗漏 actionType/u);
   assert.match(prompt, /身份背景、合法行动方向和抽象压力/u);
   assert.match(prompt, /临时人物、物件、时间和环境细节/u);
-  assert.match(prompt, /逐字复制 continuityExcerpt/u);
+  assert.match(prompt, /CONTINUATION 必须承接 continuityExcerpt/u);
+  assert.match(prompt, /至少两个自然段/u);
   assert.match(prompt, /不得替玩家角色下达/u);
   assert.match(prompt, /realTradeoff 非 null/u);
   assert.match(prompt, /为 null 时禁止提及其他选项/u);

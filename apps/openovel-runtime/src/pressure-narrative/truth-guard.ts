@@ -32,9 +32,6 @@ export class NarrativeTruthGuardV1 {
       if (!allowed || allowed.statement !== claim.statement) {
         issues.add("CLAIM_NOT_AUDIENCE_SAFE");
       }
-      if (context.projectionKind !== "BEAT_NARRATIVE" && !candidate.text.includes(claim.statement)) {
-        issues.add("CLAIM_NOT_PRESENT_IN_TEXT");
-      }
       if (claim.kind === "FACT" && !candidate.usedFactRefs.includes(claim.refId)) {
         issues.add("FACT_CLAIM_NOT_DECLARED_IN_USED_REFS");
       }

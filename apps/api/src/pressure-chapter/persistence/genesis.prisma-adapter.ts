@@ -1,6 +1,5 @@
 import { Prisma } from "@prisma/client";
 import {
-  PRESSURE_CHAPTER_SEAT_IDS_V1,
   sha256Canonical,
 } from "@ai-story/shared";
 import {
@@ -18,6 +17,7 @@ import {
   buildAuthorityDownstreamManifestV1,
   downstreamDedupeKeysV1,
   insertNarrativeProjectionPlanV1,
+  planInteractiveNarrativeAudiencesV1,
   planNarrativeProjectionJobsV1,
   validateAuthorityDownstreamManifestV1,
 } from "../projection-plan";
@@ -52,8 +52,8 @@ interface GenesisTransaction {
   pressureRunRouteSnapshot: {
     findUnique(input: {
       where: { runId: string };
-      select: { routeHash: true };
-    }): Promise<{ routeHash: string } | null>;
+      select: { routeHash: true; humanSeatIdsAtStartJson: true };
+    }): Promise<{ routeHash: string; humanSeatIdsAtStartJson: unknown } | null>;
   };
   pressureOutboxTask: {
     create(input: { data: Record<string, unknown> }): Promise<unknown>;
@@ -83,15 +83,29 @@ export class PrismaGenesisAtomicCommitRepository implements GenesisAtomicCommitP
 
   async readCommitted(runId: string): Promise<CommittedGenesisV1 | null> {
     return pressureSerializableTransaction(this.prisma, async (tx) => {
-      const row = await tx.pressureGenesisCommit.findUnique({
-        where: { runId },
-        select: {
-          runId: true,
-          commitManifestJson: true,
-          outboxDedupeKeysJson: true,
-        },
-      });
-      return row ? decodeCommittedGenesis(row) : null;
+      const [row, route] = await Promise.all([
+        tx.pressureGenesisCommit.findUnique({
+          where: { runId },
+          select: {
+            runId: true,
+            commitManifestJson: true,
+            outboxDedupeKeysJson: true,
+          },
+        }),
+        tx.pressureRunRouteSnapshot.findUnique({
+          where: { runId },
+          select: { routeHash: true, humanSeatIdsAtStartJson: true },
+        }),
+      ]);
+      if (!row) return null;
+      if (!route) {
+        throw new PressurePersistenceError(
+          ERROR.RECORD_INVALID,
+          "Stored Genesis commit is missing its route snapshot",
+          { runId },
+        );
+      }
+      return decodeCommittedGenesis(row, readHumanSeatIds(route.humanSeatIdsAtStartJson));
     });
   }
 
@@ -106,31 +120,33 @@ export class PrismaGenesisAtomicCommitRepository implements GenesisAtomicCommitP
     });
     try {
       return await pressureSerializableTransaction(this.prisma, async (tx) => {
-        const existing = await tx.pressureGenesisCommit.findUnique({
-          where: { runId: candidate.runId },
-          select: {
-            runId: true,
-            commitManifestJson: true,
-            outboxDedupeKeysJson: true,
-          },
-        });
-        if (existing) {
-          return {
-            status: "ALREADY_COMMITTED" as const,
-            committed: assertSameGenesis(decodeCommittedGenesis(existing), candidate),
-          };
-        }
-
-        const route = await tx.pressureRunRouteSnapshot.findUnique({
-          where: { runId: candidate.runId },
-          select: { routeHash: true },
-        });
+        const [existing, route] = await Promise.all([
+          tx.pressureGenesisCommit.findUnique({
+            where: { runId: candidate.runId },
+            select: {
+              runId: true,
+              commitManifestJson: true,
+              outboxDedupeKeysJson: true,
+            },
+          }),
+          tx.pressureRunRouteSnapshot.findUnique({
+            where: { runId: candidate.runId },
+            select: { routeHash: true, humanSeatIdsAtStartJson: true },
+          }),
+        ]);
         if (!route || route.routeHash !== candidate.commit.routeHash) {
           throw new PressurePersistenceError(
             ERROR.AUTHORITY_FENCE_MISMATCH,
             "Genesis route fence is missing or changed",
             { runId: candidate.runId, expectedRouteHash: candidate.commit.routeHash },
           );
+        }
+        const humanSeatIds = readHumanSeatIds(route.humanSeatIdsAtStartJson);
+        if (existing) {
+          return {
+            status: "ALREADY_COMMITTED" as const,
+            committed: assertSameGenesis(decodeCommittedGenesis(existing, humanSeatIds), candidate),
+          };
         }
 
         const snapshot = candidate.snapshot;
@@ -143,6 +159,7 @@ export class PrismaGenesisAtomicCommitRepository implements GenesisAtomicCommitP
           sourceId: snapshot.genesisHash,
           sourceCommitHash: candidate.commit.commitHash,
           sourceContentHash: snapshot.initialWorldState.stateHash,
+          audiences: planInteractiveNarrativeAudiencesV1({ humanSeatIds }),
         }, {
           runId: candidate.runId,
           commitManifestJson: committed,
@@ -274,7 +291,10 @@ function assertSameGenesis(
   return structuredClone(stored);
 }
 
-function decodeCommittedGenesis(row: GenesisCommitRow): CommittedGenesisV1 {
+function decodeCommittedGenesis(
+  row: GenesisCommitRow,
+  humanSeatIds: readonly string[],
+): CommittedGenesisV1 {
   try {
     const committed = validateCommittedGenesis(row.commitManifestJson as CommittedGenesisV1);
     if (committed.record.runId !== row.runId) throw new Error("RUN_BINDING_MISMATCH");
@@ -283,7 +303,7 @@ function decodeCommittedGenesis(row: GenesisCommitRow): CommittedGenesisV1 {
       sourceId: committed.record.snapshot.genesisHash,
       sourceCommitHash: committed.record.commit.commitHash,
     });
-    const expectedDedupeKeys = genesisDownstreamDedupeKeys(committed);
+    const expectedDedupeKeys = genesisDownstreamDedupeKeys(committed, humanSeatIds);
     if (sha256Canonical(manifest.dedupeKeys) !== sha256Canonical(expectedDedupeKeys)) {
       throw new Error("DOWNSTREAM_MANIFEST_DEDUPE_MISMATCH");
     }
@@ -297,18 +317,30 @@ function decodeCommittedGenesis(row: GenesisCommitRow): CommittedGenesisV1 {
   }
 }
 
-function genesisDownstreamDedupeKeys(committed: CommittedGenesisV1): string[] {
+function genesisDownstreamDedupeKeys(
+  committed: CommittedGenesisV1,
+  humanSeatIds: readonly string[],
+): string[] {
   const record = committed.record;
-  const audiences = ["public", ...PRESSURE_CHAPTER_SEAT_IDS_V1];
   return [
     `open_chapter:${record.runId}:N1:${record.commit.commitHash}`,
-    ...audiences.map((audience) => [
+    ...humanSeatIds.map((audience) => [
       "GENESIS_NARRATIVE",
       record.runId,
       audience,
       record.commit.commitHash,
     ].join(":")),
   ].sort();
+}
+
+function readHumanSeatIds(value: unknown): string[] {
+  if (!Array.isArray(value) || value.some((seatId) => typeof seatId !== "string")) {
+    throw new PressurePersistenceError(
+      ERROR.RECORD_INVALID,
+      "Genesis route does not contain valid human narrative audiences",
+    );
+  }
+  return [...value];
 }
 
 function json(value: unknown): Prisma.InputJsonValue {

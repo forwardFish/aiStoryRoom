@@ -9,9 +9,13 @@ import {
   type NarrativeSourceAuthorityV1,
   type OpenNovelNarrativeProjectionJobV1,
 } from "@ai-story/shared";
+import {
+  computeNarrativeLogicalProjectionKey,
+} from "@apps/openovel-runtime/pressure-narrative/contracts";
 import type { AEmotionAuthorityEmissionV1 } from "../a-emotion-production/content-source";
 import { createSangtianAEmotionContentSourceCompilerV1 } from "../a-emotion-production/content-source";
 import type { WorkingLedgerEventV1, WorkingLedgerProjectionV1 } from "../working-ledger/contracts";
+import { planInteractiveNarrativeAudiencesV1 } from "./interactive-audience";
 import {
   SANGTIAN_NARRATIVE_AUTHORITY_TARGET_V1 as TARGET,
 } from "../narrative-authority/catalog";
@@ -49,6 +53,17 @@ export interface NarrativeProjectionPlanInputV1 {
   sourceId: string;
   sourceCommitHash: string;
   sourceContentHash: string;
+  audiences?: readonly NarrativeAudienceV1[];
+}
+
+export function buildNarrativeProjectionIdentityV1(
+  job: OpenNovelNarrativeProjectionJobV1,
+  projectorVersion: string,
+): Readonly<{ logicalProjectionKey: string; requestFingerprint: string }> {
+  return {
+    logicalProjectionKey: computeNarrativeLogicalProjectionKey(job),
+    requestFingerprint: computeNarrativeProjectionFingerprint(job, projectorVersion),
+  };
 }
 
 export interface DownstreamInsertTransactionV1 {
@@ -67,6 +82,7 @@ export function planBeatAuthorityDownstreamV1(input: Readonly<{
   beatEvent: WorkingLedgerEventV1;
   contentPackageSha256: string;
   committedAt: string;
+  humanSeatIds: readonly string[];
 }>): Readonly<{
   narrativeJobs: OpenNovelNarrativeProjectionJobV1[];
   aEmotionEmissions: AEmotionAuthorityEmissionV1[];
@@ -130,6 +146,9 @@ export function planBeatAuthorityDownstreamV1(input: Readonly<{
     sourceId: beat.resolutionHash,
     sourceCommitHash: beat.resolutionHash,
     sourceContentHash: workingDeltaHash,
+    audiences: planInteractiveNarrativeAudiencesV1({
+      humanSeatIds: input.humanSeatIds,
+    }),
   }, rawAuthority);
   const aEmotionEmissions = createSangtianAEmotionContentSourceCompilerV1()
     .compileBeatProjection({
@@ -157,10 +176,9 @@ export function planNarrativeProjectionJobsV1(
   compiler: ExtendedAuthoritativeNarrativeSnapshotCompilerPortV1 =
     new SangtianAuthoritativeNarrativeSnapshotCompilerV1(),
 ): OpenNovelNarrativeProjectionJobV1[] {
-  const audiences: NarrativeAudienceV1[] = [
-    { kind: "PUBLIC", seatId: null },
-    ...PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => ({ kind: "SEAT" as const, seatId })),
-  ];
+  const audiences = input.audiences
+    ? validateNarrativeAudiencesV1(input.audiences)
+    : allNarrativeAudiencesV1();
   return Object.freeze(audiences.map((audience) => {
     const audienceKey = audience.kind === "PUBLIC" ? "public" : audience.seatId!;
     const skeleton = validateOpenNovelNarrativeProjectionJobV1({
@@ -206,13 +224,13 @@ export async function insertNarrativeProjectionPlanV1(
   jobs: readonly OpenNovelNarrativeProjectionJobV1[],
   projectorVersion: string = PRESSURE_NARRATIVE_PRODUCTION_RELEASE_V1.projectorVersion,
 ): Promise<void> {
-  assertSevenNarrativeJobs(jobs);
+  assertNarrativeJobs(jobs);
   const projectionRows: Record<string, unknown>[] = [];
   const outboxRows: Record<string, unknown>[] = [];
   for (const jobValue of jobs) {
     const job = validateOpenNovelNarrativeProjectionJobV1(jobValue);
     const audienceKey = job.audience.kind === "PUBLIC" ? "public" : job.audience.seatId!;
-    const fingerprint = computeNarrativeProjectionFingerprint(job, projectorVersion);
+    const identity = buildNarrativeProjectionIdentityV1(job, projectorVersion);
     projectionRows.push({
         runId: job.runId,
         projectionKind: job.projectionKind,
@@ -227,9 +245,9 @@ export async function insertNarrativeProjectionPlanV1(
         audienceKey,
         status: "PENDING",
         checkpoint: "PERSISTED",
-        requestFingerprint: fingerprint,
+        requestFingerprint: identity.requestFingerprint,
         lastError: createNarrativeProjectionMetaV1({
-          logicalProjectionKey: fingerprint,
+          logicalProjectionKey: identity.logicalProjectionKey,
           jobId: job.jobId,
         }),
     });
@@ -374,13 +392,36 @@ export function downstreamDedupeKeysV1(input: Readonly<{
   ].sort(compare);
 }
 
-function assertSevenNarrativeJobs(jobs: readonly OpenNovelNarrativeProjectionJobV1[]): void {
-  if (
-    jobs.length !== 7
-    || jobs.filter((job) => job.audience.kind === "PUBLIC").length !== 1
-    || PRESSURE_CHAPTER_SEAT_IDS_V1.some((seatId) =>
-      !jobs.some((job) => job.audience.kind === "SEAT" && job.audience.seatId === seatId))
-  ) throw invalid("Narrative plan must contain PUBLIC plus all six seats exactly once");
+function allNarrativeAudiencesV1(): NarrativeAudienceV1[] {
+  return [
+    { kind: "PUBLIC", seatId: null },
+    ...PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => ({ kind: "SEAT" as const, seatId })),
+  ];
+}
+
+function validateNarrativeAudiencesV1(
+  audiences: readonly NarrativeAudienceV1[],
+): NarrativeAudienceV1[] {
+  if (audiences.length === 0 || audiences.length > PRESSURE_CHAPTER_SEAT_IDS_V1.length + 1) {
+    throw invalid("Narrative plan must contain between one and seven audiences");
+  }
+  const cloned = audiences.map((audience) => structuredClone(audience));
+  const keys = cloned.map((audience) => {
+    if (audience.kind === "PUBLIC" && audience.seatId === null) return "public";
+    if (
+      audience.kind === "SEAT"
+      && PRESSURE_CHAPTER_SEAT_IDS_V1.includes(audience.seatId as (typeof PRESSURE_CHAPTER_SEAT_IDS_V1)[number])
+    ) return audience.seatId!;
+    throw invalid("Narrative plan contains an invalid audience");
+  });
+  if (new Set(keys).size !== keys.length) {
+    throw invalid("Narrative plan contains duplicate audiences");
+  }
+  return cloned;
+}
+
+function assertNarrativeJobs(jobs: readonly OpenNovelNarrativeProjectionJobV1[]): void {
+  validateNarrativeAudiencesV1(jobs.map((job) => job.audience));
 }
 
 function isHash(value: unknown): value is string {

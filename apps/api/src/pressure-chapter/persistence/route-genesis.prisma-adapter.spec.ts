@@ -78,11 +78,11 @@ test("Run five-tuple freezes once; P0 Genesis commits atomically without settlem
     null,
     "P0 keeps sequence 0 in its authority payload; StoryEvent's legacy positive sequence stays null",
   );
-  assert.equal(genesisDb.outbox.length, 8);
-  assert.equal(genesisDb.projections.length, 7);
+  assert.equal(genesisDb.outbox.length, 2);
+  assert.equal(genesisDb.projections.length, 1);
   assert.equal(
     genesisDb.outbox.filter((row) => row.taskType === "PROJECT_GENESIS_NARRATIVE").length,
-    7,
+    1,
   );
   assert.equal(genesisDb.run.worldSequence, 0, "P0 does not perform ChapterSettlement");
   assert(genesisDb.calls.indexOf("genesis.commit") < genesisDb.calls.indexOf("run.cas"));
@@ -95,8 +95,8 @@ test("Run five-tuple freezes once; P0 Genesis commits atomically without settlem
   });
   assert.equal(second.status, "REPLAYED");
   assert.equal(genesisDb.commits.length, 1);
-  assert.equal(genesisDb.projections.length, 7, "replay must not duplicate projections");
-  assert.equal(genesisDb.outbox.length, 8, "replay must not duplicate outbox tasks");
+  assert.equal(genesisDb.projections.length, 1, "replay must not duplicate projections");
+  assert.equal(genesisDb.outbox.length, 2, "replay must not duplicate outbox tasks");
 
   genesisDb.commits[0]!.outboxDedupeKeysJson = [];
   await assert.rejects(
@@ -200,7 +200,10 @@ class GenesisFake {
       this.snapshots.push(row);
       return { id: row.id };
     };
-    this.tx.pressureRunRouteSnapshot.findUnique = async () => ({ routeHash: this.routeHash });
+    this.tx.pressureRunRouteSnapshot.findUnique = async () => ({
+      routeHash: this.routeHash,
+      humanSeatIdsAtStartJson: [PRESSURE_CHAPTER_SEAT_IDS_V1[0]],
+    });
     this.tx.pressureOutboxTask.create = async ({ data }: any) => {
       this.calls.push("outbox.create");
       this.outbox.push(structuredClone(data));

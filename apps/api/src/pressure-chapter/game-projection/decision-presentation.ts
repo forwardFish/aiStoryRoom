@@ -116,7 +116,20 @@ export class PressureDecisionPresentationServiceV1 {
     input: Readonly<PressureDecisionPresentationInputV1>,
   ): Promise<PressureGameDecisionProjectionV1> {
     const fallback = structuredClone(input.decision);
-    if (!this.provider || input.decision.options.length === 0) return fallback;
+    if (input.narrative.projectionKind === "GENESIS_NARRATIVE") {
+      const storySource = loadSangtianPressureStorySourceV1(
+        input.chapter.chapterId,
+        input.viewer.seatId,
+      );
+      return {
+        ...fallback,
+        summary: storySource.currentScene.text,
+      };
+    }
+    if (
+      !this.provider
+      || input.decision.options.length === 0
+    ) return fallback;
     const context = compilePressureDecisionPresentationContextV1(input);
     const cached = this.cache.get(context.contextHash);
     if (cached) {
@@ -188,7 +201,11 @@ export function compilePressureDecisionPresentationContextV1(
     input.chapter.chapterId,
     input.viewer.seatId,
   );
-  const continuityText = input.narrative.text?.trim() || input.decision.summary;
+  const continuityText = input.narrative.text?.trim()
+    || storySource.currentScene.postBeatFrame.text.trim();
+  if (!continuityText) {
+    throw new Error("PRESSURE_DECISION_PRESENTATION_CONTINUITY_REQUIRED");
+  }
   const continuityExcerpt = decisionContinuityExcerpt(continuityText);
   const base = {
     schemaVersion: "pressure_decision_presentation_context_v1" as const,
@@ -227,7 +244,7 @@ export function compilePressureDecisionPresentationContextV1(
       projectionKind: input.narrative.projectionKind,
       sourceId: input.narrative.sourceId,
       sourceCommitHash: input.narrative.sourceCommitHash,
-      text: input.narrative.text,
+      text: continuityText,
       authority: "CONTINUITY_ONLY" as const,
     },
     pressureGuidance: input.decision.summary,
@@ -255,7 +272,9 @@ export function compilePressureDecisionPresentationContextV1(
     },
     continuityExcerpt,
     outputExample: {
-      sceneText: continuityExcerpt,
+      sceneText: input.narrative.projectionKind === "GENESIS_NARRATIVE"
+        ? storySource.currentScene.text
+        : continuityExcerpt,
       question: "由现场最后一个压力自然逼出的具体问题？",
       options: input.decision.options.map((option) => ({
         actionType: option.actionType,
@@ -314,8 +333,11 @@ export function validatePressureDecisionPresentationCandidateV1(
   if (FALSE_GUARANTEE.test(sceneText) || FALSE_GUARANTEE.test(question)) {
     throw new Error("PRESSURE_DECISION_PRESENTATION_FALSE_GUARANTEE");
   }
-  if (sceneText !== context.continuityExcerpt) {
-    throw new Error("PRESSURE_DECISION_PRESENTATION_CONTINUITY_DRIFT");
+  if (
+    context.currentScene.phase === "OPENING"
+    && sceneText === context.continuityExcerpt
+  ) {
+    throw new Error("PRESSURE_DECISION_PRESENTATION_OPENING_NOT_GENERATED");
   }
   if (!Array.isArray(candidate.options)
     || candidate.options.length !== context.legalActionContracts.length) {
@@ -325,7 +347,7 @@ export function validatePressureDecisionPresentationCandidateV1(
   const seen = new Set<string>();
   const options = candidate.options.map((raw, index) => {
     const option = plainObject(raw, `candidate.options[${index}]`);
-    exactKeys(option, ["actionType", "label", "description"], `candidate.options[${index}]`);
+    requiredKeys(option, ["actionType", "label", "description"], `candidate.options[${index}]`);
     const actionType = boundedText(option.actionType, `candidate.options[${index}].actionType`, 1, 120);
     const label = boundedText(option.label, `candidate.options[${index}].label`, 2, 32);
     const description = boundedText(option.description, `candidate.options[${index}].description`, 8, 120);
@@ -350,6 +372,17 @@ function plainObject(value: unknown, path: string): Record<string, unknown> {
     throw new Error(`PRESSURE_DECISION_PRESENTATION_OBJECT:${path}`);
   }
   return value as Record<string, unknown>;
+}
+
+function requiredKeys(
+  value: Record<string, unknown>,
+  required: readonly string[],
+  path: string,
+): void {
+  const missing = required.filter((key) => !Object.hasOwn(value, key));
+  if (missing.length > 0) {
+    throw new Error(`PRESSURE_DECISION_PRESENTATION_KEYS:${path}`);
+  }
 }
 
 function exactKeys(

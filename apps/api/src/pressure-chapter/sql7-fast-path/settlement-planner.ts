@@ -207,6 +207,7 @@ export async function planN1DecisionToN2SettlementV1(input: Readonly<{
     beatEvent: input.batch.beatPlan.event,
     contentPackageSha256: route.contentPackageSha256,
     committedAt: new Date(nowMs).toISOString(),
+    humanSeatIds: route.humanSeatIdsAtStart,
   });
   assertCanonicalEqual(
     downstream.narrativeJobs,

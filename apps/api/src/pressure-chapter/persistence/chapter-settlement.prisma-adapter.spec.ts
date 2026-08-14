@@ -71,11 +71,11 @@ test("B0 authority commit persists all artifacts and is the only worldSequence a
   );
   assert.equal(fake.seatArcs.length, 0, "seat arcs are embedded in commitManifestJson");
   assert.equal(fake.rootEvents.length, 1);
-  assert.equal(fake.outbox.length, 9);
-  assert.equal(fake.projections.length, 7);
+  assert.equal(fake.outbox.length, 3);
+  assert.equal(fake.projections.length, 1);
   assert.equal(
     fake.outbox.filter((row) => row.taskType === "PROJECT_CHAPTER_NARRATIVE").length,
-    7,
+    1,
   );
   assert.equal(
     fake.outbox.filter((row) => row.taskType === "INTERACTION_COMPILE_REQUESTED").length,
@@ -89,8 +89,8 @@ test("B0 authority commit persists all artifacts and is the only worldSequence a
   assert.equal(second.status, "ALREADY_COMMITTED");
   assert.equal(fake.settlementWrites, 1);
   assert.equal(fake.run.worldSequence, 1);
-  assert.equal(fake.projections.length, 7, "replay must not duplicate projections");
-  assert.equal(fake.outbox.length, 9, "replay must not duplicate outbox tasks");
+  assert.equal(fake.projections.length, 1, "replay must not duplicate projections");
+  assert.equal(fake.outbox.length, 3, "replay must not duplicate outbox tasks");
 
   fake.settlement!.outboxDedupeKeysJson = [];
   await assert.rejects(
@@ -160,6 +160,9 @@ class ChapterCommitFake {
       workingRevision: record.commitFence.expectedWorkingRevision,
       workingStateHash: record.commitFence.expectedWorkingStateHash,
       lockVersion: 9,
+      routeSnapshot: {
+        humanSeatIdsAtStartJson: [ACTOR],
+      },
     };
     this.run = {
       id: record.runId,

@@ -237,6 +237,7 @@ export async function planPressureSql7PreparedAutomationActionBatchV1(
     beatEvent: beat.event,
     contentPackageSha256: route.contentPackageSha256,
     committedAt: new Date(input.nowMs).toISOString(),
+    humanSeatIds: route.humanSeatIdsAtStart,
   });
 
   const batchId = `decision_batch_${sha256Canonical({

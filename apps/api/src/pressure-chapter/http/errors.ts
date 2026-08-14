@@ -51,19 +51,17 @@ export async function pressureHttpBoundary<T>(
       return await operation();
     } catch (error) {
       if (error instanceof PressureChapterHttpException) throw error;
-      if (process.env.PRESSURE_CHAPTER_DIAGNOSTIC_ERRORS === "1") {
-        const diagnostic = error && typeof error === "object"
-          ? {
-              name: "name" in error ? String(error.name) : "UNKNOWN",
-              code: "code" in error ? String(error.code) : "UNKNOWN",
-              path: "path" in error ? String(error.path) : "pressureChapter",
-              message: "message" in error
-                ? String(error.message).replace(/[\r\n]+/g, " ").slice(0, 1_000)
-                : "UNKNOWN",
-            }
-          : { name: typeof error, code: "UNKNOWN", path: "pressureChapter", message: "UNKNOWN" };
-        console.error("Pressure chapter dependency failure", diagnostic);
-      }
+      const diagnostic = error && typeof error === "object"
+        ? {
+            name: "name" in error ? String(error.name) : "UNKNOWN",
+            code: "code" in error ? String(error.code) : "UNKNOWN",
+            path: "path" in error ? String(error.path) : "pressureChapter",
+            message: "message" in error
+              ? String(error.message).replace(/[\r\n]+/g, " ").slice(0, 1_000)
+              : "UNKNOWN",
+          }
+        : { name: typeof error, code: "UNKNOWN", path: "pressureChapter", message: "UNKNOWN" };
+      console.error("Pressure chapter dependency failure", diagnostic);
       if (error instanceof HttpException) {
         const status = error.getStatus();
         if (status === HttpStatus.UNAUTHORIZED || status === HttpStatus.FORBIDDEN) {

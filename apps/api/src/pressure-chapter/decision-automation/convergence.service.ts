@@ -462,6 +462,7 @@ export class PressureDecisionConvergenceServiceV1 {
         beatEvent: beat.event,
         contentPackageSha256: route.contentPackageSha256,
         committedAt: new Date(command.nowMs).toISOString(),
+        humanSeatIds: route.humanSeatIdsAtStart,
       });
       const batch = createPreparedAutomationActionBatchV1({
         batchId: metrics.batchId,

@@ -23,6 +23,7 @@ import {
   insertAEmotionAuthorityEmissionsV1,
   insertNarrativeProjectionPlanV1,
   planNarrativeProjectionJobsV1,
+  planInteractiveNarrativeAudiencesV1,
   validateAuthorityDownstreamManifestV1,
 } from "../projection-plan";
 import {
@@ -55,6 +56,9 @@ interface ChapterRuntimeFenceRow {
   workingRevision: number;
   workingStateHash: string;
   lockVersion: number;
+  routeSnapshot: {
+    humanSeatIdsAtStartJson: unknown;
+  };
 }
 
 interface RunFenceRow {
@@ -177,6 +181,9 @@ export class PrismaAtomicChapterCommitter implements AtomicChapterCommitterPort 
               workingRevision: true,
               workingStateHash: true,
               lockVersion: true,
+              routeSnapshot: {
+                select: { humanSeatIdsAtStartJson: true },
+              },
             },
           }),
           tx.storyRun.findUnique({
@@ -208,6 +215,9 @@ export class PrismaAtomicChapterCommitter implements AtomicChapterCommitterPort 
           sourceId: bundle.bundleHash,
           sourceCommitHash: bundle.bundleHash,
           sourceContentHash: bundle.frozenWorldState.stateHash,
+          audiences: planInteractiveNarrativeAudiencesV1({
+            humanSeatIds: readHumanSeatIds(runtime!.routeSnapshot.humanSeatIdsAtStartJson),
+          }),
         }, rawNarrativeAuthority, this.narrativeCompiler);
         const committedAtDate = new Date();
         const emissions = (this.aEmotionCompiler
@@ -424,6 +434,16 @@ function decodeSettlement(
       { cause: cause instanceof Error ? cause.message : String(cause) },
     );
   }
+}
+
+function readHumanSeatIds(value: unknown): string[] {
+  if (!Array.isArray(value) || value.some((seatId) => typeof seatId !== "string")) {
+    throw new PressurePersistenceError(
+      ERROR.RECORD_INVALID,
+      "Chapter route does not contain valid human narrative audiences",
+    );
+  }
+  return [...value];
 }
 
 function assertSameSettlement(

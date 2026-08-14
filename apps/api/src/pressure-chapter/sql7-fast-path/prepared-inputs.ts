@@ -1,5 +1,4 @@
 import {
-  computeNarrativeProjectionFingerprint,
   isSha256,
   sha256Canonical,
   type OpenNovelNarrativeProjectionJobV1,
@@ -23,10 +22,12 @@ import type { SangtianPressureGameContentMapperV1 } from "../integration/content
 import { createNarrativeProjectionMetaV1 } from "../persistence/narrative.prisma-adapter";
 import { PRESSURE_NARRATIVE_PRODUCTION_RELEASE_V1 } from "../narrative-production/published-profile-resolver";
 import {
+  buildNarrativeProjectionIdentityV1,
   buildAuthorityDownstreamManifestV1,
   downstreamDedupeKeysV1,
   planNarrativeProjectionJobsV1,
 } from "../projection-plan/authority-downstream";
+import { planInteractiveNarrativeAudiencesV1 } from "../projection-plan/interactive-audience";
 import type { PressureSeatViewerPresentationCatalogV1 } from "../seat-control-persistence";
 import { planN1DecisionToN2SettlementV1, type N2AuthoredChapterContentAuthorityPortV1, type N2ChapterWorkingSeedAuthorityPortV1 } from "./settlement-planner";
 import {
@@ -80,6 +81,7 @@ implements PressureSql7SettlementN2PreparedInputsPortV1 {
       record,
       settlement.postBeatProjection,
       now,
+      input.snapshot.routeSnapshot.humanSeatIdsAtStart,
     );
     const resolvedProjectionSources = prepareProjectionSources({
       snapshot: input.snapshot,
@@ -128,6 +130,7 @@ function prepareDownstreamRows(
   record: Awaited<ReturnType<typeof planN1DecisionToN2SettlementV1>>["atomicRecord"],
   projection: Awaited<ReturnType<typeof planN1DecisionToN2SettlementV1>>["postBeatProjection"],
   committedAt: Date,
+  humanSeatIds: readonly string[],
 ) {
   const bundle = record.frozenChapterBundle;
   const narrativeJobs = planNarrativeProjectionJobsV1({
@@ -137,6 +140,7 @@ function prepareDownstreamRows(
     sourceId: bundle.bundleHash,
     sourceCommitHash: bundle.bundleHash,
     sourceContentHash: bundle.frozenWorldState.stateHash,
+    audiences: planInteractiveNarrativeAudiencesV1({ humanSeatIds }),
   }, {
     runId: record.runId,
     bundleHash: bundle.bundleHash,
@@ -207,7 +211,7 @@ function narrativeProjectionRow(
   now: Date,
 ): PressureSql7NarrativeProjectionRowV1 {
   const projectorVersion = PRESSURE_NARRATIVE_PRODUCTION_RELEASE_V1.projectorVersion;
-  const fingerprint = computeNarrativeProjectionFingerprint(job, projectorVersion);
+  const identity = buildNarrativeProjectionIdentityV1(job, projectorVersion);
   return {
     id: `sql7_np_${sha256Canonical({ jobId: job.jobId, projectorVersion }).slice(0, 40)}`,
     runId: job.runId,
@@ -222,7 +226,7 @@ function narrativeProjectionRow(
     audienceSeatId: job.audience.seatId,
     audienceKey: job.audience.kind === "PUBLIC" ? "public" : job.audience.seatId!,
     status: "PENDING",
-    requestFingerprint: fingerprint,
+    requestFingerprint: identity.requestFingerprint,
     attempt: 0,
     maxAttempts: 3,
     checkpoint: "PERSISTED",
@@ -231,7 +235,10 @@ function narrativeProjectionRow(
     leaseOwner: null,
     leaseExpiresAt: null,
     leaseVersion: 0,
-    lastError: createNarrativeProjectionMetaV1({ logicalProjectionKey: fingerprint, jobId: job.jobId }),
+    lastError: createNarrativeProjectionMetaV1({
+      logicalProjectionKey: identity.logicalProjectionKey,
+      jobId: job.jobId,
+    }),
     createdAt: new Date(now),
     updatedAt: new Date(now),
     publishedAt: null,

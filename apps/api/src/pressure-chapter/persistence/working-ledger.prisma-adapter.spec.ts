@@ -127,9 +127,9 @@ test("OPEN and ACTION do not advance working revision; BEAT CAS alone advances i
   assert.equal(fake.worldWriteCalls, 0, "BEAT must not advance worldSequence");
   assert.equal(fake.reservations.length, 0, "reservations remain in the ledger projection JSON");
   assert.equal(fake.beatResolutions.length, 0, "beat authority remains in StoryEvent");
-  assert.equal(fake.projections.length, 7);
-  assert.equal(fake.outbox.filter((row) => row.taskType === "PROJECT_BEAT_NARRATIVE").length, 7);
-  assert.equal(narrativeAuthorities.length, 7);
+  assert.equal(fake.projections.length, 2);
+  assert.equal(fake.outbox.filter((row) => row.taskType === "PROJECT_BEAT_NARRATIVE").length, 2);
+  assert.equal(narrativeAuthorities.length, 2);
   const narrativeAuthority = narrativeAuthorities[0] as Record<string, unknown>;
   assert.deepEqual(narrativeAuthority.sealedActionAudiences, [{
     actionId: action.actionId,
@@ -609,6 +609,7 @@ class WorkingLedgerFake {
           orchestrationPackageSha256: this.route.orchestrationPackageSha256,
           runtimeContractVersion: this.route.runtimeContractVersion,
           runtimeContractSha256: this.route.runtimeContractSha256,
+          humanSeatIdsAtStartJson: [...this.route.humanSeatIdsAtStart],
         }
       : null;
     this.tx.pressureResourceReservation.create = async ({ data }: any) => {
@@ -686,6 +687,7 @@ class MissingRuntimeOpeningFake {
           orchestrationPackageSha256: this.route.orchestrationPackageSha256,
           runtimeContractVersion: this.route.runtimeContractVersion,
           runtimeContractSha256: this.route.runtimeContractSha256,
+          humanSeatIdsAtStartJson: [...this.route.humanSeatIdsAtStart],
         }),
       },
       pressureGenesisCommit: {

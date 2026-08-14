@@ -5,7 +5,7 @@ const PRESSURE_SUBMIT_RESPONSE_SCHEMA = "pressure_chapter_submit_decision_http_r
 const METRIC_PRESENTATION = [
   ["fiscal_military", "国库银两"],
   ["civilian_land", "民心"],
-  ["evidence_responsibility", "粮价"],
+  ["evidence_responsibility", "真相进展"],
   ["mulberry_silk", "改桑进度"],
   ["court_imperial_face", "皇帝信任"],
 ];
@@ -20,7 +20,15 @@ const ROLE_PRESENTATION = {
 };
 
 export class PressureMainGameStorageV1 {
-  constructor({ runId, initialProjection, fetchImpl = globalThis.fetch?.bind(globalThis), createIdempotencyKey } = {}) {
+  constructor({
+    runId,
+    initialProjection,
+    fetchImpl = globalThis.fetch?.bind(globalThis),
+    createIdempotencyKey,
+    narrativePollIntervalMs = 400,
+    narrativePollAttempts = 75,
+    setTimeoutImpl = globalThis.setTimeout?.bind(globalThis),
+  } = {}) {
     if (!runId) throw new TypeError("PressureMainGameStorageV1 requires runId");
     if (typeof fetchImpl !== "function") throw new TypeError("PressureMainGameStorageV1 requires fetch");
     this.runId = runId;
@@ -28,14 +36,19 @@ export class PressureMainGameStorageV1 {
     this.projection = assertProjection(initialProjection, runId);
     this.fetchImpl = fetchImpl;
     this.createIdempotencyKey = createIdempotencyKey || defaultIdempotencyKey;
+    this.narrativePollIntervalMs = narrativePollIntervalMs;
+    this.narrativePollAttempts = narrativePollAttempts;
+    this.setTimeoutImpl = setTimeoutImpl;
   }
 
   async restoreOrCreate() {
+    this.projection = await this.awaitDecisionNarrative(this.projection);
     return this.toView(this.projection);
   }
 
   async getRun() {
     this.projection = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
+    this.projection = await this.awaitDecisionNarrative(this.projection);
     return this.toView(this.projection);
   }
 
@@ -77,7 +90,14 @@ export class PressureMainGameStorageV1 {
       body: JSON.stringify(command),
     });
     const payload = await response.json().catch(() => null);
-    if (!response.ok) throw httpError(response, payload, "这项决定暂时无法提交。");
+    if (!response.ok) {
+      console.error("Pressure decision request failed", JSON.stringify({
+        status: response.status,
+        code: typeof payload?.code === "string" ? payload.code : "UNKNOWN",
+        path: typeof payload?.path === "string" ? payload.path : "pressureChapter",
+      }));
+      throw httpError(response, payload, "这项决定暂时无法提交。");
+    }
     if (
       payload?.schemaVersion !== PRESSURE_SUBMIT_RESPONSE_SCHEMA
       || payload?.idempotencyKey !== idempotencyKey
@@ -85,6 +105,7 @@ export class PressureMainGameStorageV1 {
       throw new Error("决定响应与本次提交不一致。");
     }
     this.projection = assertProjection(payload.projection, this.runId);
+    this.projection = await this.awaitDecisionNarrative(this.projection);
     return this.toView(this.projection);
   }
 
@@ -105,6 +126,15 @@ export class PressureMainGameStorageV1 {
     if (!response.ok) throw httpError(response, payload, "暂时无法读取故事局。" );
     return assertProjection(payload, this.runId);
   }
+
+  async awaitDecisionNarrative(initialProjection) {
+    let projection = initialProjection;
+    for (let attempt = 0; needsDecisionNarrative(projection) && attempt < this.narrativePollAttempts; attempt += 1) {
+      await delay(this.narrativePollIntervalMs, this.setTimeoutImpl);
+      projection = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
+    }
+    return projection;
+  }
 }
 
 export function pressureProjectionToMainGameViewV1(projectionValue) {
@@ -120,7 +150,13 @@ export function pressureProjectionToMainGameViewV1(projectionValue) {
     && projection.capabilities?.canSubmitDecision === true
     && projection.viewer.control?.mode === "HUMAN_ACTIVE",
   );
-  const resources = projection.resources.map((item) => [item.label, item.displayValue]);
+  const decisionNarrative = decisionNarrativeText(projection);
+  const narrativePending = Boolean(decision && !decisionNarrative);
+  const resources = projection.resources.map((item) => ({
+    resourceId: item.resourceId,
+    name: item.label,
+    value: item.displayValue,
+  }));
   const tokens = projection.tokens.filter((item) => item.available && item.quantity > 0);
   return {
     continuousV2: true,
@@ -133,7 +169,7 @@ export function pressureProjectionToMainGameViewV1(projectionValue) {
       currentDay: projection.chapter.chapterNumber,
       currentTime: projection.chapter.title,
       totalDays: 7,
-      status: projection.chapter.phase === "ACTIVE" ? "awaiting_decision" : "resolving",
+      status: projection.chapter.phase === "ACTIVE" && !narrativePending ? "awaiting_decision" : "resolving",
       version: projection.projectionVersion,
       decisionsCompletedToday: 0,
       decisionsRequiredToday: 1,
@@ -144,7 +180,7 @@ export function pressureProjectionToMainGameViewV1(projectionValue) {
       stageIndex: projection.chapter.chapterNumber,
       turnIndex: Math.max(1, projection.chapter.workingRevision + 1),
       title: projection.chapter.title,
-      status: projection.chapter.phase === "ACTIVE" ? "OPEN" : "RESOLVING",
+      status: projection.chapter.phase === "ACTIVE" && !narrativePending ? "OPEN" : "RESOLVING",
     },
     player: {
       roleName: projection.viewer.roleName,
@@ -167,9 +203,9 @@ export function pressureProjectionToMainGameViewV1(projectionValue) {
       accentSoft: "#f3f0ff",
     },
     openingNarrative: projection.narrative.text || projection.decision?.summary || projection.chapter.title,
-    decisionNarrative: projection.decision?.summary || "",
+    decisionNarrative,
     messages: [],
-    activeDecision: canSubmit ? {
+    activeDecision: canSubmit && !narrativePending ? {
       messageId: decision.decisionPointId,
       title: decision.title,
       options: decision.options.map((item, index) => ({
@@ -195,6 +231,29 @@ export function pressureProjectionToMainGameViewV1(projectionValue) {
     maneuverPanel: pressureManeuverPanel(projection),
     pressureProjection: projection,
   };
+}
+
+function decisionNarrativeText(projection) {
+  if (!projection.decision) return "";
+  const summary = String(projection.decision.summary || "").trim();
+  if (projection.narrative?.projectionKind === "GENESIS_NARRATIVE") return summary;
+  const published = projection.narrative?.status === "PUBLISHED"
+    || projection.narrative?.status === "FALLBACK_PUBLISHED";
+  return published && [...summary].length >= 30 ? summary : "";
+}
+
+function needsDecisionNarrative(projection) {
+  return Boolean(
+    projection?.decision
+    && projection?.chapter?.phase === "ACTIVE"
+    && projection?.narrative?.projectionKind !== "GENESIS_NARRATIVE"
+    && !decisionNarrativeText(projection),
+  );
+}
+
+function delay(milliseconds, setTimeoutImpl) {
+  if (typeof setTimeoutImpl !== "function") return Promise.resolve();
+  return new Promise((resolve) => setTimeoutImpl(resolve, Math.max(0, milliseconds)));
 }
 
 function pressureManeuverPanel(projection) {

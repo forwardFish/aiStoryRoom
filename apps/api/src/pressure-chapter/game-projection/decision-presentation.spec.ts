@@ -13,9 +13,9 @@ test("AI rewrites scene and three option expressions without changing action bin
     async renderDecisionPresentation(context) {
       calls += 1;
       assert.equal(context.legalActionContracts.length, 3);
-      assert.equal(context.pressureGuidance, "九堰水势正在逼近总督府的最后回令时限。");
+      assert.equal(context.pressureGuidance, "赈济奏疏必须说明灾情与请求。");
       return {
-        sceneText: context.continuityExcerpt,
+        sceneText: context.outputExample.sceneText,
         question: "这道回令，你准备先保住什么？",
         options: context.legalActionContracts.map((action, index) => ({
           actionType: action.actionType,
@@ -25,11 +25,11 @@ test("AI rewrites scene and three option expressions without changing action bin
       };
     },
   });
-  const input = fixture();
+  const input = continuationFixture();
   const first = await service.present(input);
   const second = await service.present(input);
   assert.equal(calls, 1);
-  assert.equal(first.summary, compilePressureDecisionPresentationContextV1(input).continuityExcerpt);
+  assert.equal(first.summary, compilePressureDecisionPresentationContextV1(input).outputExample.sceneText);
   assert.equal(first.title, "这道回令，你准备先保住什么？");
   assert.deepEqual(
     first.options.map(({ code, actionType, preferredEntry }) => ({ code, actionType, preferredEntry })),
@@ -38,12 +38,39 @@ test("AI rewrites scene and three option expressions without changing action bin
   assert.deepEqual(second, first);
 });
 
-test("unknown AI action rejects the whole candidate and keeps the authored fallback", async () => {
-  const input = fixture();
+test("continuation generates a new literary scene and ignores non-authoritative option metadata", async () => {
+  const input = continuationFixture();
   const service = new PressureDecisionPresentationServiceV1({
     async renderDecisionPresentation(context) {
       return {
-        sceneText: context.continuityExcerpt,
+        sceneText: "奏疏房里刚换过一轮灯油，灾后的名册、河图与待署名的奏稿已经摊满长案。胡宗宪翻到记载疏散结果的一页，门外又送来催问：这场灾究竟怎样写进朝廷的第一道奏疏。",
+        question: "这道奏疏，你准备先写清哪一件事？",
+        options: context.legalActionContracts.map((action, index) => ({
+          actionType: action.actionType,
+          label: `行动${index + 1}`,
+          description: `根据当前现场提出第${index + 1}项具体行动，并只说明它的直接目的。`,
+          rationale: "presentation-only metadata",
+        })),
+      };
+    },
+  });
+
+  const result = await service.present(input);
+  const context = compilePressureDecisionPresentationContextV1(input);
+  assert.match(result.summary, /奏疏房里刚换过一轮灯油/u);
+  assert.notEqual(result.summary, context.continuityExcerpt);
+  assert.deepEqual(
+    result.options.map((option) => option.actionType),
+    input.decision.options.map((option) => option.actionType),
+  );
+});
+
+test("unknown AI action rejects the whole candidate and keeps the authored fallback", async () => {
+  const input = continuationFixture();
+  const service = new PressureDecisionPresentationServiceV1({
+    async renderDecisionPresentation(context) {
+      return {
+        sceneText: context.outputExample.sceneText,
         question: "现在怎么办？",
         options: [
           { actionType: "INVENTED_ACTION", label: "虚构行动", description: "模型无权创造这种规则行动，所以整份输出必须回退。" },
@@ -57,6 +84,53 @@ test("unknown AI action rejects the whole candidate and keeps the authored fallb
     },
   });
   assert.deepEqual(await service.present(input), input.decision);
+});
+
+test("pending Narrative uses the authored scene frame so the next story does not wait for a worker", async () => {
+  const input = continuationFixture();
+  input.narrative.status = "PENDING";
+  input.narrative.text = null;
+  input.narrative.contentHash = null;
+  input.narrative.renderMode = null;
+  let calls = 0;
+  const service = new PressureDecisionPresentationServiceV1({
+    async renderDecisionPresentation(context) {
+      calls += 1;
+      assert.equal(context.previousNarrative.text, context.currentScene.text);
+      assert.notEqual(context.previousNarrative.text, input.decision.summary);
+      return {
+        sceneText: context.outputExample.sceneText,
+        question: "现在必须先解决哪一项？",
+        options: context.legalActionContracts.map((action) => ({
+          actionType: action.actionType,
+          label: action.fallbackLabel,
+          description: action.intendedAction,
+        })),
+      };
+    },
+  });
+
+  const result = await service.present(input);
+  assert.equal(calls, 1);
+  assert.notEqual(result.summary, input.decision.summary);
+  assert.equal(result.title, "现在必须先解决哪一项？");
+});
+
+test("frozen Genesis uses the authored first scene without calling the Provider", async () => {
+  const input = fixture();
+  let calls = 0;
+  const service = new PressureDecisionPresentationServiceV1({
+    async renderDecisionPresentation() {
+      calls += 1;
+      throw new Error("Genesis must remain authored");
+    },
+  });
+
+  const result = await service.present(input);
+  assert.equal(calls, 0);
+  assert.match(result.summary, /驿卒刚跨进总督府内厅/u);
+  assert.match(result.summary, /第一道令先下给谁/u);
+  assert.deepEqual(result.options, input.decision.options);
 });
 
 test("compiled context is hash-bound and contains only the three visible Catalog actions", () => {
@@ -142,6 +216,30 @@ function fixture(): PressureDecisionPresentationInputV1 {
       customActionAllowed: true,
     },
   };
+}
+
+function continuationFixture(): PressureDecisionPresentationInputV1 {
+  const input = fixture();
+  input.chapter = {
+    ...input.chapter,
+    chapterRuntimeId: "chapter-runtime-n2",
+    chapterId: "N2",
+    chapterNumber: 2,
+    title: "奏疏措辞",
+  };
+  input.narrative = {
+    ...input.narrative,
+    projectionKind: "CHAPTER_NARRATIVE",
+    sourceAuthority: "CHAPTER_FROZEN",
+    sourceId: "chapter-n1-settlement",
+    text: "胡宗宪下令先撤低洼处百姓。差役领命奔出，总督府门前仍有人追问，奏疏究竟如何说明这场灾情。",
+  };
+  input.decision = {
+    ...input.decision,
+    decisionPointId: "N2.memorial_draft",
+    summary: "赈济奏疏必须说明灾情与请求。",
+  };
+  return input;
 }
 
 function option(

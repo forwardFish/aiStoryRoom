@@ -129,11 +129,23 @@ export class PressureChapterHttpFacade {
       if (this.sql7 && command.chapterId === "N1") {
         const sql7NowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
         const sql7 = await this.sql7.submit({
-          principal: structuredClone(principal),
-          roomId,
-          command: structuredClone(command),
-          nowMs: sql7NowMs,
-        });
+            principal: structuredClone(principal),
+            roomId,
+            command: structuredClone(command),
+            nowMs: sql7NowMs,
+          }).catch((error: unknown) => {
+          console.error("Pressure SQL7 submit failed", JSON.stringify({
+            runId: command.runId,
+            chapterId: command.chapterId,
+            code: error && typeof error === "object" && "code" in error
+              ? String(error.code)
+              : "UNKNOWN",
+            message: error instanceof Error
+              ? error.message.replace(/[\r\n]+/g, " ").slice(0, 500)
+              : "UNKNOWN",
+          }));
+          throw error;
+          });
         if (sql7.status === "COMMITTED") return sql7.response;
         if (sql7.status === "REPLAYED") {
           const replayContext = await this.resolveContext(principal, roomId, "ACTION");

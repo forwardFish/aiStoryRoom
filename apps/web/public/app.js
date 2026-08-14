@@ -43,6 +43,7 @@ export function createStoryApp({
     messageFilter: "all",
     debugBuild: debugBuild === true,
     playAgainOpen: false,
+    revealedDecisionNarrativeKey: null,
     resultStream: null,
     resultScroll: { top: 0, follow: true },
     openingScroll: { top: 0, follow: true },
@@ -321,9 +322,11 @@ export function createStoryApp({
 
   function acceptView(view) {
     const previousSceneKey = state.view?.maneuverPanel?.sceneKey || null;
+    const previousDecisionNarrativeKey = decisionNarrativeKey(state.view);
     stopResultStream();
     stopOpeningStream();
     state.view = view;
+    if (decisionNarrativeKey(view) !== previousDecisionNarrativeKey) state.revealedDecisionNarrativeKey = null;
     if (previousSceneKey && previousSceneKey !== view?.maneuverPanel?.sceneKey) state.activeManeuverType = null;
     state.guard = null;
     state.selectedOption = activePromptForView(view)?.options?.[0]?.optionKey || view.activeDecision?.options?.[0]?.key || "A";
@@ -552,8 +555,9 @@ export function createStoryApp({
       resultPause,
       criticalPending
     });
+    const decisionNarrativePending = mainMode === "decision" && isDecisionNarrativePending(view, state);
     root.innerHTML = `
-      <div class="causal-shell" data-testid="story-shell" data-game-locale="${esc(view.locale || "zh-CN")}" style="${esc(gameStyle(view))}">
+      <div class="causal-shell" data-testid="story-shell" data-game-locale="${esc(view.locale || "zh-CN")}" data-pressure-chapter="${view.pressureProjection ? "true" : "false"}" style="${esc(gameStyle(view))}">
         ${renderTopbar(view, state)}
         ${renderStatusStrip(view)}
         <aside class="causal-left" aria-label="${isEnglish(view) ? "Player information" : "玩家信息"}">
@@ -565,8 +569,8 @@ export function createStoryApp({
           ${renderCausalRecalls(view)}
         </aside>
         <main class="causal-center ${mainMode === "history" ? "history-center" : ""} ${mainMode === "critical_pending" ? "critical-pending-center" : ""} ${mainMode === "decision" ? "decision-center" : ""}">
-          ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
-          ${mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" ? renderDecisionZone(view, state) : ""}
+          ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : decisionNarrativePending ? renderDecisionNarrative(view, { showContinue: true }) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
+          ${mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" && !decisionNarrativePending ? renderDecisionZone(view, state) : ""}
         </main>
         <aside class="causal-right" aria-label="${isEnglish(view) ? "Maneuver board" : "主动谋划中枢"}">
           ${renderManeuverPanel(view, state)}
@@ -591,6 +595,14 @@ export function createStoryApp({
   function bindEvents() {
     root.querySelector("#retryBtn")?.addEventListener("click", retry);
     root.querySelector("#beginStoryBtn")?.addEventListener("click", () => { state.showOpening = false; render(); });
+    root.querySelector("#beginDecisionBtn")?.addEventListener("click", () => {
+      state.revealedDecisionNarrativeKey = decisionNarrativeKey(state.view);
+      render();
+    });
+    root.querySelector("#reviewDecisionNarrativeBtn")?.addEventListener("click", () => {
+      state.revealedDecisionNarrativeKey = null;
+      render();
+    });
     root.querySelector("#continueStoryBtn")?.addEventListener("click", continueResultStory);
     root.querySelector("[data-testid=\"result-narrative\"]")?.addEventListener("scroll", (event) => {
       const panel = event.currentTarget;
@@ -810,8 +822,10 @@ function renderResources(view) {
   const resources = array(player.resources);
   return `<section class="causal-panel resources-panel"><h2 class="panel-heading">${panelHeadingIcon("resources")}<span>${isEnglish(view) ? "My Standing" : "我的资源"}</span></h2>${resources.length
     ? resources.map((item) => {
-        const [key, value] = Array.isArray(item) ? item : [item?.name || item?.key, item?.value];
-        return `<div class="kv">${panelMetricIcon(resourceIconKind(key))}<span>${esc(key)}</span><b>${esc(value)}</b></div>`;
+        const record = Array.isArray(item) ? null : item;
+        const [key, value] = Array.isArray(item) ? item : [record?.name || record?.key, record?.value];
+        const resourceId = String(record?.resourceId || "").trim();
+        return `<div class="kv"${resourceId ? ` data-resource-id="${esc(resourceId)}"` : ""}>${panelMetricIcon(resourceIconKind(key))}<span>${esc(key)}</span><b>${esc(value)}</b></div>`;
       }).join("")
     : `<p>${isEnglish(view) ? "No public standing is available yet." : "暂无可公开资源。"}</p>`}</section>`;
 }
@@ -933,10 +947,10 @@ function openingNarrativeText(view) {
   return "杭州粮价已经连续上涨三日。城中米行陆续闭门，百姓开始聚集在粮铺之外。巡抚的奏疏在午前送到总督府，奏疏中将粮价失控归因于江南商会囤积居奇。但你知道，事情远没有这么简单。昨夜送来的密报里，出现了司礼监的名字。粮价、商会、巡抚、京中势力，所有线索都指向同一个问题：杭州，恐怕已不再只是地方粮局之乱。现在，你必须在这盘棋局落定之前，找到第一步该落子的方向。";
 }
 
-function renderDecisionNarrative(view) {
+function renderDecisionNarrative(view, { showContinue = false } = {}) {
   const narrative = String(view?.decisionNarrative || "").trim();
   return narrative
-    ? `<section class="decision-narrative" data-testid="decision-narrative"><div class="decision-copy"><p>${lineBreaks(narrative)}</p></div></section>`
+    ? `<section class="decision-narrative result-narrative" data-testid="decision-narrative"><div class="decision-copy"><p>${lineBreaks(narrative)}</p></div>${showContinue ? `<div class="result-continue"><button id="beginDecisionBtn" type="button">进入决策</button></div>` : ""}</section>`
     : "";
 }
 
@@ -1103,6 +1117,18 @@ function isOpeningDecisionState(view) {
   return Boolean(view?.run) && Number(view.run.currentDay) === 1 && array(view.decisionHistory).length === 0;
 }
 
+function decisionNarrativeKey(view) {
+  const narrative = String(view?.decisionNarrative || "").trim();
+  const prompt = activePromptForView(view);
+  if (!narrative || !prompt) return "";
+  return [view?.run?.id, view?.run?.currentDay, prompt.eventId || view?.activeDecision?.messageId, prompt.prompt].map((value) => String(value || "")).join(":");
+}
+
+function isDecisionNarrativePending(view, state) {
+  const key = decisionNarrativeKey(view);
+  return Boolean(key) && state.revealedDecisionNarrativeKey !== key;
+}
+
 function renderMessageStream(messages = [], state = {}) {
   const visibleMessages = array(messages).filter(isPublicMessage);
   const filter = state.messageFilter || "all";
@@ -1149,7 +1175,7 @@ function renderDecisionZone(view, state) {
     const customLabel = nextOptionLabel(options);
     const openingDecision = isOpeningDecisionState(view);
     const storyDecision = openingDecision || array(view.decisionHistory).length > 0 || prompt?.promptKind === "critical_response";
-    return `${renderDecisionNarrative(view)}${renderDecisionComposer({ view, state, prompt, decision, options, selected, customLabel, progress, openingDecision, storyDecision })}`;
+    return renderDecisionComposer({ view, state, prompt, decision, options, selected, customLabel, progress, openingDecision, storyDecision, hasNarrative: Boolean(decisionNarrativeKey(view)) });
   }
 
   return "";
@@ -1160,9 +1186,10 @@ function renderOptionV12(option, checked) {
 }
 
 // 共通决策提交组件：主线决策、关键事件响应和后续新增决策都复用这一套结构。
-function renderDecisionComposer({ view, state, prompt, decision, options, selected, customLabel, progress, openingDecision, storyDecision }) {
+function renderDecisionComposer({ view, state, prompt, decision, options, selected, customLabel, progress, openingDecision, storyDecision, hasNarrative }) {
   if (isEnglish(view)) {
     return `<section class="decision-zone decision-composer ${storyDecision ? "story-decision" : ""} ${openingDecision ? "opening-decision" : ""}" data-testid="decision-zone" aria-label="Submit decision">
+      ${hasNarrative ? `<button id="reviewDecisionNarrativeBtn" class="decision-review-narrative" type="button">Back to the story</button>` : ""}
       <div class="decision-zone-head"><span class="decision-kicker">Key Decision&nbsp; ${progress.completed + 1} / ${progress.required}</span><h2>How will you respond?</h2><span>Current event: ${esc(decision.title)}&nbsp; ?</span></div>
       <div class="options" role="radiogroup" aria-label="Decision options">${options.map((option) => renderOptionV12(option, option.key === selected)).join("")}
         <label class="option-card decision-custom-option custom key-D"><input type="radio" name="decision" value="CUSTOM" ${selected === "CUSTOM" ? "checked" : ""}/><span class="option-key">${esc(customLabel)}</span><span class="option-copy"><b>Custom Decision</b><span>Write your own strategy. The system checks your identity, resources, period, and current scene.</span></span><small class="custom-label-text">${esc(customLabel)}. Custom Decision</small></label>
@@ -1174,6 +1201,7 @@ function renderDecisionComposer({ view, state, prompt, decision, options, select
     </section>`;
   }
   return `<section class="decision-zone decision-composer ${storyDecision ? "story-decision" : ""} ${openingDecision ? "opening-decision" : ""}" data-testid="decision-zone" aria-label="提交决策">
+    ${hasNarrative ? `<button id="reviewDecisionNarrativeBtn" class="decision-review-narrative" type="button">返回查看剧情</button>` : ""}
     <div class="decision-zone-head"><span class="decision-kicker">今日主线决策&nbsp; ${progress.completed + 1} / ${progress.required}</span><h2>你要如何应对？</h2><span>当前事件：${esc(decision.title)}&nbsp; ?</span></div>
     <div class="options" role="radiogroup" aria-label="决策选项">${options.map((option) => renderOptionV12(option, option.key === selected)).join("")}
       <label class="option-card decision-custom-option custom key-D"><input type="radio" name="decision" value="CUSTOM" ${selected === "CUSTOM" ? "checked" : ""}/><span class="option-key">${esc(customLabel)}</span><span class="option-copy"><b>自定义决策</b><span>你可以拟定自己的策略，系统会先校验身份、资源、时代与当前阶段。</span></span><small class="custom-label-text">${esc(customLabel)}. 自定义决策</small></label>

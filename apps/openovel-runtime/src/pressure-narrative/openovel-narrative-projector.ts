@@ -79,7 +79,11 @@ export class OpenNovelNarrativeProjectorV1 {
         artifact: pending,
       });
     }
-    if (!profile.providerEnabled) {
+    if (
+      !profile.providerEnabled
+      || job.projectionKind === "GENESIS_NARRATIVE"
+      || job.projectionKind === "CHAPTER_NARRATIVE"
+    ) {
       return this.renderFallback({ job, profile, logicalProjectionKey, requestFingerprint, claim, context });
     }
 

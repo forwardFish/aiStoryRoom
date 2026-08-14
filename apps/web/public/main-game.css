@@ -427,6 +427,41 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
   align-self: center;
   margin: 0 auto;
 }
+.decision-review-narrative {
+  display: block;
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #6d49ef;
+  font-size: 14px;
+  cursor: pointer;
+}
+.decision-review-narrative:hover { text-decoration: underline; }
+
+/* Pressure uses the approved three-column shell, but its generated scene is a
+   full reading surface. Keep the prose centered as a block, left-align the
+   writing itself, and avoid the narrow legacy decision column. */
+.causal-shell[data-pressure-chapter="true"] .opening-copy,
+.causal-shell[data-pressure-chapter="true"] .decision-copy,
+.causal-shell[data-pressure-chapter="true"] .result-copy {
+  width: min(860px, calc(100% - 48px));
+  max-width: 860px;
+  margin-inline: auto;
+  text-align: left;
+}
+.causal-shell[data-pressure-chapter="true"] .decision-copy p,
+.causal-shell[data-pressure-chapter="true"] .result-copy p {
+  white-space: pre-line;
+}
+.causal-shell[data-pressure-chapter="true"] .resources-panel .kv {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.causal-shell[data-pressure-chapter="true"] .resources-panel .kv b {
+  text-align: right;
+  white-space: nowrap;
+}
 
 /* Shared room connection failure: full-screen recovery state. */
 .shared-room-error {

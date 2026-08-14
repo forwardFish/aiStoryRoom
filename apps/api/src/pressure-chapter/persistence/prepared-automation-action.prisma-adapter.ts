@@ -489,6 +489,7 @@ implements PreparedAutomationActionSubmissionPortV1 {
           beatEvent: beat.event,
           contentPackageSha256: route.contentPackageSha256,
           committedAt: new Date(batch.actions[0]!.command.nowMs).toISOString(),
+          humanSeatIds: route.humanSeatIdsAtStart,
         });
         if (
           sha256Canonical(plannedDownstream.narrativeJobs)

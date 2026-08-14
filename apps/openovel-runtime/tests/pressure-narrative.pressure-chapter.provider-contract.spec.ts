@@ -80,6 +80,38 @@ test("Provider receives only audience-safe context and publishes without authori
   assert.equal(harness.publisher.artifacts.size, 1);
 });
 
+test("GENESIS remains authored and never spends an external Provider call", async () => {
+  const provider = new ScriptedProvider([validCandidate()]);
+  const harness = projectorHarness(provider);
+  const job = jobFixture("GENESIS_NARRATIVE");
+
+  const result = await harness.projector.project({
+    job,
+    audienceSafeSource: sourceFixture(job),
+    workerId: "worker-genesis-authored",
+  });
+
+  assert.equal(result.status, "FALLBACK_PUBLISHED");
+  assert.equal(result.artifact?.renderMode, "AUTHORED_FALLBACK");
+  assert.equal(provider.calls.length, 0);
+});
+
+test("CHAPTER stores an authority-bound transition draft and leaves the only Provider call to unified game presentation", async () => {
+  const provider = new ScriptedProvider([validCandidate()]);
+  const harness = projectorHarness(provider);
+  const job = jobFixture("CHAPTER_NARRATIVE");
+
+  const result = await harness.projector.project({
+    job,
+    audienceSafeSource: sourceFixture(job),
+    workerId: "worker-chapter-transition-draft",
+  });
+
+  assert.equal(result.status, "FALLBACK_PUBLISHED");
+  assert.equal(result.artifact?.renderMode, "AUTHORED_FALLBACK");
+  assert.equal(provider.calls.length, 0);
+});
+
 test("TruthGuard rejects fabricated verdicts and cross-seat claim references", () => {
   const job = jobFixture("FINALE_NARRATIVE");
   const source = validateAudienceSafeNarrativeSourceV1(sourceFixture(job), job);

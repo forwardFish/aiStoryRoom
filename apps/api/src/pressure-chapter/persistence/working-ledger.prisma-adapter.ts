@@ -33,6 +33,7 @@ import {
   downstreamDedupeKeysV1,
   insertAEmotionAuthorityEmissionsV1,
   insertNarrativeProjectionPlanV1,
+  planInteractiveNarrativeAudiencesV1,
   planNarrativeProjectionJobsV1,
 } from "../projection-plan";
 import type {
@@ -91,6 +92,7 @@ interface RuntimeRouteRow {
   orchestrationPackageSha256: string;
   runtimeContractVersion: string;
   runtimeContractSha256: string;
+  humanSeatIdsAtStartJson: unknown;
 }
 
 interface RuntimeWorldRow {
@@ -343,6 +345,7 @@ async function createChapterRuntimeForOpening(
         orchestrationPackageSha256: true,
         runtimeContractVersion: true,
         runtimeContractSha256: true,
+        humanSeatIdsAtStartJson: true,
       },
     }),
     tx.storyRun.findUnique({
@@ -1051,6 +1054,9 @@ async function persistBeat(
     sourceId: beat.resolutionHash,
     sourceCommitHash: beat.resolutionHash,
     sourceContentHash: workingDeltaHash,
+    audiences: planInteractiveNarrativeAudiencesV1({
+      humanSeatIds: readNarrativeHumanSeatIds(route.humanSeatIdsAtStartJson),
+    }),
   }, rawAuthority, narrativeCompiler);
   const committedAtDate = new Date();
   const standardEmissions = (aEmotionCompiler ?? createSangtianAEmotionContentSourceCompilerV1())
@@ -1307,6 +1313,13 @@ function invalid(
   details: Record<string, unknown> = {},
 ): PressurePersistenceError {
   return new PressurePersistenceError(ERROR.RECORD_INVALID, message, details);
+}
+
+function readNarrativeHumanSeatIds(value: unknown): string[] {
+  if (!Array.isArray(value) || value.some((seatId) => typeof seatId !== "string")) {
+    throw invalid("Route does not contain valid human narrative audiences");
+  }
+  return [...value];
 }
 
 function json(value: unknown): Prisma.InputJsonValue {

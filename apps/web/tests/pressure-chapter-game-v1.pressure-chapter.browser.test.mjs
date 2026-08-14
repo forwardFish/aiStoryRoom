@@ -77,6 +77,52 @@ function projection({ runId = "run-pressure-main-shell", optionCode = "SEAL_AND_
   };
 }
 
+function n2Projection({ published = false } = {}) {
+  const input = projection({ runId: "run-pressure-n2-narrative" });
+  input.chapter = {
+    ...input.chapter,
+    chapterRuntimeId: `${input.runId}:N2`,
+    chapterId: "N2",
+    chapterNumber: 2,
+    title: "第一道奏疏",
+  };
+  input.decision = {
+    ...input.decision,
+    decisionPointId: "N2.memorial_draft",
+    title: "这份奏疏，现在最需要先补清楚什么？",
+    summary: published
+      ? "奏疏房里刚换过一轮灯油，灾后的名册、河图与待署名的奏稿已经摊满长案。胡宗宪翻到记载疏散结果的一页，门外又送来催问：这场灾究竟怎样写进朝廷的第一道奏疏。"
+      : "起草救济请求与原因说明。",
+    options: [
+      { code: "ADD_CAUSE", label: "补入灾情原因", description: "在奏疏正文中补入可核验的灾情原因。", actionType: "ADD_CAUSE", preferredEntry: "TALK" },
+      { code: "ADD_RELIEF_REQUEST", label: "补入救济请求", description: "在奏疏正文中加入明确的救济请求。", actionType: "ADD_RELIEF_REQUEST", preferredEntry: "TALK" },
+    ],
+  };
+  input.capabilities.allowedActionTypes = ["ADD_CAUSE", "ADD_RELIEF_REQUEST"];
+  input.narrative = published
+    ? {
+        status: "PUBLISHED",
+        projectionKind: "CHAPTER_NARRATIVE",
+        sourceAuthority: "CHAPTER_FROZEN",
+        sourceId: `${input.runId}:n1-settlement`,
+        sourceCommitHash: "f".repeat(64),
+        text: "堰区的急报暂时告一段落，案头却很快多出了一份新文书。幕僚将奏疏草稿推到胡宗宪面前，朝廷正在等他写清灾情原因与所需救济。",
+        contentHash: "1".repeat(64),
+        renderMode: "PROVIDER",
+      }
+    : {
+        status: "PENDING",
+        projectionKind: "CHAPTER_NARRATIVE",
+        sourceAuthority: "CHAPTER_FROZEN",
+        sourceId: `${input.runId}:n1-settlement`,
+        sourceCommitHash: "f".repeat(64),
+        text: null,
+        contentHash: null,
+        renderMode: null,
+      };
+  return input;
+}
+
 test("Pressure /game dispatches into the approved app.js main-game shell", async () => {
   const input = projection();
   const dom = new JSDOM('<!doctype html><main id="app"></main>', {
@@ -100,6 +146,7 @@ test("Pressure /game dispatches into the approved app.js main-game shell", async
 
   assert.equal(storageConstructed, true);
   assert.ok(root.querySelector('[data-testid="story-shell"]'));
+  assert.equal(root.querySelector('[data-testid="story-shell"]')?.dataset.pressureChapter, "true");
   assert.ok(root.querySelector(".causal-left"));
   assert.ok(root.querySelector(".causal-center"));
   assert.ok(root.querySelector(".causal-right"));
@@ -108,6 +155,8 @@ test("Pressure /game dispatches into the approved app.js main-game shell", async
   assert.match(root.textContent, /浙江总督/);
   assert.match(root.textContent, /当前目标/);
   assert.match(root.textContent, /我的资源/);
+  assert.equal(root.querySelector('[data-resource-id="silver"]')?.textContent, "银两42 万两");
+  assert.equal(root.querySelector('[data-resource-id="grain"]')?.textContent, "粮草23 万石");
   assert.match(root.textContent, /主动谋划/);
   assert.match(root.textContent, /剩余谋划/);
   assert.doesNotMatch(root.textContent, /Seat control|Hand off to AI|DEFAULT_PASS|submissionFenceToken/);
@@ -115,7 +164,7 @@ test("Pressure /game dispatches into the approved app.js main-game shell", async
   dom.window.close();
 });
 
-test("fresh Pressure N1 keeps the complete scene and explained decisions together", async () => {
+test("fresh Pressure N1 shows the complete scene before releasing explained decisions", async () => {
   const input = projection();
   const dom = new JSDOM('<!doctype html><main id="app"></main>', {
     url: `http://game.test/game?runId=${input.runId}`, pretendToBeVisual: true,
@@ -141,11 +190,19 @@ test("fresh Pressure N1 keeps the complete scene and explained decisions togethe
   assert.match(decisionNarrative?.textContent ?? "", /驿卒刚跨进总督府内厅/);
   assert.match(decisionNarrative?.textContent ?? "", /胡宗宪按住河图：“谁调的兵？”/);
   assert.match(decisionNarrative?.textContent ?? "", /第一道令先下给谁/);
+  assert.equal(root.querySelector('input[name="decision"]'), null);
+  assert.ok(root.querySelector("#beginDecisionBtn"));
+
+  root.querySelector("#beginDecisionBtn").click();
+  assert.equal(root.querySelector('[data-testid="decision-narrative"]'), null);
   assert.ok(root.querySelector('input[name="decision"]'));
   const firstOption = root.querySelector('input[name="decision"][value="A"]')?.closest("label");
   assert.match(firstOption?.querySelector(".option-copy span")?.textContent ?? "", /巡抚和县令只能派见证人参加/);
-  assert.equal(root.querySelector("#beginDecisionBtn"), null);
+  assert.ok(root.querySelector("#reviewDecisionNarrativeBtn"));
+
+  root.querySelector("#reviewDecisionNarrativeBtn").click();
   assert.ok(root.querySelector('[data-testid="decision-narrative"]'));
+  assert.equal(root.querySelector('input[name="decision"]'), null);
   dom.window.close();
 });
 
@@ -156,7 +213,7 @@ test("Pressure adapter preserves approved page data and server-sealed decision c
   assert.equal(view.player.roleName, "浙江总督");
   assert.equal(view.presentation.playerPortrait, "/assets/game/sangtian/generated/role-governor-scene-v1.png");
   assert.equal(view.decisionNarrative, N1_DECISION_NARRATIVE);
-  assert.deepEqual(view.dashboard.statusMetrics.map((item) => item.label), ["国库银两", "民心", "粮价", "改桑进度", "皇帝信任"]);
+  assert.deepEqual(view.dashboard.statusMetrics.map((item) => item.label), ["国库银两", "民心", "真相进展", "改桑进度", "皇帝信任"]);
   assert.deepEqual(view.activeDecision.options.map((item) => item.key), ["A", "B"]);
 
   let request;
@@ -184,6 +241,37 @@ test("Pressure adapter preserves approved page data and server-sealed decision c
   assert.equal(request.body.optionCode, "SEAL_AND_REVIEW");
   assert.equal(request.body.sourceEventId, null);
   assert.equal(result.pressureProjection.decision.options[0].code, "NEXT_OPTION");
+});
+
+test("N2 waits for published Narrative and never exposes the Catalog purpose as story", async () => {
+  const pending = n2Projection();
+  const pendingView = pressureProjectionToMainGameViewV1(pending);
+  assert.equal(pendingView.decisionNarrative, "");
+  assert.equal(pendingView.activeDecision, null);
+  assert.equal(pendingView.v2CurrentTurn.status, "RESOLVING");
+  assert.doesNotMatch(pendingView.decisionNarrative, /起草救济请求与原因说明/u);
+
+  const published = n2Projection({ published: true });
+  let reads = 0;
+  const storage = new PressureMainGameStorageV1({
+    runId: pending.runId,
+    initialProjection: pending,
+    narrativePollIntervalMs: 0,
+    narrativePollAttempts: 2,
+    fetchImpl: async () => {
+      reads += 1;
+      return new Response(JSON.stringify(published), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+  const readyView = await storage.restoreOrCreate();
+  assert.equal(reads, 1);
+  assert.equal(readyView.decisionNarrative, published.decision.summary);
+  assert.ok(readyView.activeDecision);
+  assert.equal(readyView.activeDecision.title, published.decision.title);
+  assert.doesNotMatch(readyView.decisionNarrative, /起草救济请求与原因说明/u);
 });
 
 test("completed Pressure run uses the existing result route without mounting a parallel page", async () => {
