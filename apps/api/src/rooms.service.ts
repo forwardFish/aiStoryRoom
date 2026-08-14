@@ -47,7 +47,7 @@ import {
   type PressurePromiseOperationCodeV1,
 } from "./pressure-chapter/a-emotion-promise";
 import type { PressurePromiseProductFacadeV1 } from "./pressure-chapter/product";
-import { RoomListProjectionScheduler, roomListProjectionConcurrencyForPool } from "./rooms-list-projection";
+import { RoomListProjectionScheduler, roomListProjectionConcurrencyForPool, uniqueRoomRowsForProjection } from "./rooms-list-projection";
 import { pressureDatabasePoolOptionsV1 } from "./pressure-chapter/production-config";
 
 const SOLO_IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
@@ -263,24 +263,42 @@ export class RoomsService {
 
   async list(worldId?: string, user?: AuthenticatedUser) {
     if (worldId && !findGameDefinition(worldId)) throw new BadRequestException({ code: "UNKNOWN_WORLD", message: "Unknown world" });
-    const rooms = await this.prisma.storyRun.findMany({
-      where: { mode: "room", visibility: "public", status: "waiting_players", ...(worldId ? { templateKey: worldId } : {}) },
-      include: { players: { include: { user: true, role: true } }, roles: true, owner: true },
-      orderBy: { updatedAt: "desc" }, take: 50
-    });
+    const [rooms, mineRows] = await Promise.all([
+      this.prisma.storyRun.findMany({
+        where: { mode: "room", visibility: "public", status: "waiting_players", ...(worldId ? { templateKey: worldId } : {}) },
+        include: { players: { include: { user: true, role: true } }, roles: true, owner: true },
+        orderBy: { updatedAt: "desc" }, take: 50
+      }),
+      user ? this.findMineRoomRows(user, worldId) : Promise.resolve([]),
+    ]);
     const openRooms = rooms.filter((room) => room.players.filter((player) => player.playerType === "human").length < room.maxPlayers);
-    const mine = user ? await this.mine(user, worldId) : { rooms: [] };
-    const publicRooms = await this.projectRooms(openRooms, user?.id);
-    const publicProjection = publicRooms.map((projected: any) => {
+    const projectionRows = uniqueRoomRowsForProjection(mineRows, openRooms);
+    const projections = await this.projectRooms(projectionRows, user?.id);
+    const projectionsById = new Map(projections.map((projection: any) => [projection.id, projection]));
+    const publicProjection = openRooms.map((room) => {
+      const projected: any = projectionsById.get(room.id);
       return { ...projected, roles: projected.roles.map(({ personalGoal: _personalGoal, ...role }: any) => role) };
     });
-    return { rooms: publicProjection, myRooms: mine.rooms };
+    const myRooms = mineRows.map((room) => {
+      const projected: any = projectionsById.get(room.id);
+      return { ...projected, roles: projected.roles.map((role: any) => role.claimedByCurrentUser ? role : { ...role, personalGoal: undefined }) };
+    });
+    return { rooms: publicProjection, myRooms };
   }
 
   /** Rooms the authenticated player can reopen, continue, or inspect after completion. */
   async mine(user: AuthenticatedUser, worldId?: string) {
     if (worldId && !findGameDefinition(worldId)) throw new BadRequestException({ code: "UNKNOWN_WORLD", message: "Unknown world" });
-    const rooms = await this.prisma.storyRun.findMany({
+    const rooms = await this.findMineRoomRows(user, worldId);
+    return {
+      rooms: (await this.projectRooms(rooms, user.id)).map((projected: any) => {
+        return { ...projected, roles: projected.roles.map((role: any) => role.claimedByCurrentUser ? role : { ...role, personalGoal: undefined }) };
+      })
+    };
+  }
+
+  private findMineRoomRows(user: AuthenticatedUser, worldId?: string) {
+    return this.prisma.storyRun.findMany({
       where: {
         mode: "room",
         status: { in: ["waiting_players", "playing", "chapter_generated", "completed"] },
@@ -303,11 +321,6 @@ export class RoomsService {
       include: { players: { include: { user: true, role: true } }, roles: true, owner: true },
       orderBy: { updatedAt: "desc" }, take: 50
     });
-    return {
-      rooms: (await this.projectRooms(rooms, user.id)).map((projected: any) => {
-        return { ...projected, roles: projected.roles.map((role: any) => role.claimedByCurrentUser ? role : { ...role, personalGoal: undefined }) };
-      })
-    };
   }
 
   async create(

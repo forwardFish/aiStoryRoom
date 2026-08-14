@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { RoomListProjectionScheduler, roomListProjectionConcurrencyForPool } from "./rooms-list-projection";
+import { RoomListProjectionScheduler, roomListProjectionConcurrencyForPool, uniqueRoomRowsForProjection } from "./rooms-list-projection";
 
 test("room list projections are ordered and globally serialized", async () => {
   const scheduler = new RoomListProjectionScheduler();
@@ -62,4 +62,13 @@ test("concurrent room lists share a bounded pool and preserve input order", asyn
   assert.deepEqual(second, [50, 60, 70, 80]);
   assert.equal(roomListProjectionConcurrencyForPool(5), 3);
   assert.equal(roomListProjectionConcurrencyForPool(2), 1);
+});
+
+test("mine and public room rows are projected once while preserving lane order", () => {
+  const mine = [{ id: "mine-1" }, { id: "shared" }];
+  const publicRooms = [{ id: "public-1" }, { id: "shared" }];
+  assert.deepEqual(
+    uniqueRoomRowsForProjection(mine, publicRooms).map((room) => room.id),
+    ["mine-1", "shared", "public-1"],
+  );
 });

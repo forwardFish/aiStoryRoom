@@ -84,3 +84,14 @@ export function roomListProjectionConcurrencyForPool(
   }
   return Math.max(1, connectionLimit - reservedConnections);
 }
+
+export function uniqueRoomRowsForProjection<T extends { id: string }>(
+  mine: readonly T[],
+  publicRooms: readonly T[],
+): T[] {
+  const rows = new Map<string, T>();
+  for (const room of [...mine, ...publicRooms]) {
+    if (!rows.has(room.id)) rows.set(room.id, room);
+  }
+  return [...rows.values()];
+}
