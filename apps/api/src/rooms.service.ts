@@ -47,6 +47,7 @@ import {
   type PressurePromiseOperationCodeV1,
 } from "./pressure-chapter/a-emotion-promise";
 import type { PressurePromiseProductFacadeV1 } from "./pressure-chapter/product";
+import { RoomListProjectionScheduler } from "./rooms-list-projection";
 
 const SOLO_IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const IDEMPOTENCY_REPLAY_ATTEMPTS = 300;
@@ -231,6 +232,8 @@ function pressurePromiseHttpError(error: unknown): unknown {
 
 @Injectable()
 export class RoomsService {
+  private readonly listProjectionScheduler = new RoomListProjectionScheduler();
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(StoryService) private readonly story: StoryService,
@@ -262,10 +265,10 @@ export class RoomsService {
     });
     const openRooms = rooms.filter((room) => room.players.filter((player) => player.playerType === "human").length < room.maxPlayers);
     const mine = user ? await this.mine(user, worldId) : { rooms: [] };
-    const publicProjection = await Promise.all(openRooms.map(async (room: any) => {
+    const publicProjection = await this.listProjectionScheduler.projectOrdered(openRooms, async (room: any) => {
       const projected = await this.projectRoom(room, user?.id);
       return { ...projected, roles: projected.roles.map(({ personalGoal: _personalGoal, ...role }: any) => role) };
-    }));
+    });
     return { rooms: publicProjection, myRooms: mine.rooms };
   }
 
@@ -296,10 +299,10 @@ export class RoomsService {
       orderBy: { updatedAt: "desc" }, take: 50
     });
     return {
-      rooms: await Promise.all(rooms.map(async (room) => {
+      rooms: await this.listProjectionScheduler.projectOrdered(rooms, async (room) => {
         const projected = await this.projectRoom(room, user.id);
         return { ...projected, roles: projected.roles.map((role: any) => role.claimedByCurrentUser ? role : { ...role, personalGoal: undefined }) };
-      }))
+      })
     };
   }
 
