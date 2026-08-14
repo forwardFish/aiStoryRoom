@@ -12,6 +12,9 @@ deploy/env/generated/
 coverage/
 scripts/test-reports/*.json
 apps/api/.auth-mail-sink.ndjson
+.auth-mail-sink.ndjson
+.codex-runtime/
+apps/openovel-runtime/dist-cjs/
 apps/miniprogram/.swc/
 apps/miniprogram/dist/
 apps/miniprogram/project.private.config.json
