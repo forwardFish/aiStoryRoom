@@ -62,6 +62,46 @@ const definitions = {
     help: "Latest observed stale RESERVED World Credits charges after reconciliation.",
     kind: "gauge",
     labelNames: []
+  },
+  room_list_projection_total: {
+    help: "Room-list projection runs by terminal result.",
+    kind: "counter",
+    labelNames: ["result"]
+  },
+  room_list_projection_queue_depth: {
+    help: "Room-list projection requests waiting on the process-wide scheduler.",
+    kind: "gauge",
+    labelNames: []
+  },
+  room_list_projection_active: {
+    help: "Whether a room-list projection request is actively using the scheduler.",
+    kind: "gauge",
+    labelNames: []
+  },
+  room_list_projection_duration_ms_p95: {
+    help: "Rolling process-local p95 room-list projection duration in milliseconds.",
+    kind: "gauge",
+    labelNames: []
+  },
+  room_list_projection_queue_wait_ms_p95: {
+    help: "Rolling process-local p95 room-list projection queue wait in milliseconds.",
+    kind: "gauge",
+    labelNames: []
+  },
+  room_api_latency_ms_p95: {
+    help: "Rolling process-local p95 latency for critical room API operations.",
+    kind: "gauge",
+    labelNames: ["operation", "status"]
+  },
+  prisma_pool_timeout_total: {
+    help: "Prisma connection acquisition and transaction start timeouts.",
+    kind: "counter",
+    labelNames: ["code", "operation"]
+  },
+  prisma_pool_connection_limit: {
+    help: "Configured Prisma connection limit for this process role.",
+    kind: "gauge",
+    labelNames: ["process_role"]
   }
 } as const satisfies Record<string, MetricDefinition>;
 
@@ -69,6 +109,7 @@ type MetricName = keyof typeof definitions;
 
 class OperationalMetrics {
   private readonly values = new Map<string, number>();
+  private readonly rollingSamples = new Map<string, number[]>();
 
   increment(name: MetricName, labels: Labels = {}, amount = 1) {
     if (!Number.isFinite(amount) || amount < 0) return;
@@ -79,6 +120,17 @@ class OperationalMetrics {
   set(name: MetricName, labels: Labels = {}, value: number) {
     if (!Number.isFinite(value)) return;
     this.values.set(this.key(name, labels), value);
+  }
+
+  observeP95(name: MetricName, labels: Labels, value: number, sampleLimit = 200) {
+    if (!Number.isFinite(value) || value < 0) return;
+    const key = this.key(name, labels);
+    const samples = [...(this.rollingSamples.get(key) ?? []), value]
+      .slice(-Math.max(1, Math.floor(sampleLimit)));
+    this.rollingSamples.set(key, samples);
+    const sorted = [...samples].sort((left, right) => left - right);
+    const index = Math.max(0, Math.ceil(sorted.length * 0.95) - 1);
+    this.values.set(key, sorted[index]!);
   }
 
   charge(input: {
@@ -160,6 +212,7 @@ class OperationalMetrics {
 
   resetForTests() {
     this.values.clear();
+    this.rollingSamples.clear();
   }
 
   private key(name: MetricName, labels: Labels) {

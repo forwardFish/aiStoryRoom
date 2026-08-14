@@ -1,5 +1,6 @@
 import { ArgumentsHost, Catch, CanActivate, ExecutionContext, HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import type { INestApplication } from "@nestjs/common";
+import { operationalMetrics } from "./observability/operational-metrics";
 
 const defaultCode: Record<number, string> = {
   400: "VALIDATION_ERROR",
@@ -41,6 +42,13 @@ export class ApiContractExceptionFilter {
       if (field in source) body[field] = source[field];
     }
     if (!(exception instanceof HttpException)) {
+      const poolTimeoutCode = prismaPoolTimeoutCode(exception);
+      if (poolTimeoutCode) {
+        operationalMetrics.increment("prisma_pool_timeout_total", {
+          code: poolTimeoutCode,
+          operation: roomMetricOperation(request.method, request.url) ?? "other"
+        });
+      }
       const diagnostic = exception instanceof Error ? exception.stack || exception.message : String(exception);
       this.logger.error(`Unhandled API failure for ${request.method} ${request.url}: ${diagnostic}`);
     }
@@ -127,6 +135,43 @@ export function configureApiTransport(app: INestApplication) {
     methods: ["GET", "HEAD", "POST", "OPTIONS"],
     allowedHeaders: ["content-type", "authorization", "x-mock-openid", "x-requested-with"]
   });
+  app.use((request: any, response: any, next: () => void) => {
+    const operation = roomMetricOperation(request.method, request.url);
+    if (!operation) return next();
+    const startedAt = Date.now();
+    response.once("finish", () => {
+      operationalMetrics.observeP95("room_api_latency_ms_p95", {
+        operation,
+        status: String(response.statusCode || 0)
+      }, Date.now() - startedAt);
+    });
+    next();
+  });
   app.useGlobalFilters(new ApiContractExceptionFilter());
   app.useGlobalGuards(new V4WriteRateLimitGuard());
+}
+
+export function roomMetricOperation(method: unknown, requestUrl: unknown): string | null {
+  const normalizedMethod = String(method || "").toUpperCase();
+  const path = String(requestUrl || "").split("?", 1)[0];
+  if (normalizedMethod === "GET" && path === "/api/v4/rooms") return "list";
+  if (normalizedMethod === "POST" && path === "/api/v4/rooms") return "create";
+  if (normalizedMethod === "POST" && /^\/api\/v4\/rooms\/[^/]+\/role$/.test(path)) return "select_role";
+  return null;
+}
+
+export function prismaPoolTimeoutCode(exception: unknown): string | null {
+  if (!exception || typeof exception !== "object") return null;
+  const code = "code" in exception && typeof exception.code === "string"
+    ? exception.code
+    : "";
+  if (code === "P2024") return code;
+  const message = exception instanceof Error ? exception.message : String(exception);
+  if (/timed out fetching a new connection from the connection pool/i.test(message)) {
+    return code || "POOL_ACQUIRE_TIMEOUT";
+  }
+  if (/unable to start a transaction in the given time/i.test(message)) {
+    return code || "TRANSACTION_START_TIMEOUT";
+  }
+  return null;
 }

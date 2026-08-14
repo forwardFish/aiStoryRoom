@@ -1,3 +1,5 @@
+import { operationalMetrics } from "./observability/operational-metrics";
+
 /**
  * Serializes room-list projection work across concurrent HTTP requests.
  *
@@ -7,17 +9,43 @@
  */
 export class RoomListProjectionScheduler {
   private tail: Promise<void> = Promise.resolve();
+  private queueDepth = 0;
 
   projectOrdered<TInput, TOutput>(
     inputs: readonly TInput[],
     project: (input: TInput, index: number) => Promise<TOutput>,
   ): Promise<TOutput[]> {
+    const queuedAt = Date.now();
+    this.queueDepth += 1;
+    operationalMetrics.set("room_list_projection_queue_depth", {}, this.queueDepth);
     return this.runExclusive(async () => {
-      const projected: TOutput[] = [];
-      for (let index = 0; index < inputs.length; index += 1) {
-        projected.push(await project(inputs[index]!, index));
+      this.queueDepth -= 1;
+      operationalMetrics.set("room_list_projection_queue_depth", {}, this.queueDepth);
+      operationalMetrics.set("room_list_projection_active", {}, 1);
+      operationalMetrics.observeP95(
+        "room_list_projection_queue_wait_ms_p95",
+        {},
+        Date.now() - queuedAt,
+      );
+      const startedAt = Date.now();
+      try {
+        const projected: TOutput[] = [];
+        for (let index = 0; index < inputs.length; index += 1) {
+          projected.push(await project(inputs[index]!, index));
+        }
+        operationalMetrics.increment("room_list_projection_total", { result: "success" });
+        return projected;
+      } catch (error) {
+        operationalMetrics.increment("room_list_projection_total", { result: "failure" });
+        throw error;
+      } finally {
+        operationalMetrics.set("room_list_projection_active", {}, 0);
+        operationalMetrics.observeP95(
+          "room_list_projection_duration_ms_p95",
+          {},
+          Date.now() - startedAt,
+        );
       }
-      return projected;
     });
   }
 
