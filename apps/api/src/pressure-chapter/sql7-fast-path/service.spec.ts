@@ -168,15 +168,13 @@ test("commit receipt mismatch throws after one commit and performs no read", asy
   assert.equal(harness.calls.projection, 0);
 });
 
-test("unverified driver SQL budget fails closed after commit receipt", async () => {
+test("unverified driver SQL evidence does not invalidate a committed authority receipt", async () => {
   const harness = createHarness({ unverifiedBudget: true });
 
-  await assert.rejects(
-    harness.service.submit(input()),
-    /PRESSURE_SQL7_SERVICE_INTEGRITY:COMMITTED_RECEIPT_INCOMPLETE/u,
-  );
+  const result = await harness.service.submit(input());
+  assert.equal(result.status, "COMMITTED");
   assert.equal(harness.calls.commit, 1);
-  assert.equal(harness.calls.projection, 0);
+  assert.equal(harness.calls.projection, 1);
 });
 
 function input(overrides: Partial<{

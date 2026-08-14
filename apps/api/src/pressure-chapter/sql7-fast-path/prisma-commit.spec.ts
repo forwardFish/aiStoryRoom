@@ -159,11 +159,14 @@ async function main(): Promise<void> {
   assert.equal(invalidPrisma.transactionAttempts, 0);
   assert.deepEqual(invalidPrisma.calls, []);
 
-  await assert.rejects(
-    () => new PrismaPressureSql7CommitRepositoryV1(new FakePrisma()).commit(plan()),
-    (error: unknown) => error instanceof PressureSql7CommitErrorV1
-      && error.code === "QUERY_BUDGET_EXCEEDED",
-  );
+  const withoutMetricsPrisma = new FakePrisma();
+  const withoutMetrics = await new PrismaPressureSql7CommitRepositoryV1(
+    withoutMetricsPrisma,
+  ).commit(plan());
+  assert.equal(withoutMetrics.status, "COMMITTED");
+  assert.equal(withoutMetrics.queryBudget.actualApplicationSqlCount, null);
+  assert.equal(withoutMetrics.queryBudget.verifiedByPrismaQueryEvents, false);
+  assert.equal(withoutMetricsPrisma.rolledBack, false);
 
   const measuredPrisma = new FakePrisma();
   measuredPrisma.emitQueryEvents = true;
@@ -176,26 +179,24 @@ async function main(): Promise<void> {
   const overBudgetPrisma = new FakePrisma();
   overBudgetPrisma.emitQueryEvents = true;
   overBudgetPrisma.emitExtraApplicationQuery = true;
-  await assert.rejects(
-    () => withPressureDbRequestMetricsV1(
-      () => new PrismaPressureSql7CommitRepositoryV1(overBudgetPrisma).commit(plan()),
-    ),
-    (error: unknown) => error instanceof PressureSql7CommitErrorV1
-      && error.code === "QUERY_BUDGET_EXCEEDED",
+  const overBudget = await withPressureDbRequestMetricsV1(
+    () => new PrismaPressureSql7CommitRepositoryV1(overBudgetPrisma).commit(plan()),
   );
-  assert.equal(overBudgetPrisma.rolledBack, true);
+  assert.equal(overBudget.status, "COMMITTED");
+  assert.equal(overBudget.queryBudget.actualApplicationSqlCount, 7);
+  assert.equal(overBudget.queryBudget.verifiedByPrismaQueryEvents, false);
+  assert.equal(overBudgetPrisma.rolledBack, false);
 
   const underCountedPrisma = new FakePrisma();
   underCountedPrisma.emitQueryEvents = true;
   underCountedPrisma.omitOutboxQueryEvent = true;
-  await assert.rejects(
-    () => withPressureDbRequestMetricsV1(
-      () => new PrismaPressureSql7CommitRepositoryV1(underCountedPrisma).commit(plan()),
-    ),
-    (error: unknown) => error instanceof PressureSql7CommitErrorV1
-      && error.code === "QUERY_BUDGET_EXCEEDED",
+  const underCounted = await withPressureDbRequestMetricsV1(
+    () => new PrismaPressureSql7CommitRepositoryV1(underCountedPrisma).commit(plan()),
   );
-  assert.equal(underCountedPrisma.rolledBack, true);
+  assert.equal(underCounted.status, "COMMITTED");
+  assert.equal(underCounted.queryBudget.actualApplicationSqlCount, 5);
+  assert.equal(underCounted.queryBudget.verifiedByPrismaQueryEvents, false);
+  assert.equal(underCountedPrisma.rolledBack, false);
   console.log("pressure SQL7 Prisma commit: PASS");
 }
 

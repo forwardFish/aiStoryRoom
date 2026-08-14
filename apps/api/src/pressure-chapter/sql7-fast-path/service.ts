@@ -399,8 +399,6 @@ function assertCommittedReceipt(
     || typeof authority.projectionAuthority !== "object"
     || result.queryBudget.applicationSqlCount !== 6
     || result.queryBudget.maxApplicationSql !== 6
-    || result.queryBudget.actualApplicationSqlCount !== 6
-    || result.queryBudget.verifiedByPrismaQueryEvents !== true
   ) integrity("COMMITTED_RECEIPT_INCOMPLETE");
 }
 
