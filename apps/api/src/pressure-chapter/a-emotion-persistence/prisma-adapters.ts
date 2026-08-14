@@ -344,7 +344,7 @@ export class PrismaAEmotionFeedRepositoryV1 implements AEmotionFeedRepositoryPor
     runId: string;
     viewerSeatId: SeatIdV1;
   }) {
-    const rows = await this.readAggregateRowsByType(AGGREGATE_EVENT_TYPE);
+    const rows = await this.readAggregateRowsByType(AGGREGATE_EVENT_TYPE, input.runId);
     const latest = new Map<string, ReturnType<typeof decodeAggregateEnvelope>["commit"]["aggregate"]>();
     for (const row of rows) {
       const aggregate = decodeAggregateEnvelope(row.payloadJson).commit.aggregate;
@@ -497,9 +497,9 @@ export class PrismaAEmotionFeedRepositoryV1 implements AEmotionFeedRepositoryPor
     return replayed;
   }
 
-  private async readAggregateRowsByType(type: string): Promise<StoryEventRow[]> {
+  private async readAggregateRowsByType(type: string, runId?: string): Promise<StoryEventRow[]> {
     return pressureSerializableTransaction(this.prisma, async (tx) => tx.storyEvent.findMany({
-      where: { type },
+      where: runId === undefined ? { type } : { type, runId },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     }));
   }
@@ -510,7 +510,7 @@ export class PrismaAEmotionFeedRepositoryV1 implements AEmotionFeedRepositoryPor
     eventId: string,
     projectionVersion: number,
   ) {
-    const rows = await this.readAggregateRowsByType(DELIVERY_MARK_EVENT_TYPE);
+    const rows = await this.readAggregateRowsByType(DELIVERY_MARK_EVENT_TYPE, runId);
     return rows
       .map((row) => decodeDeliveryMark(row.payloadJson))
       .filter((row) => (

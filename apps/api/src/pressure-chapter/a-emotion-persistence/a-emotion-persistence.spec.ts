@@ -134,6 +134,33 @@ test("feed repository upgrades one causal aggregate HIDDEN to SUSPECTED with mon
   assert.equal(fake.eventDeliveries.length, 2);
 });
 
+test("feed repository isolates malformed aggregate rows from other runs before decoding", async () => {
+  const fake = new FakePrisma();
+  const repository = createRepository(fake);
+  const commit = projectionCommitFixture();
+  assert.deepEqual(await repository.commitProjection(commit), { status: "COMMITTED" });
+
+  const validRow = fake.storyEvents.find((item) => item.type === "PRESSURE_A_EMOTION_AGGREGATE_V1");
+  assert.ok(validRow);
+  const foreignMalformedRow = structuredClone(validRow);
+  foreignMalformedRow.id = "foreign-malformed-aggregate";
+  foreignMalformedRow.runId = "run-other";
+  foreignMalformedRow.payloadJson.aggregate.runId = "run-other";
+  foreignMalformedRow.payloadJson.aggregate.projection.runId = "run-other";
+  foreignMalformedRow.payloadJson.aggregate.projection.keyModal = {
+    sourceEventId: "legacy-field-at-wrong-level",
+  };
+  fake.storyEvents.push(foreignMalformedRow);
+
+  const aggregates = await repository.listAggregates({
+    roomId: "room-ae-1",
+    runId: "run-ae-1",
+    viewerSeatId: VIEWER,
+  });
+  assert.equal(aggregates.length, 1);
+  assert.equal(aggregates[0]?.runId, "run-ae-1");
+});
+
 test("feed repository uses exact viewer binding and fails closed when absent", async () => {
   const fake = new FakePrisma();
   fake.binding = null;
@@ -290,9 +317,12 @@ class FakePrisma {
     storyEvent: {
       findMany: async ({ where }: any) => {
         const type = where?.type;
-        const rows = type
+        const typedRows = type
           ? this.storyEvents.filter((item) => item.type === type)
           : this.storyEvents;
+        const rows = where?.runId
+          ? typedRows.filter((item) => item.runId === where.runId)
+          : typedRows;
         return rows.map((item) => structuredClone(item));
       },
       findUnique: async ({ where }: any) => {
