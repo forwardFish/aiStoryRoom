@@ -1,12 +1,12 @@
 {
   "schemaVersion": "sangtian_ai_decision_policy_v1",
   "policyRef": "sangtian.ai.decision.v1",
-  "policyVersion": "sangtian-ai-decision-1.0.0",
+  "policyVersion": "sangtian-ai-decision-1.0.1",
   "selectorVersion": "sangtian-ai-decision-selector-1.0.0",
   "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
   "sourceBinding": {
-    "contentPackageVersion": "1.0.0",
-    "contentPackageSha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b"
+    "contentPackageVersion": "1.0.1",
+    "contentPackageSha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466"
   },
   "authorityBoundary": {
     "acceptedInputFields": [
@@ -1017,5 +1017,5 @@
     "applicableSeatBindingCount": 100,
     "coverageRule": "EXACT_ACCEPTED_DECISION_REQUIRED_SEAT_BINDINGS"
   },
-  "policySha256": "a761a04232bc59bfba671a8abb0d7e04111635ce0bba0d52d5f0623278170888"
+  "policySha256": "6b8aa3d6fb0eb7971fb3db0ae96e87abaec27653d070ce76c87dda893b814994"
 }

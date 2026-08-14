@@ -26,7 +26,7 @@ const DEFAULT_RELEASE_ROOT = resolve(
 const ARTIFACT_ID = "ai_decision_policy" as const;
 const ARTIFACT_PATH = "ai-decision-policy.json" as const;
 const EXPECTED_ARTIFACT_SHA256 =
-  "b9d752ab8ab40cc5885ef43d04c8404f18e184198db8ce52fc95e0e0a6fa9231";
+  "c69066e3b367118d7205e00601e5e56d258ad93dd0731100a16850813e2c52cb";
 const EXPECTED_ROUTE_KEY = "sangtian_pressure_chapter_v1" as const;
 
 const ACCEPTED_INPUT_FIELDS = Object.freeze([
@@ -90,7 +90,7 @@ export function loadPublishedSangtianAiDecisionPolicyV1(
     matches.length !== 1
     || !artifact
     || artifact.path !== ARTIFACT_PATH
-    || artifact.version !== "sangtian-ai-decision-1.0.0"
+    || artifact.version !== "sangtian-ai-decision-1.0.1"
     || artifact.hashMode !== "CANONICAL_JSON"
     || artifact.sha256 !== EXPECTED_ARTIFACT_SHA256
   ) {
@@ -146,7 +146,7 @@ export function validateSangtianAiDecisionPolicyV1(
   ], "policy");
   literal(policy.schemaVersion, "sangtian_ai_decision_policy_v1", "policy.schemaVersion");
   literal(policy.policyRef, "sangtian.ai.decision.v1", "policy.policyRef");
-  literal(policy.policyVersion, "sangtian-ai-decision-1.0.0", "policy.policyVersion");
+  literal(policy.policyVersion, "sangtian-ai-decision-1.0.1", "policy.policyVersion");
   literal(policy.selectorVersion, "sangtian-ai-decision-selector-1.0.0", "policy.selectorVersion");
   literal(policy.runtimeProfile, "SANGTIAN_CONTINUOUS_CHAPTER_V1", "policy.runtimeProfile");
 

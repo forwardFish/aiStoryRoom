@@ -1,63 +1,32 @@
 import assert from "node:assert/strict";
-import { sha256Canonical, type SeatIdV1 } from "@ai-story/shared";
-import type { NarrativeContextV1 } from "@apps/openovel-runtime/pressure-narrative/contracts";
 import {
-  compilePressureDecisionPresentationContextV1,
-  validatePressureDecisionPresentationCandidateV1,
-  type PressureDecisionPresentationInputV1,
+  compilePressureTurnPresentationContextV1,
+  validatePressureTurnPresentationCandidateV1,
+  type PressureTurnPresentationInputV1,
 } from "../../../apps/api/src/pressure-chapter/game-projection/decision-presentation";
 import { createPressureNarrativeProviderFromEnvV1 } from "../../../apps/api/src/pressure-chapter/production-config/narrative-provider";
 
 const HASH = "a".repeat(64);
-const PLAYER_INPUT = process.env.PRESSURE_LIVE_PLAYER_INPUT?.trim() || "我想睡觉了";
 const SCENARIO = process.env.PRESSURE_LIVE_SCENARIO?.trim() || "sleep";
 
 async function main(): Promise<void> {
   const configured = createPressureNarrativeProviderFromEnvV1(process.env);
-  assert.ok(configured.provider, "REAL_MODEL_NOT_CONFIGURED");
-  assert.ok(configured.decisionPresentationProvider, "REAL_DECISION_MODEL_NOT_CONFIGURED");
-
-  const narrativeContext = SCENARIO === "support-weir"
-    ? supportWeirNarrativeContext()
-    : sleepNarrativeContext();
-  const narrativeCandidate = await configured.provider.render(narrativeContext) as {
-  text?: unknown;
-  usedFactRefs?: unknown;
-  claims?: unknown;
-};
-assert.equal(typeof narrativeCandidate.text, "string");
-const resultText = String(narrativeCandidate.text);
-if (SCENARIO === "support-weir") {
-  assert.match(resultText, /(增援|堰口|人力|物资)/u, "PLAYER_SUPPORT_NOT_ACKNOWLEDGED");
-  assert.match(resultText, /(疏散|记录|封存)/u, "REMAINING_PRESSURE_NOT_PRESERVED");
-} else {
-  assert.match(resultText, /(睡|歇|休息|疲|倦)/u, "PLAYER_SLEEP_NOT_ACKNOWLEDGED");
-}
-assert.match(resultText, /(堰|水|百姓|门外|回令|秩序)/u, "PRESSURE_NOT_RETURNED");
-assert.doesNotMatch(resultText, /(水患已经彻底解决|秩序已经完全恢复|九堰危机已经结束)/u);
-assert.doesNotMatch(resultText, /(堤坝|堰口).{0,4}(崩裂|决口|垮塌)/u, "UNAUTHORIZED_DISASTER_OUTCOME");
-assert.doesNotMatch(resultText, /(玩家选择|规则绑定|系统结算|浙江总督选择先)/u, "ENGINEERING_NARRATIVE_COPY");
-if (SCENARIO !== "support-weir") {
-  assert.doesNotMatch(resultText, /(下令|命人|传令|把.*叫到|先把.*稳住)/u, "PLAYER_NEXT_ORDER_PREEMPTED");
-}
-  console.log(JSON.stringify({
-  test: 1,
-  kind: "POST_BEAT_NARRATIVE",
-  playerInput: PLAYER_INPUT,
-  output: narrativeCandidate,
-}, null, 2));
-
-  if (process.env.PRESSURE_LIVE_SMOKE_STAGE === "narrative") return;
-
-  const presentationContext = compilePressureDecisionPresentationContextV1(
-    decisionInput(resultText),
+  assert.equal(configured.provider, null, "BACKGROUND_NARRATIVE_MODEL_MUST_BE_DISABLED");
+  assert.ok(configured.turnPresentationProvider, "REAL_TURN_MODEL_NOT_CONFIGURED");
+  const previousNarrative = SCENARIO === "support-weir"
+    ? "两处关键堰口已经得到人力与物资增援，整体水患压力有所缓解。堰区疏散尚未展开，毁堤记录尚未得到封存。"
+    : "胡宗宪短暂歇息后被门外催令声惊醒。九堰水势仍在继续上涨，疏散、守堰和记录封存都还等着回令。";
+  const presentationContext = compilePressureTurnPresentationContextV1(
+    decisionInput(previousNarrative),
   );
-  const presentationCandidate = validatePressureDecisionPresentationCandidateV1(
-    await configured.decisionPresentationProvider.renderDecisionPresentation(
+  const startedAt = Date.now();
+  const presentationCandidate = validatePressureTurnPresentationCandidateV1(
+    await configured.turnPresentationProvider.renderTurnPresentation(
       presentationContext,
     ),
     presentationContext,
   );
+  const latencyMs = Date.now() - startedAt;
   assert.deepEqual(
   presentationCandidate.options.map((option) => option.actionType).sort(),
   ["EVACUATE_WEIRS", "SEAL_BREACH_RECORD", "SUPPORT_WEIR"].sort(),
@@ -78,10 +47,11 @@ if (SCENARIO !== "support-weir") {
     "UNGROUNDED_DECISION_SCENE_DETAIL",
   );
   console.log(JSON.stringify({
-  test: 2,
-  kind: "NEXT_DECISION_PRESENTATION",
-  contextHash: presentationContext.contextHash,
-  output: presentationCandidate,
+    test: "PRESSURE_ONE_CALL_TURN_PRESENTATION_LIVE_V1",
+    callCount: 1,
+    latencyMs,
+    contextHash: presentationContext.contextHash,
+    output: presentationCandidate,
   }, null, 2));
 }
 
@@ -90,96 +60,7 @@ void main().catch((error) => {
   process.exitCode = 1;
 });
 
-function sleepNarrativeContext(): NarrativeContextV1 {
-  const facts = [
-    fact("story.player_action.zhejiang_governor", `浙江总督选择先“${PLAYER_INPUT}”。`),
-    fact("story.player_input.zhejiang_governor", PLAYER_INPUT),
-    fact("story.result.evacuation", "堰区疏散尚未展开。"),
-    fact("story.result.records", "毁堤记录尚未得到封存。"),
-    fact("story.result.severity", "九堰水势仍在继续上涨。"),
-    fact("story.result.weirs", "关键堰口尚未得到增援。"),
-    fact("story.unresolved_pressure.01", "总督府门外已有百姓与差役堵门催令。"),
-    fact("story.next_direction", "当前必须决定如何维护门前秩序并处理九堰危机，可行动方向为疏散百姓、封存记录或增援堰口。"),
-  ];
-  const requiredIds = new Set([
-    "story.result.evacuation",
-    "story.result.weirs",
-    "story.unresolved_pressure.01",
-  ]);
-  const base = {
-    schemaVersion: "pressure_narrative_context_v1" as const,
-    contextCompilerVersion: "live-sleep-smoke-v1",
-    projectionKind: "BEAT_NARRATIVE" as const,
-    audience: { kind: "SEAT" as const, seatId: "zhejiang_governor" as SeatIdV1 },
-    sourceId: HASH,
-    sourceCommitHash: HASH,
-    sourceContentHash: HASH,
-    temporalInstruction: "Only committed Working facts may be narrated; the player's rest attempt creates no formal crisis-resolution effect.",
-    facts,
-    objects: [],
-    knowledge: [],
-    allowedClaims: facts.map((item) => ({
-      kind: "FACT" as const,
-      refId: item.factId,
-      statement: item.text,
-      required: requiredIds.has(item.factId),
-    })),
-    variant: {
-      kind: "BEAT" as const,
-      chapterId: "N1" as const,
-      workingRevision: 1,
-      temporalBoundary: "WORKING_NOT_FROZEN" as const,
-    },
-  };
-  return { ...base, contextHash: sha256Canonical(base) };
-}
-
-function supportWeirNarrativeContext(): NarrativeContextV1 {
-  const facts = [
-    fact("story.player_action.zhejiang_governor", "胡宗宪调动可用人力与物资增援关键堰口。"),
-    fact("story.player_input.zhejiang_governor", "增援关键堰口"),
-    fact("story.result.weirs", "两处关键堰口已经得到人力与物资增援。"),
-    fact("story.result.severity", "整体水患压力有所缓解。"),
-    fact("story.result.evacuation", "堰区疏散尚未展开。"),
-    fact("story.result.records", "毁堤记录尚未得到封存。"),
-    fact("story.unresolved_pressure.01", "低洼堰区的百姓仍在等待疏散。"),
-    fact("story.unresolved_pressure.02", "毁堤命令与经手记录仍需尽快封存。"),
-    fact("story.next_direction", "关键堰口得到增援后，仍须决定先组织百姓疏散、先封存毁堤记录，还是继续向其余堰口调配增援。"),
-  ];
-  const requiredIds = new Set([
-    "story.result.weirs",
-    "story.result.evacuation",
-    "story.result.records",
-  ]);
-  const base = {
-    schemaVersion: "pressure_narrative_context_v1" as const,
-    contextCompilerVersion: "live-support-weir-smoke-v1",
-    projectionKind: "BEAT_NARRATIVE" as const,
-    audience: { kind: "SEAT" as const, seatId: "zhejiang_governor" as SeatIdV1 },
-    sourceId: HASH,
-    sourceCommitHash: HASH,
-    sourceContentHash: HASH,
-    temporalInstruction: "Narrate only the committed Working effects: two critical weirs received support and overall pressure eased; evacuation and record sealing remain unresolved.",
-    facts,
-    objects: [],
-    knowledge: [],
-    allowedClaims: facts.map((item) => ({
-      kind: "FACT" as const,
-      refId: item.factId,
-      statement: item.text,
-      required: requiredIds.has(item.factId),
-    })),
-    variant: {
-      kind: "BEAT" as const,
-      chapterId: "N1" as const,
-      workingRevision: 2,
-      temporalBoundary: "WORKING_NOT_FROZEN" as const,
-    },
-  };
-  return { ...base, contextHash: sha256Canonical(base) };
-}
-
-function decisionInput(previousNarrative: string): PressureDecisionPresentationInputV1 {
+function decisionInput(previousNarrative: string): PressureTurnPresentationInputV1 {
   const supportWeir = SCENARIO === "support-weir";
   return {
     chapter: {
@@ -237,10 +118,6 @@ function decisionInput(previousNarrative: string): PressureDecisionPresentationI
       customActionAllowed: true,
     },
   };
-}
-
-function fact(factId: string, text: string) {
-  return { factId, text, temporalStatus: "COMMITTED_WORKING" as const };
 }
 
 function option(

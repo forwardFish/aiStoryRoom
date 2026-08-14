@@ -198,6 +198,10 @@ test("fresh Pressure N1 shows the complete scene before releasing explained deci
   root.querySelector("#beginDecisionBtn").click();
   assert.equal(root.querySelector('[data-testid="decision-narrative"]'), null);
   assert.ok(root.querySelector('input[name="decision"]'));
+  assert.equal(
+    root.querySelector(".decision-zone-head h2")?.textContent,
+    input.decision.title,
+  );
   const firstOption = root.querySelector('input[name="decision"][value="A"]')?.closest("label");
   assert.match(firstOption?.querySelector(".option-copy span")?.textContent ?? "", /巡抚和县令只能派见证人参加/);
   assert.ok(root.querySelector("#reviewDecisionNarrativeBtn"));

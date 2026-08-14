@@ -1,18 +1,18 @@
 {
   "schemaVersion": "sangtian_pressure_orchestration_package_v1",
   "packageId": "sangtian_pressure_orchestration_v1",
-  "packageVersion": "sangtian-orchestration-1.0.0",
+  "packageVersion": "sangtian-orchestration-1.0.1",
   "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
   "contentPackage": {
     "packageId": "sangtian_pressure_chapter_v1",
-    "packageVersion": "1.0.0",
+    "packageVersion": "1.0.1",
     "path": "../content.json",
-    "contentSha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b"
+    "contentSha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466"
   },
   "actionCompilation": {
     "policyPath": "action-effect-policy.json",
-    "policyVersion": "sangtian-action-effect-1.0.0",
-    "policySha256": "48de051ceab4dcca72cd5b7c30954ad244c6387a90c608d5851e13b14d04d1a8",
+    "policyVersion": "sangtian-action-effect-1.0.1",
+    "policySha256": "547f9ee415502554761e84c00f7f9e83cee80e7515aacd84f1f6df6fb702dde4",
     "compilerCorePath": "action-effect-compiler.cjs",
     "compilerEsmWrapperPath": "action-effect-compiler.mjs",
     "compilerVersion": "sangtian-action-effect-compiler-1.0.0",
@@ -26,18 +26,18 @@
   },
   "actionPresentation": {
     "catalogPath": "action-presentation-catalog.json",
-    "catalogVersion": "sangtian-action-presentation-1.0.0",
-    "catalogSha256": "ccd25e7addeb999982c563e20f4f5aa839d2673333b467ef1a82ed0e68a9b66c",
+    "catalogVersion": "sangtian-action-presentation-1.0.1",
+    "catalogSha256": "c95ef596f16c52c3ca75f6088a38d31f84a890cafae5be68aa0b159c2fefdd95",
     "locale": "zh-CN",
     "authority": "PRESENTATION_ONLY"
   },
   "aiDecisionPolicy": {
     "policyPath": "ai-decision-policy.json",
     "policyRef": "sangtian.ai.decision.v1",
-    "policyVersion": "sangtian-ai-decision-1.0.0",
+    "policyVersion": "sangtian-ai-decision-1.0.1",
     "selectorVersion": "sangtian-ai-decision-selector-1.0.0",
-    "policySha256": "a761a04232bc59bfba671a8abb0d7e04111635ce0bba0d52d5f0623278170888",
-    "artifactSha256": "b9d752ab8ab40cc5885ef43d04c8404f18e184198db8ce52fc95e0e0a6fa9231",
+    "policySha256": "6b8aa3d6fb0eb7971fb3db0ae96e87abaec27653d070ce76c87dda893b814994",
+    "artifactSha256": "c69066e3b367118d7205e00601e5e56d258ad93dd0731100a16850813e2c52cb",
     "selectionAlgorithm": "SHA256_CANONICAL_PREFIX_MODULO_RANKED_NON_DEFAULT_V1",
     "applicableSeatBindingCount": 100,
     "defaultFallback": "DEFAULT_PASS_ONLY",

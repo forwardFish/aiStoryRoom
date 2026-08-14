@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  buildPressureDecisionSystemInstructionV1,
   buildPressureStorySystemInstructionV1,
+  buildPressureTurnPresentationSystemInstructionV1,
 } from "./pressure-prompt-layers";
 
 test("story prompt assigns one purpose to each layer and makes player action happen first", () => {
@@ -20,14 +20,18 @@ test("story prompt assigns one purpose to each layer and makes player action hap
   assert.match(prompt, /不得把.*玩家选择了.*系统结算/u);
 });
 
-test("decision prompt binds copy to three legal contracts and forbids invented costs", () => {
-  const prompt = buildPressureDecisionSystemInstructionV1();
+test("one-call turn prompt binds literary story and decision to the same authority", () => {
+  const prompt = buildPressureTurnPresentationSystemInstructionV1();
+  assert.match(prompt, /一次完成本轮玩家可见的文学剧情/u);
+  assert.match(prompt, /sceneText、question、options、usedFactRefs、claims/u);
+  assert.match(prompt, /至少三个自然段/u);
+  assert.match(prompt, /claims 必须返回空数组/u);
+  assert.match(prompt, /authorityDraft\.currentAuthorityState/u);
   assert.match(prompt, /完全相同的 actionType/u);
   assert.match(prompt, /不得遗漏 actionType/u);
   assert.match(prompt, /身份背景、合法行动方向和抽象压力/u);
   assert.match(prompt, /临时人物、物件、时间和环境细节/u);
   assert.match(prompt, /CONTINUATION 必须承接 continuityExcerpt/u);
-  assert.match(prompt, /至少两个自然段/u);
   assert.match(prompt, /不得替玩家角色下达/u);
   assert.match(prompt, /realTradeoff 非 null/u);
   assert.match(prompt, /为 null 时禁止提及其他选项/u);

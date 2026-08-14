@@ -35,7 +35,7 @@
       "targetTests": [
         {
           "path": "packages/templates/tests/pressure-chapter-content.test.ts",
-          "sha256RawBytes": "ca253fd6397704ba00047e277ea9766c312d0808faf71e4d6c6b2631ec44d414"
+          "sha256RawBytes": "e1242f38384e1e497bc00d1d9550c2ff58197e25cfa59c33b03bcfa040a31b3c"
         },
         {
           "path": "packages/templates/tests/pressure-chapter-release-artifacts.test.ts",

@@ -49,18 +49,18 @@ const ACTION_PREFERRED_ENTRIES = Object.freeze([
 const ACTION_PREFERRED_ENTRY_SET = new Set<string>(ACTION_PREFERRED_ENTRIES);
 const requireCjs = require as unknown as (moduleId: string) => unknown;
 const EXPECTED_ROUTE_REGISTRY_HASH =
-  "ed7b03f220fb6ba2e6b1b64d7e78bde7db8b20b0fd7499b9dc5d0dcbe48b40a6";
+  "4842804af4f7ab10c7fc7b35bc2641637424692ecf8b38a44e5a76542cf6be67";
 const EXPECTED_RELEASE_ARTIFACT_HASHES = Object.freeze({
   action_effect_compiler_core:
     "70a47dcb3a3e28e3c8261865f45a4c0834c22b261629a592a1bc4a3f7ea95f63",
   action_effect_compiler_esm_wrapper:
     "335ca5e0c134aa6d48a896d3bbcf06ba5a0ca3b95997bafee25381aefd234405",
   action_effect_policy:
-    "a149635a1419ead43f1f18017adc279d18973de8b3d52bdea5debf5af114b807",
+    "7c100ef8b1cec5f28187d273492b6756087bf422e44399f8d1a1e77b7f92cff6",
   action_presentation_catalog:
-    "ab50754c4ef6419325b0f4c52fc1ede876701304c46edb322b0822e45152948a",
+    "33a3970eb8b657dd8350e2e315c1494034e45a77de724ee157fe79daabdef159",
   ai_decision_policy:
-    "b9d752ab8ab40cc5885ef43d04c8404f18e184198db8ce52fc95e0e0a6fa9231",
+    "c69066e3b367118d7205e00601e5e56d258ad93dd0731100a16850813e2c52cb",
 } as const);
 
 interface ReleaseManifestV1 {

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "pressure_runtime_contract_release_v1",
   "contractId": "pressure_runtime_contract_v1",
-  "contractVersion": "pressure-runtime-contract-1.0.0",
+  "contractVersion": "pressure-runtime-contract-1.0.1",
   "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
   "canonicalization": "PRESSURE_CHAPTER_CANONICAL_JSON_V1",
   "routeSchemaVersion": "pressure_run_route_snapshot_v1",
@@ -42,7 +42,7 @@
   ],
   "actionCompilation": {
     "policySchemaVersion": "sangtian_action_effect_policy_v1",
-    "policyVersion": "sangtian-action-effect-1.0.0",
+    "policyVersion": "sangtian-action-effect-1.0.1",
     "compilerVersion": "sangtian-action-effect-compiler-1.0.0",
     "bindingFields": ["chapterId", "decisionPointKey", "seatId", "actionType"],
     "workingIntentAuthority": "SERVER_POLICY_ONLY",

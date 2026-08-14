@@ -1,11 +1,11 @@
 {
   "schemaVersion": "sangtian_a_emotion_policy_v1",
-  "policyVersion": "sangtian-a-emotion-1.0.0",
+  "policyVersion": "sangtian-a-emotion-1.0.1",
   "compilerVersion": "sangtian-a-emotion-compiler-1.0.0",
   "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
   "sourceBinding": {
-    "contentPackageVersion": "1.0.0",
-    "contentPackageSha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b"
+    "contentPackageVersion": "1.0.1",
+    "contentPackageSha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466"
   },
   "authorityBoundary": {
     "allowedAuthoritySources": [
@@ -210,5 +210,5 @@
       }
     ]
   },
-  "policySha256": "27c59619f0a93fef92a2da6b250e895a6e591994cdd51fa943b078f0034153a4"
+  "policySha256": "496a56a49f27a2c62bc61fb4f70121facec0b794f2f72942d70657db9dcc2f2b"
 }

@@ -16,7 +16,7 @@ const DEFAULT_RELEASE_ROOT = resolve(
 const ARTIFACT_ID = "a_emotion_policy" as const;
 const ARTIFACT_PATH = "a-emotion-policy.json" as const;
 const EXPECTED_ARTIFACT_SHA256 =
-  "13557b10e458191846728d973b2f5829f2f85ff634009e56944c1b6765cd9c8c";
+  "117baa80b711866e371316f2edd6ff132e36f4f7bdde2796a3fa3cfcd43570e2";
 const EXPECTED_ROUTE_KEY = "sangtian_pressure_chapter_v1" as const;
 
 const SOURCE_KINDS = [
@@ -67,7 +67,7 @@ export interface SangtianAEmotionEventTemplateV1 {
 
 export interface SangtianAEmotionPolicyV1 {
   schemaVersion: "sangtian_a_emotion_policy_v1";
-  policyVersion: "sangtian-a-emotion-1.0.0";
+  policyVersion: "sangtian-a-emotion-1.0.1";
   compilerVersion: "sangtian-a-emotion-compiler-1.0.0";
   runtimeProfile: "SANGTIAN_CONTINUOUS_CHAPTER_V1";
   sourceBinding: {
@@ -162,7 +162,7 @@ export function loadPublishedSangtianAEmotionPolicyV1(
     matches.length !== 1
     || !artifact
     || artifact.path !== ARTIFACT_PATH
-    || artifact.version !== "sangtian-a-emotion-1.0.0"
+    || artifact.version !== "sangtian-a-emotion-1.0.1"
     || artifact.hashMode !== "CANONICAL_JSON"
     || artifact.sha256 !== EXPECTED_ARTIFACT_SHA256
   ) fail("MANIFEST_INVALID", `manifest.artifacts.${ARTIFACT_ID}`);
@@ -224,7 +224,7 @@ export function validateSangtianAEmotionPolicyV1(value: unknown): SangtianAEmoti
     "finale", "policySha256",
   ], "policy");
   literal(policy.schemaVersion, "sangtian_a_emotion_policy_v1", "policy.schemaVersion");
-  literal(policy.policyVersion, "sangtian-a-emotion-1.0.0", "policy.policyVersion");
+  literal(policy.policyVersion, "sangtian-a-emotion-1.0.1", "policy.policyVersion");
   literal(policy.compilerVersion, "sangtian-a-emotion-compiler-1.0.0", "policy.compilerVersion");
   literal(policy.runtimeProfile, "SANGTIAN_CONTINUOUS_CHAPTER_V1", "policy.runtimeProfile");
   const binding = record(policy.sourceBinding, "policy.sourceBinding");

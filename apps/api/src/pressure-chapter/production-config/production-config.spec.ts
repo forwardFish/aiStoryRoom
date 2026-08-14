@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { NarrativeContextV1 } from "@apps/openovel-runtime/pressure-narrative/contracts";
 import {
   configurePressureSupabaseDatabaseV1,
   createPressureNarrativeProviderFromEnvV1,
@@ -82,7 +81,7 @@ test("API and worker can share the Supabase binding with an explicit pool limit"
 test("narrative provider is explicit and deterministic fallback is visible", async () => {
   const fallback = createPressureNarrativeProviderFromEnvV1({});
   assert.equal(fallback.provider, null);
-  assert.equal(fallback.decisionPresentationProvider, null);
+  assert.equal(fallback.turnPresentationProvider, null);
   assert.deepEqual(fallback.readiness, {
     ready: true,
     mode: "DETERMINISTIC_FALLBACK_ONLY",
@@ -92,44 +91,23 @@ test("narrative provider is explicit and deterministic fallback is visible", asy
     model: null,
   });
 
-  let request: { url: string; init?: RequestInit } | null = null;
   const external = createPressureNarrativeProviderFromEnvV1({
     DEEPSEEK_API_KEY: "secret-provider-key",
     DEEPSEEK_MODEL: "deepseek-test",
-  }, async (input, init) => {
-    request = { url: String(input), init };
+  }, async () => {
     return new Response(JSON.stringify({
       choices: [{ message: { content: JSON.stringify({
-        text: "A safe line.",
+        sceneText: "A safe line.",
+        question: "What now?",
+        options: [],
         usedFactRefs: [],
         claims: [],
       }) } }],
     }), { status: 200, headers: { "content-type": "application/json" } });
   });
-  assert.equal(external.readiness.mode, "EXTERNAL_PROVIDER");
-  assert.ok(external.decisionPresentationProvider);
+  assert.equal(external.provider, null);
+  assert.equal(external.readiness.mode, "DETERMINISTIC_FALLBACK_ONLY");
+  assert.equal(external.readiness.degraded, false);
+  assert.ok(external.turnPresentationProvider);
   assert.doesNotMatch(JSON.stringify(external.readiness), /secret-provider-key/);
-  const result = await external.provider!.render(contextFixture());
-  assert.deepEqual(result, { text: "A safe line.", usedFactRefs: [], claims: [] });
-  assert.equal(request!.url, "https://api.deepseek.com/chat/completions");
-  assert.equal((request!.init?.headers as Record<string, string>).authorization, "Bearer secret-provider-key");
 });
-
-function contextFixture(): NarrativeContextV1 {
-  return {
-    schemaVersion: "pressure_narrative_context_v1",
-    contextCompilerVersion: "context-v1",
-    projectionKind: "GENESIS_NARRATIVE",
-    audience: { kind: "PUBLIC", seatId: null },
-    sourceId: "genesis-1",
-    sourceCommitHash: "a".repeat(64),
-    sourceContentHash: "b".repeat(64),
-    temporalInstruction: "Only committed facts.",
-    facts: [],
-    objects: [],
-    knowledge: [],
-    allowedClaims: [],
-    variant: { kind: "GENESIS", stageId: "P0", openingHook: "Opening" },
-    contextHash: "c".repeat(64),
-  };
-}

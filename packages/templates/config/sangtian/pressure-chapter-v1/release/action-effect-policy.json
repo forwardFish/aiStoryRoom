@@ -1,7 +1,7 @@
 {
   "schemaVersion": "sangtian_action_effect_policy_v1",
   "policyId": "sangtian_pressure_action_effect_v1",
-  "policyVersion": "sangtian-action-effect-1.0.0",
+  "policyVersion": "sangtian-action-effect-1.0.1",
   "compilerVersion": "sangtian-action-effect-compiler-1.0.0",
   "aggregationVersion": "sangtian-selector-fact-reducer-1.0.0",
   "compilerModule": {
@@ -21,8 +21,8 @@
     "resultSchemaVersion": "sangtian_pressure_result_v1"
   },
   "sourceBinding": {
-    "contentPackageVersion": "1.0.0",
-    "contentPackageSha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b",
+    "contentPackageVersion": "1.0.1",
+    "contentPackageSha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466",
     "sourceCommitSha": "5badb6fa62a823de7019ce6a046efffbd74268d8",
     "derivationClass": "VERSIONED_T3_ADAPTATION_FROM_ACCEPTED_ACTION_SEMANTICS_AND_SELECTOR_BOUNDARIES",
     "sourceContainedExactActionEffectValues": false
@@ -574,5 +574,5 @@
     "allSourceDefaultTrajectoriesReproducible": true,
     "resourceConservationMode": "ZERO_RESOURCE_MVP"
   },
-  "policySha256": "48de051ceab4dcca72cd5b7c30954ad244c6387a90c608d5851e13b14d04d1a8"
+  "policySha256": "547f9ee415502554761e84c00f7f9e83cee80e7515aacd84f1f6df6fb702dde4"
 }

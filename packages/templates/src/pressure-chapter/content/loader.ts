@@ -36,6 +36,7 @@ import type {
   SangtianObjectContentV1,
   SangtianPressureChapterContentV1,
   SangtianPressureChapterManifestV1,
+  SangtianResourceContentV1,
   SangtianSeatContentV1,
   SangtianSettlementPredicateV1,
   SangtianTrackContentV1,
@@ -226,7 +227,7 @@ function validateGenesis(value: unknown): void {
   nonEmpty(genesis.pressure, "content.genesis.pressure");
   stringArray(genesis.lockedFacts, "content.genesis.lockedFacts", true);
   scalarRecord(genesis.factValues, "content.genesis.factValues");
-  numberRecord(genesis.resources, "content.genesis.resources");
+  validateResources(genesis.resources);
   validateSeats(genesis.seats);
   validateTracks(genesis.tracks);
   validateObjects(genesis.objects);
@@ -234,6 +235,30 @@ function validateGenesis(value: unknown): void {
   validateEvidence(genesis.evidence);
   validateResponsibilities(genesis.responsibilities);
   stringArray(genesis.sourceRefs, "content.genesis.sourceRefs", true);
+}
+
+function validateResources(value: unknown): void {
+  if (!Array.isArray(value) || value.length === 0) {
+    invalid("content.genesis.resources", "NON_EMPTY_ARRAY");
+  }
+  const resources = value.map((item, index) => {
+    const pathName = `content.genesis.resources[${index}]`;
+    const resource = object(item, pathName);
+    exact(resource, ["resourceId", "label", "initialValue", "displaySuffix"], pathName);
+    nonEmpty(resource.resourceId, `${pathName}.resourceId`);
+    if (!/^resource\.[a-z][a-z0-9_]*$/u.test(resource.resourceId)) {
+      invalid(`${pathName}.resourceId`, "RESOURCE_ID");
+    }
+    nonEmpty(resource.label, `${pathName}.label`);
+    finite(resource.initialValue, `${pathName}.initialValue`, 0);
+    if (typeof resource.displaySuffix !== "string" || resource.displaySuffix.length > 20) {
+      invalid(`${pathName}.displaySuffix`, "SHORT_STRING");
+    }
+    return resource as unknown as SangtianResourceContentV1;
+  });
+  if (new Set(resources.map((resource) => resource.resourceId)).size !== resources.length) {
+    invalid("content.genesis.resources", "DUPLICATE_RESOURCE_ID");
+  }
 }
 
 function validateSeats(value: unknown): void {

@@ -150,6 +150,21 @@ test("P0 is Genesis only with exact six seats, five tracks and source objects", 
   const loaded = loadSangtianPressureChapterPackageV1();
   assert.deepEqual(loaded.content.genesis.seats.map((seat) => seat.seatId), PRESSURE_CHAPTER_SEAT_IDS_V1);
   assert.deepEqual(loaded.content.genesis.tracks.map((track) => track.trackId), TRACK_IDS_V1);
+  assert.deepEqual(
+    loaded.content.genesis.resources.map((resource) => ({
+      resourceId: resource.resourceId,
+      label: resource.label,
+      initialValue: resource.initialValue,
+      displaySuffix: resource.displaySuffix,
+    })),
+    [
+      { resourceId: "resource.silver", label: "银两", initialValue: 42, displaySuffix: " 万两" },
+      { resourceId: "resource.grain", label: "粮草", initialValue: 23, displaySuffix: " 万石" },
+      { resourceId: "resource.soldiers", label: "兵丁", initialValue: 4, displaySuffix: "/5" },
+      { resourceId: "resource.advisers", label: "幕僚", initialValue: 4, displaySuffix: " 人" },
+      { resourceId: "resource.intelligence", label: "密报", initialValue: 2, displaySuffix: " 条" },
+    ],
+  );
   assert.equal(loaded.content.genesis.objects.length, 38);
   const genesis = compileP0GenesisSnapshotV1({
     runId: "run-content-genesis",

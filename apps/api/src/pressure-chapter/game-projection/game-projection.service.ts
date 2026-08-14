@@ -34,7 +34,7 @@ import {
   PRESSURE_GAME_PROJECTION_ERROR_CODES as ERROR,
   failPressureGameProjection,
 } from "./errors";
-import type { PressureDecisionPresentationServiceV1 } from "./decision-presentation";
+import type { PressureTurnPresentationServiceV1 } from "./decision-presentation";
 
 const NON_EMPTY = /\S/u;
 const CHAPTER_IDS = Object.freeze(["P0", "N1", "N2", "N3", "N4", "N5", "N6", "N7"] as const);
@@ -58,7 +58,7 @@ export class PressureChapterGameProjectionService {
     private readonly narratives: PressureGameNarrativeReaderPort,
     private readonly feed: PressureGameAEmotionFeedPort,
     private readonly capabilities: PressureGameCapabilityReaderPort,
-    private readonly decisionPresentations: PressureDecisionPresentationServiceV1 | null = null,
+    private readonly turnPresentations: PressureTurnPresentationServiceV1 | null = null,
   ) {}
 
   async read(
@@ -288,8 +288,8 @@ export class PressureChapterGameProjectionService {
       chapter.decision,
       chapter.chapter.workingRevision,
     );
-    const decision = fallbackDecision && this.decisionPresentations
-      ? await this.decisionPresentations.present({
+    const decision = fallbackDecision && this.turnPresentations
+      ? await this.turnPresentations.present({
           chapter: structuredClone(chapter.chapter),
           viewer: structuredClone(viewer.viewer),
           situation: structuredClone(viewer.situation),

@@ -414,9 +414,18 @@ test("content-bound seat projection is viewer-scoped and uses only frozen resour
   assert.equal(projection.seatId, seatId);
   assert.equal(projection.payloadHash, sha256Canonical(projection.payload));
   assert.deepEqual(payload.resources.map((resource) => resource.resourceId), [
-    "resource.credit",
+    "resource.silver",
     "resource.grain",
-    "resource.troops",
+    "resource.soldiers",
+    "resource.advisers",
+    "resource.intelligence",
+  ]);
+  assert.deepEqual(payload.resources, [
+    { resourceId: "resource.silver", value: 42, displayValue: "42 万两" },
+    { resourceId: "resource.grain", value: 23, displayValue: "23 万石" },
+    { resourceId: "resource.soldiers", value: 4, displayValue: "4/5" },
+    { resourceId: "resource.advisers", value: 4, displayValue: "4 人" },
+    { resourceId: "resource.intelligence", value: 2, displayValue: "2 条" },
   ]);
   assert.deepEqual(payload.tokens, []);
   const serialized = JSON.stringify(payload);
@@ -432,7 +441,8 @@ test("content-bound seat projection is viewer-scoped and uses only frozen resour
 
   const catalog = await new SangtianFrozenSeatPresentationCatalogV1(prisma)
     .readCatalog({ runId: route.runId, seatId });
-  assert.equal(catalog?.resources["resource.grain"]?.label, "粮食");
+  assert.equal(catalog?.resources["resource.grain"]?.label, "粮草");
+  assert.equal(catalog?.resources["resource.intelligence"]?.label, "密报");
   assert.deepEqual(catalog?.tokens, {});
 });
 

@@ -2,34 +2,35 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { sha256Canonical } from "@ai-story/shared";
 import {
-  PressureDecisionPresentationServiceV1,
-  compilePressureDecisionPresentationContextV1,
-  type PressureDecisionPresentationInputV1,
+  PressureTurnPresentationServiceV1,
+  compilePressureTurnPresentationContextV1,
+  type PressureTurnPresentationContextV1,
+  type PressureTurnPresentationInputV1,
 } from "./decision-presentation";
 
 test("AI rewrites scene and three option expressions without changing action bindings", async () => {
   let calls = 0;
-  const service = new PressureDecisionPresentationServiceV1({
-    async renderDecisionPresentation(context) {
+  const service = new PressureTurnPresentationServiceV1({
+    async renderTurnPresentation(context) {
       calls += 1;
       assert.equal(context.legalActionContracts.length, 3);
       assert.equal(context.pressureGuidance, "赈济奏疏必须说明灾情与请求。");
-      return {
-        sceneText: context.outputExample.sceneText,
+      return candidate(context, {
+        sceneText: literaryScene("长案上的灾情簿还没有合拢"),
         question: "这道回令，你准备先保住什么？",
         options: context.legalActionContracts.map((action, index) => ({
           actionType: action.actionType,
           label: `动态行动${index + 1}`,
           description: `这是由当前现场生成的行动表达${index + 1}，只描述尝试与眼前取舍。`,
         })),
-      };
+      });
     },
   });
   const input = continuationFixture();
   const first = await service.present(input);
   const second = await service.present(input);
   assert.equal(calls, 1);
-  assert.equal(first.summary, compilePressureDecisionPresentationContextV1(input).outputExample.sceneText);
+  assert.match(first.summary, /长案上的灾情簿/u);
   assert.equal(first.title, "这道回令，你准备先保住什么？");
   assert.deepEqual(
     first.options.map(({ code, actionType, preferredEntry }) => ({ code, actionType, preferredEntry })),
@@ -40,10 +41,10 @@ test("AI rewrites scene and three option expressions without changing action bin
 
 test("continuation generates a new literary scene and ignores non-authoritative option metadata", async () => {
   const input = continuationFixture();
-  const service = new PressureDecisionPresentationServiceV1({
-    async renderDecisionPresentation(context) {
-      return {
-        sceneText: "奏疏房里刚换过一轮灯油，灾后的名册、河图与待署名的奏稿已经摊满长案。胡宗宪翻到记载疏散结果的一页，门外又送来催问：这场灾究竟怎样写进朝廷的第一道奏疏。",
+  const service = new PressureTurnPresentationServiceV1({
+    async renderTurnPresentation(context) {
+      return candidate(context, {
+        sceneText: literaryScene("奏疏房里刚换过一轮灯油"),
         question: "这道奏疏，你准备先写清哪一件事？",
         options: context.legalActionContracts.map((action, index) => ({
           actionType: action.actionType,
@@ -51,12 +52,12 @@ test("continuation generates a new literary scene and ignores non-authoritative 
           description: `根据当前现场提出第${index + 1}项具体行动，并只说明它的直接目的。`,
           rationale: "presentation-only metadata",
         })),
-      };
+      });
     },
   });
 
   const result = await service.present(input);
-  const context = compilePressureDecisionPresentationContextV1(input);
+  const context = compilePressureTurnPresentationContextV1(input);
   assert.match(result.summary, /奏疏房里刚换过一轮灯油/u);
   assert.notEqual(result.summary, context.continuityExcerpt);
   assert.deepEqual(
@@ -67,10 +68,10 @@ test("continuation generates a new literary scene and ignores non-authoritative 
 
 test("unknown AI action rejects the whole candidate and keeps the authored fallback", async () => {
   const input = continuationFixture();
-  const service = new PressureDecisionPresentationServiceV1({
-    async renderDecisionPresentation(context) {
-      return {
-        sceneText: context.outputExample.sceneText,
+  const service = new PressureTurnPresentationServiceV1({
+    async renderTurnPresentation(context) {
+      return candidate(context, {
+        sceneText: literaryScene("签押房的门刚刚合上"),
         question: "现在怎么办？",
         options: [
           { actionType: "INVENTED_ACTION", label: "虚构行动", description: "模型无权创造这种规则行动，所以整份输出必须回退。" },
@@ -80,7 +81,7 @@ test("unknown AI action rejects the whole candidate and keeps the authored fallb
             description: option.description,
           })),
         ],
-      };
+      });
     },
   });
   assert.deepEqual(await service.present(input), input.decision);
@@ -93,20 +94,20 @@ test("pending Narrative uses the authored scene frame so the next story does not
   input.narrative.contentHash = null;
   input.narrative.renderMode = null;
   let calls = 0;
-  const service = new PressureDecisionPresentationServiceV1({
-    async renderDecisionPresentation(context) {
+  const service = new PressureTurnPresentationServiceV1({
+    async renderTurnPresentation(context) {
       calls += 1;
       assert.equal(context.previousNarrative.text, context.currentScene.text);
       assert.notEqual(context.previousNarrative.text, input.decision.summary);
-      return {
-        sceneText: context.outputExample.sceneText,
+      return candidate(context, {
+        sceneText: literaryScene("河图旁的灯芯忽然爆了一声"),
         question: "现在必须先解决哪一项？",
         options: context.legalActionContracts.map((action) => ({
           actionType: action.actionType,
           label: action.fallbackLabel,
           description: action.intendedAction,
         })),
-      };
+      });
     },
   });
 
@@ -119,8 +120,8 @@ test("pending Narrative uses the authored scene frame so the next story does not
 test("frozen Genesis uses the authored first scene without calling the Provider", async () => {
   const input = fixture();
   let calls = 0;
-  const service = new PressureDecisionPresentationServiceV1({
-    async renderDecisionPresentation() {
+  const service = new PressureTurnPresentationServiceV1({
+    async renderTurnPresentation() {
       calls += 1;
       throw new Error("Genesis must remain authored");
     },
@@ -134,7 +135,7 @@ test("frozen Genesis uses the authored first scene without calling the Provider"
 });
 
 test("compiled context is hash-bound and contains only the three visible Catalog actions", () => {
-  const context = compilePressureDecisionPresentationContextV1(fixture());
+  const context = compilePressureTurnPresentationContextV1(fixture());
   const { contextHash, ...body } = context;
   assert.equal(contextHash, sha256Canonical(body));
   assert.deepEqual(context.legalActionContracts.map((item) => item.actionType), [
@@ -154,18 +155,38 @@ test("compiled context is hash-bound and contains only the three visible Catalog
   assert.match(context.factBoundary.forbiddenInferences.join("\n"), /合法行动方向/u);
   assert.equal(context.previousNarrative.authority, "CONTINUITY_ONLY");
   assert.equal(context.factBoundary.previousNarrativeIsNotAuthority, true);
-  assert.deepEqual(context.factBoundary.durableStateSources, [
-    "CURRENT_STATE",
-    "SITUATION",
-    "LEGAL_ACTION_CONTRACTS",
-  ]);
+  assert.equal(context.factBoundary.legalActionsAreNotCompletedResults, true);
+  assert.deepEqual(context.factBoundary.durableStateSources, ["TURN_AUTHORITY_DRAFT"]);
+  assert.equal(
+    context.authorityDraft.authorityHash,
+    sha256Canonical((({ authorityHash: _authorityHash, ...draft }) => draft)(context.authorityDraft)),
+  );
+  assert.deepEqual(
+    context.authorityDraft.currentAuthorityState.map((fact) => fact.factId),
+    ["situation.goal", "situation.risk", "situation.judgment"],
+  );
   assert.match(context.factBoundary.forbiddenInferences.join("\n"), /临时文学细节不等于下一轮权威事实/u);
   assert.match(context.playerIdentity.hardLimit, /不能/u);
   assert.match(context.characterRules.privatePressure, /海防/u);
   assert.doesNotMatch(JSON.stringify(context), /otherSeatSecret|providerRaw|DEFAULT_PASS/u);
 });
 
-function fixture(): PressureDecisionPresentationInputV1 {
+test("unknown fact refs and non-empty claims reject the whole generated turn", async () => {
+  const input = continuationFixture();
+  let mode: "UNKNOWN_REF" | "CLAIM" = "UNKNOWN_REF";
+  const service = new PressureTurnPresentationServiceV1({
+    async renderTurnPresentation(context) {
+      return candidate(context, mode === "UNKNOWN_REF"
+        ? { usedFactRefs: ["private.other-seat.secret"] }
+        : { claims: [{ kind: "FACT", refId: "invented", statement: "虚构事实" }] });
+    },
+  });
+  assert.deepEqual(await service.present(input), input.decision);
+  mode = "CLAIM";
+  assert.deepEqual(await service.present(input), input.decision);
+});
+
+function fixture(): PressureTurnPresentationInputV1 {
   return {
     chapter: {
       chapterRuntimeId: "chapter-runtime-n1",
@@ -218,7 +239,7 @@ function fixture(): PressureDecisionPresentationInputV1 {
   };
 }
 
-function continuationFixture(): PressureDecisionPresentationInputV1 {
+function continuationFixture(): PressureTurnPresentationInputV1 {
   const input = fixture();
   input.chapter = {
     ...input.chapter,
@@ -254,4 +275,30 @@ function option(
     label,
     description: `${label}的冻结回退说明。`,
   };
+}
+
+function candidate(
+  context: PressureTurnPresentationContextV1,
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    sceneText: literaryScene("总督府签押房的灯火仍亮着"),
+    question: "案上这道文书，现在先从哪一项落笔？",
+    options: context.legalActionContracts.map((action) => ({
+      actionType: action.actionType,
+      label: action.fallbackLabel,
+      description: action.intendedAction,
+    })),
+    usedFactRefs: ["situation.goal", "situation.risk"],
+    claims: [],
+    ...overrides,
+  };
+}
+
+function literaryScene(opening: string): string {
+  return [
+    `${opening}。胡宗宪把刚送来的文书压在河图边，先看落款，再看其中写得最含混的几行。门外脚步来回，没有人敢越过门槛，却都在等他给出一句能真正执行的话。`,
+    `书办低声报出眼前仍未解决的压力。胡宗宪没有立刻接笔，只追问哪些话已经核验，哪些还只是催促。屋里短暂安静下来，纸页被夜风吹得轻轻作响。`,
+    `他把几份材料重新排开，合法的方向都摆在案前，但任何一个都还没有成为命令。众人的目光落到那支笔上，现场已经逼到必须由他本人作出选择的时刻。`,
+  ].join("\n\n");
 }

@@ -230,7 +230,7 @@ export interface SangtianAiDecisionBindingPolicyV1 {
 export interface SangtianAiDecisionPolicyV1 {
   schemaVersion: "sangtian_ai_decision_policy_v1";
   policyRef: "sangtian.ai.decision.v1";
-  policyVersion: "sangtian-ai-decision-1.0.0";
+  policyVersion: "sangtian-ai-decision-1.0.1";
   selectorVersion: "sangtian-ai-decision-selector-1.0.0";
   runtimeProfile: "SANGTIAN_CONTINUOUS_CHAPTER_V1";
   sourceBinding: {

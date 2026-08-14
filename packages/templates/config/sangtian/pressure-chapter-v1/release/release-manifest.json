@@ -1,11 +1,11 @@
 {
   "schemaVersion": "sangtian_pressure_chapter_release_manifest_v1",
   "releaseId": "sangtian_pressure_chapter_release_v1",
-  "releaseVersion": "1.0.0",
+  "releaseVersion": "1.0.1",
   "hashAlgorithm": "SHA-256_PRESSURE_CHAPTER_CANONICAL_JSON_V1",
   "routeRegistry": {
     "schemaVersion": "pressure_chapter_route_registry_v1",
-    "registryVersion": "pressure-route-registry-1.0.0",
+    "registryVersion": "pressure-route-registry-1.0.1",
     "defaultRouteKey": "sangtian_pressure_chapter_v1",
     "routes": [
       {
@@ -24,12 +24,12 @@
           "endgamePolicyVersion": "sangtian_content_finale_v1",
           "resultSchemaVersion": "sangtian_pressure_result_v1"
         },
-        "contentPackageVersion": "1.0.0",
-        "contentPackageSha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b",
-        "orchestrationPackageVersion": "sangtian-orchestration-1.0.0",
-        "orchestrationPackageSha256": "16d99a0401a993d28ec8893ace02fb088870926bcc095fa454d557dfd1642d0d",
-        "runtimeContractVersion": "pressure-runtime-contract-1.0.0",
-        "runtimeContractSha256": "a06818b414837e9086113c8c1b74204dc10f8aef55c52b06d70e6c618836c55d",
+        "contentPackageVersion": "1.0.1",
+        "contentPackageSha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466",
+        "orchestrationPackageVersion": "sangtian-orchestration-1.0.1",
+        "orchestrationPackageSha256": "0b0f7eecefcc155000ea3b0cf8a503a7c3eeb5fbb8550b5e03cd2b80a00f0941",
+        "runtimeContractVersion": "pressure-runtime-contract-1.0.1",
+        "runtimeContractSha256": "0ad6e2cb831d553a583d11f552e73164b8f68905ef7939a8a627fbaa180fe715",
         "testMatrixVersion": "pressure-test-matrix-1.0.0",
         "testMatrixSha256": "3a10a2334dcf4f46ff09ae836ea65151187f3906aef950a030c7e52a0420c015",
         "narrativeProfileVersion": "openovel-pressure-1.0.0",
@@ -42,21 +42,21 @@
         "rendererKey": "sangtian_pressure_endgame_v1"
       }
     ],
-    "registryHash": "ed7b03f220fb6ba2e6b1b64d7e78bde7db8b20b0fd7499b9dc5d0dcbe48b40a6"
+    "registryHash": "4842804af4f7ab10c7fc7b35bc2641637424692ecf8b38a44e5a76542cf6be67"
   },
   "immutableInputs": [
     {
       "artifactId": "accepted_content_package",
       "path": "../content.json",
-      "version": "1.0.0",
-      "sha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b",
+      "version": "1.0.1",
+      "sha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466",
       "hashMode": "CANONICAL_JSON"
     },
     {
       "artifactId": "accepted_content_manifest",
       "path": "../manifest.json",
-      "version": "1.0.0",
-      "sha256": "d13dd04333e8c0e16901285f6fef61145c5bc3ef537b682e639a2f4b6d95a404",
+      "version": "1.0.1",
+      "sha256": "bc3ed839d9303164e1d1424cabd8a97ac5ca7e976b8f2b889ef47a3a91362925",
       "hashMode": "CANONICAL_JSON"
     }
   ],
@@ -71,8 +71,8 @@
     {
       "artifactId": "a_emotion_policy",
       "path": "a-emotion-policy.json",
-      "version": "sangtian-a-emotion-1.0.0",
-      "sha256": "13557b10e458191846728d973b2f5829f2f85ff634009e56944c1b6765cd9c8c",
+      "version": "sangtian-a-emotion-1.0.1",
+      "sha256": "117baa80b711866e371316f2edd6ff132e36f4f7bdde2796a3fa3cfcd43570e2",
       "hashMode": "CANONICAL_JSON"
     },
     {
@@ -92,22 +92,22 @@
     {
       "artifactId": "action_effect_policy",
       "path": "action-effect-policy.json",
-      "version": "sangtian-action-effect-1.0.0",
-      "sha256": "a149635a1419ead43f1f18017adc279d18973de8b3d52bdea5debf5af114b807",
+      "version": "sangtian-action-effect-1.0.1",
+      "sha256": "7c100ef8b1cec5f28187d273492b6756087bf422e44399f8d1a1e77b7f92cff6",
       "hashMode": "CANONICAL_JSON"
     },
     {
       "artifactId": "action_presentation_catalog",
       "path": "action-presentation-catalog.json",
-      "version": "sangtian-action-presentation-1.0.0",
-      "sha256": "ab50754c4ef6419325b0f4c52fc1ede876701304c46edb322b0822e45152948a",
+      "version": "sangtian-action-presentation-1.0.1",
+      "sha256": "33a3970eb8b657dd8350e2e315c1494034e45a77de724ee157fe79daabdef159",
       "hashMode": "CANONICAL_JSON"
     },
     {
       "artifactId": "ai_decision_policy",
       "path": "ai-decision-policy.json",
-      "version": "sangtian-ai-decision-1.0.0",
-      "sha256": "b9d752ab8ab40cc5885ef43d04c8404f18e184198db8ce52fc95e0e0a6fa9231",
+      "version": "sangtian-ai-decision-1.0.1",
+      "sha256": "c69066e3b367118d7205e00601e5e56d258ad93dd0731100a16850813e2c52cb",
       "hashMode": "CANONICAL_JSON"
     },
     {
@@ -148,8 +148,8 @@
     {
       "artifactId": "orchestration_package",
       "path": "orchestration-package.json",
-      "version": "sangtian-orchestration-1.0.0",
-      "sha256": "16d99a0401a993d28ec8893ace02fb088870926bcc095fa454d557dfd1642d0d",
+      "version": "sangtian-orchestration-1.0.1",
+      "sha256": "0b0f7eecefcc155000ea3b0cf8a503a7c3eeb5fbb8550b5e03cd2b80a00f0941",
       "hashMode": "CANONICAL_JSON"
     },
     {
@@ -162,15 +162,15 @@
     {
       "artifactId": "runtime_contract",
       "path": "runtime-contract.json",
-      "version": "pressure-runtime-contract-1.0.0",
-      "sha256": "a06818b414837e9086113c8c1b74204dc10f8aef55c52b06d70e6c618836c55d",
+      "version": "pressure-runtime-contract-1.0.1",
+      "sha256": "0ad6e2cb831d553a583d11f552e73164b8f68905ef7939a8a627fbaa180fe715",
       "hashMode": "CANONICAL_JSON"
     },
     {
       "artifactId": "source_regression_manifest",
       "path": "source-regression-manifest.json",
       "version": "pressure-source-regression-1.0.0",
-      "sha256": "53e63f5d042526f6342e0df1a9a1ef6e8ccd97125e2cbe03525b52fc5ef51347",
+      "sha256": "3c7953045d5490e82b8204b05df40cc59432624585971b66e89c500e3bdab731",
       "hashMode": "CANONICAL_JSON"
     },
     {

@@ -213,9 +213,9 @@ function buildInput(input: Readonly<{
     runId: "run-ai-policy",
     routeHash: sha256Canonical("route-ai-policy"),
     runSeed: input.runSeed,
-    contentPackageVersion: "1.0.0",
+    contentPackageVersion: "1.0.1",
     contentPackageSha256:
-    "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b",
+    "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466",
     chapterRuntimeId: `runtime-${input.chapterId}`,
     chapterId: input.chapterId,
     decisionPointId: input.decisionPointId,

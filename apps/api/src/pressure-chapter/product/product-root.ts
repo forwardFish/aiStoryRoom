@@ -24,8 +24,8 @@ import {
 } from "../finale";
 import {
   PressureChapterGameProjectionService,
-  PressureDecisionPresentationServiceV1,
-  type PressureDecisionPresentationProviderPortV1,
+  PressureTurnPresentationServiceV1,
+  type PressureTurnPresentationProviderPortV1,
 } from "../game-projection";
 import { PressureChapterGenesisService } from "../genesis";
 import {
@@ -238,7 +238,7 @@ export async function createPressureChapterProductRootV1(input: {
   prisma: PrismaService;
   options?: Partial<PressureChapterProductOptionsV1>;
   narrativeProviderReadiness?: PressureNarrativeProviderReadinessV1;
-  decisionPresentationProvider?: PressureDecisionPresentationProviderPortV1 | null;
+  turnPresentationProvider?: PressureTurnPresentationProviderPortV1 | null;
 }): Promise<PressureChapterProductRootV1> {
   const options = normalizeOptions(input.options);
   const httpProduction = createPressureChapterHttpProductionAdaptersV1(
@@ -502,8 +502,8 @@ export async function createPressureChapterProductRootV1(input: {
     new PrismaPressureGameNarrativeReaderV1(input.prisma),
     createPressureGameFeedReaderV1(aEmotion.feed),
     internal.gameCapabilities,
-    new PressureDecisionPresentationServiceV1(
-      input.decisionPresentationProvider ?? null,
+    new PressureTurnPresentationServiceV1(
+      input.turnPresentationProvider ?? null,
     ),
   );
   const runtimeFacets = pressureHttpRuntimeFacetsV1(runtime);

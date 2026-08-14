@@ -78,13 +78,20 @@ export interface SangtianInitialResponsibilityV1 {
   level: number;
 }
 
+export interface SangtianResourceContentV1 {
+  resourceId: string;
+  label: string;
+  initialValue: number;
+  displaySuffix: string;
+}
+
 export interface SangtianGenesisContentV1 {
   nodeId: "P0";
   title: string;
   pressure: string;
   lockedFacts: string[];
   factValues: Record<string, ScalarFactValueV1>;
-  resources: Record<string, number>;
+  resources: SangtianResourceContentV1[];
   seats: SangtianSeatContentV1[];
   tracks: SangtianTrackContentV1[];
   objects: SangtianObjectContentV1[];

@@ -1,12 +1,12 @@
 {
   "schemaVersion": "sangtian_action_presentation_catalog_v1",
   "catalogId": "sangtian_pressure_action_presentation_v1",
-  "catalogVersion": "sangtian-action-presentation-1.0.0",
+  "catalogVersion": "sangtian-action-presentation-1.0.1",
   "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
   "locale": "zh-CN",
   "sourceBinding": {
-    "contentPackageVersion": "1.0.0",
-    "contentPackageSha256": "76ff9519752ca1c56cb7b9b6ca6c586272c9f52e81863692b52c597e3655a65b",
+    "contentPackageVersion": "1.0.1",
+    "contentPackageSha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466",
     "sourceCommitSha": "5badb6fa62a823de7019ce6a046efffbd74268d8"
   },
   "authorityBoundary": {
@@ -300,5 +300,5 @@
     "decisionActionPairCount": 72,
     "coverageRule": "EXACT_ACCEPTED_CONTENT_DECISION_ACTION_PAIRS"
   },
-  "catalogSha256": "ccd25e7addeb999982c563e20f4f5aa839d2673333b467ef1a82ed0e68a9b66c"
+  "catalogSha256": "c95ef596f16c52c3ca75f6088a38d31f84a890cafae5be68aa0b159c2fefdd95"
 }

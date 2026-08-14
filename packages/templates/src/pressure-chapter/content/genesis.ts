@@ -90,7 +90,9 @@ export function compileInitialWorldState(
       ...structuredClone(genesis.factValues),
       "frozen.P0.LOCKED": true,
     },
-    resources: structuredClone(genesis.resources),
+    resources: Object.fromEntries(
+      genesis.resources.map((resource) => [resource.resourceId, resource.initialValue]),
+    ),
     tracks: {
       ...trackWithoutHash,
       stateHash: sha256Canonical(trackWithoutHash),

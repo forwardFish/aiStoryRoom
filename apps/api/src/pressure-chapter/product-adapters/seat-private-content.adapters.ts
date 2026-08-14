@@ -32,20 +32,6 @@ import {
   type PressureSeatSnapshotDelegateV1,
 } from "../seat-control-persistence/envelope";
 
-const RESOURCE_PRESENTATION_V1 = Object.freeze({
-  "resource.credit": Object.freeze({ label: "信用" }),
-  "resource.grain": Object.freeze({ label: "粮食" }),
-  "resource.troops": Object.freeze({ label: "兵力" }),
-});
-const RESOURCE_IDS_V1 = Object.freeze(Object.keys(RESOURCE_PRESENTATION_V1).sort(compareCanonicalText));
-const PRIVATE_PROJECTION_COMPILER_V1 = Object.freeze({
-  schemaVersion: "sangtian_genesis_seat_private_projection_compiler_v1" as const,
-  resources: RESOURCE_PRESENTATION_V1,
-  tokenPolicy: "NONE" as const,
-});
-const PRIVATE_PROJECTION_VERSION_V1 =
-  `sangtian-genesis-seat-private-v1:${sha256Canonical(PRIVATE_PROJECTION_COMPILER_V1)}`;
-
 /**
  * Read-through projection for the currently authorized seat. It reads one
  * Genesis authority and never loads another seat's private payload.
@@ -121,6 +107,7 @@ export function compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1(in
   assertSeat(input.seatId);
   assertPublishedTokenPolicyV1();
   const content = loadSangtianPressureChapterPackageV1();
+  const resourceCatalog = compileResourceCatalogV1(content.content.genesis.resources);
   const knowledge = input.world.knowledgeBySeat[input.seatId];
   const seat = content.content.genesis.seats.find(
     (candidate) => candidate.seatId === input.seatId,
@@ -146,7 +133,7 @@ export function compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1(in
     );
   }
   const resourceKeys = Object.keys(input.world.resources).sort(compareCanonicalText);
-  if (sha256Canonical(resourceKeys) !== sha256Canonical(RESOURCE_IDS_V1)) {
+  if (sha256Canonical(resourceKeys) !== sha256Canonical(resourceCatalog.sortedResourceIds)) {
     return failPressureProductAdapterV1(
       ERROR.AUTHORITY_MISMATCH,
       "SeatPrivateProjection.resources",
@@ -160,15 +147,19 @@ export function compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1(in
       risk: content.content.genesis.pressure,
       judgment: [...knowledge.knownFactRefs].sort(compareCanonicalText).join("；"),
     },
-    resources: RESOURCE_IDS_V1.map((resourceId) => {
-      const value = input.world.resources[resourceId];
+    resources: resourceCatalog.resources.map((resource) => {
+      const value = input.world.resources[resource.resourceId];
       if (!Number.isFinite(value)) {
         return failPressureProductAdapterV1(
           ERROR.RECORD_INVALID,
-          `WorldState.resources.${resourceId}`,
+          `WorldState.resources.${resource.resourceId}`,
         );
       }
-      return { resourceId, value, displayValue: String(value) };
+      return {
+        resourceId: resource.resourceId,
+        value,
+        displayValue: `${value}${resource.displaySuffix}`,
+      };
     }),
     tokens: [],
   };
@@ -177,7 +168,7 @@ export function compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1(in
     runId: input.runId,
     seatId: input.seatId,
     sourceAuthorityHash: input.seatAuthority.stateHash,
-    projectionVersion: PRIVATE_PROJECTION_VERSION_V1,
+    projectionVersion: resourceCatalog.projectionVersion,
     payload,
     payloadHash: sha256Canonical(payload),
   };
@@ -187,6 +178,9 @@ export function compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1(in
 export class SangtianFrozenSeatPresentationCatalogV1
 implements PressureSeatViewerPresentationCatalogPortV1 {
   private readonly content = loadSangtianPressureChapterPackageV1();
+  private readonly resourceCatalog = compileResourceCatalogV1(
+    this.content.content.genesis.resources,
+  );
 
   constructor(private readonly prisma: PrismaService) {
     assertPublishedTokenPolicyV1();
@@ -237,10 +231,40 @@ implements PressureSeatViewerPresentationCatalogPortV1 {
     }
     return {
       roleNames: Object.freeze(roleNames),
-      resources: RESOURCE_PRESENTATION_V1,
+      resources: this.resourceCatalog.presentation,
       tokens: Object.freeze({}),
     };
   }
+}
+
+function compileResourceCatalogV1(
+  resources: ReadonlyArray<Readonly<{
+    resourceId: string;
+    label: string;
+    displaySuffix: string;
+  }>>,
+) {
+  const presentation = Object.freeze(Object.fromEntries(
+    resources.map((resource) => [
+      resource.resourceId,
+      Object.freeze({ label: resource.label }),
+    ]),
+  ));
+  const compiler = Object.freeze({
+    schemaVersion: "sangtian_genesis_seat_private_projection_compiler_v1" as const,
+    resources: resources.map((resource) => ({
+      resourceId: resource.resourceId,
+      label: resource.label,
+      displaySuffix: resource.displaySuffix,
+    })),
+    tokenPolicy: "NONE" as const,
+  });
+  return Object.freeze({
+    resources,
+    presentation,
+    sortedResourceIds: Object.freeze(resources.map((resource) => resource.resourceId).sort(compareCanonicalText)),
+    projectionVersion: `sangtian-genesis-seat-private-v1:${sha256Canonical(compiler)}`,
+  });
 }
 
 function assertSeat(seatId: SeatIdV1): void {

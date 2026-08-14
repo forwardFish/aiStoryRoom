@@ -1,8 +1,8 @@
 import type { NarrativeContextV1 } from "@apps/openovel-runtime/pressure-narrative/contracts";
 import type { NarrativeProviderPortV1 } from "@apps/openovel-runtime/pressure-narrative/ports";
 import type {
-  PressureDecisionPresentationContextV1,
-  PressureDecisionPresentationProviderPortV1,
+  PressureTurnPresentationContextV1,
+  PressureTurnPresentationProviderPortV1,
 } from "../game-projection/decision-presentation";
 import {
   compilePressureDecisionStoryPackV1,
@@ -10,7 +10,7 @@ import {
   pressureStoryPackDiagnosticLogV1,
 } from "./decision-story-pack";
 import {
-  buildPressureDecisionSystemInstructionV1,
+  buildPressureTurnPresentationSystemInstructionV1,
   buildPressureStorySystemInstructionV1,
 } from "./pressure-prompt-layers";
 import {
@@ -36,7 +36,7 @@ export interface PressureNarrativeProviderReadinessV1 {
 
 export interface PressureNarrativeProviderConfigurationV1 {
   provider: NarrativeProviderPortV1 | null;
-  decisionPresentationProvider: PressureDecisionPresentationProviderPortV1 | null;
+  turnPresentationProvider: PressureTurnPresentationProviderPortV1 | null;
   readiness: PressureNarrativeProviderReadinessV1;
 }
 
@@ -53,7 +53,7 @@ export function createPressureNarrativeProviderFromEnvV1(
   if (requested === "deterministic" || !apiKey) {
     return {
       provider: null,
-      decisionPresentationProvider: null,
+      turnPresentationProvider: null,
       readiness: {
         ready: true,
         mode: "DETERMINISTIC_FALLBACK_ONLY",
@@ -77,21 +77,24 @@ export function createPressureNarrativeProviderFromEnvV1(
       fetchImpl,
     });
   return {
-    provider,
-    decisionPresentationProvider: provider,
+    // Normal player turns use one model call in the turn presenter. The
+    // Narrative worker persists a deterministic, audience-safe authority
+    // artifact and therefore receives no external Provider by default.
+    provider: null,
+    turnPresentationProvider: provider,
     readiness: {
       ready: true,
-      mode: "EXTERNAL_PROVIDER",
-      externalProviderConfigured: true,
+      mode: "DETERMINISTIC_FALLBACK_ONLY",
+      externalProviderConfigured: false,
       degraded: false,
-      provider: "deepseek",
-      model,
+      provider: "deterministic-fallback",
+      model: null,
     },
   };
 }
 
 export class DeepSeekPressureNarrativeProviderV1
-implements NarrativeProviderPortV1, PressureDecisionPresentationProviderPortV1 {
+implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1 {
   constructor(private readonly options: Readonly<{
     apiKey: string;
     endpoint: string;
@@ -243,13 +246,13 @@ implements NarrativeProviderPortV1, PressureDecisionPresentationProviderPortV1 {
     }
   }
 
-  async renderDecisionPresentation(
-    context: Readonly<PressureDecisionPresentationContextV1>,
+  async renderTurnPresentation(
+    context: Readonly<PressureTurnPresentationContextV1>,
   ): Promise<unknown> {
     const logMode = clean(process.env.PRESSURE_DECISION_PRESENTATION_LOG).toLowerCase();
     if (logMode && logMode !== "off" && logMode !== "0") {
       console.info(JSON.stringify({
-        event: "PRESSURE_DECISION_PRESENTATION_CONTEXT",
+        event: "PRESSURE_TURN_PRESENTATION_CONTEXT",
         mode: logMode === "full" || logMode === "1" ? "full" : "summary",
         contextHash: context.contextHash,
         chapterId: context.chapter.chapterId,
@@ -258,6 +261,7 @@ implements NarrativeProviderPortV1, PressureDecisionPresentationProviderPortV1 {
         legalActionTypes: context.legalActionContracts.map((action) => action.actionType),
         sources: {
           previousNarrative: `${context.previousNarrative.projectionKind}:${context.previousNarrative.sourceId}`,
+          authorityDraft: context.authorityDraft.authorityHash,
           currentPressure: "PRESSURE_SCENE_FLOW",
           currentState: "VIEWER_SAFE_GAME_PROJECTION",
           legalActions: "ACTION_PRESENTATION_CATALOG",
@@ -280,7 +284,7 @@ implements NarrativeProviderPortV1, PressureDecisionPresentationProviderPortV1 {
         messages: [
           {
             role: "system",
-            content: buildPressureDecisionSystemInstructionV1(),
+            content: buildPressureTurnPresentationSystemInstructionV1(),
           },
           {
             role: "user",
@@ -304,7 +308,7 @@ implements NarrativeProviderPortV1, PressureDecisionPresentationProviderPortV1 {
       const parsed = JSON.parse(content);
       if (logMode && logMode !== "off" && logMode !== "0") {
         console.info(JSON.stringify({
-          event: "PRESSURE_DECISION_PRESENTATION_RESULT",
+          event: "PRESSURE_TURN_PRESENTATION_RESULT",
           contextHash: context.contextHash,
           result: parsed,
         }));

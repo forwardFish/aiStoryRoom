@@ -1,7 +1,7 @@
 {
   "schemaVersion": "sangtian_pressure_chapter_content_v1",
   "packageId": "sangtian_pressure_chapter_v1",
-  "packageVersion": "1.0.0",
+  "packageVersion": "1.0.1",
   "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
   "defaultPolicies": {
     "absence": { "policyRef": "sangtian.default.absence.v1", "actionType": "DEFAULT_PASS", "payload": { "reason": "ABSENT" } },
@@ -22,11 +22,13 @@
       "fact.P0.policy_cancelled": false,
       "fact.P0.public_risk_known": true
     },
-    "resources": {
-      "resource.credit": 100,
-      "resource.grain": 100,
-      "resource.troops": 100
-    },
+    "resources": [
+      { "resourceId": "resource.silver", "label": "银两", "initialValue": 42, "displaySuffix": " 万两" },
+      { "resourceId": "resource.grain", "label": "粮草", "initialValue": 23, "displaySuffix": " 万石" },
+      { "resourceId": "resource.soldiers", "label": "兵丁", "initialValue": 4, "displaySuffix": "/5" },
+      { "resourceId": "resource.advisers", "label": "幕僚", "initialValue": 4, "displaySuffix": " 人" },
+      { "resourceId": "resource.intelligence", "label": "密报", "initialValue": 2, "displaySuffix": " 条" }
+    ],
     "seats": [
       {
         "seatId": "cabinet_finance",

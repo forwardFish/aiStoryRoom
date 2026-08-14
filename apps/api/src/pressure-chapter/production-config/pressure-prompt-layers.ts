@@ -29,11 +29,20 @@ export const PRESSURE_STORY_OUTPUT_REQUIREMENTS_V1 = Object.freeze({
   optionsForbidden: true,
 });
 
-export const PRESSURE_DECISION_OUTPUT_REQUIREMENTS_V1 = Object.freeze({
+export const PRESSURE_TURN_OUTPUT_REQUIREMENTS_V1 = Object.freeze({
   language: "zh-CN" as const,
   format: "JSON" as const,
-  fields: Object.freeze(["sceneText", "question", "options"] as const),
+  fields: Object.freeze([
+    "sceneText",
+    "question",
+    "options",
+    "usedFactRefs",
+    "claims",
+  ] as const),
+  oneProviderCall: true,
+  sceneLength: Object.freeze({ minimum: 180, maximum: 1_200 }),
   legalActionSetMustMatch: true,
+  claimsMustBeEmptyBeforeDecision: true,
   guaranteedOutcomeForbidden: true,
   engineeringCopyForbidden: true,
 });
@@ -72,17 +81,20 @@ export function buildPressureStorySystemInstructionV1(
 }
 
 /** Decision copy can vary, but its action identities and allowed meanings cannot. */
-export function buildPressureDecisionSystemInstructionV1(
+export function buildPressureTurnPresentationSystemInstructionV1(
 ): string {
   return [
-    "你为中国历史互动剧生成决策前场景和三个建议行动的自然表达。",
-    "只返回一个 JSON 对象，字段必须且只能是 sceneText、question、options，不得输出 Markdown。",
-    "previousNarrative 是上一段真实展示文本且authority为CONTINUITY_ONLY；currentScene 是当前地点、人物和压力材料；只有真实 currentState、situation 与 legalActionContracts 能定义持久状态和行动效果。",
+    "你是中国历史互动剧的场景叙事者。一次完成本轮玩家可见的文学剧情，以及紧接着的决策表达。",
+    "只返回一个 JSON 对象，字段必须且只能是 sceneText、question、options、usedFactRefs、claims，不得输出 Markdown。",
+    "生成顺序必须是：先完成一段可以独立阅读的文学场景，再让场景末尾的具体压力自然逼出 question，最后表达合法行动。",
+    "previousNarrative 是上一段真实展示文本且authority为CONTINUITY_ONLY；currentScene 是当前地点、人物和压力材料；只有 authorityDraft.currentAuthorityState 能定义已发生的持久状态，legalActionContracts 只定义尚未执行的合法方向。",
+    "authorityDraft.currentAuthorityState 是本轮唯一允许引用的持久事实卡；usedFactRefs 只能填写正文实际使用的 factId，不得虚构引用。",
     "playerIdentity 只决定玩家角色的权限、观察和反应；characterRules 与 dialogueExamples 只用于语气，不得转化为事实、规则效果或代价。",
     "严格遵守 factBoundary.forbiddenInferences：身份背景、合法行动方向和抽象压力都不能自行转化为已经发生的现场事实。",
     "上一段剧情里的临时人物、物件、时间和环境细节可以继续用于自然表达，但不能据此新增资源账、证据保管、行动效果、代价、责任归属或其他持久事实。",
     "无论 currentScene.phase 是 OPENING 还是 CONTINUATION，sceneText 都必须根据 currentScene、玩家身份、真实当前状态和可见压力生成一段完整的决策前现场剧情；CONTINUATION 必须承接 continuityExcerpt 的结果，但不能复制成结算报告，也不能把上一章结果冒充下一章现场。",
-    "sceneText 应包含可感知的现场、人物动作或对话、当前冲突和逼近的压力，形成至少两个自然段；不得出现世界序列、结果带、数值清单或其他工程表达。",
+    "sceneText 必须是180至1200个简体中文字符，包含可感知的现场、人物动作或对白、信息冲突和逼近压力，形成至少三个自然段；不得写成摘要、说明书或结算报告。",
+    "可以补充不改变持久状态的临时文学细节，但它们不能写入 usedFactRefs 或 claims，也不能成为后续轮次的权威状态。",
     "不得替玩家角色下达 legalActionContracts 中任何一个正式行动；必须停在他即将选择之前。",
     "question 必须由 sceneText 最后一个具体压力自然逼出，不能使用空泛的‘你要如何应对’。",
     "options 必须逐项返回 legalActionContracts 中完全相同的 actionType，数量、集合均不得改变；每一个选项对象都必须显式包含 actionType、label、description 三个字段。",
@@ -90,10 +102,15 @@ export function buildPressureDecisionSystemInstructionV1(
     "label 和 description 只能改写各行动合同的 intendedAction，说明玩家现在准备做什么及其直接目的；不能从身份背景、历史常识或想象推导新代价。",
     "只有 legalActionContracts.realTradeoff 非 null 时才可简短表达该真实代价；为 null 时禁止提及其他选项、仍需另行安排、顾不上什么或无人补位。",
     "选项不得保证结果已经发生，也不得重复解释页面上已经可见的其他选项。",
+    "本轮停在决策之前，没有产生新的持久结算，因此 claims 必须返回空数组。",
     "不得出现 actionType、Catalog、Pressure Spine、WorkingDelta、stateAfter、系统字段、规则结算等工程语言。",
     "所有玩家可见文字使用自然简体中文。",
   ].join("\n");
 }
+
+/** @deprecated Use the unified turn-presentation prompt. */
+export const buildPressureDecisionSystemInstructionV1 =
+  buildPressureTurnPresentationSystemInstructionV1;
 
 export function assertPressurePromptLayerContractV1(
   pack: Readonly<PressureDecisionStoryPackV1>,

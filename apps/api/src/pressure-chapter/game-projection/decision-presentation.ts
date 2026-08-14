@@ -2,7 +2,7 @@ import { sha256Canonical } from "@ai-story/shared";
 import {
   loadSangtianPressureStorySourceV1,
 } from "@ai-story/templates";
-import { PRESSURE_DECISION_OUTPUT_REQUIREMENTS_V1 } from "../production-config/pressure-prompt-layers";
+import { PRESSURE_TURN_OUTPUT_REQUIREMENTS_V1 } from "../production-config/pressure-prompt-layers";
 import type {
   PressureGameChapterProjectionV1,
   PressureGameDecisionProjectionV1,
@@ -12,9 +12,13 @@ import type {
   PressureGameSituationProjectionV1,
   PressureGameViewerProjectionV1,
 } from "./contracts";
+import {
+  compilePressureTurnAuthorityDraftV1,
+  type PressureTurnAuthorityDraftV1,
+} from "./turn-authority-draft";
 
-export interface PressureDecisionPresentationContextV1 {
-  schemaVersion: "pressure_decision_presentation_context_v1";
+export interface PressureTurnPresentationContextV1 {
+  schemaVersion: "pressure_turn_presentation_context_v1";
   chapter: Pick<
     PressureGameChapterProjectionV1,
     "chapterId" | "chapterRuntimeId" | "title" | "workingRevision"
@@ -35,6 +39,7 @@ export interface PressureDecisionPresentationContextV1 {
   situation: PressureGameSituationProjectionV1;
   metrics: PressureGameMetricProjectionV1[];
   resources: PressureGameResourceProjectionV1[];
+  authorityDraft: PressureTurnAuthorityDraftV1;
   previousNarrative: Pick<
     PressureGameNarrativeProjectionV1,
     "projectionKind" | "sourceId" | "sourceCommitHash" | "text"
@@ -50,7 +55,8 @@ export interface PressureDecisionPresentationContextV1 {
   factBoundary: Readonly<{
     identityAndCharacterRulesAreNotEvents: true;
     previousNarrativeIsNotAuthority: true;
-    durableStateSources: readonly ["CURRENT_STATE", "SITUATION", "LEGAL_ACTION_CONTRACTS"];
+    legalActionsAreNotCompletedResults: true;
+    durableStateSources: readonly ["TURN_AUTHORITY_DRAFT"];
     forbiddenInferences: readonly string[];
   }>;
   continuityExcerpt: string;
@@ -63,12 +69,12 @@ export interface PressureDecisionPresentationContextV1 {
       description: string;
     }>;
   }>;
-  outputRequirements: typeof PRESSURE_DECISION_OUTPUT_REQUIREMENTS_V1;
+  outputRequirements: typeof PRESSURE_TURN_OUTPUT_REQUIREMENTS_V1;
   instruction: string;
   contextHash: string;
 }
 
-export interface PressureDecisionPresentationCandidateV1 {
+export interface PressureTurnPresentationCandidateV1 {
   sceneText: string;
   question: string;
   options: Array<{
@@ -76,15 +82,17 @@ export interface PressureDecisionPresentationCandidateV1 {
     label: string;
     description: string;
   }>;
+  usedFactRefs: string[];
+  claims: [];
 }
 
-export interface PressureDecisionPresentationProviderPortV1 {
-  renderDecisionPresentation(
-    context: Readonly<PressureDecisionPresentationContextV1>,
+export interface PressureTurnPresentationProviderPortV1 {
+  renderTurnPresentation(
+    context: Readonly<PressureTurnPresentationContextV1>,
   ): Promise<unknown>;
 }
 
-export interface PressureDecisionPresentationInputV1 {
+export interface PressureTurnPresentationInputV1 {
   chapter: PressureGameChapterProjectionV1;
   viewer: PressureGameViewerProjectionV1;
   situation: PressureGameSituationProjectionV1;
@@ -102,18 +110,18 @@ const FALSE_GUARANTEE = /(一定成功|必然成功|彻底解决|全部解决|�
  * never enter the Provider output: invalid output returns the original
  * Catalog/Pressure presentation as one whole fallback.
  */
-export class PressureDecisionPresentationServiceV1 {
+export class PressureTurnPresentationServiceV1 {
   private readonly cache = new Map<
     string,
     Promise<PressureGameDecisionProjectionV1>
   >();
 
   constructor(
-    private readonly provider: PressureDecisionPresentationProviderPortV1 | null,
+    private readonly provider: PressureTurnPresentationProviderPortV1 | null,
   ) {}
 
   async present(
-    input: Readonly<PressureDecisionPresentationInputV1>,
+    input: Readonly<PressureTurnPresentationInputV1>,
   ): Promise<PressureGameDecisionProjectionV1> {
     const fallback = structuredClone(input.decision);
     if (input.narrative.projectionKind === "GENESIS_NARRATIVE") {
@@ -130,7 +138,7 @@ export class PressureDecisionPresentationServiceV1 {
       !this.provider
       || input.decision.options.length === 0
     ) return fallback;
-    const context = compilePressureDecisionPresentationContextV1(input);
+    const context = compilePressureTurnPresentationContextV1(input);
     const cached = this.cache.get(context.contextHash);
     if (cached) {
       try {
@@ -151,14 +159,14 @@ export class PressureDecisionPresentationServiceV1 {
   }
 
   private async generate(
-    context: PressureDecisionPresentationContextV1,
+    context: PressureTurnPresentationContextV1,
     fallback: PressureGameDecisionProjectionV1,
   ): Promise<PressureGameDecisionProjectionV1> {
     try {
-      const raw = await this.provider!.renderDecisionPresentation(
+      const raw = await this.provider!.renderTurnPresentation(
         structuredClone(context),
       );
-      const candidate = validatePressureDecisionPresentationCandidateV1(
+      const candidate = validatePressureTurnPresentationCandidateV1(
         raw,
         context,
       );
@@ -180,7 +188,7 @@ export class PressureDecisionPresentationServiceV1 {
       };
     } catch (error) {
       console.warn(JSON.stringify({
-        event: "PRESSURE_DECISION_PRESENTATION_FALLBACK",
+        event: "PRESSURE_TURN_PRESENTATION_FALLBACK",
         contextHash: context.contextHash,
         chapterId: context.chapter.chapterId,
         decisionPointId: context.decisionPointId,
@@ -191,9 +199,9 @@ export class PressureDecisionPresentationServiceV1 {
   }
 }
 
-export function compilePressureDecisionPresentationContextV1(
-  input: Readonly<PressureDecisionPresentationInputV1>,
-): PressureDecisionPresentationContextV1 {
+export function compilePressureTurnPresentationContextV1(
+  input: Readonly<PressureTurnPresentationInputV1>,
+): PressureTurnPresentationContextV1 {
   if (input.chapter.chapterId === "P0") {
     throw new Error("PRESSURE_DECISION_PRESENTATION_P0_FORBIDDEN");
   }
@@ -207,8 +215,9 @@ export function compilePressureDecisionPresentationContextV1(
     throw new Error("PRESSURE_DECISION_PRESENTATION_CONTINUITY_REQUIRED");
   }
   const continuityExcerpt = decisionContinuityExcerpt(continuityText);
+  const authorityDraft = compilePressureTurnAuthorityDraftV1(input);
   const base = {
-    schemaVersion: "pressure_decision_presentation_context_v1" as const,
+    schemaVersion: "pressure_turn_presentation_context_v1" as const,
     chapter: {
       chapterId: input.chapter.chapterId,
       chapterRuntimeId: input.chapter.chapterRuntimeId,
@@ -240,6 +249,7 @@ export function compilePressureDecisionPresentationContextV1(
     situation: structuredClone(input.situation),
     metrics: structuredClone(input.metrics),
     resources: structuredClone(input.resources),
+    authorityDraft,
     previousNarrative: {
       projectionKind: input.narrative.projectionKind,
       sourceId: input.narrative.sourceId,
@@ -258,11 +268,8 @@ export function compilePressureDecisionPresentationContextV1(
     factBoundary: {
       identityAndCharacterRulesAreNotEvents: true as const,
       previousNarrativeIsNotAuthority: true as const,
-      durableStateSources: [
-        "CURRENT_STATE",
-        "SITUATION",
-        "LEGAL_ACTION_CONTRACTS",
-      ] as const,
+      legalActionsAreNotCompletedResults: true as const,
+      durableStateSources: ["TURN_AUTHORITY_DRAFT"] as const,
       forbiddenInferences: [
         "身份背景中的长期压力不等于当前现场已经发生对应事件。",
         "合法行动方向不等于执行该行动所需人物、物件或证据已经出现在现场。",
@@ -282,12 +289,12 @@ export function compilePressureDecisionPresentationContextV1(
         description: `自然改写“${option.description}”并说明直接目的；realTradeoff为null时不补写代价或其他选项。`,
       })),
     },
-    outputRequirements: PRESSURE_DECISION_OUTPUT_REQUIREMENTS_V1,
+    outputRequirements: PRESSURE_TURN_OUTPUT_REQUIREMENTS_V1,
     instruction: [
-      "只写当前玩家可见的连续中文戏剧场景，承接上一段真实叙事。",
-      "通过人物动作、消息、追问和压力自然逼出当前问题。",
-      "逐一改写已有合法行动的表达，不新增行动，不宣告行动结果。",
-      "sceneText 是决策前剧情，question 是人物此刻必须回答的问题。",
+      "一次完成当前玩家可见的连续中文文学剧情，以及紧接着的决策表达。",
+      "先写完整场景，再由场景末尾的具体压力自然逼出问题。",
+      "逐一改写已有合法行动，不新增行动，不替玩家执行行动，不宣告行动结果。",
+      "临时文学细节只服务本轮阅读，不得升级成claims或下一轮权威状态。",
     ].join(" "),
   };
   return {
@@ -319,13 +326,17 @@ function decisionContinuityExcerpt(value: string): string {
     : [...excerpt].slice(-1_200).join("");
 }
 
-export function validatePressureDecisionPresentationCandidateV1(
+export function validatePressureTurnPresentationCandidateV1(
   value: unknown,
-  context: Readonly<PressureDecisionPresentationContextV1>,
-): PressureDecisionPresentationCandidateV1 {
+  context: Readonly<PressureTurnPresentationContextV1>,
+): PressureTurnPresentationCandidateV1 {
   const candidate = plainObject(value, "candidate");
-  exactKeys(candidate, ["sceneText", "question", "options"], "candidate");
-  const sceneText = boundedText(candidate.sceneText, "candidate.sceneText", 30, 1_200);
+  exactKeys(
+    candidate,
+    ["sceneText", "question", "options", "usedFactRefs", "claims"],
+    "candidate",
+  );
+  const sceneText = boundedText(candidate.sceneText, "candidate.sceneText", 180, 1_200);
   const question = boundedText(candidate.question, "candidate.question", 4, 80);
   if (ENGINEERING_COPY.test(sceneText) || ENGINEERING_COPY.test(question)) {
     throw new Error("PRESSURE_DECISION_PRESENTATION_ENGINEERING_COPY");
@@ -364,7 +375,26 @@ export function validatePressureDecisionPresentationCandidateV1(
   if (seen.size !== allowed.size) {
     throw new Error("PRESSURE_DECISION_PRESENTATION_ACTION_SET");
   }
-  return { sceneText, question, options };
+  if (!Array.isArray(candidate.usedFactRefs)) {
+    throw new Error("PRESSURE_TURN_PRESENTATION_FACT_REFS");
+  }
+  const allowedFactRefs = new Set(
+    context.authorityDraft.currentAuthorityState.map((fact) => fact.factId),
+  );
+  const usedFactRefs = candidate.usedFactRefs.map((value, index) => {
+    const factRef = boundedText(value, `candidate.usedFactRefs[${index}]`, 1, 160);
+    if (!allowedFactRefs.has(factRef)) {
+      throw new Error("PRESSURE_TURN_PRESENTATION_UNKNOWN_FACT_REF");
+    }
+    return factRef;
+  });
+  if (new Set(usedFactRefs).size !== usedFactRefs.length) {
+    throw new Error("PRESSURE_TURN_PRESENTATION_DUPLICATE_FACT_REF");
+  }
+  if (!Array.isArray(candidate.claims) || candidate.claims.length !== 0) {
+    throw new Error("PRESSURE_TURN_PRESENTATION_CLAIMS_FORBIDDEN");
+  }
+  return { sceneText, question, options, usedFactRefs, claims: [] };
 }
 
 function plainObject(value: unknown, path: string): Record<string, unknown> {
