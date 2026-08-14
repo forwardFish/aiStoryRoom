@@ -1,0 +1,99 @@
+{
+  "seatLens": {
+    "seatId": "seat.qingliu_law",
+    "actorId": "actor.tan_lun",
+    "opening": {
+      "title": "见证未齐",
+      "dramaticPurpose": "让谭纶承认尚不知最高指使，只追问可核验的经手、签押与保管。",
+      "text": "谭纶把亲眼所见、听人转述和尚待查证的消息分开摆放。他知道九处堰口的异常不像寻常失修，却不知道最高处是谁授意，也不肯让愤怒替代证据。送信河工只认得来人的腰牌，记不清文书是否当面展开。谭纶问得很慢：“谁传，谁收，谁改过，谁肯作见证？原件若不能留，副本由谁签收？”窗纸被雨打得发响。水退以后，未经保管与见证的话最先消失。",
+      "factRefs": [
+        "known.n1.qingliu_law.pressure",
+        "known.n1.qingliu_law.claim.n1-sf-02",
+        "known.n1.qingliu_law.object.sealed_evidence_index",
+        "obj.breach_order_chain"
+      ],
+      "stopCondition": "停在谭纶尚未确定先保护哪一名经手人与把材料送往哪一条合法渠道之时。"
+    },
+    "afterPrepareReactions": {
+      "controlled": {
+        "title": "回执成线",
+        "dramaticPurpose": "让初步保全产生新的见证、保管与交接要求。",
+        "text": "有一部分材料已经由人当面收下，也留下了能够追问的回执。谭纶仍不许把它称作完整真相：“收件人、见证、封缄都要对得上。现在最怕的不是没有纸，是人人手里各有一张，却没有谁肯承认从谁那里得来。”",
+        "factRefs": [
+          "known.n1.qingliu_law.object.sealed_evidence_index",
+          "obj.breach_order_chain"
+        ],
+        "stopCondition": "停在材料已有去处，但保管与见证尚未连成可核验链条之时。"
+      },
+      "contested": {
+        "title": "各执一纸",
+        "dramaticPurpose": "把碎片化记录与相反命令变成法度席必须审查的程序冲突。",
+        "text": "两份回令都有人声称亲见，签押和送达却对不上。谭纶直言：“我不知道哪一份在先，也不知道哪一份被改过。先封存各自持有的纸，再分开问经手；谁若急着把两份合成一个说法，便先说明自己为何着急。”",
+        "factRefs": [
+          "known.n1.qingliu_law.object.sealed_evidence_index",
+          "obj.breach_order_chain"
+        ],
+        "stopCondition": "停在两套材料尚未分开保管、见证与核验，任何定论都不能成立之时。"
+      },
+      "lostInitiative": {
+        "title": "口说将散",
+        "dramaticPurpose": "让时间损失表现为见证离散与书面痕迹被口头说法取代。",
+        "text": "迟来的查问只找回零散经手痕迹，更多人开始说“听上头吩咐”，却无人肯写下上头是谁。谭纶没有替他们补全：“不知道便写不知道。先保住还在的人与纸，别为了一个完整故事，把真实的缺口也抹掉。”",
+        "factRefs": [
+          "known.n1.qingliu_law.pressure",
+          "known.n1.qingliu_law.object.sealed_evidence_index",
+          "obj.breach_order_chain"
+        ],
+        "stopCondition": "停在可见证材料正迅速减少，而谭纶尚未确定优先保全次序之时。"
+      }
+    },
+    "commitPressure": {
+      "title": "封存与送达",
+      "dramaticPurpose": "把证据保全压成一次明确的保管、签收、见证和拒签决断。",
+      "text": "封缄纸、索引与收件回执已经摆齐，谭纶却仍缺一项选择：材料由谁保管，副本送到哪里，哪一道未核实口令必须当场拒绝。有人催他先写结论，他摇头：“结论可以晚，交接不能空。谁收、谁见、谁保管，先落笔；否则明日只剩各说各话。”",
+      "factRefs": [
+        "known.n1.qingliu_law.object.sealed_evidence_index",
+        "obj.breach_order_chain",
+        "obj.law_review_channel"
+      ],
+      "stopCondition": "停在谭纶尚未指定保管与收件路径，也尚未落下拒签之笔之时。"
+    },
+    "settlementReactions": {
+      "high": {
+        "title": "证据未完",
+        "dramaticPurpose": "让可核验记录成为下一步保护持有人与合法送达的起点。",
+        "text": "至少一条毁堤命令或经手记录已经可验，多数高风险村落也及时撤出。谭纶只说：“这证明材料没有全丢，不证明责任已经查明。”他随即追问原件在谁手、认证副本由谁收、见证人能否在下一次询问前得到保护。",
+        "factRefs": [
+          "frozen.N1.HIGH.fact.02",
+          "frozen.N1.HIGH.fact.03",
+          "known.n1.qingliu_law.object.sealed_evidence_index"
+        ],
+        "stopCondition": "停在可核验记录已有基础，而合法保管与后续见证仍未安排之时。"
+      },
+      "mid": {
+        "title": "冲突须存",
+        "dramaticPurpose": "阻止相反记录被草率合并，让矛盾本身进入下一章。",
+        "text": "多处堰口失守，疏散只做成一部分，毁堤责任又有相反说法。谭纶承认：“我不知道哪一份最终为真。”他要求两套记录分别封存、分别列出经手，不许先删掉彼此冲突之处：“矛盾也是事实，谁抹平它，谁便替后来的人作了假。”",
+        "factRefs": [
+          "frozen.N1.MID.fact.01",
+          "frozen.N1.MID.fact.02",
+          "frozen.N1.MID.fact.03",
+          "obj.breach_order_chain"
+        ],
+        "stopCondition": "停在冲突材料尚未分别封存并取得独立见证之时。"
+      },
+      "low": {
+        "title": "片纸难保",
+        "dramaticPurpose": "让记录被压与撤离迟缓转成保护残余经手痕迹的紧迫任务。",
+        "text": "大范围民生冲击已经形成，撤离严重迟缓，关键记录又被压下。谭纶没有凭空补出完整命令，只把还能找到的经手、收件和缺失逐一记下：“剩下的是片段，便按片段保。最怕有人借灾重，逼我们把不知道的地方写成已经知道。”",
+        "factRefs": [
+          "frozen.N1.LOW.fact.01",
+          "frozen.N1.LOW.fact.02",
+          "frozen.N1.LOW.fact.03",
+          "known.n1.qingliu_law.object.sealed_evidence_index"
+        ],
+        "stopCondition": "停在残余材料尚未安全交接，而先成公开说法正要覆盖这些缺口之时。"
+      }
+    }
+  }
+}

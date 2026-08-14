@@ -1,0 +1,141 @@
+{
+  "npcReactions": [
+    {
+      "reactionId": "reaction.n1.hu.high",
+      "actorId": "actor.hu_zongxian",
+      "phase": "SETTLEMENT",
+      "triggerTags": [
+        "high"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "text": "胡宗宪听完受灾与撤离回报，没有许人称功：“把军务损耗和可核验的经手记录同报。救下来的与付出去的，都要有人署名。”",
+      "factRefs": [
+        "frozen.N1.HIGH.fact.01",
+        "frozen.N1.HIGH.fact.02",
+        "frozen.N1.HIGH.fact.03"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.zheng.mid",
+      "actorId": "actor.zheng_michang",
+      "phase": "SETTLEMENT",
+      "triggerTags": [
+        "mid",
+        "authority_conflict"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "text": "郑泌昌把两套记录分开：“印都在，话却相反。省府认哪一道，先查送达与经手；不能等京师来替我们挑。”",
+      "factRefs": [
+        "frozen.N1.MID.fact.01",
+        "frozen.N1.MID.fact.02",
+        "frozen.N1.MID.fact.03"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.tan.low",
+      "actorId": "actor.tan_lun",
+      "phase": "SETTLEMENT",
+      "triggerTags": [
+        "low",
+        "records_preserved"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "text": "谭纶只收拢仍能核验的片段：“不知道的地方就写不知道。灾越重，越不能拿一个顺口说法盖住缺失的经手。”",
+      "factRefs": [
+        "frozen.N1.LOW.fact.01",
+        "frozen.N1.LOW.fact.02",
+        "frozen.N1.LOW.fact.03"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.shen.low",
+      "actorId": "actor.shen_yishi",
+      "phase": "SETTLEMENT",
+      "triggerTags": [
+        "low",
+        "resource_gap"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "text": "沈一石让人先收起问田价的纸：“粮是借是赈，谁作保，先说清。趁人无粮收田，商会买下的是后患。”",
+      "factRefs": [
+        "frozen.N1.LOW.fact.01",
+        "frozen.N1.LOW.fact.02",
+        "obj.merchant_grain_pool"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.yang.mid",
+      "actorId": "actor.yang_jinshui",
+      "phase": "SETTLEMENT",
+      "triggerTags": [
+        "mid",
+        "authority_conflict"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "text": "杨金水不许人用宫廷名义压过相反文书：“谁传、谁收、谁改过，照实列。宫里的名头不能替地方合并两道令。”",
+      "factRefs": [
+        "frozen.N1.MID.fact.01",
+        "frozen.N1.MID.fact.03",
+        "obj.weaving_records"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.yan.high",
+      "actorId": "actor.yan_shifan",
+      "phase": "SETTLEMENT",
+      "triggerTags": [
+        "high",
+        "resource_gap"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant",
+        "seat.sili_weaving",
+        "seat.cabinet_finance"
+      ],
+      "text": "严世蕃看完好消息仍追问：“抢险用了哪些军务准备，谁核、谁补；可验材料由谁送、由谁收，不能只报一句受控。”",
+      "factRefs": [
+        "frozen.N1.HIGH.fact.01",
+        "frozen.N1.HIGH.fact.03",
+        "obj.capital_receipt_channel"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "seatLens": {
+    "seatId": "seat.sili_weaving",
+    "actorId": "actor.yang_jinshui",
+    "opening": {
+      "title": "织造封簿",
+      "dramaticPurpose": "让杨金水在异常堰情、织造记录与宫廷名义之间控制可说与不可说。",
+      "text": "杨金水把织造局的供货与银路记录合上，手指仍按在封皮上。他知道九处堰口的异常不像寻常失修，却不知道外廷已经掌握到哪一步。随从问，是先封簿，还是先让查问的人看一眼；织造差使仍要照常交代，任何停顿也会引来另一层追问。杨金水只道：“宫里的名头可以叫人让路，也会叫所有人的眼睛都盯过来。外头要交代，里头要体面；先说谁有权封，谁来见证，封后从哪一条路报进去。”门外已经有人递名帖求见。",
+      "factRefs": [
+        "known.n1.sili_weaving.pressure",
+        "known.n1.sili_weaving.claim.n1-sf-02",
+        "known.n1.sili_weaving.object.weaving_records",
+        "obj.weaving_records",
+        "obj.inner_court_dispatch_channel"
+      ],
+      "stopCondition": "停在杨金水尚未决定记录的封存方式与内外递送边界之时。"
+    },
+    "afterPrepareReactions": {
+      "controlled": {
+        "title": "局稳人来",
+        "dramaticPurpose": "让局势稍稳后对织造记录的追问变得更具体、更危险。",
+        "text": "堰情暂时有了控制，来查经手的人反而更快到了织造局。杨金水不许随从用宫里名头把人全挡回去：“挡得太干净，便像我们知道得太多。先问他奉谁的差、要看哪几页、看后由谁具名收件。”",
+        "factRefs": [
+          "known.n1.sili_weaving.object.weaving_records",
+          "obj.weaving_records"
+        ],
+        "stopCondition": "停在外廷查问已到门前，而织造局尚未划定可查与封存的界线之时。"
+      },
+      "contested": {
+        "title": "两路索簿",
+        "dramaticPurpose": "把外廷查问与内廷保管要求推成同一份记录的保管冲突。",
+        "text": "外头要调看记录，里头又催先封后报，两路话都说得急。杨金水把名帖压在簿上：“一份簿不能同时在两处。谁拿走、谁签收、谁能送回，先写清；只说奉了哪边的口谕，不足以让我交东西。”",
+        "factRefs": [
+          "known.n1.sili_weaving.object.weaving_records",
+          "obj.weaving_records",
+          "obj.inner_court_dispatch_channel"
+        ],
+        "stopCondition": "停在两条权力渠道同时索取记录，而主保管尚未确定之时。"
+      },
+      "lostInitiative": {
+        "title": "封迟生疑",
+        "dramaticPurpose": "让迟延使任何封存都带上自保嫌疑，并逼迫织造局说明递送路径。",
+        "text": "查问已经在外头传开，此时再封簿，每一道封条都会被人问为何不早不晚。杨金水没有让人撕页，也没有许人乱翻：“迟了便迟了，别再添灭证的罪名。把现状、经手和封存时辰写明，再决定送里头还是交外头见证。”",
+        "factRefs": [
+          "known.n1.sili_weaving.pressure",
+          "known.n1.sili_weaving.object.weaving_records",
+          "obj.weaving_records"
+        ],
+        "stopCondition": "停在封存行为本身已受怀疑，而递送与见证尚未选定之时。"
+      }
+    },
+    "commitPressure": {
+      "title": "内外一线",
+      "dramaticPurpose": "把织造记录、宫廷名义与密奏渠道锁定到一次可追溯的正式处置。",
+      "text": "封条、收件名册和内廷递送文书同时摆在杨金水面前。织造差使不能因查簿而断，记录也不能为了保住宫廷体面便失去经手。织造局可以封存，可以交外廷核验，也可以沿既有渠道报入宫中，却不能让同一份记录在账面上同时归两处。他让随从重念经手和收件：“拿宫里的名头吓人容易，真要落笔，先说这份材料由谁负责到最后。”",
+      "factRefs": [
+        "known.n1.sili_weaving.object.weaving_records",
+        "obj.weaving_records",
+        "obj.inner_court_dispatch_channel",
+        "obj.weaving_bureau_banner"
+      ],
+      "stopCondition": "停在杨金水尚未确认记录的唯一保管者与对内对外说法之时。"
+    },
+    "settlementReactions": {
+      "high": {
+        "title": "记录会问人",
+        "dramaticPurpose": "让责任链可验后，织造局必须决定如何面对可能指向自身的追问。",
+        "text": "灾情被压在少数堰区，多数高风险村落撤出，至少一条命令或经手记录已经可验。杨金水看着封好的簿册：“能查是好事，查到织造名下时也得有人答。外头能写到哪一层，里头由哪一条渠道先报，须在他们来取簿前定下。”",
+        "factRefs": [
+          "frozen.N1.HIGH.fact.01",
+          "frozen.N1.HIGH.fact.02",
+          "frozen.N1.HIGH.fact.03",
+          "known.n1.sili_weaving.object.weaving_records"
+        ],
+        "stopCondition": "停在织造局尚未确定对外披露边界与内廷先行收件路径之时。"
+      },
+      "mid": {
+        "title": "宫名难遮",
+        "dramaticPurpose": "让冲突记录迫使织造局区分地方责任与宫廷名义。",
+        "text": "多处堰口失守，撤离只完成一部分，责任说法又彼此相冲。杨金水不许人拿“宫里差使”四字替任何一份文书加重：“谁传、谁收、谁改过，照实列。宫廷名义只能保护合法递送，不能替地方把相反的两道令说成一道。”",
+        "factRefs": [
+          "frozen.N1.MID.fact.01",
+          "frozen.N1.MID.fact.02",
+          "frozen.N1.MID.fact.03",
+          "obj.weaving_records"
+        ],
+        "stopCondition": "停在织造局尚未选择提交哪一份经手说明，也未划清名义边界之时。"
+      },
+      "low": {
+        "title": "密奏亦留痕",
+        "dramaticPurpose": "让关键记录被压后的密奏选择同时承担救材料与被视为遮掩的风险。",
+        "text": "民生冲击已经扩大，撤离严重迟缓，关键记录又被压下。随从劝杨金水只走密奏，他却先问：“密奏送了什么、谁送、谁收，一样会留痕。若外头只剩失修一说，织造局手里的片段是保命，还是替人遮掩，须先想明白。”",
+        "factRefs": [
+          "frozen.N1.LOW.fact.01",
+          "frozen.N1.LOW.fact.02",
+          "frozen.N1.LOW.fact.03",
+          "known.n1.sili_weaving.object.weaving_records"
+        ],
+        "stopCondition": "停在织造局尚未决定是否递送残余记录及其可见范围之时。"
+      }
+    }
+  }
+}

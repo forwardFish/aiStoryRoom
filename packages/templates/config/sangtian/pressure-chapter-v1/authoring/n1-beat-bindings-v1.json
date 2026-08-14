@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "pressure_chapter_beat_bindings_v1",
+  "chapterId": "N1",
+  "decisionContracts": [
+    {
+      "decisionContractRef": "N1.weir_crisis.prepare.intake",
+      "catalogDecisionPointRef": "N1.weir_crisis",
+      "actionPhase": "PREPARE",
+      "pressure": "九处堰口同时承压，调兵口令互相抵触，第一份命令必须能真正送达。",
+      "advanceCondition": {
+        "kind": "AUTHORITY_NEXT_DECISION_PIN",
+        "successorDecisionContractRefs": [
+          "N1.weir_crisis.prepare.dispatch"
+        ]
+      }
+    },
+    {
+      "decisionContractRef": "N1.weir_crisis.prepare.dispatch",
+      "catalogDecisionPointRef": "N1.weir_crisis",
+      "actionPhase": "PREPARE",
+      "pressure": "第一轮行动已经占用人手、船只、文书和时间，回报正在暴露新的缺口。",
+      "advanceCondition": {
+        "kind": "AUTHORITY_NEXT_DECISION_PIN",
+        "successorDecisionContractRefs": [
+          "N1.weir_crisis.prepare.reconcile"
+        ]
+      }
+    },
+    {
+      "decisionContractRef": "N1.weir_crisis.prepare.reconcile",
+      "catalogDecisionPointRef": "N1.weir_crisis",
+      "actionPhase": "PREPARE",
+      "pressure": "相反命令争夺同一批资源，现场需要一条能够撤换旧令的执行链。",
+      "advanceCondition": {
+        "kind": "AUTHORITY_NEXT_DECISION_PIN",
+        "successorDecisionContractRefs": [
+          "N1.weir_crisis.prepare.evidence"
+        ]
+      }
+    },
+    {
+      "decisionContractRef": "N1.weir_crisis.prepare.evidence",
+      "catalogDecisionPointRef": "N1.weir_crisis",
+      "actionPhase": "PREPARE",
+      "pressure": "抢险与证据保全同时倒计时，经手和见证正在离散。",
+      "advanceCondition": {
+        "kind": "AUTHORITY_NEXT_DECISION_PIN",
+        "successorDecisionContractRefs": [
+          "N1.weir_crisis.commit.resources"
+        ]
+      }
+    },
+    {
+      "decisionContractRef": "N1.weir_crisis.commit.resources",
+      "catalogDecisionPointRef": "N1.weir_crisis",
+      "actionPhase": "COMMIT",
+      "pressure": "可挽回范围缩窄，剩余船粮兵力不能顾全所有告急处。",
+      "advanceCondition": {
+        "kind": "AUTHORITY_NEXT_DECISION_PIN",
+        "successorDecisionContractRefs": [
+          "N1.weir_crisis.commit.accountability"
+        ]
+      }
+    },
+    {
+      "decisionContractRef": "N1.weir_crisis.commit.accountability",
+      "catalogDecisionPointRef": "N1.weir_crisis",
+      "actionPhase": "COMMIT",
+      "pressure": "任何更正都必须具名，含混命令会把责任和风险继续推给现场。",
+      "advanceCondition": {
+        "kind": "AUTHORITY_NEXT_DECISION_PIN",
+        "successorDecisionContractRefs": [
+          "N1.weir_crisis.commit.review"
+        ]
+      }
+    },
+    {
+      "decisionContractRef": "N1.weir_crisis.commit.review",
+      "catalogDecisionPointRef": "N1.weir_crisis",
+      "actionPhase": "COMMIT",
+      "pressure": "封缄前只允许核对权威事实、行动去向和已经明确的代价。",
+      "advanceCondition": {
+        "kind": "AUTHORITY_NEXT_DECISION_PIN",
+        "successorDecisionContractRefs": [
+          "N1.weir_crisis.commit.seal"
+        ]
+      }
+    },
+    {
+      "decisionContractRef": "N1.weir_crisis.commit.seal",
+      "catalogDecisionPointRef": "N1.weir_crisis",
+      "actionPhase": "COMMIT",
+      "pressure": "最后正式行动一经送达即进入章末Settlement，不再打开下一决策。",
+      "advanceCondition": {
+        "kind": "CHAPTER_SUMMARY_READY",
+        "successorDecisionContractRefs": []
+      }
+    }
+  ],
+  "chapterSummaryMaterialRefs": [
+    "publicMainline.settlementResults.high",
+    "publicMainline.transitions.high",
+    "chapterSummaryFrames.high",
+    "publicMainline.settlementResults.mid",
+    "publicMainline.transitions.mid",
+    "chapterSummaryFrames.mid",
+    "publicMainline.settlementResults.low",
+    "publicMainline.transitions.low",
+    "chapterSummaryFrames.low",
+    "seatLenses.seat.zhejiang_governor.settlementReactions.high",
+    "seatLenses.seat.zhejiang_governor.settlementReactions.mid",
+    "seatLenses.seat.zhejiang_governor.settlementReactions.low",
+    "seatLenses.seat.zhejiang_administration.settlementReactions.high",
+    "seatLenses.seat.zhejiang_administration.settlementReactions.mid",
+    "seatLenses.seat.zhejiang_administration.settlementReactions.low",
+    "seatLenses.seat.qingliu_law.settlementReactions.high",
+    "seatLenses.seat.qingliu_law.settlementReactions.mid",
+    "seatLenses.seat.qingliu_law.settlementReactions.low",
+    "seatLenses.seat.jiangnan_merchant.settlementReactions.high",
+    "seatLenses.seat.jiangnan_merchant.settlementReactions.mid",
+    "seatLenses.seat.jiangnan_merchant.settlementReactions.low",
+    "seatLenses.seat.sili_weaving.settlementReactions.high",
+    "seatLenses.seat.sili_weaving.settlementReactions.mid",
+    "seatLenses.seat.sili_weaving.settlementReactions.low",
+    "seatLenses.seat.cabinet_finance.settlementReactions.high",
+    "seatLenses.seat.cabinet_finance.settlementReactions.mid",
+    "seatLenses.seat.cabinet_finance.settlementReactions.low",
+    "npcReactions.19",
+    "npcReactions.20",
+    "npcReactions.21",
+    "npcReactions.22",
+    "npcReactions.23",
+    "npcReactions.24"
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "seatLens": {
+    "seatId": "seat.jiangnan_merchant",
+    "actorId": "actor.shen_yishi",
+    "opening": {
+      "title": "船粮有数",
+      "dramaticPurpose": "让沈一石只凭已知水患与自有船队，在救急、粮路和契约风险间权衡。",
+      "text": "沈一石走进账房时，船主已经把埠头能动的船、要守的粮路和等工钱的船夫写在一张清单上。他没有收到能够说明堰口为何告急的正式材料，只知道水势逼近，官府随时会来要船。领头船主问：“装人去低处，后面的粮便慢；全保粮路，眼前的人怎么办？”沈一石没有许下一句“商会全担”，只让人把每一次征用、每一笔损耗和交船时辰留出空白，等真正有权的人具名。",
+      "factRefs": [
+        "known.n1.jiangnan_merchant.pressure",
+        "known.n1.jiangnan_merchant.object.merchant_fleet",
+        "obj.merchant_fleet",
+        "obj.merchant_credit_network"
+      ],
+      "stopCondition": "停在沈一石尚未把船、粮与人手实际分配给救急或商路之时。"
+    },
+    "afterPrepareReactions": {
+      "controlled": {
+        "title": "官府来借船",
+        "dramaticPurpose": "让局势稍稳后出现更具体的征用与偿付谈判。",
+        "text": "堰上暂时接住先手，官府的催船文书随即到了账房。沈一石先看收件，再看落款：“船能走，粮也能挪。先写明哪一处最急、谁接船、误了后面的粮路算谁的借据。救命的时辰不能等，账却不能因此没有主人。”",
+        "factRefs": [
+          "known.n1.jiangnan_merchant.object.merchant_fleet",
+          "obj.merchant_fleet",
+          "obj.merchant_credit_network"
+        ],
+        "stopCondition": "停在商会尚未接受具名征用，也未决定保留多少粮路运力之时。"
+      },
+      "contested": {
+        "title": "一船两催",
+        "dramaticPurpose": "把互相冲突的官府请求转成不可双花的船、粮与信用压力。",
+        "text": "两路差役同时来催同一批船，一路要运人，一路要保粮。沈一石把两张文书摊开：“一条船不能在同一时辰走两条水路。谁先写清接船、归还和损失，船便先认谁；只拿官威来催，埠头的人不会替你们分真假。”",
+        "factRefs": [
+          "known.n1.jiangnan_merchant.object.merchant_fleet",
+          "obj.merchant_fleet",
+          "obj.merchant_grain_pool"
+        ],
+        "stopCondition": "停在两路征用仍争夺同一运力，而商会尚未接受其中一份之时。"
+      },
+      "lostInitiative": {
+        "title": "船主先退",
+        "dramaticPurpose": "让拖延造成船主自保和可用运力收缩，而不凭空补足资源。",
+        "text": "等令太久，已有船主先把船挪向较稳的水面，剩下的人也不肯再听口头征用。沈一石没有骂他们，只敲着清单道：“船、粮、人手都少了一截，时辰更少。现在谁还要我出力，便拿具名借据来，说清先救哪一头。”",
+        "factRefs": [
+          "known.n1.jiangnan_merchant.pressure",
+          "known.n1.jiangnan_merchant.object.merchant_fleet",
+          "obj.merchant_fleet"
+        ],
+        "stopCondition": "停在可用运力已经收缩，而商会尚未决定余下资源的唯一用途之时。"
+      }
+    },
+    "commitPressure": {
+      "title": "船契落笔",
+      "dramaticPurpose": "把商会的船、粮、船夫和信用锁定到一次可履行的正式承诺。",
+      "text": "船契与借据已经摊在账桌上，沈一石要求把船的去向、接收人、粮路损失与归还责任写在同一页。有人劝他先放船、以后再补手续，他笑得很淡：“救急可以先，赖账不能先。船出了埠头，便不能同时回来保另一趟粮。”最后的空白只剩商会究竟把资源押在哪一处。",
+      "factRefs": [
+        "known.n1.jiangnan_merchant.object.merchant_fleet",
+        "obj.merchant_fleet",
+        "obj.merchant_grain_pool",
+        "obj.merchant_credit_network"
+      ],
+      "stopCondition": "停在沈一石尚未签下船粮的唯一去向与对应借据之时。"
+    },
+    "settlementReactions": {
+      "high": {
+        "title": "救急须记",
+        "dramaticPurpose": "让受灾受控后的商会贡献进入可追溯契约，而非自动换成政治保护。",
+        "text": "主要冲击被压在少数堰区，多数高风险村落已经撤出。沈一石把实际出过的船、粮与人手逐项对清：“救下来的是众人的命令和众人的力，不是商会一家的功。可官府用了什么，仍须写成借据；不然今日叫义举，明日便成商会本该白出的东西。”",
+        "factRefs": [
+          "frozen.N1.HIGH.fact.01",
+          "frozen.N1.HIGH.fact.02",
+          "known.n1.jiangnan_merchant.object.merchant_fleet",
+          "obj.merchant_credit_network"
+        ],
+        "stopCondition": "停在商会损耗尚未取得具名确认，后续粮路安排也未落定之时。"
+      },
+      "mid": {
+        "title": "粮路半断",
+        "dramaticPurpose": "让部分撤离与冲突命令留下实际运力损失和债务归属问题。",
+        "text": "多处堰口失守，撤离只完成一部分，前后命令又互相抵消。沈一石看着迟回的船与未到的粮：“人没有全运出，粮路也没有全保住。现在别争谁说得好听，先把哪一路征用了船、哪一路耽误了粮、由谁认这笔账写清。”",
+        "factRefs": [
+          "frozen.N1.MID.fact.01",
+          "frozen.N1.MID.fact.02",
+          "frozen.N1.MID.fact.03",
+          "obj.merchant_fleet"
+        ],
+        "stopCondition": "停在运力损耗与官府债务尚未被任何具名文书承认之时。"
+      },
+      "low": {
+        "title": "粮田相逼",
+        "dramaticPurpose": "把断粮与低价卖田风险转成商会必须公开选择的交易边界。",
+        "text": "大范围民生冲击已经形成，撤离又严重迟缓，粮路的每一次耽搁都在抬高灾民的急迫。沈一石让人收起询价的纸：“先说粮是借、是赈，谁作保；田价可以以后谈。若趁人无粮先收田，商会得到的不是契约，是一张将来抄家的清单。”",
+        "factRefs": [
+          "frozen.N1.LOW.fact.01",
+          "frozen.N1.LOW.fact.02",
+          "obj.merchant_grain_pool",
+          "obj.merchant_credit_network"
+        ],
+        "stopCondition": "停在商会尚未确定赈粮或借粮条件，而低价卖田风险继续逼近之时。"
+      }
+    }
+  }
+}
