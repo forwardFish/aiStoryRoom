@@ -748,7 +748,9 @@ export class RoomsService {
     if (!room || room.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
     if (this.isPressureRoom(room)) {
       const pressureEntry = this.requirePressureRoomsEntry();
-      await pressureEntry.selectRole({ runId: roomId, userId: user.id, roleKey: roleId, idempotencyKey });
+      const selected = room.roles.find((role) => role.id === roleId || role.roleKey === roleId);
+      if (!selected) throw new NotFoundException({ code: "ROLE_NOT_FOUND", message: "Role not found" });
+      await pressureEntry.selectRole({ runId: roomId, userId: user.id, roleKey: selected.roleKey, idempotencyKey });
       return this.get(user, roomId);
     }
     const waitingRoom = await this.requireWaitingMember(user, roomId);

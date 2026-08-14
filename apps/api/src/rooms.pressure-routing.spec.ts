@@ -24,7 +24,7 @@ function createService(options: {
     updatedAt: new Date("2026-08-11T00:00:00.000Z"),
     createdAt: new Date("2026-08-11T00:00:00.000Z"),
     players: [],
-    roles: [],
+    roles: [{ id: "pressure-role-cabinet", roleKey: "cabinet_finance" }],
   };
   const prisma = {
     storyRun: {
@@ -118,7 +118,7 @@ test("pressure create, solo, join, select, ready, leave, and start dispatch thro
   await service.create({ id: "user-1" } as never, { worldId: "sangtian", title: "Pressure", idempotencyKey: "create-key-1" });
   await service.createSolo({ id: "user-1" } as never, { worldId: "sangtian", idempotencyKey: "solo-key-1", roleKey: "cabinet_finance" });
   await service.joinByCode({ id: "user-2" } as never, "PRESS1", "join-key-1");
-  await service.selectRole({ id: "user-2" } as never, "pressure-room-1", "cabinet_finance", "seat-key-1");
+  await service.selectRole({ id: "user-2" } as never, "pressure-room-1", "pressure-role-cabinet", "seat-key-1");
   await service.ready({ id: "user-2" } as never, "pressure-room-1", true, "ready-key-1");
   await service.leave({ id: "user-2" } as never, "pressure-room-1", { idempotencyKey: "leave-key-1" });
   await service.start({ id: "user-1" } as never, "pressure-room-1", { idempotencyKey: "start-key-1" });
@@ -135,6 +135,36 @@ test("pressure create, solo, join, select, ready, leave, and start dispatch thro
   ]);
   assert.equal(calls.filter(([name]) => name === "start")[0]![1].runId, "pressure-solo-1");
   assert.equal("runSeed" in calls.find(([name]) => name === "start")![1], false);
+  assert.equal(calls.find(([name]) => name === "selectRole")![1].roleKey, "cabinet_finance");
+});
+
+test("pressure role selection accepts canonical keys and rejects unknown role identifiers", async () => {
+  const calls: any[] = [];
+  const service = createService({
+    pressureGateway: {
+      selectRole: async (command: any) => { calls.push(command); return { status: "UPDATED" }; },
+    },
+  });
+  (service as any).get = async (_user: unknown, roomId: string) => ({ id: roomId });
+
+  await service.selectRole(
+    { id: "user-1" } as never,
+    "pressure-room-1",
+    "cabinet_finance",
+    "canonical-seat-key-1",
+  );
+  assert.equal(calls[0].roleKey, "cabinet_finance");
+
+  await assert.rejects(
+    () => service.selectRole(
+      { id: "user-1" } as never,
+      "pressure-room-1",
+      "unknown-role-id",
+      "unknown-seat-key-1",
+    ),
+    (error: any) => error?.response?.code === "ROLE_NOT_FOUND",
+  );
+  assert.equal(calls.length, 1);
 });
 
 test("pressure game, result, action, chat, replay, and legacy slot routing delegate to pressure HTTP methods", async () => {
