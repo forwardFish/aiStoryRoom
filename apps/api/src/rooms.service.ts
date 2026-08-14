@@ -270,8 +270,8 @@ export class RoomsService {
     });
     const openRooms = rooms.filter((room) => room.players.filter((player) => player.playerType === "human").length < room.maxPlayers);
     const mine = user ? await this.mine(user, worldId) : { rooms: [] };
-    const publicProjection = await this.listProjectionScheduler.projectOrdered(openRooms, async (room: any) => {
-      const projected = await this.projectRoom(room, user?.id);
+    const publicRooms = await this.projectRooms(openRooms, user?.id);
+    const publicProjection = publicRooms.map((projected: any) => {
       return { ...projected, roles: projected.roles.map(({ personalGoal: _personalGoal, ...role }: any) => role) };
     });
     return { rooms: publicProjection, myRooms: mine.rooms };
@@ -304,8 +304,7 @@ export class RoomsService {
       orderBy: { updatedAt: "desc" }, take: 50
     });
     return {
-      rooms: await this.listProjectionScheduler.projectOrdered(rooms, async (room) => {
-        const projected = await this.projectRoom(room, user.id);
+      rooms: (await this.projectRooms(rooms, user.id)).map((projected: any) => {
         return { ...projected, roles: projected.roles.map((role: any) => role.claimedByCurrentUser ? role : { ...role, personalGoal: undefined }) };
       })
     };
@@ -1465,6 +1464,22 @@ export class RoomsService {
       viewerId,
       requireMembership,
     });
+  }
+
+  private async projectRooms(rooms: any[], viewerId?: string, requireMembership = false) {
+    const pressureRooms = rooms.filter((room) => this.isPressureRoom(room));
+    const pressureProjections = pressureRooms.length
+      ? (await this.listProjectionScheduler.projectOrdered([pressureRooms], (batch) =>
+          this.requirePressureRoomsEntry().projectRooms({
+            rooms: batch,
+            viewerId,
+            requireMembership,
+          })))[0]!
+      : [];
+    const pressureById = new Map(pressureProjections.map((projection: any) => [projection.id, projection]));
+    return rooms.map((room) => this.isPressureRoom(room)
+      ? pressureById.get(room.id)
+      : this.project(room, viewerId));
   }
 
   private project(room: any, viewerId?: string) {

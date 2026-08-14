@@ -185,9 +185,16 @@ test("concurrent join/select/ready preserves all lifecycle writes and one winner
   assert.deepEqual(env.db.runs[0]!.stateJson, {});
 });
 
-test("room projection status derives lobby and start from one transaction snapshot", async () => {
+test("room projection statuses batch multiple rooms into one transaction snapshot", async () => {
   const env = createEnvironment();
   await env.shell.createLobbyDraft(lobbyCommand());
+  const secondRunId = `${RUN_ID}-second`;
+  await env.shell.createLobbyDraft({
+    ...lobbyCommand(),
+    runId: secondRunId,
+    inviteCode: "PRESSURE-PRISMA-2",
+    idempotencyKey: "create-pressure-prisma-2",
+  });
   let transactions = 0;
   const lobby = new PrismaPressureLobbyPersistenceAdapter({
     $transaction: async (operation, options) => {
@@ -196,11 +203,10 @@ test("room projection status derives lobby and start from one transaction snapsh
     },
   });
 
-  const status = await lobby.getRoomProjectionStatus({ runId: RUN_ID, viewerUserId: OWNER });
+  const statuses = await lobby.getRoomProjectionStatuses([RUN_ID, secondRunId]);
 
-  assert(status);
-  assert.equal(status.lobby.runId, RUN_ID);
-  assert.equal(status.start.runId, RUN_ID);
+  assert.deepEqual(statuses.map((status) => status.lobby.runId), [RUN_ID, secondRunId]);
+  assert.deepEqual(statuses.map((status) => status.start.runId), [RUN_ID, secondRunId]);
   assert.equal(transactions, 1);
 });
 

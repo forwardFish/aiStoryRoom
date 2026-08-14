@@ -31,6 +31,7 @@ import {
   invalid,
   missing,
   readPressureProductionSnapshot,
+  readPressureProductionSnapshots,
   type PressureProductionSnapshotV1,
 } from "./production-store";
 
@@ -85,6 +86,19 @@ implements PressureLobbyPersistencePortV1 {
             start: buildPressureStartStatus(snapshot),
           }
         : null;
+    });
+  }
+
+  async getRoomProjectionStatuses(runIdsValue: readonly string[]) {
+    const runIds = [...new Set(runIdsValue.map((runId) => requireText(runId, "runId")))];
+    return pressureSerializableTransaction(this.prisma, async (tx) => {
+      const snapshots = await readPressureProductionSnapshots(tx, runIds);
+      return runIds.flatMap((runId) => {
+        const snapshot = snapshots.get(runId);
+        return snapshot
+          ? [{ lobby: buildPressureLobbyStatus(snapshot), start: buildPressureStartStatus(snapshot) }]
+          : [];
+      });
     });
   }
 

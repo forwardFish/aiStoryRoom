@@ -2,7 +2,7 @@ import { ConflictException, ForbiddenException, NotFoundException } from "@nestj
 import { createHash } from "node:crypto";
 import { PRESSURE_CHAPTER_ROUTE_V1 } from "@ai-story/shared";
 import { findGameDefinition } from "@ai-story/templates";
-import type { PressureProductionBridgeV1 } from "../production";
+import type { PressureProductionBridgeV1, PressureRoomProjectionStatusV1 } from "../production";
 import type {
   PressureRoomsEntryProjectionDepsV1,
   PressureRoomsEntryStoryRunLikeV1,
@@ -154,6 +154,34 @@ export class PressureRoomsEntryAdapter {
       viewerUserId: input.viewerId ?? null,
     });
     if (!status) throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
+    return this.projectRoomFromStatus(input, status);
+  }
+
+  async projectRooms(input: {
+    rooms: readonly PressureRoomsEntryStoryRunLikeV1[];
+    viewerId?: string;
+    requireMembership?: boolean;
+  }) {
+    const statuses = await this.deps.gateway.getRoomProjectionStatuses(
+      input.rooms.map((room) => room.id),
+    );
+    const statusesByRun = new Map(statuses.map((status) => [status.lobby.runId, status]));
+    return input.rooms.map((room) => {
+      const status = statusesByRun.get(room.id);
+      if (!status) throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
+      return this.projectRoomFromStatus({
+        room,
+        viewerId: input.viewerId,
+        requireMembership: input.requireMembership,
+      }, status);
+    });
+  }
+
+  private projectRoomFromStatus(input: {
+    room: PressureRoomsEntryStoryRunLikeV1;
+    viewerId?: string;
+    requireMembership?: boolean;
+  }, status: PressureRoomProjectionStatusV1) {
     const { lobby, start } = status;
     const isMember = lobby.ownerUserId === input.viewerId
       || lobby.members.some((member) => member.userId === input.viewerId);

@@ -56,6 +56,7 @@ export class PressureProductionPrismaFake {
     storyRun: {
       findUnique: async ({ where }: any) => cloneOrNull(findOne(this.state.runs, where)),
       findFirst: async ({ where }: any) => cloneOrNull(findFirst(this.state.runs, where)),
+      findMany: async ({ where }: any) => findAll(this.state.runs, where).map(clone),
       create: async ({ data }: any) => {
         if (this.state.runs.has(data.id) || [...this.state.runs.values()].some((row) => row.inviteCode === data.inviteCode)) {
           throw uniqueError();
@@ -115,6 +116,7 @@ export class PressureProductionPrismaFake {
     },
     pressureRunLifecycle: {
       findUnique: async ({ where }: any) => cloneOrNull(findOne(this.state.lifecycles, where)),
+      findMany: async ({ where }: any) => findAll(this.state.lifecycles, where).map(clone),
       create: async ({ data }: any) => {
         if (this.state.lifecycles.has(data.runId)) throw uniqueError();
         const row = clone(data) as PressureRunLifecycleRow;

@@ -74,6 +74,7 @@ export interface PressureProductionTransaction {
   storyRun: {
     findUnique(input: Record<string, unknown>): Promise<PressureProductionStoryRunRow | null>;
     findFirst(input: Record<string, unknown>): Promise<PressureProductionStoryRunRow | null>;
+    findMany(input: Record<string, unknown>): Promise<PressureProductionStoryRunRow[]>;
     create(input: { data: Record<string, unknown> }): Promise<PressureProductionStoryRunRow>;
     updateMany(input: {
       where: Record<string, unknown>;
@@ -98,6 +99,7 @@ export interface PressureProductionTransaction {
   };
   pressureRunLifecycle: {
     findUnique(input: Record<string, unknown>): Promise<PressureRunLifecycleRow | null>;
+    findMany(input: Record<string, unknown>): Promise<PressureRunLifecycleRow[]>;
     create(input: { data: Record<string, unknown> }): Promise<PressureRunLifecycleRow>;
     updateMany(input: {
       where: Record<string, unknown>;

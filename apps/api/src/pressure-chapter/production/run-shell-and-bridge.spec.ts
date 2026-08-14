@@ -116,6 +116,11 @@ class AtomicPlaceholderLobby implements PressureLobbyPersistencePortV1 {
     return lobby && start ? { lobby, start } : null;
   }
 
+  async getRoomProjectionStatuses(runIds: readonly string[]) {
+    const statuses = await Promise.all(runIds.map((runId) => this.getRoomProjectionStatus({ runId })));
+    return statuses.filter((status): status is NonNullable<typeof status> => status !== null);
+  }
+
   async join(
     command: Readonly<JoinPressureLobbyCommandV1>,
   ): Promise<PressureLobbyMutationResultV1> {

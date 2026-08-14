@@ -159,6 +159,9 @@ export interface PressureLobbyPersistencePortV1 {
     runId: string;
     viewerUserId?: string | null;
   }): Promise<PressureRoomProjectionStatusV1 | null>;
+  getRoomProjectionStatuses(
+    runIds: readonly string[],
+  ): Promise<PressureRoomProjectionStatusV1[]>;
   /**
    * Membership lives in the independent PressureRunLifecycle.lobbyJson. Joining
    * must not insert a seventh, unseated StoryPlayer: the six StoryPlayer rows
@@ -249,6 +252,9 @@ export interface PressureProductionBridgeV1 {
   getRoomProjectionStatus(
     query: Readonly<GetPressureLobbyStatusQueryV1>,
   ): Promise<PressureRoomProjectionStatusV1 | null>;
+  getRoomProjectionStatuses(
+    runIds: readonly string[],
+  ): Promise<PressureRoomProjectionStatusV1[]>;
 }
 
 /**
@@ -367,6 +373,15 @@ export class PressureProductionBridgeService implements PressureProductionBridge
       lobby: assertLobbyStatus(status.lobby, runId),
       start: assertStartStatus(status.start, runId),
     };
+  }
+
+  async getRoomProjectionStatuses(runIdsValue: readonly string[]) {
+    const runIds = [...new Set(runIdsValue.map((runId) => requireText("runId", runId)))];
+    const statuses = await this.lobby.getRoomProjectionStatuses(runIds);
+    return statuses.map((status) => ({
+      lobby: assertLobbyStatus(status.lobby, status.lobby.runId),
+      start: assertStartStatus(status.start, status.lobby.runId),
+    }));
   }
 }
 

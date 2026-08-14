@@ -36,6 +36,46 @@ export async function readPressureProductionSnapshot(
     tx.storyRole.findMany({ where: { runId }, select: roleSelect() }),
     tx.storyPlayer.findMany({ where: { runId }, select: playerSelect() }),
   ]);
+  return assemblePressureProductionSnapshot(run, lifecycleRow, roles, players, runId);
+}
+
+export async function readPressureProductionSnapshots(
+  tx: PressureProductionTransaction,
+  runIdsValue: readonly string[],
+): Promise<Map<string, PressureProductionSnapshotV1>> {
+  const runIds = [...new Set(runIdsValue)];
+  if (runIds.length === 0) return new Map();
+  const [runs, lifecycleRows, roles, players] = await Promise.all([
+    tx.storyRun.findMany({ where: { id: { in: runIds } }, select: storyRunSelect() }),
+    tx.pressureRunLifecycle.findMany({ where: { runId: { in: runIds } } }),
+    tx.storyRole.findMany({ where: { runId: { in: runIds } }, select: roleSelect() }),
+    tx.storyPlayer.findMany({ where: { runId: { in: runIds } }, select: playerSelect() }),
+  ]);
+  const runsById = new Map(runs.map((run) => [run.id, run]));
+  const lifecyclesById = new Map(lifecycleRows.map((row) => [row.runId, row]));
+  const rolesByRun = groupByRunId(roles);
+  const playersByRun = groupByRunId(players);
+  const snapshots = new Map<string, PressureProductionSnapshotV1>();
+  for (const runId of runIds) {
+    const snapshot = assemblePressureProductionSnapshot(
+      runsById.get(runId) ?? null,
+      lifecyclesById.get(runId) ?? null,
+      rolesByRun.get(runId) ?? [],
+      playersByRun.get(runId) ?? [],
+      runId,
+    );
+    if (snapshot) snapshots.set(runId, snapshot);
+  }
+  return snapshots;
+}
+
+function assemblePressureProductionSnapshot(
+  run: PressureProductionStoryRunRow | null,
+  lifecycleRow: Parameters<typeof decodePressureRunLifecycleRow>[0] | null,
+  roles: PressureProductionRoleRow[],
+  players: PressureProductionPlayerRow[],
+  runId: string,
+): PressureProductionSnapshotV1 | null {
   if (!run && !lifecycleRow && roles.length === 0 && players.length === 0) return null;
   if (!run || !lifecycleRow) {
     throw invalid("Pressure Run shell is only partially persisted", { runId });
@@ -55,6 +95,12 @@ export async function readPressureProductionSnapshot(
   const snapshot = { run, lifecycle, roles: rolesBySeat, players: playersBySeat };
   assertControllerSlots(snapshot);
   return snapshot;
+}
+
+function groupByRunId<T extends { runId: string }>(rows: readonly T[]): Map<string, T[]> {
+  const grouped = new Map<string, T[]>();
+  for (const row of rows) grouped.set(row.runId, [...(grouped.get(row.runId) ?? []), row]);
+  return grouped;
 }
 
 export function buildPressureLobbyStatus(
