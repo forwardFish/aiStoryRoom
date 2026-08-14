@@ -546,7 +546,7 @@ test("a self-hashed catalog still fails when a reference is not bound to its Fro
 
   await assert.rejects(
     state.service.finalize(state.command),
-    /PRESSSURE_TERMINAL_ATOMIC_RECORD_INVALID/u,
+    /PRESSURE_TERMINAL_ATOMIC_RECORD_INVALID/u,
   );
   assert.equal(state.committer.attempts, 0);
   assert.equal(state.outbox.calls, 0);
