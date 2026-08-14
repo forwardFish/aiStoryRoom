@@ -45,6 +45,7 @@ test("multiplayer room reuses the original formal game renderer", async () => {
   assert.ok(harness.root.querySelector('[data-testid="room-party-panel"]'));
   assert.match(harness.root.querySelector(".player").textContent, /浙江巡抚/);
   assert.match(harness.root.querySelector(".player").textContent, /one/);
+  assert.equal(harness.root.querySelector(".player em"), null, "identity card must not repeat the current objective");
   assert.equal(harness.root.querySelector(".room-main-shell"), null, "the removed imitation shell must not render");
   harness.dom.window.close();
 });
@@ -60,6 +61,7 @@ test("Caesar reuses the same main-game renderer with its own script-backed Engli
   assert.match(harness.root.querySelector(".player .portrait").getAttribute("style"), /game-player-portrait/);
   assert.match(harness.root.querySelector(".player").textContent, /My Role/);
   assert.match(harness.root.querySelector(".player").textContent, /Marcus Junius Brutus/);
+  assert.equal(harness.root.querySelector(".player em"), null, "identity card must not repeat the current objective");
   assert.match(harness.root.querySelector(".status-strip").textContent, /Caesar's Authority\s*78/);
   assert.match(harness.root.querySelector(".status-strip").textContent, /Senate Legitimacy\s*48/);
   assert.ok(harness.root.querySelector(".maneuver-panel"));

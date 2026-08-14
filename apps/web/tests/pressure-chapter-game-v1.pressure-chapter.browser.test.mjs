@@ -154,6 +154,8 @@ test("Pressure /game dispatches into the approved app.js main-game shell", async
   assert.match(root.textContent, /我的身份/);
   assert.match(root.textContent, /浙江总督/);
   assert.match(root.textContent, /当前目标/);
+  assert.doesNotMatch(root.querySelector(".player")?.textContent || "", /稳定浙江局势/);
+  assert.match(root.querySelector(".day-mission")?.textContent || "", /稳定浙江局势/);
   assert.match(root.textContent, /我的资源/);
   assert.equal(root.querySelector('[data-resource-id="silver"]')?.textContent, "银两42 万两");
   assert.equal(root.querySelector('[data-resource-id="grain"]')?.textContent, "粮草23 万石");

@@ -804,7 +804,6 @@ function renderPlayer(view) {
     <div class="portrait ${portraitClass}" style="${portraitStyle(view)}" aria-hidden="true" role="img" aria-label="${esc(player.roleName || (en ? "Player role" : "浙江总督"))}"></div>
     <h3>${esc(player.roleName || (en ? "Player role" : "浙江总督"))}</h3>
     <p class="player-meta"><strong>${esc(player.name || (en ? "Player" : "郝帅彬"))}</strong><span>${esc(player.rank || (en ? "Role standing" : "从四品"))}</span><span>${esc(player.office || (en ? "Current office" : "兵部侍郎衔"))}</span></p>
-    ${player.fateQuestion ? `<em>${esc(player.fateQuestion)}</em>` : ""}
   </section>`;
 }
 
