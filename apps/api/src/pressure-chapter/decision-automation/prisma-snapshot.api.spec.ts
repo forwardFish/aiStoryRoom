@@ -30,7 +30,7 @@ test("Prisma convergence snapshot captures route, W4, W5 and SeatControl in one 
   assert.doesNotMatch(source, /projectWorkingLedger|readLedgerEvents/u);
   assert.match(source, /TransactionIsolationLevel\.Serializable/u);
   assert.match(source, /maxWait:\s*500/u);
-  assert.match(source, /timeout:\s*2_000/u);
+  assert.match(source, /timeout:\s*10_000/u);
 });
 
 test("HTTP submit membership is joined inside the same snapshot transaction", () => {

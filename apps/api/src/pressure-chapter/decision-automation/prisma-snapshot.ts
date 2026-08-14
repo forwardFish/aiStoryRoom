@@ -103,7 +103,7 @@ export interface DecisionConvergenceSnapshotPrismaClientV1 {
 const FAST_TRANSACTION_OPTIONS = Object.freeze({
   isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
   maxWait: 500,
-  timeout: 2_000,
+  timeout: 10_000,
 });
 
 async function pressureFastSerializableTransaction<TResult>(
