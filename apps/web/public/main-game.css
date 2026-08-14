@@ -1415,9 +1415,42 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
   }
 }
 @media (max-width: 1180px) {
+  .causal-player-root:has(.v2-current-situation-summary) {
+    height: 100vh;
+    overflow-y: auto;
+  }
   .causal-shell:has(.v2-current-situation-summary) {
-    gap: 0 14px;
-    padding-inline: 14px;
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: 10px;
+    padding: 8px;
+    overflow: visible;
+  }
+  .causal-shell:has(.v2-current-situation-summary) .causal-topbar,
+  .causal-shell:has(.v2-current-situation-summary) .status-strip,
+  .causal-shell:has(.v2-current-situation-summary) .causal-left,
+  .causal-shell:has(.v2-current-situation-summary) .causal-center,
+  .causal-shell:has(.v2-current-situation-summary) .causal-right {
+    grid-column: 1;
+    width: 100%;
+    min-width: 0;
+  }
+  .causal-shell:has(.v2-current-situation-summary) .causal-left,
+  .causal-shell:has(.v2-current-situation-summary) .causal-right {
+    display: flex;
+    max-height: none;
+    overflow: visible;
+  }
+  .causal-shell:has(.v2-current-situation-summary) .causal-left > .causal-panel {
+    flex: 0 0 auto;
+  }
+  .causal-shell:has(.v2-current-situation-summary) .causal-center {
+    min-height: 0;
+    margin-top: 0;
+    overflow: visible;
   }
   .causal-shell:has(.v2-current-situation-summary) .opening-start button {
     min-width: 0;
