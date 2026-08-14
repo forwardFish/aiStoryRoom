@@ -584,7 +584,7 @@ function resolveMailSink(testEnvironment) {
   const configured = String(testEnvironment.AUTH_MAIL_SINK_FILE || '.auth-mail-sink.ndjson');
   return path.isAbsolute(configured)
     ? configured
-    : path.resolve(process.cwd(), 'apps/api', configured);
+    : path.resolve(process.cwd(), configured);
 }
 
 function positivePort(value) {
@@ -634,3 +634,11 @@ async function countPressureRows(prisma, runIds) {
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
+
+// Narrow acceptance-only exports. These preserve the existing bounded polling
+// and HTTP safety behavior without creating a second fixture authority.
+export {
+  apiRequest as pressureFixtureApiRequest,
+  waitForProjection as waitForPressureFixtureProjection,
+  waitForDecisionReadback as waitForPressureFixtureDecisionReadback,
+};

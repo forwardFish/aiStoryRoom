@@ -8,6 +8,7 @@ import {
   type SeatIdV1,
 } from "@ai-story/shared";
 import { assertStoredRunRouteRecord } from "../run-router";
+import type { AuthoredChapterRuntimeV1 } from "../orchestrator/contracts";
 import {
   PRESSURE_CHAPTER_GAME_PROJECTION_SCHEMA_V1,
   type AEmotionFeedItemPortV1,
@@ -17,6 +18,7 @@ import {
   type PressureGameCapabilitiesV1,
   type PressureGameCapabilityReaderPort,
   type PressureGameChapterReaderPort,
+  type PressureGameChapterSourceV1,
   type PressureGameDecisionProjectionV1,
   type PressureGameMetricProjectionV1,
   type PressureGameNarrativeProjectionV1,
@@ -35,6 +37,7 @@ import {
   failPressureGameProjection,
 } from "./errors";
 import type { PressureTurnPresentationServiceV1 } from "./decision-presentation";
+import type { GameReadP0ResolvedSourcesV1 } from "./game-read-snapshot";
 
 const NON_EMPTY = /\S/u;
 const CHAPTER_IDS = Object.freeze(["P0", "N1", "N2", "N3", "N4", "N5", "N6", "N7"] as const);
@@ -98,25 +101,41 @@ export class PressureChapterGameProjectionService {
 
   /** SQL7 post-commit projection: all sources are already authority-bound. */
   async projectFromResolvedSources(
-    query: ProjectPressureChapterGameProjectionFromSourcesV1,
+    query:
+      | ProjectPressureChapterGameProjectionFromSourcesV1
+      | GameReadP0ResolvedSourcesV1,
   ): Promise<PressureChapterGameProjectionV1> {
     validateQuery(query);
-    if (!this.chapters.projectCurrent) {
-      failPressureGameProjection(
-        ERROR.INVALID_SOURCE,
-        "chapterReader.projectCurrent",
-        "CAPABILITY_REQUIRED",
-      );
-    }
     const routeSnapshot = validateRunRouteSnapshotV1(query.routeSnapshot);
-    const chapter = this.chapters.projectCurrent({
-      runId: query.runId,
-      routeHash: routeSnapshot.routeHash,
-      viewerSeatId: query.viewerSeatId,
-      state: query.chapter,
-      projection: query.workingProjection,
-      chapter: query.chapterDescriptor,
-    });
+
+    let chapter: PressureGameChapterSourceV1;
+    if ("chapterSource" in query) {
+      if (query.chapterSource.chapter.chapterId !== "P0") {
+        failPressureGameProjection(
+          ERROR.INVALID_SOURCE,
+          "chapterSource.chapter.chapterId",
+          "P0_REQUIRED",
+        );
+      }
+      chapter = query.chapterSource;
+    } else {
+      if (!this.chapters.projectCurrent) {
+        failPressureGameProjection(
+          ERROR.INVALID_SOURCE,
+          "chapterReader.projectCurrent",
+          "CAPABILITY_REQUIRED",
+        );
+      }
+      chapter = this.chapters.projectCurrent({
+        runId: query.runId,
+        routeHash: routeSnapshot.routeHash,
+        viewerSeatId: query.viewerSeatId,
+        state: query.chapter,
+        projection: query.workingProjection,
+        chapter: query.chapterDescriptor,
+      });
+    }
+
     return this.projectResolvedSources({
       query,
       routeSnapshot,
@@ -126,6 +145,12 @@ export class PressureChapterGameProjectionService {
       narrativeSource: query.narrativeSource,
       feedPage: query.feedPage,
       capabilities: null,
+      committedAllowedActionTypes: "chapterSource" in query
+        ? []
+        : allowedActionTypesFromChapterDescriptor(
+            query.chapterDescriptor,
+            chapter.decision,
+          ),
     });
   }
 
@@ -242,6 +267,12 @@ export class PressureChapterGameProjectionService {
       narrativeSource,
       feedPage: rawFeedPage,
       capabilities: rawCapabilities,
+      committedAllowedActionTypes: seeded
+        ? allowedActionTypesFromChapterDescriptor(
+            seeded.chapterDescriptor,
+            chapter.decision,
+          )
+        : null,
     });
   }
 
@@ -254,6 +285,7 @@ export class PressureChapterGameProjectionService {
     narrativeSource: NonNullable<Awaited<ReturnType<PressureGameNarrativeReaderPort["readCurrent"]>>>;
     feedPage: AEmotionFeedPagePortV1;
     capabilities: PressureGameCapabilitiesV1 | null;
+    committedAllowedActionTypes: readonly string[] | null;
   }>): Promise<PressureChapterGameProjectionV1> {
     const { query, routeSnapshot, viewer, chapter, world, narrativeSource } = input;
     const routeHash = routeSnapshot.routeHash;
@@ -304,6 +336,7 @@ export class PressureChapterGameProjectionService {
         viewer.viewer.control,
         chapter.chapter.phase,
         decision,
+        input.committedAllowedActionTypes ?? [],
       ),
     );
     assertCapabilitiesMatch(
@@ -545,6 +578,7 @@ function capabilitiesFromCommittedAuthority(
   control: PressureChapterGameProjectionV1["viewer"]["control"],
   phase: PressureChapterGameProjectionV1["chapter"]["phase"],
   decision: PressureGameDecisionProjectionV1 | null,
+  committedAllowedActionTypes: readonly string[],
 ): PressureGameCapabilitiesV1 {
   return {
     canSubmitDecision: Boolean(
@@ -557,11 +591,26 @@ function capabilitiesFromCommittedAuthority(
     canUseToken: false,
     canPlan: false,
     canReclaimControl: control.canReclaim,
-    allowedActionTypes: decision
-      ? [...new Set(decision.options.map((option) => option.actionType))]
-          .sort(compareCanonicalText)
-      : [],
+    allowedActionTypes: decision ? [...committedAllowedActionTypes] : [],
   };
+}
+
+function allowedActionTypesFromChapterDescriptor(
+  descriptor: AuthoredChapterRuntimeV1,
+  decision: PressureGameDecisionProjectionV1 | null,
+): string[] {
+  if (!decision) return [];
+  const authored = descriptor.decisions.find(
+    (candidate) => candidate.decisionPointId === decision.decisionPointId,
+  );
+  if (!authored) {
+    failPressureGameProjection(
+      ERROR.CAPABILITY_MISMATCH,
+      "chapterDescriptor.decisions",
+      decision.decisionPointId,
+    );
+  }
+  return [...authored.execution.allowedActionTypes];
 }
 
 function assertCapabilitiesMatch(

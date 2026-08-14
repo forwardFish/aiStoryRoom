@@ -1,10 +1,19 @@
-# Pressure GET `/game` SQL7 式聚合快照性能优化开发任务书 v1.0
+# Pressure GET `/game` SQL7 式聚合快照性能优化开发任务书 v1.1（实施修订）
 
 ## 1. 文档用途
 
 本文档用于把 Pressure 普通 `GET /api/v4/rooms/:roomId/game` 从旧的多读取器权威重建链路，改造成与 SQL7 提交路径一致的“单次权威快照读取 + 内存投影”模式。
 
-本文档是交给另一个 Codex 的开发任务书。当前任务只编写文档，不实施性能代码、不提交、不推送、不部署、不执行数据库迁移。
+本文档现作为正式实施与验收任务书。主要业务代码必须由项目所有者指定的网页版 ChatGPT Pro 普通 Chat 模式完成；Codex 负责冻结基线、准备脱敏源码、逐模块落地、独立测试、真实验收和 Git 交付。Pro 自述、附件或测试报告不能直接视为 PASS。
+
+本次实施使用独立分支 `codex/chatgpt-pro-pressure-performance-v2`，准确基线为 `origin/main@b6f512442f7e67d6c6d0dcaa2e6449bdd849de44`。不得写入旧分支 `codex/pressure-phased-performance-v1`，不得直接修改 `main` 或 `release`。项目所有者已经授权验收完成后提交并推送这个新分支；该授权不包含合并、部署或数据库迁移。
+
+ChatGPT Pro 普通 Chat 对话：
+
+- M2（Prisma 聚合快照 Reader）：`https://chatgpt.com/g/g-p-69f810ddfcec8191b7a0d9371ec3ab86-aiduo-ren-ju-qing-tui-yan-aistory/c/6a7db677-d748-83ea-b90f-e8eeb62c2f55`
+- M3（现有正式 Projector 复用）：`https://chatgpt.com/g/g-p-69f810ddfcec8191b7a0d9371ec3ab86-aiduo-ren-ju-qing-tui-yan-aistory/c/6a7f10de-5724-83e8-bd46-e28431ca4add`
+
+仍按小模块独立交付和验收。项目所有者于 2026-08-14 明确授权在 6 小时时限内使用多个网页版 ChatGPT Pro 普通 Chat 并行开发，因此允许并行实现写入范围不重叠、只共同依赖已验收 M1 的 M2 与 M3；两者必须分别交付、分别验收，再由 Codex 统一机械合并。依赖 M2/M3 的 M4/M5 不得提前接入未验收工件，真实 Supabase 测量不得并行或重复运行。
 
 实施者必须先阅读仓库根目录 `AGENTS.md` 和：
 
@@ -113,6 +122,41 @@ PressureChapterHttpFacade.game()
 
 已有 `WorkingProjectionFastReaderV1` 只优化 Working Ledger 的单行缓存读取，不包含完整玩家 `/game` 投影；它不能代替本任务的完整聚合读取器。
 
+### 4.1 与上一次 SQL7 优化的关系
+
+上一次提交性能优化已经落在当前 `main`：
+
+- `ce2fd4da809a144ce08631aff875eda1bfc11f7c`：引入 SQL7 first-submit fast path；
+- `ce92e680c48c57c1b076a937f607b414af8d45fa`：把 SQL 观测证据与权威提交结果解耦，避免观测噪声决定事务是否提交。
+
+上一次最终有效机制是：
+
+```text
+1 条参数化聚合 snapshot SQL
+  -> 严格 decoder 与 authority binding
+  -> 内存编译 HUMAN + 5 AI、Beat、Settlement、N2 opening
+  -> 1 个 Serializable 事务内 6 个 application statements
+  -> commit receipt
+  -> 复用 projectFromResolvedSources() 直接返回正式 Projection
+```
+
+本次 GET 优化必须直接复用以下成熟模式：
+
+1. `Prisma.sql` 参数绑定和单语句 CTE/JSONB 聚合；
+2. raw row 与领域快照分离，decoder 对 run/route/seat/chapter/revision/head/hash/fence fail-closed；
+3. `ledgerProjectionJson` 使用现有 Working Projection cache decoder，不复制 hash 规则；
+4. `projectFromResolvedSources()` 是最终正式 Projection 的唯一实现；
+5. Prisma query events 只形成请求级访问量证据，应用 SQL 与事务控制往返分别统计；
+6. 明确“不适用”与数据损坏/未知错误分开，未知错误不得静默回退；
+7. 成功、幂等、并发、恢复和隐私分别测试，单个成功样本不冒充 p50/p95。
+
+但不得照搬以下内容：
+
+- SQL7 snapshot 是 N1 首次提交专用写前快照，含 action/settlement/commit 语义；GET snapshot 是任意 P0/N1-N7、任意 viewer 的只读页面权威，必须重新定义合同；
+- SQL7 的 Serializable 写事务、六条持久化语句和 commit receipt 不属于普通 GET；理想 GET 是 0 事务；
+- SQL7 的 eligibility/NOT_APPLICABLE 不能成为 GET 在 FAST 数据损坏时静默回退 REPLAY 的理由；
+- 不得复制上次一次修改 100 余文件的大爆炸式范围。本次严格按 M1-M5 单模块交付和验收。
+
 ## 5. 设计原则
 
 1. PostgreSQL/Supabase继续是运行时唯一权威。
@@ -125,6 +169,8 @@ PressureChapterHttpFacade.game()
 8. FAST只服务普通在线读取；恢复、审计、修复、事件回放继续使用REPLAY。
 9. SHADOW出现任何字段、hash、权限或隐私差异，立即停止FAST启用。
 10. 应用SQL、协议往返、事务和延迟必须分别报告。
+11. Query-event 指标是观测证据，不是 PostgreSQL 权威；指标缺失或污染使性能样本无效，但不得改变一个已经满足业务 CAS/fence 的只读结果。
+12. 先复用 SQL7 已有 validator、cache decoder、metrics 和 Projector，再新增最窄合同；禁止平行实现同一规则。
 
 ## 6. 目标架构
 
@@ -157,7 +203,7 @@ flowchart LR
 
 ## 7. 模块清单与实施顺序
 
-必须一次只实现和验收一个模块。当前模块未通过，不得进入下一模块。
+默认一次只实现和验收一个模块。本轮经项目所有者明确批准，采用 `M1 -> (M2 || M3) -> 统一合并验收 -> (M4 || M5中可独立部分) -> 统一真实验收`。并行模块必须具有互不重叠的生产文件所有权；若出现公共合同、数据库、路由、权威链或同一文件冲突，立即停止对应并行项并回到串行验收。
 
 ### 模块一：Game Read Snapshot合同与解码
 
@@ -274,7 +320,7 @@ SHADOW对比至少覆盖：完整响应深相等、`projectionHash`、seat、rou
 
 ### Gate 0：重新建立基线
 
-1. 确认当前分支是 `main`。
+1. 确认开发工作树位于已授权新分支 `codex/chatgpt-pro-pressure-performance-v2`，其起点严格等于最新 `origin/main`；主工作树保持不动。
 2. 保存当前HEAD、远程基线和工作树状态；工作树可能存在其他任务修改，禁止reset、cleanup、广泛stash或覆盖。
 3. 用一个隔离non-production run记录：
    - 单次普通GET应用SQL；
@@ -283,6 +329,10 @@ SHADOW对比至少覆盖：完整响应深相等、`projectionHash`、seat、rou
    - API服务端总耗时；
    - 各Reader阶段耗时。
 4. 保存原始日志；如果统计混入后台任务，基线无效。
+
+本轮首次重测已经在准确基线、独立端口、关闭 Pressure worker ownership 的条件下尝试，但 API 在监听端口和访问数据库前因现有 `SANGTIAN_ACTION_RELEASE_ARTIFACT_HASH_MISMATCH` fail-closed。该问题不在 GET 优化允许范围内，因此没有擅自修复，也没有反复访问 Supabase。当前状态为 `REFERENCE_BASELINE / G0_REMEASURE_OPEN`：暂沿用任务书中的约 40/80/11 作为参考，不声明新的 `PERF_MEASURED`。详细证据见 `docs/auto-execute/pressure-game-read-performance-v1/01-g0-baseline.md`。
+
+M1 是纯合同模块，不依赖 API 启动或数据库，可以在 G0 重测仍开放时独立实施；M2 也可做离线 query-budget/decoder 测试。SHADOW、FAST、真实 SQL 数和 warm p50/p95 必须等待启动阻塞解除后再执行。
 
 ### Gate 1：只完成模块一
 
@@ -331,6 +381,8 @@ SHADOW对比至少覆盖：完整响应深相等、`projectionHash`、seat、rou
 - 玩家页面没有出现内部hash、Provider、SQL或错误码。
 
 ## 10. 必须执行的测试
+
+测试遵循“一次定位、一次最小正确性、一次同场景前后对比”。失败后先归属到输入、合同、Prisma、Projector、selector 或观测层，只重跑失败的最小用例；不得反复运行整套真实 fixture。
 
 聚焦测试建议：
 
@@ -412,7 +464,7 @@ FAST硬门下：
 
 ## 13. 预计工时和参与节点
 
-通用版本预计3–4小时：
+在已有 SQL7 机制可复用且两个独立 Pro Chat 并行的前提下，本轮目标是在项目所有者给定的 6 小时内完成开发、统一集成和可执行的独立验收；真实环境若继续被仓库既有启动硬门阻塞，必须如实标记为开放项，不得用离线结果冒充：
 
 - 60–90分钟：快照合同、聚合Reader和聚焦测试；
 - 45–60分钟：复用现有Projector并完成SHADOW对比；
@@ -424,11 +476,11 @@ FAST硬门下：
 1. Gate 0确认修改前基线；
 2. SHADOW完全一致后确认是否启用FAST；
 3. FAST真实Supabase通过后，在正式 `/game` 亲自测试一次；
-4. 未认可前不得提交、推送或进入轮询优化。
+4. 当前任务已授权最终提交并推送新分支，但只有上述门全部完成后才能执行；未认可前不得提交、推送或进入轮询优化。
 
 ## 14. 完成交付格式
 
-另一个Codex最终必须按模块报告：
+Codex 最终必须按模块报告，并附 ChatGPT Pro 普通 Chat 链接、源码 ZIP 基线/大小/SHA-256、Pro 交付物 hash、独立验收和准确远程分支：
 
 ```text
 模块：

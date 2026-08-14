@@ -12,6 +12,11 @@ import {
   type SangtianPressureResultEnvelopeV1,
 } from "@ai-story/shared";
 import type { PressureChapterGameProjectionV1 } from "../game-projection";
+import type { PressureGameReadModeV1 } from "../observability/game-read-observation";
+import type {
+  PressureGameReadRuntimeObserverPortV1,
+  PressureGameReadSafeRequestInputV1,
+} from "../observability/game-read-runtime-observer";
 import { computePressureChatRequestFingerprint } from "../interaction/chat.service";
 import { computeFormalInteractionInputFingerprint } from "../interaction/formal-interaction.service";
 import type {
@@ -64,6 +69,224 @@ test("GET game and result authorize first, honor frozen route and perform zero c
   assert.equal(harness.chatWrites, 0);
   assert.equal(harness.replayWrites, 0);
   assert.equal(harness.resultReads, 1);
+});
+
+test("GET game alone uses the dedicated mode-bound reader and preserves pagination", async () => {
+  const explicit = createHarness({ dedicatedGameRead: true });
+  await explicit.facade.getGame(explicit.principal, ROOM_ID, {
+    feedCursor: "opaque-http-cursor",
+    feedLimit: 7,
+  });
+  assert.deepEqual(explicit.calls.slice(0, 4), [
+    "access",
+    "route:GAME",
+    "stored-route",
+    "selected-game-read",
+  ]);
+  assert.equal(explicit.selectedGameReads, 1);
+  assert.equal(explicit.gameReads, 0);
+  assert.deepEqual(explicit.selectedGameReadQueries, [{
+    runId: RUN_ID,
+    subjectId: USER_ID,
+    feedCursor: "opaque-http-cursor",
+    feedLimit: 7,
+  }]);
+
+  await explicit.facade.submitDecision(
+    explicit.principal,
+    ROOM_ID,
+    decisionCommand(explicit.stored.snapshot.routeHash),
+  );
+  assert.equal(explicit.selectedGameReads, 1);
+  assert.equal(explicit.gameReads, 1, "POST projection remains on the legacy game port");
+
+  const defaults = createHarness({ dedicatedGameRead: true });
+  await defaults.facade.getGame(defaults.principal, ROOM_ID);
+  assert.deepEqual(defaults.selectedGameReadQueries, [{
+    runId: RUN_ID,
+    subjectId: USER_ID,
+  }]);
+});
+
+test("FAST GET authorizes once and enters the dedicated reader without legacy route pre-reads", async () => {
+  const harness = createHarness({
+    dedicatedGameRead: true,
+    gameReadMode: "FAST",
+  });
+
+  const value = await harness.facade.getGame(harness.principal, ROOM_ID, {
+    feedCursor: "opaque-fast-cursor",
+    feedLimit: 6,
+  });
+
+  assert.equal(value.runId, RUN_ID);
+  assert.deepEqual(harness.calls, ["access", "selected-game-read"]);
+  assert.equal(harness.selectedGameReads, 1);
+  assert.equal(harness.gameReads, 0);
+  assert.deepEqual(harness.selectedGameReadQueries, [{
+    runId: RUN_ID,
+    subjectId: USER_ID,
+    feedCursor: "opaque-fast-cursor",
+    feedLimit: 6,
+  }]);
+});
+
+test("FAST access denial preserves the public 403 and stops before route or game readers", async () => {
+  const harness = createHarness({
+    deny: true,
+    dedicatedGameRead: true,
+    gameReadMode: "FAST",
+  });
+
+  await expectHttpCode(
+    () => harness.facade.getGame(harness.principal, ROOM_ID),
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.ACCESS_DENIED,
+    403,
+  );
+
+  assert.deepEqual(harness.calls, ["access"]);
+  assert.equal(harness.selectedGameReads, 0);
+  assert.equal(harness.gameReads, 0);
+});
+
+test("FAST reader errors preserve public identity or existing mapping without route fallback", async () => {
+  const publicError = new PressureChapterHttpException(
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.DEPENDENCY_FAILURE,
+    500,
+    "gameRead",
+  );
+  const identity = createHarness({
+    dedicatedGameRead: true,
+    gameReadMode: "FAST",
+    selectedGameReadError: publicError,
+  });
+  await assert.rejects(
+    () => identity.facade.getGame(identity.principal, ROOM_ID),
+    (error: unknown) => error === publicError,
+  );
+  assert.deepEqual(identity.calls, ["access", "selected-game-read"]);
+  assert.equal(identity.selectedGameReads, 1);
+  assert.equal(identity.gameReads, 0);
+
+  const mapped = createHarness({
+    dedicatedGameRead: true,
+    gameReadMode: "FAST",
+    selectedGameReadError: {
+      code: "GAME_READ_SNAPSHOT_SCOPE_MISMATCH",
+      path: "gameRead.snapshot",
+    },
+  });
+  await expectHttpCode(
+    () => mapped.facade.getGame(mapped.principal, ROOM_ID),
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.ROUTE_MISMATCH,
+    409,
+  );
+  assert.deepEqual(mapped.calls, ["access", "selected-game-read"]);
+  assert.equal(mapped.selectedGameReads, 1);
+  assert.equal(mapped.gameReads, 0);
+});
+
+test("REPLAY and SHADOW retain route dispatch and stored-route validation before reading", async () => {
+  for (const mode of ["REPLAY", "SHADOW"] as const) {
+    const success = createHarness({
+      dedicatedGameRead: true,
+      gameReadMode: mode,
+    });
+    const projection = await success.facade.getGame(success.principal, ROOM_ID);
+    assert.deepEqual(projection, {
+      schemaVersion: "pressure_chapter_game_projection_v1",
+      runId: RUN_ID,
+      roomId: ROOM_ID,
+    });
+    assert.deepEqual(success.calls, [
+      "access",
+      "route:GAME",
+      "stored-route",
+      "selected-game-read",
+    ], mode);
+
+    const mismatch = createHarness({
+      dedicatedGameRead: true,
+      gameReadMode: mode,
+      dispatchRouteHash: sha256Canonical(`wrong-route-${mode}`),
+    });
+    await expectHttpCode(
+      () => mismatch.facade.getGame(mismatch.principal, ROOM_ID),
+      PRESSURE_CHAPTER_HTTP_ERROR_CODES.ROUTE_MISMATCH,
+      409,
+    );
+    assert.deepEqual(mismatch.calls, [
+      "access",
+      "route:GAME",
+      "stored-route",
+    ], mode);
+    assert.equal(mismatch.selectedGameReads, 0);
+    assert.equal(mismatch.gameReads, 0);
+  }
+});
+
+test("GET observation wraps exactly once, preserves success/error identity, and excludes other methods", async () => {
+  const observed: Array<{
+    mode: PressureGameReadModeV1;
+    input: Readonly<PressureGameReadSafeRequestInputV1>;
+  }> = [];
+  const observedErrors: unknown[] = [];
+  const observer: PressureGameReadRuntimeObserverPortV1 = {
+    async observe<T>(
+      mode: PressureGameReadModeV1,
+      input: Readonly<PressureGameReadSafeRequestInputV1>,
+      operation: () => Promise<T>,
+    ): Promise<T> {
+      observed.push({ mode, input });
+      try {
+        return await operation();
+      } catch (error) {
+        observedErrors.push(error);
+        throw error;
+      }
+    },
+    report() {},
+  };
+  const harness = createHarness({
+    dedicatedGameRead: true,
+    gameReadMode: "FAST",
+    gameReadObserver: observer,
+  });
+  const query = { feedCursor: "opaque-observed-cursor", feedLimit: 4 };
+
+  const value = await harness.facade.getGame(harness.principal, ROOM_ID, query);
+  assert.deepEqual(value, {
+    schemaVersion: "pressure_chapter_game_projection_v1",
+    runId: RUN_ID,
+    roomId: ROOM_ID,
+  });
+  assert.deepEqual(harness.calls, ["access", "selected-game-read"]);
+  assert.equal(observed.length, 1);
+  assert.equal(observed[0]!.mode, "FAST");
+  assert.equal(observed[0]!.input.roomId, ROOM_ID);
+  assert.equal(observed[0]!.input.principal, harness.principal);
+  assert.equal(observed[0]!.input.query, query);
+
+  await harness.facade.getResult(harness.principal, ROOM_ID);
+  assert.deepEqual(harness.calls.slice(2), [
+    "access",
+    "route:RESULT",
+    "stored-route",
+    "result-read",
+  ]);
+  assert.equal(observed.length, 1, "RESULT must not be observed by the GET /game observer");
+
+  let rejected: unknown;
+  try {
+    await harness.facade.getGame(harness.principal, "");
+  } catch (error) {
+    rejected = error;
+  }
+  assert.ok(rejected instanceof PressureChapterHttpException);
+  assert.equal(rejected.code, PRESSURE_CHAPTER_HTTP_ERROR_CODES.INPUT_INVALID);
+  assert.equal(observed.length, 2);
+  assert.equal(observedErrors.length, 1);
+  assert.equal(rejected, observedErrors[0], "the exact business error object must survive");
 });
 
 test("unauthorized viewer stops before stored route or game/result reads", async () => {
@@ -520,6 +743,10 @@ function createHarness(options: {
   sharedSnapshot?: boolean;
   committedAuthority?: boolean;
   sql7?: "COMMITTED" | "REPLAYED" | "NOT_APPLICABLE" | "AUTHORITY_FENCE_MISMATCH";
+  dedicatedGameRead?: boolean;
+  selectedGameReadError?: unknown;
+  gameReadMode?: PressureGameReadModeV1;
+  gameReadObserver?: PressureGameReadRuntimeObserverPortV1;
 } = {}) {
   const calls: string[] = [];
   const stored = storedRoute();
@@ -527,9 +754,11 @@ function createHarness(options: {
   let chatWrites = 0;
   let replayWrites = 0;
   let gameReads = 0;
+  let selectedGameReads = 0;
   let seededGameReads = 0;
   let resultReads = 0;
   let sql7Submits = 0;
+  const selectedGameReadQueries: Parameters<PressureChapterHttpGamePort["read"]>[0][] = [];
   const actionCommands: SubmitOrchestratedActionCommandV1[] = [];
   const compilerInputs: Parameters<PressureChapterHttpDecisionCompilerPort["compile"]>[0][] = [];
   const chatCommands: SubmitPressureChatCommandV1[] = [];
@@ -597,6 +826,21 @@ function createHarness(options: {
       } as unknown as PressureChapterGameProjectionV1;
     },
   };
+  const selectedGameRead = options.dedicatedGameRead ? {
+    async read(query: Parameters<PressureChapterHttpGamePort["read"]>[0]) {
+      calls.push("selected-game-read");
+      selectedGameReads += 1;
+      selectedGameReadQueries.push(structuredClone(query));
+      if (options.selectedGameReadError !== undefined) {
+        throw options.selectedGameReadError;
+      }
+      return {
+        schemaVersion: "pressure_chapter_game_projection_v1",
+        runId: RUN_ID,
+        roomId: ROOM_ID,
+      } as unknown as PressureChapterGameProjectionV1;
+    },
+  } : undefined;
   const decisionCompiler: PressureChapterHttpDecisionCompilerPort = {
     async compile(input) {
       calls.push("decision-compile");
@@ -758,6 +1002,9 @@ function createHarness(options: {
       async recordHttpCompletion() {},
     } : undefined,
     sql7,
+    selectedGameRead,
+    options.gameReadMode,
+    options.gameReadObserver,
   );
   return {
     facade,
@@ -770,10 +1017,12 @@ function createHarness(options: {
     replayCommands,
     replayViewerIds,
     convergenceCommands,
+    selectedGameReadQueries,
     get actionWrites() { return actionWrites; },
     get chatWrites() { return chatWrites; },
     get replayWrites() { return replayWrites; },
     get gameReads() { return gameReads; },
+    get selectedGameReads() { return selectedGameReads; },
     get seededGameReads() { return seededGameReads; },
     get resultReads() { return resultReads; },
     get sql7Submits() { return sql7Submits; },

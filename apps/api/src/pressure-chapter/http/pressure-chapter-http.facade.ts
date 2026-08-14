@@ -9,6 +9,11 @@ import {
 } from "@ai-story/shared";
 import type { PressureDecisionConvergencePortV1 } from "../decision-automation/contracts";
 import type { PressureSql7FirstSubmitServiceV1 } from "../sql7-fast-path/service";
+import type { PressureGameReadModeV1 } from "../observability/game-read-observation";
+import {
+  NoopPressureGameReadRuntimeObserverV1,
+  type PressureGameReadRuntimeObserverPortV1,
+} from "../observability/game-read-runtime-observer";
 import { computePressureChatRequestFingerprint } from "../interaction/chat.service";
 import {
   canonicalizeWorkingActionIntentV1,
@@ -81,6 +86,10 @@ export class PressureChapterHttpFacade {
     private readonly clock: PressureChapterHttpClockPort,
     private readonly convergence: PressureDecisionConvergencePortV1 | undefined = undefined,
     private readonly sql7: Pick<PressureSql7FirstSubmitServiceV1, "submit"> | undefined = undefined,
+    private readonly gameRead: Pick<PressureChapterHttpGamePort, "read"> = game,
+    private readonly gameReadMode: PressureGameReadModeV1 = "REPLAY",
+    private readonly gameReadObserver: PressureGameReadRuntimeObserverPortV1 =
+      new NoopPressureGameReadRuntimeObserverV1(),
   ) {}
 
   getGame(
@@ -88,17 +97,27 @@ export class PressureChapterHttpFacade {
     roomIdValue: string,
     queryValue: PressureChapterGameHttpQueryV1 = {},
   ) {
-    return pressureHttpBoundary(async () => {
-      const principal = parsePrincipal(principalValue);
-      const roomId = requiredString(roomIdValue, "roomId");
-      const query = parseGameQuery(queryValue);
-      const context = await this.resolveContext(principal, roomId, "GAME");
-      return this.game.read({
-        runId: context.access.runId,
-        subjectId: context.access.subjectId,
-        ...query,
-      });
-    });
+    return pressureHttpBoundary(() => this.gameReadObserver.observe(
+      this.gameReadMode,
+      {
+        roomId: roomIdValue,
+        principal: principalValue,
+        query: queryValue,
+      },
+      async () => {
+        const principal = parsePrincipal(principalValue);
+        const roomId = requiredString(roomIdValue, "roomId");
+        const query = parseGameQuery(queryValue);
+        const access = this.gameReadMode === "FAST"
+          ? await this.resolveAccess(principal, roomId)
+          : (await this.resolveContext(principal, roomId, "GAME")).access;
+        return this.gameRead.read({
+          runId: access.runId,
+          subjectId: access.subjectId,
+          ...query,
+        });
+      },
+    ));
   }
 
   getResult(
@@ -344,15 +363,7 @@ export class PressureChapterHttpFacade {
     roomId: string,
     operation: HttpOperation,
   ) {
-    const accessValue = await this.access.authorize({
-      roomId,
-      subjectId: principal.subjectId,
-      viewerId: principal.viewerId,
-    });
-    if (accessValue === null) {
-      failPressureChapterHttp(ERROR.ACCESS_DENIED, "roomId");
-    }
-    const access = parseAccess(accessValue, roomId, principal);
+    const access = await this.resolveAccess(principal, roomId);
     const dispatch = await this.resolveDispatch(access.runId, operation);
     const stored = assertStoredRunRouteRecord(
       await this.routes.readStoredRoute(access.runId),
@@ -377,6 +388,21 @@ export class PressureChapterHttpFacade {
       failPressureChapterHttp(ERROR.ROUTE_MISMATCH, "storedRoute.dispatch");
     }
     return { access, stored };
+  }
+
+  private async resolveAccess(
+    principal: PressureChapterHttpPrincipalV1,
+    roomId: string,
+  ): Promise<PressureChapterHttpAccessV1> {
+    const accessValue = await this.access.authorize({
+      roomId,
+      subjectId: principal.subjectId,
+      viewerId: principal.viewerId,
+    });
+    if (accessValue === null) {
+      failPressureChapterHttp(ERROR.ACCESS_DENIED, "roomId");
+    }
+    return parseAccess(accessValue, roomId, principal);
   }
 
   private resolveDispatch(runId: string, operation: HttpOperation) {

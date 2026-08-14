@@ -17,3 +17,4 @@ export * from "./transaction";
 export * from "./vocabulary";
 export * from "./working-ledger.prisma-adapter";
 export * from "./working-projection-fast-reader.prisma-adapter";
+export * from "./game-read-snapshot.prisma-adapter";

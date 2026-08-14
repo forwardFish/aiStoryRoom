@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "pressure_game_read_performance_acceptance_v1",
+  "status": "PASS_CLEANED",
+  "failedStage": null,
+  "failureCode": null,
+  "stages": {
+    "provision": "PASS",
+    "start": "PASS",
+    "replay": "PASS",
+    "shadow": "PASS",
+    "fast": "PASS",
+    "compare": "PASS",
+    "warm": "PASS",
+    "submit": "PASS",
+    "readback": "PASS",
+    "cleanup": "PASS"
+  },
+  "fixture": {
+    "credentialsPersisted": false,
+    "cookiePersisted": false,
+    "cleanupAttempted": true,
+    "cleanupSucceeded": true
+  },
+  "scenario": {
+    "participantMode": "SOLO",
+    "chapterBefore": "N1",
+    "feedLimit": 10
+  },
+  "equivalence": {
+    "deepEqual": true,
+    "canonicalJsonEqual": true,
+    "shadowStatus": "MATCH",
+    "projectionHash": true,
+    "seat": true,
+    "routeHash": true,
+    "chapterRuntimeId": true,
+    "workingRevision": true,
+    "narrativeSource": true,
+    "capabilities": true,
+    "resources": true,
+    "tokens": true,
+    "decisionOptions": true,
+    "feedAudience": true
+  },
+  "sampling": {
+    "coldSampleCount": 1,
+    "warmSampleCount": 10,
+    "percentileMethod": "NEAREST_RANK",
+    "clientWarmWallTimeMs": {
+      "count": 10,
+      "min": 372.641,
+      "max": 390.758,
+      "p50": 378.949,
+      "p95": 390.758
+    },
+    "serverWarm": {
+      "wallTimeMs": { "count": 10, "min": 199, "max": 217, "p50": 204, "p95": 217 },
+      "applicationSqlStatementCount": { "count": 10, "min": 2, "max": 2, "p50": 2, "p95": 2 },
+      "databaseProtocolRoundtripCountIncludingBeginCommit": { "count": 10, "min": 2, "max": 2, "p50": 2, "p95": 2 },
+      "transactionAttemptCount": { "count": 10, "min": 0, "max": 0, "p50": 0, "p95": 0 },
+      "queryDurationMs": { "count": 10, "min": 173, "max": 184, "p50": 174, "p95": 184 }
+    }
+  },
+  "comparisonSample": {
+    "replay": { "applicationSql": 31, "protocolRoundtrips": 61, "transactions": 8, "wallTimeMs": 5947 },
+    "shadow": { "applicationSql": 35, "protocolRoundtrips": 67, "transactions": 8, "wallTimeMs": 7925, "shadowStatus": "MATCH" },
+    "fastCold": { "applicationSql": 2, "protocolRoundtrips": 2, "transactions": 0, "wallTimeMs": 981 }
+  },
+  "transition": {
+    "decisionSubmitted": true,
+    "decisionReadBack": true,
+    "chapterAdvanced": true,
+    "runtimeAdvanced": true,
+    "decisionPointAdvanced": true
+  }
+}

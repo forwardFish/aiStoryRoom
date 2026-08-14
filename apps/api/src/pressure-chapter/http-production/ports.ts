@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 export interface PressureChapterHttpProductionRouteRowV1 {
   runId: string;
   schemaVersion: string;
@@ -20,39 +22,26 @@ export interface PressureChapterHttpProductionMembershipRowV1 {
   status: string;
 }
 
+export interface PressureChapterHttpProductionAccessRowV1 {
+  runId: string;
+  runEngineVersion: string;
+  runStrategyVersion: string;
+  routeRunId: string;
+  routeSchemaVersion: string;
+  routeEngineVersion: string;
+  routeStrategyVersion: string;
+  routeRuntimeProfile: string;
+  membershipRunId: string;
+  membershipUserId: string | null;
+  membershipPlayerType: string;
+  membershipStatus: string;
+}
+
 /**
- * Deliberately read-only and narrower than PrismaService. In particular, this
- * capability cannot select another seat's role, secret, or private projection.
+ * Read-only raw-query capability required by the production access adapter.
+ * The adapter owns the fixed narrow statement and must not select seat, secret,
+ * private projection, or full route JSON data.
  */
 export interface PressureChapterHttpProductionPrismaPortV1 {
-  storyRun: {
-    findUnique(input: {
-      where: { id: string };
-      select: {
-        id: true;
-        engineVersion: true;
-        strategyVersion: true;
-        pressureRouteSnapshot: {
-          select: {
-            runId: true;
-            schemaVersion: true;
-            engineVersion: true;
-            strategyVersion: true;
-            runtimeProfile: true;
-          };
-        };
-      };
-    }): Promise<PressureChapterHttpProductionRunRowV1 | null>;
-  };
-  storyPlayer: {
-    findUnique(input: {
-      where: { runId_userId: { runId: string; userId: string } };
-      select: {
-        runId: true;
-        userId: true;
-        playerType: true;
-        status: true;
-      };
-    }): Promise<PressureChapterHttpProductionMembershipRowV1 | null>;
-  };
+  $queryRaw<T = unknown>(query: Prisma.Sql): Promise<T>;
 }

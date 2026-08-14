@@ -3,11 +3,23 @@ import test from "node:test";
 import type { DynamicModule, Provider } from "@nestjs/common";
 import { PrismaService } from "../../prisma.service";
 import {
+  PRESSURE_GAME_READ_MODE_ERROR_CODES_V1,
+  PressureGameReadModeErrorV1,
+  PressureGameReadModeSelectorV1,
+  type PressureGameReadShadowDiagnosticV1,
+} from "../game-projection/game-read-mode-selector";
+import {
   PRESSURE_CHAPTER_HTTP_TOKENS,
   PressureChapterHttpControllerMethods,
   PressureChapterHttpFacade,
 } from "../http";
 import { PressureChapterModule } from "../pressure-chapter.module";
+import { PRESSURE_GAME_READ_MODE_ENV_V1 } from "../production-config";
+import type { PressureGameReadModeV1 } from "../observability/game-read-observation";
+import type {
+  PressureGameReadRuntimeObserverPortV1,
+  PressureGameReadSafeRequestInputV1,
+} from "../observability/game-read-runtime-observer";
 import {
   PRESSURE_CHAPTER_GET_CAPABILITY_SURFACE_V1,
   PRESSURE_CHAPTER_PRODUCT_DEPENDENCY_GRAPH_V1,
@@ -154,20 +166,181 @@ test("root provider uses one PrismaService and has no external-port provider", a
 
 test("zero-external ProductRoot composes without DB access or pre-init workers", async () => {
   let transactionCalls = 0;
+  let queryRawCalls = 0;
   const prisma = {
     $transaction: async () => {
       transactionCalls += 1;
       throw new Error("composition must not access the database");
     },
+    $queryRaw: async () => {
+      queryRawCalls += 1;
+      throw new Error("composition must not execute the snapshot query");
+    },
   } as unknown as PrismaService;
 
-  const root = await createPressureChapterProductRootV1({ prisma });
+  const root = await createPressureChapterProductRootV1({
+    prisma,
+    environment: {},
+    options: productRootGameReadTestOptions(),
+  });
   assert.equal(transactionCalls, 0);
+  assert.equal(queryRawCalls, 0);
+  assert.equal(root.diagnostics.gameReadMode, "REPLAY");
   assert.equal(root.workerLifecycle.health().running, false);
   assert.equal(root.diagnostics.narrativeWorkerAutoStarted, false);
   assert.equal(typeof root.progress.worker.tick, "function");
   assert.equal(typeof root.decisionAutomation.workerLane.tick, "function");
   await root.workerLifecycle.onModuleDestroy();
+});
+
+test("ProductRoot binds exact FAST configuration without DB work", async () => {
+  let databaseCalls = 0;
+  const prisma = {
+    $transaction: async () => {
+      databaseCalls += 1;
+      throw new Error("composition must not access the database");
+    },
+    $queryRaw: async () => {
+      databaseCalls += 1;
+      throw new Error("composition must not execute the snapshot query");
+    },
+  } as unknown as PrismaService;
+  const root = await createPressureChapterProductRootV1({
+    prisma,
+    environment: { [PRESSURE_GAME_READ_MODE_ENV_V1]: "FAST" },
+    options: productRootGameReadTestOptions(),
+  });
+  assert.equal(databaseCalls, 0);
+  assert.equal(root.diagnostics.gameReadMode, "FAST");
+  await root.workerLifecycle.onModuleDestroy();
+});
+
+test("ProductRoot shares one observer between GET and SHADOW diagnostics", async () => {
+  const projection = Object.freeze({ marker: "m5b-projection" });
+  const observed: Array<{
+    mode: PressureGameReadModeV1;
+    input: Readonly<PressureGameReadSafeRequestInputV1>;
+  }> = [];
+  const diagnostics: PressureGameReadShadowDiagnosticV1[] = [];
+  const observer: PressureGameReadRuntimeObserverPortV1 = {
+    async observe<T>(
+      mode: PressureGameReadModeV1,
+      input: Readonly<PressureGameReadSafeRequestInputV1>,
+      _operation: () => Promise<T>,
+    ): Promise<T> {
+      observed.push({ mode, input });
+      return projection as T;
+    },
+    report(value) {
+      diagnostics.push(value);
+    },
+  };
+  const selectorPrototype = PressureGameReadModeSelectorV1.prototype as unknown as {
+    read: (
+      this: PressureGameReadModeSelectorV1,
+      mode: "REPLAY" | "SHADOW" | "FAST",
+      query: Readonly<{ runId: string; subjectId: string }>,
+    ) => Promise<unknown>;
+  };
+  const originalRead = selectorPrototype.read;
+  let root: Awaited<ReturnType<typeof createPressureChapterProductRootV1>> | undefined;
+
+  selectorPrototype.read = async function patchedSelectorRead(mode, query) {
+    assert.equal(mode, "SHADOW");
+    assert.deepEqual(query, { runId: "run-observed", subjectId: "viewer-observed" });
+    const dependencies = Reflect.get(this, "dependencies") as {
+      diagnostics: { report(value: PressureGameReadShadowDiagnosticV1): void | Promise<void> };
+    };
+    await dependencies.diagnostics.report(Object.freeze({
+      schemaVersion: "pressure_game_read_shadow_diagnostic_v1",
+      mode: "SHADOW",
+      outcome: "MATCH",
+      stage: "COMPARE",
+      deepEqual: true,
+      canonicalEqual: true,
+    }));
+    return projection;
+  };
+
+  let databaseCalls = 0;
+  const prisma = {
+    $transaction: async () => {
+      databaseCalls += 1;
+      throw new Error("composition must not access the database");
+    },
+    $queryRaw: async () => {
+      databaseCalls += 1;
+      throw new Error("composition must not execute the snapshot query");
+    },
+  } as unknown as PrismaService;
+
+  try {
+    root = await createPressureChapterProductRootV1({
+      prisma,
+      environment: { [PRESSURE_GAME_READ_MODE_ENV_V1]: "SHADOW" },
+      options: productRootGameReadTestOptions(),
+      gameReadRuntimeObserver: observer,
+    });
+    assert.equal(databaseCalls, 0);
+
+    const principal = Object.freeze({
+      subjectId: "subject-observed",
+      viewerId: "viewer-observed",
+    });
+    const query = Object.freeze({ feedCursor: "cursor-observed", feedLimit: 5 });
+    const facadeProjection = await root.httpFacade.getGame(
+      principal,
+      "room-observed",
+      query,
+    );
+    assert.equal(facadeProjection, projection);
+    assert.equal(observed.length, 1);
+    assert.equal(observed[0]!.mode, "SHADOW");
+    assert.equal(observed[0]!.input.roomId, "room-observed");
+    assert.equal(observed[0]!.input.principal, principal);
+    assert.equal(observed[0]!.input.query, query);
+
+    const composedReader = Reflect.get(root.httpFacade, "gameRead") as {
+      read(query: Readonly<{ runId: string; subjectId: string }>): Promise<unknown>;
+    };
+    assert.equal(
+      await composedReader.read({
+        runId: "run-observed",
+        subjectId: "viewer-observed",
+      }),
+      projection,
+    );
+    assert.deepEqual(diagnostics, [{
+      schemaVersion: "pressure_game_read_shadow_diagnostic_v1",
+      mode: "SHADOW",
+      outcome: "MATCH",
+      stage: "COMPARE",
+      deepEqual: true,
+      canonicalEqual: true,
+    }]);
+  } finally {
+    selectorPrototype.read = originalRead;
+    await root?.workerLifecycle.onModuleDestroy();
+  }
+});
+
+test("ProductRoot rejects invalid game-read configuration before composition", async () => {
+  let databaseCalls = 0;
+  const prisma = {
+    $transaction: async () => { databaseCalls += 1; },
+    $queryRaw: async () => { databaseCalls += 1; },
+  } as unknown as PrismaService;
+  await assert.rejects(
+    createPressureChapterProductRootV1({
+      prisma,
+      environment: { [PRESSURE_GAME_READ_MODE_ENV_V1]: "fast" },
+    }),
+    (error: unknown) => (
+      error instanceof PressureGameReadModeErrorV1
+      && error.code === PRESSURE_GAME_READ_MODE_ERROR_CODES_V1.MODE_INVALID
+    ),
+  );
+  assert.equal(databaseCalls, 0);
 });
 
 test("one Nest lifecycle starts and stops the single supervisor exactly once", async () => {
@@ -598,6 +771,39 @@ test("forRoot is zero-external and exposes one async ProductRoot factory", () =>
   assert.deepEqual(root.inject, [PrismaService]);
   assert.equal(root.useFactory.length, 1);
 });
+
+function productRootGameReadTestOptions() {
+  class TestNarrativeRendererV1 {
+    constructor(_provider: unknown) {}
+  }
+  class TestNarrativePublisherV1 {
+    constructor(_persistence: unknown) {}
+  }
+  class TestOpenNovelNarrativeProjectorV1 {
+    constructor(..._input: unknown[]) {}
+
+    async project(): Promise<never> {
+      throw new Error("test runtime projector must not execute during composition");
+    }
+  }
+  return {
+    internalAdapters: {
+      narrative: {
+        runtimeLoader: {
+          async load() {
+            return {
+              OpenNovelNarrativeProjectorV1: TestOpenNovelNarrativeProjectorV1,
+              NarrativeRendererV1: TestNarrativeRendererV1,
+              NarrativePublisherV1: TestNarrativePublisherV1,
+              validateNarrativeProjectionJobV1: (value: unknown) => value,
+              validateAudienceSafeNarrativeSourceV1: (value: unknown) => value,
+            };
+          },
+        },
+      },
+    },
+  } as never;
+}
 
 function moduleMetadata(): DynamicModule {
   return PressureChapterModule.forRoot({

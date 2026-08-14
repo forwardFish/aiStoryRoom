@@ -83,6 +83,7 @@ import {
   PrismaChapterOrchestratorStateRepository,
   PrismaDurableChapterSettlementSourceRepository,
   PrismaGenesisAtomicCommitRepository,
+  PrismaGameReadSnapshotReaderV1,
   PrismaN7FrozenFinaleSourceReader,
   PrismaPressureChatRepository,
   PrismaPressureInteractionAccessRepository,
@@ -95,6 +96,7 @@ import {
   type AuthorityFirstTerminalPrismaClient,
   type ChapterSettlementPrismaClient,
   type ChapterSettlementSourcePrismaClient,
+  type GameReadSnapshotPrismaClientV1,
   type GenesisPrismaClient,
   type InteractionAccessPrismaClient,
   type N7FrozenFinaleSourcePrismaClient,
@@ -109,19 +111,30 @@ import {
   type WorkingProjectionFastReaderPrismaClientV1,
 } from "../persistence";
 import {
+  composeGameReadSnapshotLocalAuthoritiesV1,
+  composePressureGameReadV1,
   composePressureProductionCoreV1,
 } from "../production";
 import {
   createPrismaPressureProductionAdaptersV1,
 } from "../production-prisma";
 import {
+  compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1,
   createPressureChapterInternalProductionPortsV1,
   SangtianFrozenSeatPresentationCatalogV1,
 } from "../product-adapters";
-import type { PressureNarrativeProviderReadinessV1 } from "../production-config";
+import {
+  resolvePressureGameReadConfigurationV1,
+  type PressureNarrativeProviderReadinessV1,
+} from "../production-config";
 import {
   createPrismaPressureProgressOutboxWorkerV1,
 } from "../progress-outbox/factory";
+import {
+  EnvironmentPressureGameReadObservationSinkV1,
+  PressureGameReadRuntimeObserverV1,
+  type PressureGameReadRuntimeObserverPortV1,
+} from "../observability/game-read-runtime-observer";
 import {
   PrismaProgressChapterHandoffAuthorityV1,
   type ProgressChapterHandoffAuthorityPrismaClientV1,
@@ -226,6 +239,7 @@ export interface PressureChapterProductRootV1 {
     n1StarterBoundExactlyOnce: true;
     narrativeWorkerAutoStarted: false;
     narrativeProviderMode: "EXTERNAL_PROVIDER" | "DETERMINISTIC_FALLBACK_ONLY";
+    gameReadMode: "REPLAY" | "SHADOW" | "FAST";
   }>;
 }
 
@@ -239,11 +253,23 @@ export async function createPressureChapterProductRootV1(input: {
   options?: Partial<PressureChapterProductOptionsV1>;
   narrativeProviderReadiness?: PressureNarrativeProviderReadinessV1;
   turnPresentationProvider?: PressureTurnPresentationProviderPortV1 | null;
+  environment?: Readonly<Record<string, string | undefined>>;
+  gameReadRuntimeObserver?: PressureGameReadRuntimeObserverPortV1;
 }): Promise<PressureChapterProductRootV1> {
+  const gameReadConfiguration = resolvePressureGameReadConfigurationV1(
+    input.environment ?? process.env,
+  );
   const options = normalizeOptions(input.options);
   const httpProduction = createPressureChapterHttpProductionAdaptersV1(
     input.prisma as unknown as PressureChapterHttpProductionPrismaPortV1,
   );
+  const gameReadRuntimeObserver = input.gameReadRuntimeObserver
+    ?? new PressureGameReadRuntimeObserverV1({
+      clock: httpProduction.clock,
+      sink: new EnvironmentPressureGameReadObservationSinkV1(
+        input.environment ?? process.env,
+      ),
+    });
   const internal = await createPressureChapterInternalProductionPortsV1(
     input.prisma,
     options.internalAdapters,
@@ -506,6 +532,24 @@ export async function createPressureChapterProductRootV1(input: {
       input.turnPresentationProvider ?? null,
     ),
   );
+  const gameReadSnapshot = new PrismaGameReadSnapshotReaderV1(
+    asPrisma<GameReadSnapshotPrismaClientV1>(input.prisma),
+    composeGameReadSnapshotLocalAuthoritiesV1({
+      chapters: content,
+      presentation: gameContentMapper,
+      seatCatalog: internal.seatPresentationCatalog,
+      compilePrivateProjection:
+        compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1,
+    }),
+  );
+  const gameRead = composePressureGameReadV1({
+    mode: gameReadConfiguration.mode,
+    legacy: gameProjection,
+    snapshots: gameReadSnapshot,
+    projector: gameProjection,
+    clock: httpProduction.clock,
+    diagnostics: gameReadRuntimeObserver,
+  });
   const runtimeFacets = pressureHttpRuntimeFacetsV1(runtime);
   const httpRoutes = pressureHttpRouteReadPortV1(routes);
   const chat = new PressureChapterChatService(
@@ -670,6 +714,9 @@ export async function createPressureChapterProductRootV1(input: {
     httpPorts.clock,
     decisionAutomation.service,
     sql7FirstSubmit,
+    gameRead.reader,
+    gameReadConfiguration.mode,
+    gameReadRuntimeObserver,
   );
   const roomsGateway = new PressureChapterRoomsGatewayV1(production.bridge);
   return Object.freeze({
@@ -696,6 +743,7 @@ export async function createPressureChapterProductRootV1(input: {
       n1StarterBoundExactlyOnce: true as const,
       narrativeWorkerAutoStarted: false as const,
       narrativeProviderMode: internal.narrativeProviderMode,
+      gameReadMode: gameReadConfiguration.mode,
     }),
   });
 }
