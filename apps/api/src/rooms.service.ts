@@ -47,7 +47,8 @@ import {
   type PressurePromiseOperationCodeV1,
 } from "./pressure-chapter/a-emotion-promise";
 import type { PressurePromiseProductFacadeV1 } from "./pressure-chapter/product";
-import { RoomListProjectionScheduler } from "./rooms-list-projection";
+import { RoomListProjectionScheduler, roomListProjectionConcurrencyForPool } from "./rooms-list-projection";
+import { pressureDatabasePoolOptionsV1 } from "./pressure-chapter/production-config";
 
 const SOLO_IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const IDEMPOTENCY_REPLAY_ATTEMPTS = 300;
@@ -232,7 +233,11 @@ function pressurePromiseHttpError(error: unknown): unknown {
 
 @Injectable()
 export class RoomsService {
-  private readonly listProjectionScheduler = new RoomListProjectionScheduler();
+  private readonly listProjectionScheduler = new RoomListProjectionScheduler(
+    roomListProjectionConcurrencyForPool(
+      pressureDatabasePoolOptionsV1(process.env, "api").connectionLimit,
+    ),
+  );
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
