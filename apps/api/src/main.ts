@@ -2,13 +2,16 @@ import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { configureApiTransport } from "./api-transport";
-import { configurePressureSupabaseDatabaseV1 } from "./pressure-chapter/production-config";
+import { configurePressureSupabaseDatabaseV1, pressureDatabasePoolOptionsV1 } from "./pressure-chapter/production-config";
 import { PRESSURE_CHAPTER_WORKER_OWNER_ENV_V1 } from "./pressure-chapter/product";
 
 // Pressure is Supabase-only. Resolve and bind the selected project before
 // Nest constructs Prisma or any production adapter; diagnostics never expose
 // the selected URL, credentials, or project ref.
-configurePressureSupabaseDatabaseV1(process.env);
+configurePressureSupabaseDatabaseV1(
+  process.env,
+  pressureDatabasePoolOptionsV1(process.env, "api"),
+);
 async function bootstrap() {
   if (process.env.STORY_WORKER_ENABLED === undefined) process.env.STORY_WORKER_ENABLED = "true";
   if (process.env[PRESSURE_CHAPTER_WORKER_OWNER_ENV_V1] === undefined) {

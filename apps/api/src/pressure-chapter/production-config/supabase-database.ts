@@ -10,6 +10,17 @@ extends PressureSupabaseDatabaseReadinessV1 {
   connectionString: string;
 }
 
+export interface PressureDatabasePoolOptionsV1 {
+  connectionLimit: number;
+  poolTimeoutSeconds: number;
+}
+
+const DEFAULT_API_CONNECTION_LIMIT = 5;
+const DEFAULT_WORKER_CONNECTION_LIMIT = 1;
+const DEFAULT_POOL_TIMEOUT_SECONDS = 20;
+const MAX_CONNECTION_LIMIT_PER_PROCESS = 50;
+const MAX_POOL_TIMEOUT_SECONDS = 120;
+
 /**
  * Resolve the only database Pressure is allowed to use.
  *
@@ -86,7 +97,7 @@ export function inspectPressureSupabaseDatabaseV1(
 
 export function configurePressureSupabaseDatabaseV1(
   environment: NodeJS.ProcessEnv,
-  options: { connectionLimit?: number } = {},
+  options: { connectionLimit?: number; poolTimeoutSeconds?: number } = {},
 ): PressureSupabaseDatabaseReadinessV1 {
   const resolved = resolvePressureSupabaseDatabaseV1(environment);
   const connectionString = new URL(resolved.connectionString);
@@ -96,6 +107,12 @@ export function configurePressureSupabaseDatabaseV1(
     }
     connectionString.searchParams.set("connection_limit", String(options.connectionLimit));
   }
+  if (options.poolTimeoutSeconds !== undefined) {
+    if (!Number.isSafeInteger(options.poolTimeoutSeconds) || options.poolTimeoutSeconds < 1) {
+      throw configurationError("SUPABASE_POOL_TIMEOUT_INVALID");
+    }
+    connectionString.searchParams.set("pool_timeout", String(options.poolTimeoutSeconds));
+  }
   environment.DATABASE_URL = connectionString.toString();
   return {
     ready: true,
@@ -103,6 +120,27 @@ export function configurePressureSupabaseDatabaseV1(
     projectRefMatched: true,
     reason: null,
   };
+}
+
+export function pressureDatabasePoolOptionsV1(
+  environment: NodeJS.ProcessEnv,
+  processRole: "api" | "worker",
+): PressureDatabasePoolOptionsV1 {
+  const connectionLimit = positiveBoundedInteger(
+    environment[processRole === "api"
+      ? "PRESSURE_API_DATABASE_CONNECTION_LIMIT"
+      : "PRESSURE_WORKER_DATABASE_CONNECTION_LIMIT"],
+    processRole === "api" ? DEFAULT_API_CONNECTION_LIMIT : DEFAULT_WORKER_CONNECTION_LIMIT,
+    MAX_CONNECTION_LIMIT_PER_PROCESS,
+    "SUPABASE_CONNECTION_LIMIT_INVALID",
+  );
+  const poolTimeoutSeconds = positiveBoundedInteger(
+    environment.PRESSURE_DATABASE_POOL_TIMEOUT_SECONDS,
+    DEFAULT_POOL_TIMEOUT_SECONDS,
+    MAX_POOL_TIMEOUT_SECONDS,
+    "SUPABASE_POOL_TIMEOUT_INVALID",
+  );
+  return { connectionLimit, poolTimeoutSeconds };
 }
 
 export class PressureProductionConfigurationErrorV1 extends Error {
@@ -191,6 +229,21 @@ function isLocalHost(hostname: string): boolean {
 
 function clean(value: string | undefined): string {
   return String(value ?? "").trim();
+}
+
+function positiveBoundedInteger(
+  value: string | undefined,
+  fallback: number,
+  maximum: number,
+  errorCode: string,
+): number {
+  const normalized = clean(value);
+  if (!normalized) return fallback;
+  const parsed = Number(normalized);
+  if (!Number.isSafeInteger(parsed) || parsed < 1 || parsed > maximum) {
+    throw configurationError(errorCode);
+  }
+  return parsed;
 }
 
 function configurationError(code: string): PressureProductionConfigurationErrorV1 {

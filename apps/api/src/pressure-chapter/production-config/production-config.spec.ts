@@ -4,6 +4,7 @@ import {
   configurePressureSupabaseDatabaseV1,
   createPressureNarrativeProviderFromEnvV1,
   inspectPressureSupabaseDatabaseV1,
+  pressureDatabasePoolOptionsV1,
   PressureProductionConfigurationErrorV1,
   resolvePressureSupabaseDatabaseV1,
 } from "./index";
@@ -68,14 +69,48 @@ test("API and worker can share the Supabase binding with an explicit pool limit"
     SUPABASE_DATABASE_URL: `postgresql://postgres.${TEST_REF}:secret@aws-0-ap-northeast-1.pooler.supabase.com/postgres`,
     SUPABASE_PROJECT_REF: TEST_REF,
   };
-  configurePressureSupabaseDatabaseV1(environment, { connectionLimit: 1 });
+  configurePressureSupabaseDatabaseV1(environment, { connectionLimit: 1, poolTimeoutSeconds: 30 });
   const selected = new URL(environment.DATABASE_URL!);
   assert.equal(selected.searchParams.get("connection_limit"), "1");
+  assert.equal(selected.searchParams.get("pool_timeout"), "30");
   assert.throws(
     () => configurePressureSupabaseDatabaseV1(environment, { connectionLimit: 0 }),
     (error: unknown) => error instanceof PressureProductionConfigurationErrorV1
       && error.code === "SUPABASE_CONNECTION_LIMIT_INVALID",
   );
+  assert.throws(
+    () => configurePressureSupabaseDatabaseV1(environment, { poolTimeoutSeconds: 0 }),
+    (error: unknown) => error instanceof PressureProductionConfigurationErrorV1
+      && error.code === "SUPABASE_POOL_TIMEOUT_INVALID",
+  );
+});
+
+test("API and worker pool budgets are explicit, bounded, and independently configurable", () => {
+  assert.deepEqual(pressureDatabasePoolOptionsV1({}, "api"), {
+    connectionLimit: 5,
+    poolTimeoutSeconds: 20,
+  });
+  assert.deepEqual(pressureDatabasePoolOptionsV1({}, "worker"), {
+    connectionLimit: 1,
+    poolTimeoutSeconds: 20,
+  });
+  assert.deepEqual(pressureDatabasePoolOptionsV1({
+    PRESSURE_API_DATABASE_CONNECTION_LIMIT: "8",
+    PRESSURE_DATABASE_POOL_TIMEOUT_SECONDS: "45",
+  }, "api"), {
+    connectionLimit: 8,
+    poolTimeoutSeconds: 45,
+  });
+  for (const environment of [
+    { PRESSURE_API_DATABASE_CONNECTION_LIMIT: "0" },
+    { PRESSURE_API_DATABASE_CONNECTION_LIMIT: "51" },
+    { PRESSURE_DATABASE_POOL_TIMEOUT_SECONDS: "121" },
+  ]) {
+    assert.throws(
+      () => pressureDatabasePoolOptionsV1(environment, "api"),
+      (error: unknown) => error instanceof PressureProductionConfigurationErrorV1,
+    );
+  }
 });
 
 test("narrative provider is explicit and deterministic fallback is visible", async () => {
