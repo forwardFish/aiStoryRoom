@@ -185,6 +185,25 @@ test("concurrent join/select/ready preserves all lifecycle writes and one winner
   assert.deepEqual(env.db.runs[0]!.stateJson, {});
 });
 
+test("room projection status derives lobby and start from one transaction snapshot", async () => {
+  const env = createEnvironment();
+  await env.shell.createLobbyDraft(lobbyCommand());
+  let transactions = 0;
+  const lobby = new PrismaPressureLobbyPersistenceAdapter({
+    $transaction: async (operation, options) => {
+      transactions += 1;
+      return env.db.client.$transaction(operation, options);
+    },
+  });
+
+  const status = await lobby.getRoomProjectionStatus({ runId: RUN_ID, viewerUserId: OWNER });
+
+  assert(status);
+  assert.equal(status.lobby.runId, RUN_ID);
+  assert.equal(status.start.runId, RUN_ID);
+  assert.equal(transactions, 1);
+});
+
 test("lobby receipts replay exact responses, bind keys to fingerprints, and commit with lifecycle CAS", async () => {
   const env = createEnvironment();
   await env.shell.createLobbyDraft(lobbyCommand());

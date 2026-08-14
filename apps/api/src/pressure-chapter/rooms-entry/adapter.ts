@@ -149,17 +149,17 @@ export class PressureRoomsEntryAdapter {
     viewerId?: string;
     requireMembership?: boolean;
   }) {
-    const lobby = await this.deps.gateway.getStatus({
+    const status = await this.deps.gateway.getRoomProjectionStatus({
       runId: input.room.id,
       viewerUserId: input.viewerId ?? null,
     });
-    if (!lobby) throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
+    if (!status) throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
+    const { lobby, start } = status;
     const isMember = lobby.ownerUserId === input.viewerId
       || lobby.members.some((member) => member.userId === input.viewerId);
     if (input.requireMembership && !isMember) {
       throw new ForbiddenException({ code: "ROOM_ACCESS_DENIED", message: "Join this room before viewing its private state" });
     }
-    const start = await this.deps.gateway.getStartStatus(input.room.id);
     return buildPressureRoomProjection({
       room: input.room,
       lobby,

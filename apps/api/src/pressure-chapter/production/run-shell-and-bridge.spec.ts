@@ -110,6 +110,12 @@ class AtomicPlaceholderLobby implements PressureLobbyPersistencePortV1 {
     };
   }
 
+  async getRoomProjectionStatus(query: { runId: string }) {
+    const lobby = await this.getLobbyStatus(query);
+    const start = await this.getStartStatus(query.runId);
+    return lobby && start ? { lobby, start } : null;
+  }
+
   async join(
     command: Readonly<JoinPressureLobbyCommandV1>,
   ): Promise<PressureLobbyMutationResultV1> {

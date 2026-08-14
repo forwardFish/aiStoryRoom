@@ -109,6 +109,11 @@ export interface PressureStartStatusV1 {
   } | null;
 }
 
+export interface PressureRoomProjectionStatusV1 {
+  lobby: PressureLobbyStatusV1;
+  start: PressureStartStatusV1;
+}
+
 export interface PressureLobbyMutationResultV1 {
   status: "UPDATED" | "EXISTING";
   lobby: PressureLobbyStatusV1;
@@ -150,6 +155,10 @@ export interface PressureLobbyPersistencePortV1 {
     viewerUserId?: string | null;
   }): Promise<PressureLobbyStatusV1 | null>;
   getStartStatus(runId: string): Promise<PressureStartStatusV1 | null>;
+  getRoomProjectionStatus(query: {
+    runId: string;
+    viewerUserId?: string | null;
+  }): Promise<PressureRoomProjectionStatusV1 | null>;
   /**
    * Membership lives in the independent PressureRunLifecycle.lobbyJson. Joining
    * must not insert a seventh, unseated StoryPlayer: the six StoryPlayer rows
@@ -237,6 +246,9 @@ export interface PressureProductionBridgeV1 {
     query: Readonly<GetPressureLobbyStatusQueryV1>,
   ): Promise<PressureLobbyStatusV1 | null>;
   getStartStatus(runId: string): Promise<PressureStartStatusV1 | null>;
+  getRoomProjectionStatus(
+    query: Readonly<GetPressureLobbyStatusQueryV1>,
+  ): Promise<PressureRoomProjectionStatusV1 | null>;
 }
 
 /**
@@ -342,6 +354,19 @@ export class PressureProductionBridgeService implements PressureProductionBridge
     const normalizedRunId = requireText("runId", runId);
     const status = await this.lobby.getStartStatus(normalizedRunId);
     return status ? assertStartStatus(status, normalizedRunId) : null;
+  }
+
+  async getRoomProjectionStatus(query: Readonly<GetPressureLobbyStatusQueryV1>) {
+    const runId = requireText("runId", query.runId);
+    const viewerUserId = query.viewerUserId == null
+      ? null
+      : requireText("viewerUserId", query.viewerUserId);
+    const status = await this.lobby.getRoomProjectionStatus({ runId, viewerUserId });
+    if (!status) return null;
+    return {
+      lobby: assertLobbyStatus(status.lobby, runId),
+      start: assertStartStatus(status.start, runId),
+    };
   }
 }
 

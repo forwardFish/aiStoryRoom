@@ -53,4 +53,8 @@ export class PressureChapterRoomsGatewayV1 implements PressureProductionBridgeV1
   getStartStatus(runId: string) {
     return this.production.getStartStatus(runId);
   }
+
+  getRoomProjectionStatus(query: Readonly<GetPressureLobbyStatusQueryV1>) {
+    return this.production.getRoomProjectionStatus(query);
+  }
 }

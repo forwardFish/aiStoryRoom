@@ -228,8 +228,7 @@ test("pressure room projection preserves room compatibility fields and shows joi
     {} as never,
     {} as never,
   );
-  (pressureService as any).pressureRoomsGateway = {
-    getStatus: async () => ({
+  const lobbyStatus = {
       schemaVersion: "pressure_lobby_status_v1",
       runId: "pressure-room-1",
       participantMode: "MULTIPLAYER",
@@ -252,8 +251,8 @@ test("pressure room projection preserves room compatibility fields and shows joi
         controllerType: index === 0 ? "human" as const : "ai" as const,
         ready: index === 0,
       })),
-    }),
-    getStartStatus: async () => ({
+    };
+  const startStatus = {
       schemaVersion: "pressure_start_status_v1",
       runId: "pressure-room-1",
       phase: "STARTED",
@@ -264,7 +263,9 @@ test("pressure room projection preserves room compatibility fields and shows joi
       seatControlStateHash: null,
       n1ChapterHash: null,
       lastFailure: null,
-    }),
+    };
+  (pressureService as any).pressureRoomsGateway = {
+    getRoomProjectionStatus: async () => ({ lobby: lobbyStatus, start: startStatus }),
   };
   const room = {
     id: "pressure-room-1",

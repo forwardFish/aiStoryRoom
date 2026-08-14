@@ -71,6 +71,23 @@ implements PressureLobbyPersistencePortV1 {
     });
   }
 
+  async getRoomProjectionStatus(query: {
+    runId: string;
+    viewerUserId?: string | null;
+  }) {
+    const runId = requireText(query.runId, "runId");
+    if (query.viewerUserId != null) requireText(query.viewerUserId, "viewerUserId");
+    return pressureSerializableTransaction(this.prisma, async (tx) => {
+      const snapshot = await readPressureProductionSnapshot(tx, runId);
+      return snapshot
+        ? {
+            lobby: buildPressureLobbyStatus(snapshot),
+            start: buildPressureStartStatus(snapshot),
+          }
+        : null;
+    });
+  }
+
   async join(commandValue: Readonly<JoinPressureLobbyCommandV1>) {
     const command = normalizeMemberCommand(commandValue);
     const receipt = prepareLobbyCommand("JOIN", command, {
