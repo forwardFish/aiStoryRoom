@@ -9,6 +9,17 @@ import {
 } from "../src/pressure-spine/beat-authoring";
 import { loadSangtianPressureChapterBeatAuthoringSourceV1 } from "../src/pressure-spine/sangtian-beat-authoring";
 
+const N1_DECISION_POINT_IDS = Object.freeze([
+  "N1.weir_crisis",
+  "N1.dispatch_route",
+  "N1.order_reconciliation",
+  "N1.evidence_handoff",
+  "N1.remaining_resources",
+  "N1.named_accountability",
+  "N1.seal_review",
+  "N1.final_dispatch",
+]);
+
 function synthetic() {
   const authoring: PressureChapterBeatAuthoringV1 = {
     schemaVersion: "pressure_chapter_beat_authoring_v1",
@@ -65,7 +76,7 @@ function synthetic() {
       },
       {
         decisionContractRef: "C42.decision.close",
-        catalogDecisionPointRef: "catalog.neutral",
+        catalogDecisionPointRef: "catalog.neutral.close",
         actionPhase: "COMMIT",
         pressure: "The chapter must now close through authority.",
         advanceCondition: {
@@ -85,10 +96,16 @@ function synthetic() {
       { materialRef: "summary.mid", visibility: "PUBLIC", authorizedSeatIds: [] },
       { materialRef: "summary.low", visibility: "PUBLIC", authorizedSeatIds: [] },
     ],
-    decisions: [{
-      decisionPointRef: "catalog.neutral",
-      legalActionRefs: ["catalog.neutral#ACT_A", "catalog.neutral#ACT_B"],
-    }],
+    decisions: [
+      {
+        decisionPointRef: "catalog.neutral",
+        legalActionRefs: ["catalog.neutral#ACT_A", "catalog.neutral#ACT_B"],
+      },
+      {
+        decisionPointRef: "catalog.neutral.close",
+        legalActionRefs: ["catalog.neutral.close#ACT_C", "catalog.neutral.close#ACT_D"],
+      },
+    ],
   };
   return { authoring, bindings, referenceIndex };
 }
@@ -110,6 +127,10 @@ test("an arbitrary chapter compiles multiple ordered beats without an N1 constan
     "catalog.neutral#ACT_A",
     "catalog.neutral#ACT_B",
   ]);
+  assert.deepEqual(compiled.beats[1]!.legalActionRefs, [
+    "catalog.neutral.close#ACT_C",
+    "catalog.neutral.close#ACT_D",
+  ]);
   assert.equal(compiled.beats[0]!.sourceMaterials[1]!.visibility, "SEAT_PRIVATE");
   assert.equal(Object.isFrozen(compiled), true);
   assert.match(compiled.packageHash, /^[A-F0-9]{64}$/u);
@@ -126,6 +147,14 @@ test("duplicate beat and decision refs fail closed", () => {
   codeOf(
     () => compilePressureChapterBeatAuthoringPackageV1(duplicateDecision),
     ERROR.DECISION_CONTRACT_DUPLICATE,
+  );
+
+  const duplicateCatalogDecision = synthetic();
+  duplicateCatalogDecision.bindings.decisionContracts[1]!.catalogDecisionPointRef =
+    duplicateCatalogDecision.bindings.decisionContracts[0]!.catalogDecisionPointRef;
+  codeOf(
+    () => compilePressureChapterBeatAuthoringPackageV1(duplicateCatalogDecision),
+    ERROR.BINDING_MISMATCH,
   );
 });
 
@@ -207,7 +236,7 @@ test("binding successor and chapter-ending strategy must match the authoring gra
   );
 });
 
-test("registered N1 is READY, has eight causal beats, six seat lenses and all 24 NPC reactions", () => {
+test("registered N1 binds eight causal Beats to eight executable Catalog identities", () => {
   const source = loadSangtianPressureChapterBeatAuthoringSourceV1("N1");
   const compiled = source.package;
   assert.equal(compiled.contentStatus, "READY_FOR_IMPORT");
@@ -234,6 +263,11 @@ test("registered N1 is READY, has eight causal beats, six seat lenses and all 24
   ]);
   assert.equal(npcs.every((ref) => referenced.has(ref)), true);
   assert.equal(seats.every((ref) => referenced.has(ref)), true);
+  const decisionPointRefs = compiled.beats.map((beat) => beat.catalogDecisionPointRef);
+  assert.deepEqual(decisionPointRefs, N1_DECISION_POINT_IDS);
+  assert.equal(new Set(decisionPointRefs).size, 8);
   assert.equal(compiled.beats.every((beat) =>
-    beat.legalActionRefs.every((ref) => ref.startsWith("N1.weir_crisis#"))), true);
+    beat.legalActionRefs.every((ref) =>
+      ref.startsWith(`${beat.catalogDecisionPointRef}#`),
+    )), true);
 });

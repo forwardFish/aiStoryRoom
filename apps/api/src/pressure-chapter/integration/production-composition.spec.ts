@@ -104,7 +104,7 @@ async function storedRoute(): Promise<ApiStoredRunRouteRecordV1> {
 test("accepted content composes P0 and all N1-N7 dynamic authored runtimes", async () => {
   const stored = await storedRoute();
   const content = new SangtianAuthoredChapterContentAdapterV1();
-  const expectedCounts = [1, 4, 4, 2, 7, 3, 5];
+  const expectedCounts = [8, 4, 4, 2, 7, 3, 5];
   for (let index = 0; index < expectedCounts.length; index += 1) {
     const chapterId = `N${index + 1}` as AuthoredChapterRuntimeV1["chapterId"];
     const descriptor = await content.load({ routeSnapshot: stored.snapshot, chapterId });
@@ -175,9 +175,11 @@ test("server decision compiler derives authority fields and rejects controlEpoch
   const descriptor = await content.load({ routeSnapshot: stored.snapshot, chapterId: "N1" });
   const projection = workingProjection(stored, descriptor);
   const decision = descriptor.decisions[0]!;
+  assert.deepEqual(decision.execution.requiredSeatIds, PRESSURE_CHAPTER_SEAT_IDS_V1);
   const option = decision.execution.allowedActionTypes.find(
     (actionType) => actionType !== "DEFAULT_PASS",
   )!;
+  assert.equal(option, "EVACUATE_WEIRS");
   const submissionFenceToken = digest("submission-fence");
   const game = gameProjection(stored, decision, option, submissionFenceToken);
   const compiler = new PressureDecisionCommandCompilerV1(
@@ -210,7 +212,10 @@ test("server decision compiler derives authority fields and rejects controlEpoch
     evidenceRefs: [],
     resourceReservations: [],
     commitmentMutations: [],
-    knowledgeGrants: [],
+    knowledgeGrants: PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => ({
+      seatId,
+      factRefs: ["working.N1.intake.evacuation_ordered"],
+    })),
     seatArcProgress: [],
   });
   await assert.rejects(

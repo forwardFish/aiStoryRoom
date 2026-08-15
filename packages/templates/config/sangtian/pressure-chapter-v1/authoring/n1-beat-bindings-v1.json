@@ -16,9 +16,9 @@
     },
     {
       "decisionContractRef": "N1.weir_crisis.prepare.dispatch",
-      "catalogDecisionPointRef": "N1.weir_crisis",
+      "catalogDecisionPointRef": "N1.dispatch_route",
       "actionPhase": "PREPARE",
-      "pressure": "第一轮行动已经占用人手、船只、文书和时间，回报正在暴露新的缺口。",
+      "pressure": "第一轮处置窗口已经耗去时辰；已离案命令若存在，其收件与回执正在暴露新的送达缺口。",
       "advanceCondition": {
         "kind": "AUTHORITY_NEXT_DECISION_PIN",
         "successorDecisionContractRefs": [
@@ -28,9 +28,9 @@
     },
     {
       "decisionContractRef": "N1.weir_crisis.prepare.reconcile",
-      "catalogDecisionPointRef": "N1.weir_crisis",
+      "catalogDecisionPointRef": "N1.order_reconciliation",
       "actionPhase": "PREPARE",
-      "pressure": "相反命令争夺同一批资源，现场需要一条能够撤换旧令的执行链。",
+      "pressure": "相反命令争夺同一批资源，现场需要一条能够撤换旧令或保全冲突证据的执行链。",
       "advanceCondition": {
         "kind": "AUTHORITY_NEXT_DECISION_PIN",
         "successorDecisionContractRefs": [
@@ -40,9 +40,9 @@
     },
     {
       "decisionContractRef": "N1.weir_crisis.prepare.evidence",
-      "catalogDecisionPointRef": "N1.weir_crisis",
+      "catalogDecisionPointRef": "N1.evidence_handoff",
       "actionPhase": "PREPARE",
-      "pressure": "抢险与证据保全同时倒计时，经手和见证正在离散。",
+      "pressure": "抢险与证据保全同时倒计时，经手、收件人与见证正在离散。",
       "advanceCondition": {
         "kind": "AUTHORITY_NEXT_DECISION_PIN",
         "successorDecisionContractRefs": [
@@ -52,9 +52,9 @@
     },
     {
       "decisionContractRef": "N1.weir_crisis.commit.resources",
-      "catalogDecisionPointRef": "N1.weir_crisis",
+      "catalogDecisionPointRef": "N1.remaining_resources",
       "actionPhase": "COMMIT",
-      "pressure": "可挽回范围缩窄，剩余船粮兵力不能顾全所有告急处。",
+      "pressure": "可挽回范围缩窄，剩余船路与人手不能顾全所有告急处。",
       "advanceCondition": {
         "kind": "AUTHORITY_NEXT_DECISION_PIN",
         "successorDecisionContractRefs": [
@@ -64,9 +64,9 @@
     },
     {
       "decisionContractRef": "N1.weir_crisis.commit.accountability",
-      "catalogDecisionPointRef": "N1.weir_crisis",
+      "catalogDecisionPointRef": "N1.named_accountability",
       "actionPhase": "COMMIT",
-      "pressure": "任何更正都必须具名，含混命令会把责任和风险继续推给现场。",
+      "pressure": "任何继续或更正都必须具名，含混命令会把责任和风险继续推给现场。",
       "advanceCondition": {
         "kind": "AUTHORITY_NEXT_DECISION_PIN",
         "successorDecisionContractRefs": [
@@ -76,7 +76,7 @@
     },
     {
       "decisionContractRef": "N1.weir_crisis.commit.review",
-      "catalogDecisionPointRef": "N1.weir_crisis",
+      "catalogDecisionPointRef": "N1.seal_review",
       "actionPhase": "COMMIT",
       "pressure": "封缄前只允许核对权威事实、行动去向和已经明确的代价。",
       "advanceCondition": {
@@ -88,9 +88,9 @@
     },
     {
       "decisionContractRef": "N1.weir_crisis.commit.seal",
-      "catalogDecisionPointRef": "N1.weir_crisis",
+      "catalogDecisionPointRef": "N1.final_dispatch",
       "actionPhase": "COMMIT",
-      "pressure": "最后正式行动一经送达即进入章末Settlement，不再打开下一决策。",
+      "pressure": "最后正式行动一经送达即进入章末 Settlement，不再打开下一决策。",
       "advanceCondition": {
         "kind": "CHAPTER_SUMMARY_READY",
         "successorDecisionContractRefs": []

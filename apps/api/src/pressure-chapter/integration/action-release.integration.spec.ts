@@ -34,7 +34,7 @@ test("published loader pins the full route and rejects a tampered CJS core", (t)
   assert.equal(release.routeRegistration.status, "PUBLISHED");
   assert.equal(release.routeRegistration.createEnabled, true);
   assert.deepEqual(release.routeConfiguration, {
-    registryVersion: "pressure-route-registry-1.0.0",
+    registryVersion: "pressure-route-registry-1.0.2",
     orchestrationPackageVersion: release.routeRegistration.orchestrationPackageVersion,
     orchestrationPackageSha256: release.routeRegistration.orchestrationPackageSha256,
     runtimeContractVersion: release.routeRegistration.runtimeContractVersion,
@@ -52,7 +52,7 @@ test("published loader pins the full route and rejects a tampered CJS core", (t)
   assert.deepEqual(reconstructedRegistry.routes, [release.routeRegistration]);
   assert.equal(
     reconstructedRegistry.registryHash,
-    "ed7b03f220fb6ba2e6b1b64d7e78bde7db8b20b0fd7499b9dc5d0dcbe48b40a6",
+    "3303b13984ace2e9d20660fc5039b11dd9af7864e9e3c2be28da3ad147ed9f91",
   );
 
   const sourceRoot = resolve(
@@ -203,8 +203,11 @@ test("release presentation catalog implements the game projection port", () => {
   });
   assert.equal(presentation.actionType, "EVACUATE_WEIRS");
   assert.equal(presentation.preferredEntry, "PLAN");
-  assert.equal(presentation.label, "组织堰区疏散");
-  assert.ok(presentation.description.trim());
+  assert.equal(presentation.label, "先发堰区疏散令");
+  assert.equal(
+    presentation.description,
+    "先把可送达的差役与船路用于高风险村落疏散，并明确第一批接令对象。",
+  );
   assert.equal(catalog.read({
     contentPackageVersion: release.route.contentPackageVersion,
     contentPackageHash: release.route.contentPackageSha256,

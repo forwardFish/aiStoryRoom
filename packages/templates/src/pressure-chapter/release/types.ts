@@ -154,8 +154,8 @@ export interface SangtianActionPresentationCatalogV1 {
   }>;
   completeness: {
     chapterCount: 7;
-    decisionPointCount: 26;
-    decisionActionPairCount: 72;
+    decisionPointCount: 33;
+    decisionActionPairCount: 93;
     coverageRule: "EXACT_ACCEPTED_CONTENT_DECISION_ACTION_PAIRS";
   };
   catalogSha256: string;
@@ -230,7 +230,7 @@ export interface SangtianAiDecisionBindingPolicyV1 {
 export interface SangtianAiDecisionPolicyV1 {
   schemaVersion: "sangtian_ai_decision_policy_v1";
   policyRef: "sangtian.ai.decision.v1";
-  policyVersion: "sangtian-ai-decision-1.0.1";
+  policyVersion: "sangtian-ai-decision-1.0.2";
   selectorVersion: "sangtian-ai-decision-selector-1.0.0";
   runtimeProfile: "SANGTIAN_CONTINUOUS_CHAPTER_V1";
   sourceBinding: {
@@ -272,8 +272,8 @@ export interface SangtianAiDecisionPolicyV1 {
   decisions: SangtianAiDecisionBindingPolicyV1[];
   coverage: {
     chapterCount: 7;
-    decisionPointCount: 26;
-    applicableSeatBindingCount: 100;
+    decisionPointCount: 33;
+    applicableSeatBindingCount: 142;
     coverageRule: "EXACT_ACCEPTED_DECISION_REQUIRED_SEAT_BINDINGS";
   };
   policySha256: string;

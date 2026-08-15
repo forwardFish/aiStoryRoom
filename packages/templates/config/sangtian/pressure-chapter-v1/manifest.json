@@ -1,14 +1,14 @@
 {
   "schemaVersion": "sangtian_pressure_chapter_manifest_v1",
   "packageId": "sangtian_pressure_chapter_v1",
-  "packageVersion": "1.0.1",
+  "packageVersion": "1.0.2",
   "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
   "sourceCommitSha": "5badb6fa62a823de7019ce6a046efffbd74268d8",
   "sourcePackageId": "sangtian_complete_story_content_package_v1_1",
   "sourcePackageVersion": "1.1.0-repair-final",
   "sourceStorySha256": "04d5e8d4533d86890a79058c25252d33e001668921a2bbd8ffde401cdd2b6238",
   "contentFile": "content.json",
-  "contentSha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466",
+  "contentSha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
   "forbiddenLegacyFields": [
     "actionBudget",
     "commitPerSeat",
@@ -46,5 +46,5 @@
     { "path": "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/P0/seat-content.json", "gitBlobSha1": "cca85ba9deac827e5139ae05c293930fdec41e7f" },
     { "path": "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/P0/source-evidence.jsonl", "gitBlobSha1": "8e4f472f97647f038ed17458c47aeb182e8a9589" }
   ],
-  "manifestSha256": "5168d4609980e3ca199bfc9874c038b5e001ae67739a689b783d715fa8002f33"
+  "manifestSha256": "6f206e8dade12cc1c841d2f51a425e85ddd843db7b403f56d38ef97d7c4bd3bb"
 }

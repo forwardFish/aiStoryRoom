@@ -26,7 +26,7 @@ const DEFAULT_RELEASE_ROOT = resolve(
 const ARTIFACT_ID = "ai_decision_policy" as const;
 const ARTIFACT_PATH = "ai-decision-policy.json" as const;
 const EXPECTED_ARTIFACT_SHA256 =
-  "c69066e3b367118d7205e00601e5e56d258ad93dd0731100a16850813e2c52cb";
+  "2ec7a3d17e418cfde6aa4ecdcbe395d7c271bfa9772cd39fd8c9a534176fe78f";
 const EXPECTED_ROUTE_KEY = "sangtian_pressure_chapter_v1" as const;
 
 const ACCEPTED_INPUT_FIELDS = Object.freeze([
@@ -90,7 +90,7 @@ export function loadPublishedSangtianAiDecisionPolicyV1(
     matches.length !== 1
     || !artifact
     || artifact.path !== ARTIFACT_PATH
-    || artifact.version !== "sangtian-ai-decision-1.0.1"
+    || artifact.version !== "sangtian-ai-decision-1.0.2"
     || artifact.hashMode !== "CANONICAL_JSON"
     || artifact.sha256 !== EXPECTED_ARTIFACT_SHA256
   ) {
@@ -146,7 +146,7 @@ export function validateSangtianAiDecisionPolicyV1(
   ], "policy");
   literal(policy.schemaVersion, "sangtian_ai_decision_policy_v1", "policy.schemaVersion");
   literal(policy.policyRef, "sangtian.ai.decision.v1", "policy.policyRef");
-  literal(policy.policyVersion, "sangtian-ai-decision-1.0.1", "policy.policyVersion");
+  literal(policy.policyVersion, "sangtian-ai-decision-1.0.2", "policy.policyVersion");
   literal(policy.selectorVersion, "sangtian-ai-decision-selector-1.0.0", "policy.selectorVersion");
   literal(policy.runtimeProfile, "SANGTIAN_CONTINUOUS_CHAPTER_V1", "policy.runtimeProfile");
 
@@ -200,7 +200,7 @@ export function validateSangtianAiDecisionPolicyV1(
   literal(algorithm.defaultActionType, "DEFAULT_PASS", "policy.selectionAlgorithm.defaultActionType");
 
   const decisions = array(policy.decisions, "policy.decisions");
-  if (decisions.length !== 26) fail("POLICY_INVALID", "policy.decisions", "EXPECTED_26");
+  if (decisions.length !== 33) fail("POLICY_INVALID", "policy.decisions", "EXPECTED_33");
   const decisionKeys = new Set<string>();
   let seatBindingCount = 0;
   decisions.forEach((value, decisionIndex) => {
@@ -261,15 +261,15 @@ export function validateSangtianAiDecisionPolicyV1(
     "coverageRule",
   ], "policy.coverage");
   literal(coverage.chapterCount, 7, "policy.coverage.chapterCount");
-  literal(coverage.decisionPointCount, 26, "policy.coverage.decisionPointCount");
-  literal(coverage.applicableSeatBindingCount, 100, "policy.coverage.applicableSeatBindingCount");
+  literal(coverage.decisionPointCount, 33, "policy.coverage.decisionPointCount");
+  literal(coverage.applicableSeatBindingCount, 142, "policy.coverage.applicableSeatBindingCount");
   literal(
     coverage.coverageRule,
     "EXACT_ACCEPTED_DECISION_REQUIRED_SEAT_BINDINGS",
     "policy.coverage.coverageRule",
   );
-  if (seatBindingCount !== 100) {
-    fail("POLICY_INVALID", "policy.decisions.seatPolicies", "EXPECTED_100");
+  if (seatBindingCount !== 142) {
+    fail("POLICY_INVALID", "policy.decisions.seatPolicies", "EXPECTED_142");
   }
   sha(policy.policySha256, "policy.policySha256");
   if (hashWithoutField(policy, "policySha256") !== policy.policySha256) {
@@ -391,7 +391,7 @@ function assertPolicyMatchesAcceptedContent(
     }
     seatBindingCount += configured.seatPolicies.length;
   });
-  if (seatBindingCount !== 100) {
+  if (seatBindingCount !== 142) {
     fail("CONTENT_BINDING_MISMATCH", "policy.coverage.applicableSeatBindingCount");
   }
 }

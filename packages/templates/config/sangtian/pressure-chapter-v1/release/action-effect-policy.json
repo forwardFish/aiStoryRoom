@@ -1,7 +1,7 @@
 {
   "schemaVersion": "sangtian_action_effect_policy_v1",
   "policyId": "sangtian_pressure_action_effect_v1",
-  "policyVersion": "sangtian-action-effect-1.0.1",
+  "policyVersion": "sangtian-action-effect-1.0.2",
   "compilerVersion": "sangtian-action-effect-compiler-1.0.0",
   "aggregationVersion": "sangtian-selector-fact-reducer-1.0.0",
   "compilerModule": {
@@ -21,8 +21,8 @@
     "resultSchemaVersion": "sangtian_pressure_result_v1"
   },
   "sourceBinding": {
-    "contentPackageVersion": "1.0.1",
-    "contentPackageSha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466",
+    "contentPackageVersion": "1.0.2",
+    "contentPackageSha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
     "sourceCommitSha": "5badb6fa62a823de7019ce6a046efffbd74268d8",
     "derivationClass": "VERSIONED_T3_ADAPTATION_FROM_ACCEPTED_ACTION_SEMANTICS_AND_SELECTOR_BOUNDARIES",
     "sourceContainedExactActionEffectValues": false
@@ -35,9 +35,9 @@
   "bindingExpansion": {
     "keyFields": ["chapterId", "decisionPointKey", "seatId", "actionType"],
     "rule": "CARTESIAN_REQUIRED_SEATS_X_DECLARED_ACTIONS",
-    "expectedDecisionPointCount": 26,
-    "expectedDecisionActionPairCount": 72,
-    "expectedExpandedBindingCount": 288,
+    "expectedDecisionPointCount": 33,
+    "expectedDecisionActionPairCount": 93,
+    "expectedExpandedBindingCount": 414,
     "unknownBinding": "SANGTIAN_ACTION_EFFECT_BINDING_NOT_FOUND",
     "duplicateBinding": "SANGTIAN_ACTION_EFFECT_BINDING_DUPLICATE",
     "contentDrift": "SANGTIAN_ACTION_EFFECT_CONTENT_DRIFT",
@@ -50,25 +50,807 @@
     "ignoredForAuthority": ["customText", "providerOutput", "narrativeText", "arrivalOrder"],
     "canonicalActionOrder": ["decisionPointOrdinal", "seatId", "actionOrdinal", "actionId"],
     "workingIntentExpansion": {
-      "DEFAULT_PRIVATE": {
-        "visibility": "PRIVATE",
-        "targetSeatRule": "NONE",
-        "evidenceRefs": [],
-        "resourceReservations": [],
-        "commitmentMutations": [],
-        "knowledgeGrants": [],
-        "seatArcProgress": []
-      },
-      "PARTICIPANT_EFFECT": {
-        "visibility": "PARTICIPANTS",
-        "targetSeatRule": "DECISION_REQUIRED_SEATS",
-        "evidenceRefs": [],
-        "resourceReservations": [],
-        "commitmentMutations": [],
-        "knowledgeGrants": [],
-        "seatArcProgress": []
-      }
-    },
+                                "DEFAULT_PRIVATE": {
+                                  "visibility": "PRIVATE",
+                                  "targetSeatRule": "NONE",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [],
+                                  "seatArcProgress": []
+                                },
+                                "PARTICIPANT_EFFECT": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [],
+                                  "seatArcProgress": []
+                                },
+                                "N1_EVACUATE_WEIRS": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.intake.evacuation_ordered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.intake.evacuation_ordered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.intake.evacuation_ordered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.intake.evacuation_ordered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.intake.evacuation_ordered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.intake.evacuation_ordered"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_SEAL_BREACH_RECORD": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.intake.breach_record_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.intake.breach_record_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.intake.breach_record_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.intake.breach_record_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.intake.breach_record_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.intake.breach_record_sealed"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_SUPPORT_WEIR": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.intake.weir_support_ordered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.intake.weir_support_ordered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.intake.weir_support_ordered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.intake.weir_support_ordered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.intake.weir_support_ordered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.intake.weir_support_ordered"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_CONFIRM_DISPATCH_ROUTE": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_confirmed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_confirmed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_confirmed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_confirmed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_confirmed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_confirmed"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_REDIRECT_DISPATCH_ROUTE": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_redirected"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_redirected"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_redirected"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_redirected"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_redirected"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.dispatch.route_redirected"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_PRESERVE_PARALLEL_ORDER_EVIDENCE": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.reconcile.parallel_orders_preserved"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.reconcile.parallel_orders_preserved"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.reconcile.parallel_orders_preserved"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.reconcile.parallel_orders_preserved"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.reconcile.parallel_orders_preserved"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.reconcile.parallel_orders_preserved"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_REVOKE_CONFLICTING_ORDER": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.reconcile.conflicting_order_revoked"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.reconcile.conflicting_order_revoked"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.reconcile.conflicting_order_revoked"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.reconcile.conflicting_order_revoked"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.reconcile.conflicting_order_revoked"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.reconcile.conflicting_order_revoked"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_REGISTER_EVIDENCE_HANDOFF": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.evidence.handoff_registered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.evidence.handoff_registered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.evidence.handoff_registered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.evidence.handoff_registered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.evidence.handoff_registered"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.evidence.handoff_registered"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_SEAL_WITNESS_CHAIN": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.evidence.witness_chain_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.evidence.witness_chain_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.evidence.witness_chain_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.evidence.witness_chain_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.evidence.witness_chain_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.evidence.witness_chain_sealed"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_PRIORITIZE_EVACUATION_ROUTE": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.resources.evacuation_prioritized"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.resources.evacuation_prioritized"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.resources.evacuation_prioritized"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.resources.evacuation_prioritized"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.resources.evacuation_prioritized"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.resources.evacuation_prioritized"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_REINFORCE_REMAINING_WEIR": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.resources.weir_reinforced"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.resources.weir_reinforced"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.resources.weir_reinforced"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.resources.weir_reinforced"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.resources.weir_reinforced"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.resources.weir_reinforced"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_REQUIRE_COUNTERSIGNATURE": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.accountability.countersignature_required"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.accountability.countersignature_required"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.accountability.countersignature_required"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.accountability.countersignature_required"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.accountability.countersignature_required"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.accountability.countersignature_required"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_SIGN_COMMAND_RESPONSIBILITY": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.accountability.responsibility_signed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.accountability.responsibility_signed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.accountability.responsibility_signed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.accountability.responsibility_signed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.accountability.responsibility_signed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.accountability.responsibility_signed"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_PRESERVE_UNRESOLVED_CONFLICT": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.review.unresolved_conflict_preserved"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.review.unresolved_conflict_preserved"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.review.unresolved_conflict_preserved"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.review.unresolved_conflict_preserved"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.review.unresolved_conflict_preserved"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.review.unresolved_conflict_preserved"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_VERIFY_DELIVERY_RECEIPTS": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.review.delivery_receipts_verified"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.review.delivery_receipts_verified"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.review.delivery_receipts_verified"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.review.delivery_receipts_verified"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.review.delivery_receipts_verified"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.review.delivery_receipts_verified"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_DISPATCH_FINAL_WEIR_ORDERS": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.final.orders_dispatched"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.final.orders_dispatched"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.final.orders_dispatched"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.final.orders_dispatched"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.final.orders_dispatched"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.final.orders_dispatched"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                },
+                                "N1_SEAL_FINAL_WEIR_ORDERS": {
+                                  "visibility": "PARTICIPANTS",
+                                  "targetSeatRule": "DECISION_REQUIRED_SEATS",
+                                  "evidenceRefs": [],
+                                  "resourceReservations": [],
+                                  "commitmentMutations": [],
+                                  "knowledgeGrants": [
+                                    {
+                                      "seatId": "cabinet_finance",
+                                      "factRefs": [
+                                        "working.N1.final.orders_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "jiangnan_merchant",
+                                      "factRefs": [
+                                        "working.N1.final.orders_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "qingliu_law",
+                                      "factRefs": [
+                                        "working.N1.final.orders_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "sili_weaving",
+                                      "factRefs": [
+                                        "working.N1.final.orders_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_administration",
+                                      "factRefs": [
+                                        "working.N1.final.orders_sealed"
+                                      ]
+                                    },
+                                    {
+                                      "seatId": "zhejiang_governor",
+                                      "factRefs": [
+                                        "working.N1.final.orders_sealed"
+                                      ]
+                                    }
+                                  ],
+                                  "seatArcProgress": []
+                                }
+                              },
     "factAggregation": {
       "input": "ALL_SEALED_ACTION_CONTRIBUTIONS_FOR_CHAPTER",
       "dedupeKey": "actionId",
@@ -103,44 +885,529 @@
       "chapterId": "N1",
       "settlementPolicyVersion": "sangtian.N1.settlement_v1",
       "sourceRefs": [
-        "content.json#/chapters/N1",
+        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/seat-content.json#/seats",
         "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/defaultTrajectory",
-        "5badb6fa62a823de7019ce6a046efffbd74268d8:packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/seat-content.json#/seats"
+        "content.json#/chapters/N1",
+        "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/authorityBoundary",
+        "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions"
       ],
       "factAggregators": [
-        { "factRef": "evacuationCoveragePct", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
-        { "factRef": "criticalWeirsSecuredCount", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
-        { "factRef": "verifiedBreachRecordCount", "valueType": "NUMBER", "reducer": "MAX", "identity": 0 },
-        { "factRef": "disasterSeverity", "valueType": "NUMBER", "reducer": "MIN", "identity": 4 }
+        {
+          "factRef": "evacuationCoveragePct",
+          "valueType": "NUMBER",
+          "reducer": "MAX",
+          "identity": 0
+        },
+        {
+          "factRef": "criticalWeirsSecuredCount",
+          "valueType": "NUMBER",
+          "reducer": "MAX",
+          "identity": 0
+        },
+        {
+          "factRef": "verifiedBreachRecordCount",
+          "valueType": "NUMBER",
+          "reducer": "MAX",
+          "identity": 0
+        },
+        {
+          "factRef": "disasterSeverity",
+          "valueType": "NUMBER",
+          "reducer": "MIN",
+          "identity": 4
+        }
       ],
       "defaultTrajectory": {
-        "settlementFacts": { "evacuationCoveragePct": 50, "criticalWeirsSecuredCount": 1, "verifiedBreachRecordCount": 1, "disasterSeverity": 3 },
+        "settlementFacts": {
+          "evacuationCoveragePct": 50,
+          "criticalWeirsSecuredCount": 1,
+          "verifiedBreachRecordCount": 1,
+          "disasterSeverity": 3
+        },
         "expectedOutcomeBand": "MID",
         "derivation": "EXACT_SOURCE_DEFAULT_INPUT_STATE"
       },
       "selectorWitnesses": {
-        "HIGH": { "evacuationCoveragePct": 70, "criticalWeirsSecuredCount": 2, "verifiedBreachRecordCount": 1, "disasterSeverity": 2 },
-        "MID": { "evacuationCoveragePct": 50, "criticalWeirsSecuredCount": 1, "verifiedBreachRecordCount": 1, "disasterSeverity": 3 },
-        "LOW": { "evacuationCoveragePct": 0, "criticalWeirsSecuredCount": 0, "verifiedBreachRecordCount": 0, "disasterSeverity": 4 }
+        "HIGH": {
+          "evacuationCoveragePct": 70,
+          "criticalWeirsSecuredCount": 2,
+          "verifiedBreachRecordCount": 1,
+          "disasterSeverity": 2
+        },
+        "MID": {
+          "evacuationCoveragePct": 50,
+          "criticalWeirsSecuredCount": 1,
+          "verifiedBreachRecordCount": 1,
+          "disasterSeverity": 3
+        },
+        "LOW": {
+          "evacuationCoveragePct": 0,
+          "criticalWeirsSecuredCount": 0,
+          "verifiedBreachRecordCount": 0,
+          "disasterSeverity": 4
+        }
       },
       "decisions": [
         {
           "decisionPointKey": "N1.weir_crisis",
-          "requiredSeatIds": ["cabinet_finance", "jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "requiredSeatIds": [
+            "cabinet_finance",
+            "jiangnan_merchant",
+            "qingliu_law",
+            "sili_weaving",
+            "zhejiang_administration",
+            "zhejiang_governor"
+          ],
           "actions": [
-            { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_NEW_FORMAL_EFFECT"] },
-            { "actionType": "EVACUATE_WEIRS", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "evacuationCoveragePct", "value": 70 }, { "factRef": "disasterSeverity", "value": 3 }], "derivationRefs": ["DECISION_PURPOSE_EVACUATION", "HIGH_SELECTOR_GTE_70", "SOURCE_DEFAULT_DISASTER_SEVERITY_3"] },
-            { "actionType": "SEAL_BREACH_RECORD", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "verifiedBreachRecordCount", "value": 1 }], "derivationRefs": ["ACTION_SEMANTICS_SEAL_RECORD", "HIGH_SELECTOR_GTE_1"] },
-            { "actionType": "SUPPORT_WEIR", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "criticalWeirsSecuredCount", "value": 2 }, { "factRef": "disasterSeverity", "value": 2 }], "derivationRefs": ["DECISION_PURPOSE_SUPPORT_WEIR", "HIGH_SELECTOR_GTE_2_AND_LTE_2"] }
+            {
+              "actionType": "DEFAULT_PASS",
+              "workingIntentMode": "DEFAULT_PRIVATE",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B01/actions/DEFAULT_PASS"
+              ]
+            },
+            {
+              "actionType": "EVACUATE_WEIRS",
+              "workingIntentMode": "N1_EVACUATE_WEIRS",
+              "factContributions": [
+                {
+                  "factRef": "evacuationCoveragePct",
+                  "value": 70
+                },
+                {
+                  "factRef": "disasterSeverity",
+                  "value": 3
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B01/actions/EVACUATE_WEIRS"
+              ]
+            },
+            {
+              "actionType": "SEAL_BREACH_RECORD",
+              "workingIntentMode": "N1_SEAL_BREACH_RECORD",
+              "factContributions": [
+                {
+                  "factRef": "verifiedBreachRecordCount",
+                  "value": 1
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B01/actions/SEAL_BREACH_RECORD"
+              ]
+            },
+            {
+              "actionType": "SUPPORT_WEIR",
+              "workingIntentMode": "N1_SUPPORT_WEIR",
+              "factContributions": [
+                {
+                  "factRef": "criticalWeirsSecuredCount",
+                  "value": 2
+                },
+                {
+                  "factRef": "disasterSeverity",
+                  "value": 2
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B01/actions/SUPPORT_WEIR"
+              ]
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.dispatch_route",
+          "requiredSeatIds": [
+            "cabinet_finance",
+            "jiangnan_merchant",
+            "qingliu_law",
+            "sili_weaving",
+            "zhejiang_administration",
+            "zhejiang_governor"
+          ],
+          "actions": [
+            {
+              "actionType": "CONFIRM_DISPATCH_ROUTE",
+              "workingIntentMode": "N1_CONFIRM_DISPATCH_ROUTE",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B02/actions/CONFIRM_DISPATCH_ROUTE"
+              ]
+            },
+            {
+              "actionType": "DEFAULT_PASS",
+              "workingIntentMode": "DEFAULT_PRIVATE",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B02/actions/DEFAULT_PASS"
+              ]
+            },
+            {
+              "actionType": "REDIRECT_DISPATCH_ROUTE",
+              "workingIntentMode": "N1_REDIRECT_DISPATCH_ROUTE",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B02/actions/REDIRECT_DISPATCH_ROUTE"
+              ]
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.order_reconciliation",
+          "requiredSeatIds": [
+            "cabinet_finance",
+            "jiangnan_merchant",
+            "qingliu_law",
+            "sili_weaving",
+            "zhejiang_administration",
+            "zhejiang_governor"
+          ],
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "workingIntentMode": "DEFAULT_PRIVATE",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B03/actions/DEFAULT_PASS"
+              ]
+            },
+            {
+              "actionType": "PRESERVE_PARALLEL_ORDER_EVIDENCE",
+              "workingIntentMode": "N1_PRESERVE_PARALLEL_ORDER_EVIDENCE",
+              "factContributions": [
+                {
+                  "factRef": "verifiedBreachRecordCount",
+                  "value": 1
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B03/actions/PRESERVE_PARALLEL_ORDER_EVIDENCE"
+              ]
+            },
+            {
+              "actionType": "REVOKE_CONFLICTING_ORDER",
+              "workingIntentMode": "N1_REVOKE_CONFLICTING_ORDER",
+              "factContributions": [
+                {
+                  "factRef": "disasterSeverity",
+                  "value": 3
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B03/actions/REVOKE_CONFLICTING_ORDER"
+              ]
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.evidence_handoff",
+          "requiredSeatIds": [
+            "cabinet_finance",
+            "jiangnan_merchant",
+            "qingliu_law",
+            "sili_weaving",
+            "zhejiang_administration",
+            "zhejiang_governor"
+          ],
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "workingIntentMode": "DEFAULT_PRIVATE",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B04/actions/DEFAULT_PASS"
+              ]
+            },
+            {
+              "actionType": "REGISTER_EVIDENCE_HANDOFF",
+              "workingIntentMode": "N1_REGISTER_EVIDENCE_HANDOFF",
+              "factContributions": [
+                {
+                  "factRef": "verifiedBreachRecordCount",
+                  "value": 1
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B04/actions/REGISTER_EVIDENCE_HANDOFF"
+              ]
+            },
+            {
+              "actionType": "SEAL_WITNESS_CHAIN",
+              "workingIntentMode": "N1_SEAL_WITNESS_CHAIN",
+              "factContributions": [
+                {
+                  "factRef": "verifiedBreachRecordCount",
+                  "value": 1
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B04/actions/SEAL_WITNESS_CHAIN"
+              ]
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.remaining_resources",
+          "requiredSeatIds": [
+            "cabinet_finance",
+            "jiangnan_merchant",
+            "qingliu_law",
+            "sili_weaving",
+            "zhejiang_administration",
+            "zhejiang_governor"
+          ],
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "workingIntentMode": "DEFAULT_PRIVATE",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B05/actions/DEFAULT_PASS"
+              ]
+            },
+            {
+              "actionType": "PRIORITIZE_EVACUATION_ROUTE",
+              "workingIntentMode": "N1_PRIORITIZE_EVACUATION_ROUTE",
+              "factContributions": [
+                {
+                  "factRef": "evacuationCoveragePct",
+                  "value": 70
+                },
+                {
+                  "factRef": "disasterSeverity",
+                  "value": 3
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B05/actions/PRIORITIZE_EVACUATION_ROUTE"
+              ]
+            },
+            {
+              "actionType": "REINFORCE_REMAINING_WEIR",
+              "workingIntentMode": "N1_REINFORCE_REMAINING_WEIR",
+              "factContributions": [
+                {
+                  "factRef": "criticalWeirsSecuredCount",
+                  "value": 2
+                },
+                {
+                  "factRef": "disasterSeverity",
+                  "value": 2
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B05/actions/REINFORCE_REMAINING_WEIR"
+              ]
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.named_accountability",
+          "requiredSeatIds": [
+            "cabinet_finance",
+            "jiangnan_merchant",
+            "qingliu_law",
+            "sili_weaving",
+            "zhejiang_administration",
+            "zhejiang_governor"
+          ],
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "workingIntentMode": "DEFAULT_PRIVATE",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B06/actions/DEFAULT_PASS"
+              ]
+            },
+            {
+              "actionType": "REQUIRE_COUNTERSIGNATURE",
+              "workingIntentMode": "N1_REQUIRE_COUNTERSIGNATURE",
+              "factContributions": [
+                {
+                  "factRef": "verifiedBreachRecordCount",
+                  "value": 1
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B06/actions/REQUIRE_COUNTERSIGNATURE"
+              ]
+            },
+            {
+              "actionType": "SIGN_COMMAND_RESPONSIBILITY",
+              "workingIntentMode": "N1_SIGN_COMMAND_RESPONSIBILITY",
+              "factContributions": [
+                {
+                  "factRef": "verifiedBreachRecordCount",
+                  "value": 1
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B06/actions/SIGN_COMMAND_RESPONSIBILITY"
+              ]
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.seal_review",
+          "requiredSeatIds": [
+            "cabinet_finance",
+            "jiangnan_merchant",
+            "qingliu_law",
+            "sili_weaving",
+            "zhejiang_administration",
+            "zhejiang_governor"
+          ],
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "workingIntentMode": "DEFAULT_PRIVATE",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B07/actions/DEFAULT_PASS"
+              ]
+            },
+            {
+              "actionType": "PRESERVE_UNRESOLVED_CONFLICT",
+              "workingIntentMode": "N1_PRESERVE_UNRESOLVED_CONFLICT",
+              "factContributions": [
+                {
+                  "factRef": "verifiedBreachRecordCount",
+                  "value": 1
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B07/actions/PRESERVE_UNRESOLVED_CONFLICT"
+              ]
+            },
+            {
+              "actionType": "VERIFY_DELIVERY_RECEIPTS",
+              "workingIntentMode": "N1_VERIFY_DELIVERY_RECEIPTS",
+              "factContributions": [
+                {
+                  "factRef": "verifiedBreachRecordCount",
+                  "value": 1
+                }
+              ],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B07/actions/VERIFY_DELIVERY_RECEIPTS"
+              ]
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.final_dispatch",
+          "requiredSeatIds": [
+            "cabinet_finance",
+            "jiangnan_merchant",
+            "qingliu_law",
+            "sili_weaving",
+            "zhejiang_administration",
+            "zhejiang_governor"
+          ],
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "workingIntentMode": "DEFAULT_PRIVATE",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B08/actions/DEFAULT_PASS"
+              ]
+            },
+            {
+              "actionType": "DISPATCH_FINAL_WEIR_ORDERS",
+              "workingIntentMode": "N1_DISPATCH_FINAL_WEIR_ORDERS",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B08/actions/DISPATCH_FINAL_WEIR_ORDERS"
+              ]
+            },
+            {
+              "actionType": "SEAL_FINAL_WEIR_ORDERS",
+              "workingIntentMode": "N1_SEAL_FINAL_WEIR_ORDERS",
+              "factContributions": [],
+              "derivationRefs": [
+                "NO_RESOURCE_QUANTITY_AUTHORED",
+                "NO_TRACK_DELTA_OUTSIDE_SETTLEMENT",
+                "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B08/actions/SEAL_FINAL_WEIR_ORDERS"
+              ]
+            }
           ]
         }
       ],
       "reachabilityCases": {
-        "HIGH": ["EVACUATE_WEIRS", "SEAL_BREACH_RECORD", "SUPPORT_WEIR"],
-        "MID": ["EVACUATE_WEIRS", "SEAL_BREACH_RECORD"],
-        "LOW": ["DEFAULT_PASS"]
+        "HIGH": [
+          "EVACUATE_WEIRS",
+          "REGISTER_EVIDENCE_HANDOFF",
+          "REINFORCE_REMAINING_WEIR"
+        ],
+        "MID": [
+          "PRIORITIZE_EVACUATION_ROUTE",
+          "PRESERVE_PARALLEL_ORDER_EVIDENCE"
+        ],
+        "LOW": [
+          "DEFAULT_PASS"
+        ]
       },
-      "settlementOutputBinding": { "objectRefs": ["obj.breach_order_chain", "obj.nine_weirs"], "evidenceRefs": ["evidence.N1.breach_chain"], "trackDeltaAuthority": "ACCEPTED_CONTENT_SELECTED_BRANCH" }
+      "settlementOutputBinding": {
+        "objectRefs": [
+          "obj.breach_order_chain",
+          "obj.nine_weirs"
+        ],
+        "evidenceRefs": [
+          "evidence.N1.breach_chain"
+        ],
+        "trackDeltaAuthority": "ACCEPTED_CONTENT_SELECTED_BRANCH"
+      }
     },
     {
       "chapterId": "N2",
@@ -574,5 +1841,5 @@
     "allSourceDefaultTrajectoriesReproducible": true,
     "resourceConservationMode": "ZERO_RESOURCE_MVP"
   },
-  "policySha256": "547f9ee415502554761e84c00f7f9e83cee80e7515aacd84f1f6df6fb702dde4"
+  "policySha256": "64da80f7230f011d1b3e2db6cde1bf78ccd0366e1ee2cf08ef58d75d2901ed25"
 }

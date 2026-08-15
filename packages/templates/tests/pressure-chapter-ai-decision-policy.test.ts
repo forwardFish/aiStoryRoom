@@ -22,20 +22,20 @@ const PACKAGE_ROOT = path.resolve(
 );
 const RELEASE_ROOT = path.resolve(PACKAGE_ROOT, "release");
 
-test("published AI policy exactly covers 26 accepted decisions and 100 applicable seats", () => {
+test("published AI policy exactly covers 33 accepted decisions and 142 applicable seats", () => {
   const published = loadPublishedSangtianAiDecisionPolicyV1();
   const loaded = loadSangtianPressureChapterPackageV1(PACKAGE_ROOT);
   assert.equal(
     published.policy.policySha256,
     hashWithoutField(published.policy, "policySha256"),
   );
-  assert.equal(published.policy.decisions.length, 26);
+  assert.equal(published.policy.decisions.length, 33);
   assert.equal(
     published.policy.decisions.reduce(
       (count, decision) => count + decision.seatPolicies.length,
       0,
     ),
-    100,
+    142,
   );
   assert.deepEqual(published.policy.authorityBoundary.selectionEntropyFields, [
     "runSeed",
@@ -125,7 +125,7 @@ test("selection is deterministic, eligible, non-default when possible and struct
       assert.equal(selectionHash, sha256Canonical(body));
     }
   }
-  assert.equal(selectionCount, 100);
+  assert.equal(selectionCount, 142);
 
   const variableDecision = published.policy.decisions.find(
     (decision) => decision.publishedAllowedActionTypes.length > 2,
@@ -213,9 +213,9 @@ function buildInput(input: Readonly<{
     runId: "run-ai-policy",
     routeHash: sha256Canonical("route-ai-policy"),
     runSeed: input.runSeed,
-    contentPackageVersion: "1.0.1",
+    contentPackageVersion: "1.0.2",
     contentPackageSha256:
-    "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466",
+    "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
     chapterRuntimeId: `runtime-${input.chapterId}`,
     chapterId: input.chapterId,
     decisionPointId: input.decisionPointId,

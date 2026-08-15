@@ -49,18 +49,18 @@ const ACTION_PREFERRED_ENTRIES = Object.freeze([
 const ACTION_PREFERRED_ENTRY_SET = new Set<string>(ACTION_PREFERRED_ENTRIES);
 const requireCjs = require as unknown as (moduleId: string) => unknown;
 const EXPECTED_ROUTE_REGISTRY_HASH =
-  "4842804af4f7ab10c7fc7b35bc2641637424692ecf8b38a44e5a76542cf6be67";
+  "3303b13984ace2e9d20660fc5039b11dd9af7864e9e3c2be28da3ad147ed9f91";
 const EXPECTED_RELEASE_ARTIFACT_HASHES = Object.freeze({
   action_effect_compiler_core:
     "70a47dcb3a3e28e3c8261865f45a4c0834c22b261629a592a1bc4a3f7ea95f63",
   action_effect_compiler_esm_wrapper:
     "335ca5e0c134aa6d48a896d3bbcf06ba5a0ca3b95997bafee25381aefd234405",
   action_effect_policy:
-    "7c100ef8b1cec5f28187d273492b6756087bf422e44399f8d1a1e77b7f92cff6",
+    "8854d46333f15fe740cd84d4c671325e7c4355bcc3eacf3b803f1e37a7e57fee",
   action_presentation_catalog:
-    "33a3970eb8b657dd8350e2e315c1494034e45a77de724ee157fe79daabdef159",
+    "b33d05773ed89f2c90dc699feaf264e4a9aecd057039f2b27610d2b38aebed2f",
   ai_decision_policy:
-    "c69066e3b367118d7205e00601e5e56d258ad93dd0731100a16850813e2c52cb",
+    "2ec7a3d17e418cfde6aa4ecdcbe395d7c271bfa9772cd39fd8c9a534176fe78f",
 } as const);
 
 interface ReleaseManifestV1 {
@@ -429,13 +429,13 @@ function assertPresentationCatalog(
 
   if (
     chapterIds.size !== EXPECTED_CHAPTER_IDS.length
-    || decisionCount !== 26
-    || actionCount !== 72
-    || defaultPassCount !== 26
+    || decisionCount !== 33
+    || actionCount !== 93
+    || defaultPassCount !== 33
     || nonDefaultEntries.size !== 4
     || catalog.completeness?.chapterCount !== 7
-    || catalog.completeness?.decisionPointCount !== 26
-    || catalog.completeness?.decisionActionPairCount !== 72
+    || catalog.completeness?.decisionPointCount !== 33
+    || catalog.completeness?.decisionActionPairCount !== 93
     || catalog.completeness?.coverageRule
       !== "EXACT_ACCEPTED_CONTENT_DECISION_ACTION_PAIRS"
   ) {

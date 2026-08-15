@@ -53,11 +53,20 @@ export function compilePressureChapterBeatAuthoringPackageV1(input: Readonly<{
     fail(ERROR.BINDING_MISMATCH, "bindings.decisionContracts", "EXACTLY_ONE_PER_BEAT");
   }
 
+  const claimedCatalogDecisionPointRefs = new Set<string>();
   const beats = authoring.beats.map((beat) => {
     const binding = bindingsByRef.get(beat.decisionContractRef);
     if (!binding) {
       fail(ERROR.BINDING_MISMATCH, `beats.${beat.beatId}.decisionContractRef`, beat.decisionContractRef);
     }
+    if (claimedCatalogDecisionPointRefs.has(binding.catalogDecisionPointRef)) {
+      fail(
+        ERROR.BINDING_MISMATCH,
+        `bindings.${binding.decisionContractRef}.catalogDecisionPointRef`,
+        `DUPLICATE_${binding.catalogDecisionPointRef}`,
+      );
+    }
+    claimedCatalogDecisionPointRefs.add(binding.catalogDecisionPointRef);
     const decision = decisionsByRef.get(binding.catalogDecisionPointRef);
     if (!decision) {
       fail(
