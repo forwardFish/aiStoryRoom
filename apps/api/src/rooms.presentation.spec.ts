@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { getGameDefinition } from "@ai-story/templates";
 import { CONTINUOUS_STORY_ENGINE_VERSION, PRESSURE_CHAPTER_ROUTE_V1, PRESSURE_CHAPTER_SEAT_IDS_V1 } from "@ai-story/shared";
-import { RoomsService, compareSoloProgress, roomTitleForCreate, sharedRoomRunIdForRequest, shouldResumeExistingSolo, soloCreationResponse, soloRunIdForRequest } from "./rooms.service";
+import { RoomsService, compareSoloProgress, maskRoomCreatorLabel, roomTitleForCreate, sharedRoomRunIdForRequest, shouldResumeExistingSolo, soloCreationResponse, soloRunIdForRequest } from "./rooms.service";
 import { publicWorldRolePresentation } from "./public-world-role-presentation";
 
 const service = new RoomsService(
@@ -99,6 +99,57 @@ test("new rooms use product room labels instead of a story-scene title", () => {
   assert.equal(roomTitleForCreate(undefined, "solo"), "Solo Story");
   assert.equal(roomTitleForCreate("  The Senate Decides  "), "The Senate Decides");
   assert.doesNotMatch(roomTitleForCreate(undefined), /没有影子的客人/);
+});
+
+test("public room list exposes masked creator metadata in newest-created order", async () => {
+  const rows = [
+    {
+      id: "new-room",
+      createdAt: new Date("2026-08-15T03:38:34.480Z"),
+      owner: { nickname: "forward", email: "private@example.com" },
+      players: [],
+      roles: [],
+      maxPlayers: 6,
+    },
+    {
+      id: "old-room",
+      createdAt: new Date("2026-08-14T03:38:34.480Z"),
+      owner: { nickname: "", email: "reader@example.com" },
+      players: [],
+      roles: [],
+      maxPlayers: 6,
+    },
+  ];
+  let listQuery: any;
+  const listService = new RoomsService(
+    { storyRun: { findMany: async (query: any) => { listQuery = query; return rows; } } } as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+  );
+  (listService as any).projectRooms = async (input: any[]) => input.map((room) => ({ id: room.id, roles: [] }));
+
+  const result = await listService.list();
+
+  assert.deepEqual(listQuery.orderBy, { createdAt: "desc" });
+  assert.deepEqual(result.rooms.map((room: any) => room.id), ["new-room", "old-room"]);
+  assert.equal(result.rooms[0]?.createdAt, "2026-08-15T03:38:34.480Z");
+  assert.equal(result.rooms[0]?.creatorLabel, "forwa****rd");
+  assert.equal(result.rooms[1]?.creatorLabel, "reade****er");
+  assert.equal(JSON.stringify(result.rooms).includes("private@example.com"), false);
+});
+
+test("room creator masking never exposes the email domain", () => {
+  assert.equal(maskRoomCreatorLabel("forward"), "forwa****rd");
+  assert.equal(maskRoomCreatorLabel("reader@example.com"), "reade****er");
+  assert.equal(maskRoomCreatorLabel("李明"), "李*");
 });
 
 test("Solo creation response exposes every supported run identifier", () => {

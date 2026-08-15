@@ -124,6 +124,16 @@ export function roomTitleForCreate(title: unknown, kind: "shared" | "solo" = "sh
   return (requested || (kind === "solo" ? "Solo Story" : "Shared Story Room")).slice(0, 100);
 }
 
+export function maskRoomCreatorLabel(value: unknown) {
+  const requested = String(value || "").trim().replace(/\s+/g, " ");
+  const displayName = requested.includes("@") ? requested.split("@")[0]! : requested;
+  const characters = [...displayName];
+  if (!characters.length) return "Player";
+  if (characters.length <= 2) return `${characters[0]}*`;
+  if (characters.length <= 5) return `${characters.slice(0, 2).join("")}***${characters.at(-1)}`;
+  return `${characters.slice(0, 5).join("")}****${characters.slice(-2).join("")}`;
+}
+
 function isRecoverableRunCreationError(error: unknown) {
   const code = exceptionCode(error);
   if (["GENERATION_FAILED_RETRYABLE", "STORY_GENERATION_IN_PROGRESS", "STORY_PROVIDER_UNAVAILABLE", "OPENING_STORY_GENERATION_RETRYABLE"].includes(code)) return true;
@@ -267,7 +277,7 @@ export class RoomsService {
       this.prisma.storyRun.findMany({
         where: { mode: "room", visibility: "public", status: "waiting_players", ...(worldId ? { templateKey: worldId } : {}) },
         include: { players: { include: { user: true, role: true } }, roles: true, owner: true },
-        orderBy: { updatedAt: "desc" }, take: 50
+        orderBy: { createdAt: "desc" }, take: 50
       }),
       user ? this.findMineRoomRows(user, worldId) : Promise.resolve([]),
     ]);
@@ -277,7 +287,12 @@ export class RoomsService {
     const projectionsById = new Map(projections.map((projection: any) => [projection.id, projection]));
     const publicProjection = openRooms.map((room) => {
       const projected: any = projectionsById.get(room.id);
-      return { ...projected, roles: projected.roles.map(({ personalGoal: _personalGoal, ...role }: any) => role) };
+      return {
+        ...projected,
+        createdAt: room.createdAt.toISOString(),
+        creatorLabel: maskRoomCreatorLabel(room.owner?.nickname || room.owner?.email),
+        roles: projected.roles.map(({ personalGoal: _personalGoal, ...role }: any) => role),
+      };
     });
     const myRooms = mineRows.map((room) => {
       const projected: any = projectionsById.get(room.id);
