@@ -58,6 +58,17 @@ test("Open Rooms and My Rooms share one table while keeping their own actions", 
   assert.doesNotMatch(roomDataFlow, /Night Council|After Hours|Board Vote/);
 });
 
+test("Open Rooms Join sends the server-required stable idempotency key", async () => {
+  const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
+  const start = source.indexOf("function bindRoomActions()");
+  const end = source.indexOf("async function hydrateRooms()", start);
+  const joinAction = source.slice(start, end);
+
+  assert.match(joinAction, /lobbyMutationKey\(idempotencyStorageKey, "room-join"\)/);
+  assert.match(joinAction, /JSON\.stringify\(\{ code: button\.dataset\.joinCode, idempotencyKey \}\)/);
+  assert.match(joinAction, /localStorage\.removeItem\(idempotencyStorageKey\)/);
+});
+
 test("deployed platform authentication uses Vercel's same-origin API proxy", async () => {
   const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
 

@@ -14,6 +14,9 @@ test("Join with Code uses an in-page accessible dialog instead of a suppressible
   assert.match(dialog, /name="inviteCode"/);
   assert.match(dialog, /Join Room/);
   assert.match(dialog, /\/api\/v4\/rooms\/join-by-code/);
+  assert.match(dialog, /lobbyMutationKey\(idempotencyStorageKey, "room-join"\)/);
+  assert.match(dialog, /JSON\.stringify\(\{ code, idempotencyKey \}\)/);
+  assert.match(dialog, /localStorage\.removeItem\(idempotencyStorageKey\)/);
   assert.match(dialog, /dialog\.showModal\(\)/);
   assert.match(dialog, /saveRoomDialogDraft\(\{ type: "join", code:/);
   assert.match(dialog, /input\.addEventListener\("input"/);

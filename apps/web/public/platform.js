@@ -1175,7 +1175,7 @@ function setRoomsTab(activeTab) {
   renderRoomsView();
   bindRoomActions();
 }
-function bindRoomActions() { root.querySelectorAll("[data-open-room]").forEach((button) => button.addEventListener("click", async () => { if (!requireSession() || button.disabled) return; const roomId = button.dataset.openRoom; return runMutationOnce(`join-open-room:${roomId}`, button, "Joining…", async () => { try { if (button.dataset.joinCode) await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: button.dataset.joinCode }) }); location.assign(`/rooms/${roomId}`); } catch (error) { notice(error.message || "Unable to join this room."); } }); })); root.querySelectorAll("[data-my-room]").forEach((button) => button.addEventListener("click", () => { const id = button.dataset.myRoom; const action = button.dataset.nextAction; location.assign(action === "continue" ? `/game?runId=${encodeURIComponent(id)}` : action === "view_result" ? `/game/result?runId=${encodeURIComponent(id)}` : `/rooms/${encodeURIComponent(id)}`); })); }
+function bindRoomActions() { root.querySelectorAll("[data-open-room]").forEach((button) => button.addEventListener("click", async () => { if (!requireSession() || button.disabled) return; const roomId = button.dataset.openRoom; return runMutationOnce(`join-open-room:${roomId}`, button, "Joining…", async () => { try { if (button.dataset.joinCode) { const idempotencyStorageKey = `many-worlds:join-room:${button.dataset.joinCode}`; const idempotencyKey = lobbyMutationKey(idempotencyStorageKey, "room-join"); await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code: button.dataset.joinCode, idempotencyKey }) }); localStorage.removeItem(idempotencyStorageKey); } location.assign(`/rooms/${roomId}`); } catch (error) { notice(error.message || "Unable to join this room."); } }); })); root.querySelectorAll("[data-my-room]").forEach((button) => button.addEventListener("click", () => { const id = button.dataset.myRoom; const action = button.dataset.nextAction; location.assign(action === "continue" ? `/game?runId=${encodeURIComponent(id)}` : action === "view_result" ? `/game/result?runId=${encodeURIComponent(id)}` : `/rooms/${encodeURIComponent(id)}`); })); }
 async function hydrateRooms() { try { const data = await request(`/api/v4/rooms${params.get("worldId") ? `?worldId=${encodeURIComponent(params.get("worldId"))}` : ""}`); roomsView.openRooms = Array.isArray(data.rooms) ? data.rooms : []; roomsView.myRooms = Array.isArray(data.myRooms) ? data.myRooms : []; renderRoomsView(); bindRoomActions(); clearNotice(); } catch (error) { notice(error.code === "INTERNAL_ERROR" ? "Rooms are temporarily unavailable. Retrying automatically…" : error.message || "Unable to load rooms."); const target = root.querySelector("[data-live-rooms]"); if (target) target.innerHTML = `<p class="rooms-empty-state rooms-load-error">Rooms could not be loaded. Please try again.</p>`; } }
 function roomWorldTitle(room) {
   const declaredTitle = String(room?.world?.title || "").trim();
@@ -1300,10 +1300,13 @@ function openJoinCodeDialog(restoredDraft = null) {
       input.focus();
       return;
     }
+    const idempotencyStorageKey = `many-worlds:join-room:${code}`;
+    const idempotencyKey = lobbyMutationKey(idempotencyStorageKey, "room-join");
     return runMutationOnce(`join-room:${code}`, submit, "Joining…", async () => {
       error.hidden = true;
       try {
-        const room = await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code }) });
+        const room = await request("/api/v4/rooms/join-by-code", { method:"POST", body:JSON.stringify({ code, idempotencyKey }) });
+        localStorage.removeItem(idempotencyStorageKey);
         clearRoomDialogDraft();
         location.assign(`/rooms/${room.id}`);
       } catch (joinError) {
