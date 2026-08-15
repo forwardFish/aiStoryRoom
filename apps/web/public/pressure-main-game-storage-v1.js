@@ -188,7 +188,7 @@ export function pressureProjectionToMainGameViewV1(projectionValue) {
       rank: role.rank,
       office: role.office,
       fateQuestion: projection.situation.goal,
-      goals: [projection.situation.goal, projection.situation.risk, projection.situation.judgment].filter(Boolean),
+      goals: [projection.situation.goal, projection.situation.risk].filter(Boolean),
       resources,
       leverage: tokens.map((item) => item.label),
     },

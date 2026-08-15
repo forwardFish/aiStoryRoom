@@ -156,6 +156,10 @@ test("Pressure /game dispatches into the approved app.js main-game shell", async
   assert.match(root.textContent, /当前目标/);
   assert.doesNotMatch(root.querySelector(".player")?.textContent || "", /稳定浙江局势/);
   assert.match(root.querySelector(".day-mission")?.textContent || "", /稳定浙江局势/);
+  assert.doesNotMatch(
+    root.querySelector(".day-mission")?.textContent || "",
+    /巡抚与县令都接触过账册/,
+  );
   assert.match(root.textContent, /我的资源/);
   assert.equal(root.querySelector('[data-resource-id="silver"]')?.textContent, "银两42 万两");
   assert.equal(root.querySelector('[data-resource-id="grain"]')?.textContent, "粮草23 万石");
@@ -218,6 +222,8 @@ test("Pressure adapter preserves approved page data and server-sealed decision c
   assert.equal(view.continuousV2, true);
   assert.equal(view.player.roleName, "浙江总督");
   assert.equal(view.presentation.playerPortrait, "/assets/game/sangtian/generated/role-governor-scene-v1.png");
+  assert.deepEqual(view.player.goals, [input.situation.goal, input.situation.risk]);
+  assert.equal(view.player.goals.includes(input.situation.judgment), false);
   assert.equal(view.decisionNarrative, N1_DECISION_NARRATIVE);
   assert.deepEqual(view.dashboard.statusMetrics.map((item) => item.label), ["国库余裕", "民心", "粮价压力", "改桑进度", "皇帝信任"]);
   assert.deepEqual(view.dashboard.statusMetrics.map((item) => item.value), [35, 55, 60, 8, 45]);

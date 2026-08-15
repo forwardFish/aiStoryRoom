@@ -1,7 +1,6 @@
 import { Prisma } from "@prisma/client";
 import {
   PRESSURE_CHAPTER_SEAT_IDS_V1,
-  compareCanonicalText,
   sha256Canonical,
   type RunRouteSnapshotV1,
   type SeatIdV1,
@@ -135,12 +134,16 @@ export function compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1(in
       "PACKAGE_OR_SEAT",
     );
   }
+  const judgment = compilePlayerSafeSeatJudgmentV1(
+    seat,
+    content.content.genesis.objects,
+  );
   const payload = {
     schemaVersion: "pressure_game_viewer_private_payload_v1" as const,
     situation: {
       goal: seat.institutionalMission,
       risk: content.content.genesis.pressure,
-      judgment: [...knowledge.knownFactRefs].sort(compareCanonicalText).join("；"),
+      judgment,
     },
     resources: resourceCatalog.resources.map((resource) => ({
       resourceId: resource.resourceId,
@@ -221,6 +224,32 @@ implements PressureSeatViewerPresentationCatalogPortV1 {
       tokens: Object.freeze({}),
     };
   }
+}
+
+function compilePlayerSafeSeatJudgmentV1(
+  seat: Readonly<{ displayName: string; persistentObjectRefs: string[] }>,
+  objects: ReadonlyArray<Readonly<{ objectId: string; name: string }>>,
+): string {
+  const objectNames = new Map(objects.map((object) => [object.objectId, object.name]));
+  const names = seat.persistentObjectRefs.map((objectRef) => {
+    const name = objectNames.get(objectRef);
+    if (!name?.trim()) {
+      return failPressureProductAdapterV1(
+        ERROR.AUTHORITY_NOT_FOUND,
+        "SeatPrivateProjection.persistentObject",
+        objectRef,
+      );
+    }
+    return name;
+  });
+  if (!names.length) {
+    return failPressureProductAdapterV1(
+      ERROR.RECORD_INVALID,
+      "SeatPrivateProjection.persistentObjects",
+      seat.displayName,
+    );
+  }
+  return `当前可调用：${names.join("、")}。`;
 }
 
 function compileResourceCatalogV1(

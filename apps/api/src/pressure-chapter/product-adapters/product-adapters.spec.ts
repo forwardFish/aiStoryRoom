@@ -408,6 +408,7 @@ test("content-bound seat projection is viewer-scoped and uses only frozen resour
   });
   assert.deepEqual(capturedProjection, projection);
   const payload = projection.payload as {
+    situation: { judgment: string };
     resources: Array<{ resourceId: string; value: number }>;
     tokens: unknown[];
   };
@@ -424,7 +425,12 @@ test("content-bound seat projection is viewer-scoped and uses only frozen resour
     { resourceId: "reserve_silver", value: 80000, displayValue: "80000 两" },
   ]);
   assert.deepEqual(payload.tokens, []);
+  assert.equal(
+    payload.situation.judgment,
+    "当前可调用：总督军政令印、总督奏报渠道、总督军驿与前线渠道。",
+  );
   const serialized = JSON.stringify(payload);
+  assert.doesNotMatch(serialized, /P0-SF-|obj\./u);
   const viewerKnown = new Set(world.knowledgeBySeat[seatId].knownFactRefs);
   for (const otherSeatId of Object.keys(world.knowledgeBySeat).filter((candidate) => candidate !== seatId)) {
     const knowledge = world.knowledgeBySeat[
@@ -449,6 +455,7 @@ test("content-bound seat projection is viewer-scoped and uses only frozen resour
     world,
   });
   const administratorPayload = administratorProjection.payload as {
+    situation: { judgment: string };
     resources: Array<{ resourceId: string; value: number; displayValue: string }>;
   };
   assert.deepEqual(administratorPayload.resources, [
@@ -457,6 +464,11 @@ test("content-bound seat projection is viewer-scoped and uses only frozen resour
     { resourceId: "local_runners", value: 1200, displayValue: "1200 人" },
   ]);
   assert.notDeepEqual(administratorPayload.resources, payload.resources);
+  assert.equal(
+    administratorPayload.situation.judgment,
+    "当前可调用：差役与押解名册、府县执行官吏网络、浙江省府印信。",
+  );
+  assert.doesNotMatch(JSON.stringify(administratorPayload), /P0-SF-|obj\./u);
 });
 
 test("factory internalizes authority, narrative and frozen-stage adapters", async () => {
