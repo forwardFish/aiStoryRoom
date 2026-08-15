@@ -1500,9 +1500,12 @@ const actions = {
   ready: async (_event, element) => {
     if (!activeRoom || !requireSession() || element?.disabled) return;
     const roomId = activeRoom.id;
+    const storageKey = `many-worlds:room-ready:${roomId}:true`;
+    const idempotencyKey = lobbyMutationKey(storageKey, "room-ready");
     return runMutationOnce(`room:${roomId}:ready`, element, "Saving…", async () => {
       try {
-        await request(`/api/v4/rooms/${roomId}/ready`, { method:"POST", body:JSON.stringify({ ready:true }) });
+        await request(`/api/v4/rooms/${roomId}/ready`, { method:"POST", body:JSON.stringify({ ready:true, idempotencyKey }) });
+        localStorage.removeItem(storageKey);
         await hydrateSharedRoom(roomId);
       } catch (error) {
         notice(error.message || "Unable to mark ready.");

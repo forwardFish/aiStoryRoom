@@ -184,6 +184,17 @@ test("room lobby uses one component with world title, banner and portraits suppl
   assert.doesNotMatch(source.slice(start, end), /worldId === ["'](?:caesar|sangtian)|roomRoleArtwork\(["'](?:caesar|sangtian)/);
 });
 
+test("Ready sends the server-required stable idempotency key", async () => {
+  const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
+  const start = source.indexOf("ready: async");
+  const end = source.indexOf('"start-game":', start);
+  const readyAction = source.slice(start, end);
+
+  assert.match(readyAction, /lobbyMutationKey\(storageKey, "room-ready"\)/);
+  assert.match(readyAction, /JSON\.stringify\(\{ ready:true, idempotencyKey \}\)/);
+  assert.match(readyAction, /localStorage\.removeItem\(storageKey\)/);
+});
+
 async function renderRoomLobby(room) {
   const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
   const dom = new JSDOM('<!doctype html><main id="platform-app"></main>', {
