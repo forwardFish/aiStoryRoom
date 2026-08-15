@@ -22,6 +22,7 @@ async function run() {
   assert.notEqual(storedVerification.tokenHash, emails[0].token);
 
   await assert.rejects(() => auth.login({ email: "alice@example.test", password: "password-123", clientIp: "127.0.0.2" }), hasCode("EMAIL_VERIFICATION_REQUIRED"));
+  await assert.rejects(() => auth.login({ email: "alice@example.test", password: "different-password", clientIp: "127.0.0.20" }), hasCode("EMAIL_VERIFICATION_REQUIRED"));
   const firstVerificationToken = emails[0].token;
   assert.deepEqual(await auth.resendVerification({ email: "alice@example.test", clientIp: "127.0.0.3" }), { accepted: true });
   const replacementVerificationToken = emails.at(-1)!.token;
@@ -35,6 +36,7 @@ async function run() {
 
   const session = await auth.login({ email: "alice@example.test", password: "password-123", clientIp: "127.0.0.7" });
   assert.ok(session.accessToken);
+  await assert.rejects(() => auth.login({ email: "alice@example.test", password: "different-password", clientIp: "127.0.0.21" }), hasCode("INVALID_CREDENTIALS"));
   prisma.authIdentities.push({ id: "identity_1", userId: prisma.users[0].id, provider: "GOOGLE", providerEmail: "alice@gmail.com", createdAt: new Date("2026-07-16T00:00:00.000Z") });
   assert.deepEqual(await auth.me(prisma.users[0].id), {
     id: prisma.users[0].id,

@@ -157,11 +157,13 @@ export class AuthService {
     const email = normalizeEmail(input.email);
     this.enforceRateLimit("login", email, input.clientIp, 10, 15 * 60_000);
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user || !user.passwordHash || !verifyPassword(String(input.password || ""), user.passwordHash)) {
+    if (!user || !user.passwordHash || user.status !== "active") {
       throw new UnauthorizedException({ code: "INVALID_CREDENTIALS", message: "Invalid email or password" });
     }
-    if (user.status !== "active") throw new UnauthorizedException({ code: "INVALID_CREDENTIALS", message: "Invalid email or password" });
     if (!user.emailVerifiedAt) throw new UnauthorizedException({ code: "EMAIL_VERIFICATION_REQUIRED", message: "Verify your email before logging in" });
+    if (!verifyPassword(String(input.password || ""), user.passwordHash)) {
+      throw new UnauthorizedException({ code: "INVALID_CREDENTIALS", message: "Invalid email or password" });
+    }
     const token = issueAccessToken(user);
     return { token, accessToken: token, user: this.safeUser(user) };
   }
