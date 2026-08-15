@@ -9,3 +9,4 @@ export * from "./batch-planner";
 export * from "./settlement-planner";
 export * from "./plan-builder";
 export * from "./prepared-inputs";
+export * from "./progression-gate";

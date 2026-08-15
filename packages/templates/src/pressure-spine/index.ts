@@ -12,3 +12,4 @@ export * from "./sangtian-beat-authoring";
 export * from "./beat-authoring-contracts";
 export * from "./beat-authoring-validation";
 export * from "./sangtian-authorial-materials";
+export * from "./beat-progression";
