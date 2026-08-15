@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "pressure_chapter_beat_authoring_registry_v1",
+  "chapters": {
+    "N1": {
+      "authoringPath": "authoring/n1-multibeat-authoring-v1.json",
+      "bindingsPath": "authoring/n1-beat-bindings-v1.json",
+      "authorialContentManifestPath": "authoring/n1-authorial-content-manifest-v1.json",
+      "sourceBindingPaths": {
+        "sceneFlowSha256": "../pressure-spine-v1.0/source/nodes/N1/scene-flow.json",
+        "seatContentSha256": "../pressure-spine-v1.0/source/nodes/N1/seat-content.json",
+        "settlementSha256": "../pressure-spine-v1.0/source/nodes/N1/settlement.json"
+      }
+    }
+  }
+}

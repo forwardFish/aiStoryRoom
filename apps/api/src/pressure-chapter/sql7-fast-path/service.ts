@@ -18,6 +18,7 @@ import type {
 import type {
   PressureSql7CommitResultV1,
 } from "./prisma-commit";
+import { classifyPressureSql7BatchProgressionV1 } from "./progression-gate";
 import type {
   DecisionToNextProjectionSnapshotReaderPortV1,
   DecisionToNextProjectionSnapshotV1,
@@ -65,7 +66,8 @@ export interface PressureSql7ReceiptProjectionPortV1 {
 export type PressureSql7NotApplicableReasonV1 =
   | "INPUT_NOT_ELIGIBLE"
   | "SNAPSHOT_UNAVAILABLE"
-  | "PRIOR_ACTION_REQUIRES_RECOVERY";
+  | "PRIOR_ACTION_REQUIRES_RECOVERY"
+  | "INTERMEDIATE_BEAT_REQUIRES_GENERIC_COMMIT";
 
 export type PressureSql7SubmitResultV1 =
   | {
@@ -151,6 +153,16 @@ export class PressureSql7FirstSubmitServiceV1 {
 
     const batch = await this.batches.plan({ snapshot, humanCommand, nowMs: input.nowMs });
     assertBatchBinding(batch, humanCommand, snapshot);
+    const progression = classifyPressureSql7BatchProgressionV1(batch);
+    if (progression.kind === "NEXT_BEAT") {
+      // The existing generic convergence transaction owns intermediate Beat
+      // commits. Returning NOT_APPLICABLE before any write avoids the old
+      // first-N1-is-always-N2 assumption without creating a parallel writer.
+      return {
+        status: "NOT_APPLICABLE",
+        reason: "INTERMEDIATE_BEAT_REQUIRES_GENERIC_COMMIT",
+      };
+    }
     const commitPlan = await this.settlementN2.build({
       snapshot,
       humanCommand,

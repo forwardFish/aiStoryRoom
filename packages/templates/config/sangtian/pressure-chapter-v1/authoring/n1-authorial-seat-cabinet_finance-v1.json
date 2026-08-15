@@ -1,0 +1,103 @@
+{
+  "seatLens": {
+    "seatId": "seat.cabinet_finance",
+    "actorId": "actor.yan_shifan",
+    "opening": {
+      "title": "京师问缺",
+      "dramaticPurpose": "让严世蕃只凭中央已收材料，在期限、军饷与责任上设置可执行条件。",
+      "text": "京师值房里，浙江急报的封皮还带着水渍。严世蕃知道有人曾要借端午汛开堰，再让丝绸大户以粮收田；他却看不见此刻哪处堰口已经发生了什么，只能看见地方正在试探能否缓期限。属官问，是照旧催办，还是给灾情留一道口子。严世蕃先追问军饷缺口、替代银源、急报收件路径和谁愿在求缓文书上具名：“地方的急处可以听，朝廷账上的空处也要有人填。”",
+      "factRefs": [
+        "known.n1.cabinet_finance.pressure",
+        "known.n1.cabinet_finance.claim.n1-sf-01",
+        "known.n1.cabinet_finance.object.cabinet_urgent_dispatch",
+        "obj.cabinet_urgent_dispatch",
+        "obj.fiscal_target_register"
+      ],
+      "stopCondition": "停在严世蕃尚未决定期限是否松动、由谁补缺并承担中央责任之时。"
+    },
+    "afterPrepareReactions": {
+      "controlled": {
+        "title": "急报尚可",
+        "dramaticPurpose": "让地方局部受控仍需向中央交代军务与财政代价。",
+        "text": "新到急报称局势仍有收束余地，却只写了已办何事，没有写抽走多少军务准备、后续银从哪里补。严世蕃把文书退回一角：“救急可以先做，账不能永远空着。谁主张继续调度，谁把军饷影响和收件责任一并补上。”",
+        "factRefs": [
+          "known.n1.cabinet_finance.object.cabinet_urgent_dispatch",
+          "obj.cabinet_urgent_dispatch",
+          "obj.fiscal_target_register"
+        ],
+        "stopCondition": "停在中央尚未收到具名的损失与补缺说明，期限也未正式调整之时。"
+      },
+      "contested": {
+        "title": "两报不一",
+        "dramaticPurpose": "把地方相反回报变成中央收件、责任层级与财政条件的冲突。",
+        "text": "两份浙江急报前后抵触，一份求继续调度，一份要求先保原限。严世蕃没有替地方猜：“先核哪一份真正由有权者发出，哪一份只是在求免责。要京师回批，便把主张、军饷影响和收件人写在同一页。”",
+        "factRefs": [
+          "known.n1.cabinet_finance.object.cabinet_urgent_dispatch",
+          "obj.cabinet_urgent_dispatch"
+        ],
+        "stopCondition": "停在中央尚未认定有效急报，也未指定由哪一层责任人收取回批之时。"
+      },
+      "lostInitiative": {
+        "title": "廷寄已迟",
+        "dramaticPurpose": "让路途时限使中央任何回批都只能影响余下局面。",
+        "text": "急报抵京时，地方已经按先前压力自行处置。严世蕃看完送达时辰，冷声道：“现在回一纸宽免，救不了已经用掉的人手；照旧催办，也不能装作灾情未发生。把还能影响的期限、缺口和收件衙门列清，别拿迟到的文书冒充先见。”",
+        "factRefs": [
+          "known.n1.cabinet_finance.pressure",
+          "known.n1.cabinet_finance.object.cabinet_urgent_dispatch",
+          "obj.cabinet_urgent_dispatch"
+        ],
+        "stopCondition": "停在中央回批作用范围已收窄，而严世蕃尚未确定剩余期限与责任层级之时。"
+      }
+    },
+    "commitPressure": {
+      "title": "回批定责",
+      "dramaticPurpose": "把国策期限、财政缺口、急递收件与责任层级写入一次正式中央决断。",
+      "text": "廷寄稿摆在案上，只有写清维持或缓和的范围、地方须补报的损失、军饷缺口和最终收件衙门，才算真正的回批。严世蕃让属官删去所有“酌情”二字：“要朝廷担责，可以；谁主张、谁核数、谁补缺，一并具名。急递出京以后，不能再说原来不是这个意思。”",
+      "factRefs": [
+        "known.n1.cabinet_finance.object.cabinet_urgent_dispatch",
+        "obj.cabinet_urgent_dispatch",
+        "obj.fiscal_target_register",
+        "obj.capital_receipt_channel"
+      ],
+      "stopCondition": "停在严世蕃尚未确认期限、补缺办法、收件路径和具名责任之时。"
+    },
+    "settlementReactions": {
+      "high": {
+        "title": "控灾仍欠账",
+        "dramaticPurpose": "让较好结果仍进入军饷、财政缺口与证据收件的中央审查。",
+        "text": "主要冲击被压在少数堰区，多数高风险村落撤出，命令或经手记录也至少有一条可验。严世蕃没有只看好消息：“抢险用了什么军务准备，谁来补；那条记录由谁送到京师，谁负责收。救灾和追责不能各写一半。”",
+        "factRefs": [
+          "frozen.N1.HIGH.fact.01",
+          "frozen.N1.HIGH.fact.02",
+          "frozen.N1.HIGH.fact.03",
+          "obj.capital_receipt_channel"
+        ],
+        "stopCondition": "停在中央尚未确定军务补缺与可核验材料的正式收件责任之时。"
+      },
+      "mid": {
+        "title": "责任分层",
+        "dramaticPurpose": "让相反记录迫使中央要求地方分别说明主张、损失与经手。",
+        "text": "多处堰口失守，疏散只完成一部分，责任说法又互相冲突。严世蕃把两份来文分开：“不要替京师合成一份。哪一层发令，哪一层执行，哪一层承担军饷和灾损，各自具名送来。先收到谁，不等于只信谁。”",
+        "factRefs": [
+          "frozen.N1.MID.fact.01",
+          "frozen.N1.MID.fact.02",
+          "frozen.N1.MID.fact.03",
+          "obj.cabinet_urgent_dispatch"
+        ],
+        "stopCondition": "停在中央尚未指定两套记录的独立收件与核验层级之时。"
+      },
+      "low": {
+        "title": "灾账压京",
+        "dramaticPurpose": "把大范围冲击、记录受压与粮田风险转成期限和财政回批压力。",
+        "text": "大范围民生冲击已经形成，撤离严重迟缓，公开解释又被先手掌握。严世蕃听完便一连追问：赈粮从哪里来，军饷缺口谁补，第一份奏稿由谁收件。“若仍照原限催，地方会把缺口转给灾民；若松，便要有人把这道责任接住。”",
+        "factRefs": [
+          "frozen.N1.LOW.fact.01",
+          "frozen.N1.LOW.fact.02",
+          "frozen.N1.LOW.fact.03",
+          "obj.fiscal_target_register"
+        ],
+        "stopCondition": "停在中央尚未决定是否调整期限，也未确定赈粮与军饷的责任层级之时。"
+      }
+    }
+  }
+}

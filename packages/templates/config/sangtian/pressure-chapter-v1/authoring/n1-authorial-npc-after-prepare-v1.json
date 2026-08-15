@@ -1,0 +1,232 @@
+{
+  "npcReactions": [
+    {
+      "reactionId": "reaction.n1.hu.controlled_weirs",
+      "actorId": "actor.hu_zongxian",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "controlled",
+        "weirs_reinforced"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law"
+      ],
+      "text": "胡宗宪看过回执，只问抵达的人手由谁统领、撤离由谁接应：“先手已经有了，别再让两道令把它拆散。”",
+      "factRefs": [
+        "known.n1.zhejiang_governor.object.weir_troop_deployment",
+        "obj.nine_weirs"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.hu.time_lost",
+      "actorId": "actor.hu_zongxian",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "lost_initiative",
+        "time_lost"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law"
+      ],
+      "text": "迟报送到，胡宗宪把已经失去先手的地方压在图下：“只报还能到达的人、还能守的堰，别拿追回不来的事拖住最后一道令。”",
+      "factRefs": [
+        "known.n1.zhejiang_governor.pressure",
+        "obj.nine_weirs"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.zheng.authority_conflict",
+      "actorId": "actor.zheng_michang",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "contested",
+        "authority_conflict"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law"
+      ],
+      "text": "郑泌昌将两份相反回令并排放下：“印信、经手、收件逐项核。谁要续办，谁先在更正处具名，不许县里替省府猜。”",
+      "factRefs": [
+        "known.n1.zhejiang_administration.object.breach_order_chain",
+        "obj.breach_order_chain"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.tan.records_preserved",
+      "actorId": "actor.tan_lun",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "controlled",
+        "records_preserved"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law"
+      ],
+      "text": "谭纶看见签收回执后仍不肯下结论：“纸留下只是第一步。原件、认证副本、见证与保管人若对不上，明日照样各说各话。”",
+      "factRefs": [
+        "known.n1.qingliu_law.object.sealed_evidence_index",
+        "obj.breach_order_chain"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.tan.conflicting_records",
+      "actorId": "actor.tan_lun",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "contested",
+        "authority_conflict"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law"
+      ],
+      "text": "谭纶拒绝把相反文书叠成一份：“我不知道哪张在先。分别封存、分别问经手，先保住矛盾，别急着替它们和解。”",
+      "factRefs": [
+        "known.n1.qingliu_law.object.sealed_evidence_index",
+        "obj.breach_order_chain"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.shen.evacuation_bargain",
+      "actorId": "actor.shen_yishi",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "evacuation_advanced",
+        "resource_gap"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.jiangnan_merchant"
+      ],
+      "text": "官府来催加船，沈一石把空白借据推过去：“船能先走，接船人、归还和误粮责任现在就写。救急不能等，账不能没有主人。”",
+      "factRefs": [
+        "known.n1.jiangnan_merchant.object.merchant_fleet",
+        "obj.merchant_credit_network"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.shen.double_requisition",
+      "actorId": "actor.shen_yishi",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "contested",
+        "resource_gap"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.jiangnan_merchant"
+      ],
+      "text": "两路差役争同一批船，沈一石敲着清单：“一条船不能走两条路。谁先具名接收，商会便先认谁。”",
+      "factRefs": [
+        "known.n1.jiangnan_merchant.object.merchant_fleet",
+        "obj.merchant_fleet"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.yang.seal_records",
+      "actorId": "actor.yang_jinshui",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "controlled",
+        "records_preserved"
+      ],
+      "knownBy": [
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.sili_weaving"
+      ],
+      "text": "杨金水没有让人把来查簿者赶走，只问奉谁的差、要看哪几页、看后谁签收：“封簿是保管，不是叫记录从世上消失。”",
+      "factRefs": [
+        "known.n1.sili_weaving.object.weaving_records",
+        "obj.weaving_records"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.yang.two_channels",
+      "actorId": "actor.yang_jinshui",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "contested",
+        "authority_conflict"
+      ],
+      "knownBy": [
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.sili_weaving"
+      ],
+      "text": "外廷与内廷同时索簿，杨金水把名帖压在封皮上：“谁拿、谁收、谁送回，先写清。宫里的名头也不能让一份簿同时在两处。”",
+      "factRefs": [
+        "known.n1.sili_weaving.object.weaving_records",
+        "obj.inner_court_dispatch_channel"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.yan.late_dispatch",
+      "actorId": "actor.yan_shifan",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "lost_initiative",
+        "time_lost"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.cabinet_finance"
+      ],
+      "text": "严世蕃看完送达时辰，将急报退回：“迟到的回批只能管余下的局面。把还能改的期限、军饷缺口和收件衙门列清。”",
+      "factRefs": [
+        "known.n1.cabinet_finance.object.cabinet_urgent_dispatch",
+        "obj.fiscal_target_register"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.qi.evacuation_seen",
+      "actorId": "actor.qi_dazhu",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "controlled",
+        "evacuation_advanced"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.jiangnan_merchant"
+      ],
+      "text": "齐大柱从低处赶来，只说亲眼所见：“有人已经往高处走，后头还有人等船。哪条船来、谁领人，请给个准话。”",
+      "factRefs": [
+        "obj.nine_weirs",
+        "obj.merchant_fleet"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.ma.order_witness",
+      "actorId": "actor.ma_ningyuan",
+      "phase": "AFTER_PREPARE",
+      "triggerTags": [
+        "contested",
+        "authority_conflict"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law"
+      ],
+      "text": "马宁远不肯替传令人补全上意：“我只说哪一道话到了县里、由谁转来。要我认更高的来路，先把原令拿来当面对。”",
+      "factRefs": [
+        "obj.breach_order_chain"
+      ]
+    }
+  ]
+}

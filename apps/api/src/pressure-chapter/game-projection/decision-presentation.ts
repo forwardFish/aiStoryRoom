@@ -194,7 +194,7 @@ export class PressureTurnPresentationServiceV1 {
         decisionPointId: context.decisionPointId,
         reason: error instanceof Error ? error.message : "UNKNOWN",
       }));
-      throw error;
+      return structuredClone(fallback);
     }
   }
 }

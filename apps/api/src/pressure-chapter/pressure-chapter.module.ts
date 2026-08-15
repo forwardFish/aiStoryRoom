@@ -59,6 +59,7 @@ export class PressureChapterModule {
           return await createPressureChapterProductRootV1({
             prisma,
             turnPresentationProvider: narrative.turnPresentationProvider,
+            oneCallStoryProvider: narrative.oneCallStoryProvider,
             options: {
               ...configuredOptions,
               internalAdapters: {

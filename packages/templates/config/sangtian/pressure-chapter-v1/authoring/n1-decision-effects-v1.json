@@ -1,0 +1,628 @@
+{
+  "schemaVersion": "sangtian_n1_multibeat_decision_effects_v1",
+  "contractVersion": "1.0.0",
+  "chapterId": "N1",
+  "sourceBinding": {
+    "authorialContentSha256": "382A2E065273BACA2F6A2869B285CD6C8FA73F25524CC63EF06B5F2088530C0F",
+    "nodeSource": "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/node.json",
+    "sceneFlowSource": "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json",
+    "settlementSource": "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json"
+  },
+  "authorityBoundary": {
+    "actionGuardAuthority": "UNCHANGED_EXISTING_RUNTIME",
+    "workingStateAuthority": "EXISTING_WORKING_LEDGER",
+    "settlementAuthority": "sangtian.N1.settlement_v1",
+    "trackDeltaAuthority": "EXISTING_SETTLEMENT_BRANCH_ONLY",
+    "resourceQuantityPolicy": "NO_NEW_RESOURCE_QUANTITIES",
+    "providerMayCreateActionOrEffect": false,
+    "chapterCloseFactRef": "chapter.N1.exit_ready",
+    "resourceMutationAllowed": false,
+    "trackDeltaWriteAllowed": false,
+    "outcomeBandSelectionAllowed": false
+  },
+  "sequenceRule": {
+    "kind": "COMMITTED_CLOSE_FACT_CHAIN",
+    "firstDecisionPointId": "N1.weir_crisis",
+    "finalDecisionPointId": "N1.final_dispatch",
+    "intermediateResult": "NEXT_BEAT",
+    "finalResult": "CHAPTER_SUMMARY_READY",
+    "activationAuthority": "PREVIOUS_DECISION_CLOSE_FACT_IN_COMMITTED_STATE_AFTER",
+    "repeatedDecisionPolicy": "FAIL_CLOSED",
+    "unknownDecisionOrActionPolicy": "FAIL_CLOSED_ZERO_WRITE"
+  },
+  "decisions": [
+    {
+      "beatId": "N1.B01",
+      "decisionContractRef": "N1.weir_crisis.prepare.intake",
+      "decisionPointId": "N1.weir_crisis",
+      "phase": "PREPARE",
+      "purpose": "在九堰同时告急时，先选择一条能够真正送达现场的疏散、守堰或证据方向。",
+      "activation": {
+        "requiredPreviousCloseFactRef": null,
+        "closeFactRef": "chapter.N1.weir_crisis.closed",
+        "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
+      },
+      "sourceMaterialRefs": [
+        "publicMainline.opening",
+        "publicMainline.npcUrgent"
+      ],
+      "actions": [
+        {
+          "actionType": "DEFAULT_PASS",
+          "preferredEntry": "DEFER",
+          "label": "本轮不采取正式行动",
+          "description": "不追加疏散、守堰或证据命令；水势、旧令和其他席位行动继续推进。",
+          "workingKnowledgeFactRef": null,
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B01/actions/DEFAULT_PASS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B01",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        },
+        {
+          "actionType": "EVACUATE_WEIRS",
+          "preferredEntry": "PLAN",
+          "label": "先发堰区疏散令",
+          "description": "先把可送达的差役与船路用于高风险村落疏散，并明确第一批接令对象。",
+          "workingKnowledgeFactRef": "working.N1.intake.evacuation_ordered",
+          "settlementFactContributions": [
+            {
+              "factRef": "evacuationCoveragePct",
+              "value": 70
+            },
+            {
+              "factRef": "disasterSeverity",
+              "value": 3
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B01/actions/EVACUATE_WEIRS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B01",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        },
+        {
+          "actionType": "SEAL_BREACH_RECORD",
+          "preferredEntry": "INVESTIGATE",
+          "label": "先封毁堤经手记录",
+          "description": "先固定命令、经手与见证的保管链，防止第一轮调度把证据冲散。",
+          "workingKnowledgeFactRef": "working.N1.intake.breach_record_sealed",
+          "settlementFactContributions": [
+            {
+              "factRef": "verifiedBreachRecordCount",
+              "value": 1
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B01/actions/SEAL_BREACH_RECORD",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B01",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        },
+        {
+          "actionType": "SUPPORT_WEIR",
+          "preferredEntry": "TOKEN",
+          "label": "先增援关键堰口",
+          "description": "先把能够立即送达的人手与物资写入关键堰口增援令，并承担其他处延后的代价。",
+          "workingKnowledgeFactRef": "working.N1.intake.weir_support_ordered",
+          "settlementFactContributions": [
+            {
+              "factRef": "criticalWeirsSecuredCount",
+              "value": 2
+            },
+            {
+              "factRef": "disasterSeverity",
+              "value": 2
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B01/actions/SUPPORT_WEIR",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B01",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        }
+      ]
+    },
+    {
+      "beatId": "N1.B02",
+      "decisionContractRef": "N1.weir_crisis.prepare.dispatch",
+      "decisionPointId": "N1.dispatch_route",
+      "phase": "PREPARE",
+      "purpose": "第一轮处置窗口已经耗去时辰；若有命令离案，必须确认继续送达还是改投仍可接令的路线。",
+      "activation": {
+        "requiredPreviousCloseFactRef": "chapter.N1.weir_crisis.closed",
+        "closeFactRef": "chapter.N1.dispatch_route.closed",
+        "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
+      },
+      "sourceMaterialRefs": [
+        "publicMainline.afterPrepareCommon",
+        "npcReactions.02",
+        "npcReactions.03"
+      ],
+      "actions": [
+        {
+          "actionType": "CONFIRM_DISPATCH_ROUTE",
+          "preferredEntry": "INVESTIGATE",
+          "label": "确认原送达路线",
+          "description": "核对收件人、经手和回执后，维持已经接上执行链的原路线。",
+          "workingKnowledgeFactRef": "working.N1.dispatch.route_confirmed",
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B02/actions/CONFIRM_DISPATCH_ROUTE",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B02",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        },
+        {
+          "actionType": "DEFAULT_PASS",
+          "preferredEntry": "DEFER",
+          "label": "不确认送达路线",
+          "description": "不为当前命令补充收件人与回执，现有送达争议继续存在。",
+          "workingKnowledgeFactRef": null,
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B02/actions/DEFAULT_PASS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B02",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        },
+        {
+          "actionType": "REDIRECT_DISPATCH_ROUTE",
+          "preferredEntry": "PLAN",
+          "label": "改投仍可接令的路线",
+          "description": "撤回尚未送达的部分，把命令改投仍有人手和接令能力的路线。",
+          "workingKnowledgeFactRef": "working.N1.dispatch.route_redirected",
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B02/actions/REDIRECT_DISPATCH_ROUTE",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B02",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        }
+      ]
+    },
+    {
+      "beatId": "N1.B03",
+      "decisionContractRef": "N1.weir_crisis.prepare.reconcile",
+      "decisionPointId": "N1.order_reconciliation",
+      "phase": "PREPARE",
+      "purpose": "处理两道相反命令争夺同一批人手与船只的问题，并留下可复核的撤换或并存记录。",
+      "activation": {
+        "requiredPreviousCloseFactRef": "chapter.N1.dispatch_route.closed",
+        "closeFactRef": "chapter.N1.order_reconciliation.closed",
+        "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
+      },
+      "sourceMaterialRefs": [
+        "publicMainline.afterPrepareVariants.contested",
+        "npcReactions.05",
+        "npcReactions.06"
+      ],
+      "actions": [
+        {
+          "actionType": "DEFAULT_PASS",
+          "preferredEntry": "DEFER",
+          "label": "不处置冲突命令",
+          "description": "不撤换任何旧令，也不固定冲突版本；现场继续承担两令并行的代价。",
+          "workingKnowledgeFactRef": null,
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B03/actions/DEFAULT_PASS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B03",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        },
+        {
+          "actionType": "PRESERVE_PARALLEL_ORDER_EVIDENCE",
+          "preferredEntry": "INVESTIGATE",
+          "label": "保全两令并行证据",
+          "description": "分别登记两道命令的经手、时序和去向，保留其冲突而不伪造统一口径。",
+          "workingKnowledgeFactRef": "working.N1.reconcile.parallel_orders_preserved",
+          "settlementFactContributions": [
+            {
+              "factRef": "verifiedBreachRecordCount",
+              "value": 1
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B03/actions/PRESERVE_PARALLEL_ORDER_EVIDENCE",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B03",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        },
+        {
+          "actionType": "REVOKE_CONFLICTING_ORDER",
+          "preferredEntry": "PLAN",
+          "label": "具名撤换冲突旧令",
+          "description": "明确指出被撤换的旧令、撤换时点和接续命令，结束同一执行链上的相反要求。",
+          "workingKnowledgeFactRef": "working.N1.reconcile.conflicting_order_revoked",
+          "settlementFactContributions": [
+            {
+              "factRef": "disasterSeverity",
+              "value": 3
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B03/actions/REVOKE_CONFLICTING_ORDER",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B03",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        }
+      ]
+    },
+    {
+      "beatId": "N1.B04",
+      "decisionContractRef": "N1.weir_crisis.prepare.evidence",
+      "decisionPointId": "N1.evidence_handoff",
+      "phase": "PREPARE",
+      "purpose": "在经手人与见证即将离散前，决定由谁收件、谁见证、如何封存命令链。",
+      "activation": {
+        "requiredPreviousCloseFactRef": "chapter.N1.order_reconciliation.closed",
+        "closeFactRef": "chapter.N1.evidence_handoff.closed",
+        "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
+      },
+      "sourceMaterialRefs": [
+        "publicMainline.npcUrgent",
+        "npcReactions.09",
+        "npcReactions.11"
+      ],
+      "actions": [
+        {
+          "actionType": "DEFAULT_PASS",
+          "preferredEntry": "DEFER",
+          "label": "不完成证据交接",
+          "description": "不指定收件、见证或保管人，文袋继续停在无人承担的门槛上。",
+          "workingKnowledgeFactRef": null,
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B04/actions/DEFAULT_PASS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B04",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        },
+        {
+          "actionType": "REGISTER_EVIDENCE_HANDOFF",
+          "preferredEntry": "INVESTIGATE",
+          "label": "登记证据交接",
+          "description": "写明交件人、收件人、时辰与保管去向，使后续能够追索。",
+          "workingKnowledgeFactRef": "working.N1.evidence.handoff_registered",
+          "settlementFactContributions": [
+            {
+              "factRef": "verifiedBreachRecordCount",
+              "value": 1
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B04/actions/REGISTER_EVIDENCE_HANDOFF",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B04",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        },
+        {
+          "actionType": "SEAL_WITNESS_CHAIN",
+          "preferredEntry": "PLAN",
+          "label": "封存见证链",
+          "description": "让经手与见证共同确认当前版本并封缄，防止事后改写交接事实。",
+          "workingKnowledgeFactRef": "working.N1.evidence.witness_chain_sealed",
+          "settlementFactContributions": [
+            {
+              "factRef": "verifiedBreachRecordCount",
+              "value": 1
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B04/actions/SEAL_WITNESS_CHAIN",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B04",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        }
+      ]
+    },
+    {
+      "beatId": "N1.B05",
+      "decisionContractRef": "N1.weir_crisis.commit.resources",
+      "decisionPointId": "N1.remaining_resources",
+      "phase": "COMMIT",
+      "purpose": "在先手已经消耗后，把剩余船路与人手明确押向疏散或关键堰口，不能同时许给两处。",
+      "activation": {
+        "requiredPreviousCloseFactRef": "chapter.N1.evidence_handoff.closed",
+        "closeFactRef": "chapter.N1.remaining_resources.closed",
+        "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
+      },
+      "sourceMaterialRefs": [
+        "publicMainline.npcUrgent",
+        "publicMainline.commitConfrontation",
+        "npcReactions.13",
+        "npcReactions.14"
+      ],
+      "actions": [
+        {
+          "actionType": "DEFAULT_PASS",
+          "preferredEntry": "DEFER",
+          "label": "不重新分配剩余力量",
+          "description": "不为剩余船路与人手确定优先级，先前占用和水势继续收窄可挽回范围。",
+          "workingKnowledgeFactRef": null,
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B05/actions/DEFAULT_PASS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B05",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        },
+        {
+          "actionType": "PRIORITIZE_EVACUATION_ROUTE",
+          "preferredEntry": "PLAN",
+          "label": "优先保住疏散路线",
+          "description": "把剩余可用船路与差役优先用于高风险村落撤离，并接受部分堰口增援不足。",
+          "workingKnowledgeFactRef": "working.N1.resources.evacuation_prioritized",
+          "settlementFactContributions": [
+            {
+              "factRef": "evacuationCoveragePct",
+              "value": 70
+            },
+            {
+              "factRef": "disasterSeverity",
+              "value": 3
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B05/actions/PRIORITIZE_EVACUATION_ROUTE",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B05",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        },
+        {
+          "actionType": "REINFORCE_REMAINING_WEIR",
+          "preferredEntry": "TOKEN",
+          "label": "优先守住剩余关键堰口",
+          "description": "把剩余可用人手优先投入仍可稳住的关键堰口，并接受部分疏散延后。",
+          "workingKnowledgeFactRef": "working.N1.resources.weir_reinforced",
+          "settlementFactContributions": [
+            {
+              "factRef": "criticalWeirsSecuredCount",
+              "value": 2
+            },
+            {
+              "factRef": "disasterSeverity",
+              "value": 2
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B05/actions/REINFORCE_REMAINING_WEIR",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B05",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        }
+      ]
+    },
+    {
+      "beatId": "N1.B06",
+      "decisionContractRef": "N1.weir_crisis.commit.accountability",
+      "decisionPointId": "N1.named_accountability",
+      "phase": "COMMIT",
+      "purpose": "为继续执行或更正命令留下具名责任，禁止用含混措辞把代价推回现场。",
+      "activation": {
+        "requiredPreviousCloseFactRef": "chapter.N1.remaining_resources.closed",
+        "closeFactRef": "chapter.N1.named_accountability.closed",
+        "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
+      },
+      "sourceMaterialRefs": [
+        "publicMainline.commitConfrontation",
+        "npcReactions.16",
+        "npcReactions.17",
+        "seatLenses.seat.zhejiang_governor.commitPressure"
+      ],
+      "actions": [
+        {
+          "actionType": "DEFAULT_PASS",
+          "preferredEntry": "DEFER",
+          "label": "不在更正处具名",
+          "description": "不确认谁承担继续或更正责任，现场只得到一份无法追责的含混版本。",
+          "workingKnowledgeFactRef": null,
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B06/actions/DEFAULT_PASS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B06",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        },
+        {
+          "actionType": "REQUIRE_COUNTERSIGNATURE",
+          "preferredEntry": "INVESTIGATE",
+          "label": "要求经手反签",
+          "description": "要求执行经手对去向、时辰和代价反签，形成可核验的共同责任记录。",
+          "workingKnowledgeFactRef": "working.N1.accountability.countersignature_required",
+          "settlementFactContributions": [
+            {
+              "factRef": "verifiedBreachRecordCount",
+              "value": 1
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B06/actions/REQUIRE_COUNTERSIGNATURE",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B06",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        },
+        {
+          "actionType": "SIGN_COMMAND_RESPONSIBILITY",
+          "preferredEntry": "PLAN",
+          "label": "具名承担命令责任",
+          "description": "以本席权限确认继续或更正的正式版本，并留下不可事后抹去的署名。",
+          "workingKnowledgeFactRef": "working.N1.accountability.responsibility_signed",
+          "settlementFactContributions": [
+            {
+              "factRef": "verifiedBreachRecordCount",
+              "value": 1
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B06/actions/SIGN_COMMAND_RESPONSIBILITY",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B06",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        }
+      ]
+    },
+    {
+      "beatId": "N1.B07",
+      "decisionContractRef": "N1.weir_crisis.commit.review",
+      "decisionPointId": "N1.seal_review",
+      "phase": "COMMIT",
+      "purpose": "封缄前只核对已经发生的送达、收件、见证和未解冲突，不提前写章末结果。",
+      "activation": {
+        "requiredPreviousCloseFactRef": "chapter.N1.named_accountability.closed",
+        "closeFactRef": "chapter.N1.seal_review.closed",
+        "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
+      },
+      "sourceMaterialRefs": [
+        "publicMainline.commitConfrontation",
+        "seatLenses.seat.qingliu_law.commitPressure",
+        "seatLenses.seat.zhejiang_administration.commitPressure"
+      ],
+      "actions": [
+        {
+          "actionType": "DEFAULT_PASS",
+          "preferredEntry": "DEFER",
+          "label": "不做封缄前复核",
+          "description": "不补核送达与见证，也不标记未解冲突；错误只能随最终命令一起送出。",
+          "workingKnowledgeFactRef": null,
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B07/actions/DEFAULT_PASS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B07",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        },
+        {
+          "actionType": "PRESERVE_UNRESOLVED_CONFLICT",
+          "preferredEntry": "INVESTIGATE",
+          "label": "标记并保留未解冲突",
+          "description": "把仍未一致的命令版本和经手差异列入封缄附件，不把矛盾伪装成已解决。",
+          "workingKnowledgeFactRef": "working.N1.review.unresolved_conflict_preserved",
+          "settlementFactContributions": [
+            {
+              "factRef": "verifiedBreachRecordCount",
+              "value": 1
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B07/actions/PRESERVE_UNRESOLVED_CONFLICT",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B07",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        },
+        {
+          "actionType": "VERIFY_DELIVERY_RECEIPTS",
+          "preferredEntry": "PLAN",
+          "label": "核验送达与回执",
+          "description": "逐项核对去向、收件人、见证和时辰，只确认已有回执能够支持的事实。",
+          "workingKnowledgeFactRef": "working.N1.review.delivery_receipts_verified",
+          "settlementFactContributions": [
+            {
+              "factRef": "verifiedBreachRecordCount",
+              "value": 1
+            }
+          ],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B07/actions/VERIFY_DELIVERY_RECEIPTS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B07",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/settlement.json#/branches"
+          ]
+        }
+      ]
+    },
+    {
+      "beatId": "N1.B08",
+      "decisionContractRef": "N1.weir_crisis.commit.seal",
+      "decisionPointId": "N1.final_dispatch",
+      "phase": "COMMIT",
+      "purpose": "把最终版本封缄并送出；行动只关闭 N1，HIGH/MID/LOW 与五项增量仍由既有 Settlement 一次裁定。",
+      "activation": {
+        "requiredPreviousCloseFactRef": "chapter.N1.seal_review.closed",
+        "closeFactRef": "chapter.N1.exit_ready",
+        "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
+      },
+      "sourceMaterialRefs": [
+        "publicMainline.commitConfrontation",
+        "seatLenses.seat.zhejiang_governor.commitPressure",
+        "seatLenses.seat.jiangnan_merchant.commitPressure",
+        "seatLenses.seat.cabinet_finance.commitPressure"
+      ],
+      "actions": [
+        {
+          "actionType": "DEFAULT_PASS",
+          "preferredEntry": "DEFER",
+          "label": "不追加最终正式命令",
+          "description": "放弃最后正式行动机会；既有六席行动仍按已经提交的事实进入 Settlement。",
+          "workingKnowledgeFactRef": null,
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B08/actions/DEFAULT_PASS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B08",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        },
+        {
+          "actionType": "DISPATCH_FINAL_WEIR_ORDERS",
+          "preferredEntry": "PLAN",
+          "label": "送出最终诸令",
+          "description": "按已核验的去向、收件、见证和具名责任送出最终版本，不预写执行结果。",
+          "workingKnowledgeFactRef": "working.N1.final.orders_dispatched",
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B08/actions/DISPATCH_FINAL_WEIR_ORDERS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B08",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        },
+        {
+          "actionType": "SEAL_FINAL_WEIR_ORDERS",
+          "preferredEntry": "INVESTIGATE",
+          "label": "封缄最终诸令",
+          "description": "把最终版本、附件和未解冲突一并封缄，随后交由既有 Settlement 裁定后果。",
+          "workingKnowledgeFactRef": "working.N1.final.orders_sealed",
+          "settlementFactContributions": [],
+          "derivationRefs": [
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-decision-effects-v1.json#/decisions/N1.B08/actions/SEAL_FINAL_WEIR_ORDERS",
+            "packages/templates/config/sangtian/pressure-chapter-v1/authoring/n1-multibeat-authoring-v1.json#/beats/N1.B08",
+            "packages/templates/config/sangtian/pressure-spine-v1.0/source/nodes/N1/scene-flow.json#/decisionBeats"
+          ]
+        }
+      ]
+    }
+  ],
+  "adaptationDecision": {
+    "adaptationId": "adapt.n1.multibeat.v1",
+    "authorization": "N1_MULTIBEAT_GOAL_M1_PROJECT_OWNER_AUTHOR_APPROVAL",
+    "sourceMacroDecisionBeatIds": [
+      "beat.n1.prepare",
+      "beat.n1.commit"
+    ],
+    "expandedBeatIds": [
+      "N1.B01",
+      "N1.B02",
+      "N1.B03",
+      "N1.B04",
+      "N1.B05",
+      "N1.B06",
+      "N1.B07",
+      "N1.B08"
+    ],
+    "expandedDecisionPointIds": [
+      "N1.weir_crisis",
+      "N1.dispatch_route",
+      "N1.order_reconciliation",
+      "N1.evidence_handoff",
+      "N1.remaining_resources",
+      "N1.named_accountability",
+      "N1.seal_review",
+      "N1.final_dispatch"
+    ],
+    "macroActionBudgetInterpretation": "SOURCE_PREPARE_COMMIT_BUDGET_IS_THE_TWO_MACRO_BEAT_BASELINE; THE_AUTHORIZED_ADAPTATION PUBLISHES EIGHT DISTINCT DECISION IDENTITIES WITH ONE SUBMISSION PER SEAT PER ID",
+    "perDecisionSeatActionBudget": 1,
+    "mayChangeActionGuardAlgorithm": false,
+    "mayChangeAiSelectionAlgorithm": false,
+    "mayChangeSettlementBranchSelectors": false
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "pressure_chapter_authorial_content_manifest_v1",
+  "contentSchemaVersion": "sangtian_n1_authorial_content_v1",
+  "nodeId": "N1",
+  "sourceBinding": {
+    "gitBase": "9cb016d97ebc99ed5446553d9e530f0e5e7ca994",
+    "sceneFlowSha256": "F4721194E8A03C252C27B3B65CFF5F37FC8118D5F61ADCDC7A82BB79AD443F2C",
+    "seatContentSha256": "4171E015BC0F10803DE26DB6DC5894CB3659229D69A2ED4038892B21DD23D837",
+    "settlementSha256": "8FD2080563981572AAD0C06824D4223E8642AD1E5AC1C9F8FC24D7386E6F79CC"
+  },
+  "sourceArtifactSha256": "382A2E065273BACA2F6A2869B285CD6C8FA73F25524CC63EF06B5F2088530C0F",
+  "assembledContentSha256": "EAE631EC6FB7DE94600085922A365B424A21D3594D4CA8ABB743D4A42BB69372",
+  "publicMainlinePath": "n1-authorial-public-mainline-v1.json",
+  "seatLensPaths": {
+    "seat.zhejiang_governor": "n1-authorial-seat-zhejiang_governor-v1.json",
+    "seat.zhejiang_administration": "n1-authorial-seat-zhejiang_administration-v1.json",
+    "seat.qingliu_law": "n1-authorial-seat-qingliu_law-v1.json",
+    "seat.jiangnan_merchant": "n1-authorial-seat-jiangnan_merchant-v1.json",
+    "seat.sili_weaving": "n1-authorial-seat-sili_weaving-v1.json",
+    "seat.cabinet_finance": "n1-authorial-seat-cabinet_finance-v1.json"
+  },
+  "npcReactionPaths": {
+    "AFTER_PREPARE": "n1-authorial-npc-after-prepare-v1.json",
+    "BEFORE_COMMIT": "n1-authorial-npc-before-commit-v1.json",
+    "SETTLEMENT": "n1-authorial-npc-settlement-v1.json"
+  },
+  "chapterSummaryFramesPath": "n1-authorial-summary-frames-v1.json"
+}

@@ -20,6 +20,7 @@ import {
 } from "@ai-story/shared";
 import {
   compileSangtianContentFinalePolicyV1,
+  loadSangtianPressureChapterPackageV1,
   type GenericFinaleShadowCandidateV1,
 } from "@ai-story/templates";
 import {
@@ -49,20 +50,35 @@ function withHash<T extends Record<string, unknown>, K extends string>(
   return { ...value, [field]: sha256Canonical(value) } as T & Record<K, string>;
 }
 
-function worldState(sequence: number): WorldStateV1 {
-  const finalTracks: Record<TrackIdV1, number> = {
-    civilian_land: 3,
-    mulberry_silk: 3,
-    fiscal_military: 3,
-    evidence_responsibility: 3,
-    court_imperial_face: 3,
-  };
+type FinaleFixtureScaleV1 = "DELTA_FROM_GENESIS" | "ABSOLUTE";
+
+const GENESIS_TRACK_VALUES: Record<TrackIdV1, number> = {
+  civilian_land: 50,
+  mulberry_silk: 50,
+  fiscal_military: 45,
+  evidence_responsibility: 50,
+  court_imperial_face: 50,
+};
+
+const N7_HIGH_TRACK_DELTA: Record<TrackIdV1, number> = {
+  civilian_land: 15,
+  mulberry_silk: 5,
+  fiscal_military: 5,
+  evidence_responsibility: 15,
+  court_imperial_face: 5,
+};
+
+function worldState(
+  sequence: number,
+  scale: FinaleFixtureScaleV1,
+): WorldStateV1 {
+  const values = Object.fromEntries(TRACK_IDS_V1.map((trackId) => {
+    const base = scale === "ABSOLUTE" ? GENESIS_TRACK_VALUES[trackId] : 0;
+    return [trackId, base + (sequence === 7 ? N7_HIGH_TRACK_DELTA[trackId] : 0)];
+  })) as Record<TrackIdV1, number>;
   const tracks = withHash({
     schemaVersion: "sangtian_track_state_v1" as const,
-    values: Object.fromEntries(TRACK_IDS_V1.map((trackId) => [
-      trackId,
-      sequence === 7 ? finalTracks[trackId] : 0,
-    ])) as Record<TrackIdV1, number>,
+    values,
   }, "stateHash");
   const knowledgeBySeat = PRESSURE_CHAPTER_SEAT_IDS_V1.reduce<WorldStateV1["knowledgeBySeat"]>((bySeat, seatId) => {
     bySeat[seatId] = withHash({
@@ -107,12 +123,15 @@ function worldState(sequence: number): WorldStateV1 {
   }, "stateHash") as WorldStateV1;
 }
 
-function frozenBundles(genesisHash: string): FrozenChapterBundleV1[] {
+function frozenBundles(
+  genesisHash: string,
+  scale: FinaleFixtureScaleV1,
+): FrozenChapterBundleV1[] {
   const bundles: FrozenChapterBundleV1[] = [];
   let previousFrozenHash = genesisHash;
   CHAPTER_IDS_V1.forEach((chapterId, index) => {
     const sequence = index + 1;
-    const world = worldState(sequence);
+    const world = worldState(sequence, scale);
     const carryForward = withHash({
       nextChapterId: nextChapterId(chapterId),
       unlockedContentRefs: [],
@@ -142,13 +161,16 @@ function frozenBundles(genesisHash: string): FrozenChapterBundleV1[] {
   return bundles;
 }
 
-function sourceFixture(): N7FrozenFinaleSourceV1 {
+function sourceFixture(
+  scale: FinaleFixtureScaleV1 = "DELTA_FROM_GENESIS",
+): N7FrozenFinaleSourceV1 {
+  const loaded = loadSangtianPressureChapterPackageV1();
   const policy = compileSangtianContentFinalePolicyV1({
-    contentPackageVersion: "sangtian-content-1.0.0",
-    contentPackageSha256: digest("content"),
+    contentPackageVersion: loaded.manifest.packageVersion,
+    contentPackageSha256: loaded.manifest.contentSha256,
   });
   const genesisHash = digest("genesis");
-  const bundles = frozenBundles(genesisHash);
+  const bundles = frozenBundles(genesisHash, scale);
   return withN7FrozenFinaleSourceFingerprintV1({
     schemaVersion: "n7_frozen_finale_source_v1",
     runId: "run-terminal-1",
@@ -376,6 +398,16 @@ function harness(source = sourceFixture()) {
 function rehashSource(source: Record<string, unknown>): void {
   source.sourceFingerprint = hashWithoutField(source, "sourceFingerprint");
 }
+
+test("absolute 0-100 N7 tracks fail closed before evaluator or terminal commit", async () => {
+  const state = harness(sourceFixture("ABSOLUTE"));
+  await assert.rejects(
+    state.service.finalize(state.command),
+    /PRESSURE_FINALE_SCALE_MISMATCH/u,
+  );
+  assert.equal(state.committer.attempts, 0);
+  assert.deepEqual(state.events, []);
+});
 
 test("N7 Frozen is evaluated and one authority-first atomic terminal record is committed", async () => {
   const state = harness();

@@ -26,6 +26,7 @@ import {
   PressureChapterGameProjectionService,
   PressureTurnPresentationServiceV1,
   type PressureTurnPresentationProviderPortV1,
+  type PressureGameChapterSummaryReaderPort,
 } from "../game-projection";
 import { PressureChapterGenesisService } from "../genesis";
 import {
@@ -128,6 +129,10 @@ import {
   type PressureNarrativeProviderReadinessV1,
 } from "../production-config";
 import {
+  PressureOneCallStoryGeneratorV1,
+  type PressureOneCallStoryProviderPortV1,
+} from "../story-generation";
+import {
   createPrismaPressureProgressOutboxWorkerV1,
 } from "../progress-outbox/factory";
 import {
@@ -200,6 +205,7 @@ import {
   PressurePromiseProductAccessAdapterV1,
   PressurePromiseProductFacadeV1,
 } from "./promise-facade";
+import { createPrismaPressureChapterSummaryProductionV2 } from "../chapter-summary-gate";
 
 export interface PressureChapterProductRootV1 {
   routeRelease: ReturnType<typeof loadPublishedSangtianActionReleaseV1>;
@@ -221,6 +227,8 @@ export interface PressureChapterProductRootV1 {
     clock: PressureChapterHttpClockPort;
   }>;
   gameProjection: PressureChapterGameProjectionService;
+  oneCallStoryGenerator: PressureOneCallStoryGeneratorV1;
+  chapterSummaryProduction: ReturnType<typeof createPrismaPressureChapterSummaryProductionV2>;
   seatTransport: PressureSeatTransportFacadeV1;
   promises: PressurePromiseProductFacadeV1;
   aEmotion: ReturnType<typeof createPrismaAEmotionPersistenceV1>;
@@ -255,6 +263,8 @@ export async function createPressureChapterProductRootV1(input: {
   turnPresentationProvider?: PressureTurnPresentationProviderPortV1 | null;
   environment?: Readonly<Record<string, string | undefined>>;
   gameReadRuntimeObserver?: PressureGameReadRuntimeObserverPortV1;
+  oneCallStoryProvider?: PressureOneCallStoryProviderPortV1 | null;
+  chapterSummaryReader?: PressureGameChapterSummaryReaderPort | null;
 }): Promise<PressureChapterProductRootV1> {
   const gameReadConfiguration = resolvePressureGameReadConfigurationV1(
     input.environment ?? process.env,
@@ -520,6 +530,13 @@ export async function createPressureChapterProductRootV1(input: {
     content,
     mapper: gameContentMapper,
   });
+  const oneCallStoryGenerator = new PressureOneCallStoryGeneratorV1(
+    input.oneCallStoryProvider ?? null,
+  );
+  const chapterSummaryProduction = createPrismaPressureChapterSummaryProductionV2({
+    prisma: input.prisma as never,
+    generator: oneCallStoryGenerator,
+  });
   const gameProjection = new PressureChapterGameProjectionService(
     routes,
     gameChapterReader,
@@ -531,6 +548,7 @@ export async function createPressureChapterProductRootV1(input: {
     new PressureTurnPresentationServiceV1(
       input.turnPresentationProvider ?? null,
     ),
+    input.chapterSummaryReader ?? chapterSummaryProduction.reader,
   );
   const gameReadSnapshot = new PrismaGameReadSnapshotReaderV1(
     asPrisma<GameReadSnapshotPrismaClientV1>(input.prisma),
@@ -726,9 +744,11 @@ export async function createPressureChapterProductRootV1(input: {
     productionBridge: production.bridge,
     roomsGateway,
     httpFacade,
-    httpControllerMethods: new PressureChapterHttpControllerMethods(httpFacade),
+    httpControllerMethods: new PressureChapterHttpControllerMethods(httpFacade, chapterSummaryProduction.commandHandler),
     httpPorts,
     gameProjection,
+    oneCallStoryGenerator,
+    chapterSummaryProduction,
     seatTransport,
     promises,
     aEmotion,

@@ -13,13 +13,8 @@ import {
   buildPressureTurnPresentationSystemInstructionV1,
   buildPressureStorySystemInstructionV1,
 } from "./pressure-prompt-layers";
-import {
-  buildPressureNarrativeReviewUnitsV1,
-  buildPressureNarrativeTruthReviewInstructionV1,
-  pressureNarrativeTruthReviewPayloadV1,
-  validatePressureNarrativeTruthReviewV1,
-} from "./pressure-narrative-truth-review";
 import { validateNarrativeRenderCandidateV1 } from "@apps/openovel-runtime/pressure-narrative/contracts";
+import type { PressureOneCallStoryProviderPortV1 } from "../story-generation";
 
 export type PressureNarrativeProviderModeV1 =
   | "EXTERNAL_PROVIDER"
@@ -37,6 +32,7 @@ export interface PressureNarrativeProviderReadinessV1 {
 export interface PressureNarrativeProviderConfigurationV1 {
   provider: NarrativeProviderPortV1 | null;
   turnPresentationProvider: PressureTurnPresentationProviderPortV1 | null;
+  oneCallStoryProvider: PressureOneCallStoryProviderPortV1 | null;
   readiness: PressureNarrativeProviderReadinessV1;
 }
 
@@ -54,6 +50,7 @@ export function createPressureNarrativeProviderFromEnvV1(
     return {
       provider: null,
       turnPresentationProvider: null,
+      oneCallStoryProvider: null,
       readiness: {
         ready: true,
         mode: "DETERMINISTIC_FALLBACK_ONLY",
@@ -82,6 +79,7 @@ export function createPressureNarrativeProviderFromEnvV1(
     // artifact and therefore receives no external Provider by default.
     provider: null,
     turnPresentationProvider: provider,
+    oneCallStoryProvider: provider,
     readiness: {
       ready: true,
       mode: "DETERMINISTIC_FALLBACK_ONLY",
@@ -94,7 +92,7 @@ export function createPressureNarrativeProviderFromEnvV1(
 }
 
 export class DeepSeekPressureNarrativeProviderV1
-implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1 {
+implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, PressureOneCallStoryProviderPortV1 {
   constructor(private readonly options: Readonly<{
     apiKey: string;
     endpoint: string;
@@ -164,86 +162,7 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1 {
       }
       throw new Error("NARRATIVE_PROVIDER_INVALID_OUTPUT");
     }
-    if (context.projectionKind === "BEAT_NARRATIVE") {
-      await this.assertDurableTruth(context, storyPack, candidate);
-    }
     return candidate;
-  }
-
-  private async assertDurableTruth(
-    context: NarrativeContextV1,
-    storyPack: ReturnType<typeof compilePressureDecisionStoryPackV1>,
-    candidate: ReturnType<typeof validateNarrativeRenderCandidateV1>,
-  ): Promise<void> {
-    const response = await this.options.fetchImpl(this.options.endpoint, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${this.options.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.options.model,
-        thinking: { type: "disabled" },
-        response_format: { type: "json_object" },
-        max_tokens: 1_024,
-        temperature: 0,
-        messages: [
-          { role: "system", content: buildPressureNarrativeTruthReviewInstructionV1() },
-          {
-            role: "user",
-            content: JSON.stringify(pressureNarrativeTruthReviewPayloadV1({
-              storyPack,
-              authority: context,
-              candidate,
-            })),
-          },
-        ],
-      }),
-      signal: AbortSignal.timeout(60_000),
-    });
-    if (!response.ok) throw new Error(`NARRATIVE_TRUTH_REVIEW_PROVIDER_HTTP_${response.status}`);
-    const payload = await response.json() as {
-      choices?: Array<{ message?: { content?: unknown } }>;
-    };
-    const content = payload.choices?.[0]?.message?.content;
-    if (typeof content !== "string" || !content.trim()) {
-      throw new Error("NARRATIVE_TRUTH_REVIEW_PROVIDER_EMPTY_RESPONSE");
-    }
-    const reviewUnits = buildPressureNarrativeReviewUnitsV1(candidate.text);
-    const review = validatePressureNarrativeTruthReviewV1(
-      JSON.parse(content),
-      reviewUnits,
-      [
-        ...context.facts.map((fact) => fact.factId),
-        ...context.objects.map((object) => object.objectVersionId),
-        ...context.knowledge.map((item) => item.knowledgeId),
-        ...context.allowedClaims.map((claim) => claim.refId),
-      ],
-      context.allowedClaims.filter((claim) => claim.required).map((claim) => claim.refId),
-    );
-    const unsupportedAssessments = review.assessments.filter(
-      (assessment) => assessment.classification === "UNSUPPORTED_DURABLE",
-    );
-    const logMode = clean(process.env.PRESSURE_NARRATIVE_TRUTH_REVIEW_LOG
-      ?? process.env.PRESSURE_NARRATIVE_GROUNDING_LOG).toLowerCase();
-    if (logMode && logMode !== "off" && logMode !== "0") {
-      console.info(JSON.stringify({
-        event: "PRESSURE_NARRATIVE_TRUTH_REVIEW",
-        contextHash: context.contextHash,
-        assessments: review.assessments,
-        missingRequiredRefs: review.missingRequiredRefs,
-        ...(logMode === "full" || logMode === "1" ? {
-          candidateText: candidate.text,
-          reviewUnits,
-        } : {}),
-      }));
-    }
-    if (unsupportedAssessments.length > 0 || review.missingRequiredRefs.length > 0) {
-      const reasons: string[] = [];
-      if (unsupportedAssessments.length > 0) reasons.push("UNSUPPORTED_DURABLE_ASSERTION");
-      if (review.missingRequiredRefs.length > 0) reasons.push("MISSING_REQUIRED_MEANING");
-      throw new Error(`NARRATIVE_PROVIDER_DURABLE_TRUTH_REJECTED:${reasons.join("|")}`);
-    }
   }
 
   async renderTurnPresentation(
@@ -318,6 +237,44 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1 {
       throw new Error("DECISION_PRESENTATION_PROVIDER_INVALID_JSON");
     }
   }
+  async renderOneCallStory(context: Readonly<Record<string, unknown>>): Promise<unknown> {
+    const response = await this.options.fetchImpl(this.options.endpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${this.options.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.options.model,
+        thinking: { type: "disabled" },
+        response_format: { type: "json_object" },
+        max_tokens: context.mode === "CHAPTER_SUMMARY" ? 3_072 : 2_048,
+        temperature: 0.5,
+        messages: [
+          {
+            role: "system",
+            content: context.mode === "CHAPTER_SUMMARY"
+              ? "一次输出章末文学收束与结构化总结。只能转述给定权威字段；引用集合和数值必须原样返回，不得裁定、打分或创造因果。只返回JSON。"
+              : "一次输出连续文学剧情、具体问题与全部合法选项表达。不得新增行动、事实、效果或结果。只返回JSON。",
+          },
+          { role: "user", content: JSON.stringify(context) },
+        ],
+      }),
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (!response.ok) throw new Error(`PRESSURE_ONE_CALL_PROVIDER_HTTP_${response.status}`);
+    const payload = await response.json() as { choices?: Array<{ message?: { content?: unknown } }> };
+    const content = payload.choices?.[0]?.message?.content;
+    if (typeof content !== "string" || !content.trim()) {
+      throw new Error("PRESSURE_ONE_CALL_PROVIDER_EMPTY_RESPONSE");
+    }
+    try {
+      return JSON.parse(content);
+    } catch {
+      throw new Error("PRESSURE_ONE_CALL_PROVIDER_INVALID_JSON");
+    }
+  }
+
 }
 
 export function deepSeekNarrativeEndpoint(value?: string): string {

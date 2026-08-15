@@ -81,6 +81,10 @@ const RELEASE_ROOT = path.resolve(
   "../config/sangtian/pressure-chapter-v1/release",
 );
 const PACKAGE_ROOT = path.resolve(RELEASE_ROOT, "..");
+const N1_ADAPTATION_PATH = path.resolve(
+  PACKAGE_ROOT,
+  "authoring/n1-decision-effects-v1.json",
+);
 const RELEASE_MANIFEST_PATH = path.resolve(RELEASE_ROOT, "release-manifest.json");
 const COMPILER_CORE_PATH = path.resolve(RELEASE_ROOT, "action-effect-compiler.cjs");
 const COMPILER_PATH = path.resolve(RELEASE_ROOT, "action-effect-compiler.mjs");
@@ -430,19 +434,19 @@ test("Chinese action presentation is exact, complete and presentation-only", asy
       }
     }
   }
-  assert.equal(decisionCount, 26);
-  assert.equal(pairCount, 72);
+  assert.equal(decisionCount, 33);
+  assert.equal(pairCount, 93);
   assert.deepEqual(Object.fromEntries([...preferredEntryCounts].sort()), {
-    DEFER: 26,
-    INVESTIGATE: 17,
-    PLAN: 13,
+    DEFER: 33,
+    INVESTIGATE: 23,
+    PLAN: 20,
     TALK: 8,
-    TOKEN: 8,
+    TOKEN: 9,
   });
   assert.deepEqual(catalog.completeness, {
     chapterCount: 7,
-    decisionPointCount: 26,
-    decisionActionPairCount: 72,
+    decisionPointCount: 33,
+    decisionActionPairCount: 93,
     coverageRule: "EXACT_ACCEPTED_CONTENT_DECISION_ACTION_PAIRS",
   });
 });
@@ -467,6 +471,18 @@ test("T3 action-effect compiler expands every accepted decision-seat-action bind
   );
   assert.deepEqual(policy.route, PRESSURE_CHAPTER_ROUTE_TUPLE_V1);
   assert.equal(policy.resourcePolicy.mode, "NONE");
+  const n1Adaptation = readJson(N1_ADAPTATION_PATH);
+  assert.equal(n1Adaptation.chapterId, "N1");
+  assert.equal(n1Adaptation.decisions.length, 8);
+  const n1ActionsByBinding = new Map<string, JsonObject>();
+  for (const decision of n1Adaptation.decisions as JsonObject[]) {
+    for (const action of decision.actions as JsonObject[]) {
+      n1ActionsByBinding.set(
+        `${decision.decisionPointId}:${action.actionType}`,
+        action,
+      );
+    }
+  }
 
   let decisionCount = 0;
   let pairCount = 0;
@@ -499,15 +515,37 @@ test("T3 action-effect compiler expands every accepted decision-seat-action bind
           assert.equal(compiled.resourcePolicy, "NONE");
           assert.deepEqual(compiled.workingIntent.resourceReservations, []);
           assert.deepEqual(compiled.workingIntent.commitmentMutations, []);
-          assert.deepEqual(compiled.workingIntent.knowledgeGrants, []);
           assert.deepEqual(compiled.workingIntent.seatArcProgress, []);
+          const adaptedAction = n1ActionsByBinding.get(
+            `${authoredDecision.decisionPointKey}:${actionType}`,
+          );
           if (actionType === "DEFAULT_PASS") {
             assert.equal(compiled.workingIntent.visibility, "PRIVATE");
             assert.deepEqual(compiled.workingIntent.targetSeatIds, []);
+            assert.deepEqual(compiled.workingIntent.knowledgeGrants, []);
             assert.deepEqual(compiled.factContributions, []);
+            if (authoredChapter.chapterId === "N1") {
+              assert.ok(adaptedAction);
+              assert.equal(adaptedAction.workingKnowledgeFactRef, null);
+            }
           } else {
             assert.equal(compiled.workingIntent.visibility, "PARTICIPANTS");
             assert.deepEqual(compiled.workingIntent.targetSeatIds, authoredDecision.requiredSeatIds);
+            if (authoredChapter.chapterId === "N1") {
+              assert.ok(adaptedAction);
+              const factRef = adaptedAction.workingKnowledgeFactRef;
+              assert.equal(typeof factRef, "string");
+              assert.match(factRef, /^working\.N1\./u);
+              assert.deepEqual(
+                compiled.workingIntent.knowledgeGrants,
+                authoredDecision.requiredSeatIds.map((requiredSeatId) => ({
+                  seatId: requiredSeatId,
+                  factRefs: [factRef],
+                })),
+              );
+            } else {
+              assert.deepEqual(compiled.workingIntent.knowledgeGrants, []);
+            }
           }
           for (const contribution of compiled.factContributions) {
             assert.equal(selectorFacts.has(contribution.factRef), true);
@@ -517,9 +555,9 @@ test("T3 action-effect compiler expands every accepted decision-seat-action bind
     }
   }
   assert.deepEqual({ decisionCount, pairCount, expandedCount }, {
-    decisionCount: 26,
-    pairCount: 72,
-    expandedCount: 288,
+    decisionCount: 33,
+    pairCount: 93,
+    expandedCount: 414,
   });
   assert.equal(expandedCount, policy.bindingExpansion.expectedExpandedBindingCount);
   expectActionPolicyCode(
@@ -723,11 +761,11 @@ test("continuous runtime rejects the fixed PREPARE/COMMIT/REACTION route and eve
   assert.equal(orchestration.terminalTrigger.sourceChapterId, "N7");
   assert.equal(orchestration.terminalTrigger.terminalDecisionCount, 1);
   assert.equal(orchestration.contentPackage.contentSha256, loaded.manifest.contentSha256);
-  assert.equal(orchestration.actionCompilation.expandedBindingCount, 288);
+  assert.equal(orchestration.actionCompilation.expandedBindingCount, 414);
   assert.equal(orchestration.actionCompilation.resourcePolicy, "NONE");
 
   const contentCounts = loaded.content.chapters.map((chapter) => chapter.decisionPoints.length);
-  assert.deepEqual(contentCounts, [1, 4, 4, 2, 7, 3, 5]);
+  assert.deepEqual(contentCounts, [8, 4, 4, 2, 7, 3, 5]);
   assert.equal(new Set(contentCounts).size > 1, true);
   const fixedPhases = ["PREPARE", "COMMIT", "REACTION"];
   assert.deepEqual(orchestration.legacyFixedPhaseRoute.fixedPhases, fixedPhases);

@@ -1,0 +1,248 @@
+{
+  "schemaVersion": "pressure_chapter_beat_authoring_v1",
+  "contentStatus": "READY_FOR_IMPORT",
+  "chapterId": "N1",
+  "title": "九堰将决",
+  "entryBeatId": "N1.B01",
+  "beats": [
+    {
+      "beatId": "N1.B01",
+      "ordinal": 1,
+      "phase": "OPENING",
+      "title": "九堰急报",
+      "storyPurpose": "让九处堰口、相互抵触的调兵口令和正在转移的百姓同时进入现场，并要求玩家先判断该把第一份可执行命令落在哪里。",
+      "sourceMaterialRefs": [
+        "publicMainline.opening",
+        "publicMainline.npcUrgent",
+        "seatLenses.seat.zhejiang_governor.opening",
+        "seatLenses.seat.zhejiang_administration.opening",
+        "seatLenses.seat.qingliu_law.opening",
+        "seatLenses.seat.jiangnan_merchant.opening",
+        "seatLenses.seat.sili_weaving.opening",
+        "seatLenses.seat.cabinet_finance.opening"
+      ],
+      "decisionContractRef": "N1.weir_crisis.prepare.intake",
+      "successorBeatIds": [
+        "N1.B02"
+      ],
+      "closesChapter": false
+    },
+    {
+      "beatId": "N1.B02",
+      "ordinal": 2,
+      "phase": "DEVELOPMENT",
+      "title": "第一道令出门",
+      "storyPurpose": "只依据上一轮六席已提交的真实结果，呈现命令离案后对人手、船只、堰口和文书造成的第一批可见后果，再逼出新的处理重点。",
+      "sourceMaterialRefs": [
+        "publicMainline.afterPrepareCommon",
+        "publicMainline.afterPrepareVariants.controlled",
+        "publicMainline.afterPrepareVariants.contested",
+        "publicMainline.afterPrepareVariants.lostInitiative",
+        "seatLenses.seat.zhejiang_governor.afterPrepareReactions.controlled",
+        "seatLenses.seat.zhejiang_governor.afterPrepareReactions.contested",
+        "seatLenses.seat.zhejiang_governor.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.zhejiang_administration.afterPrepareReactions.controlled",
+        "seatLenses.seat.zhejiang_administration.afterPrepareReactions.contested",
+        "seatLenses.seat.zhejiang_administration.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.controlled",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.contested",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.jiangnan_merchant.afterPrepareReactions.controlled",
+        "seatLenses.seat.jiangnan_merchant.afterPrepareReactions.contested",
+        "seatLenses.seat.jiangnan_merchant.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.controlled",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.contested",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.controlled",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.contested",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.lostInitiative",
+        "npcReactions.01",
+        "npcReactions.02",
+        "npcReactions.03",
+        "npcReactions.04"
+      ],
+      "decisionContractRef": "N1.weir_crisis.prepare.dispatch",
+      "successorBeatIds": [
+        "N1.B03"
+      ],
+      "closesChapter": false
+    },
+    {
+      "beatId": "N1.B03",
+      "ordinal": 3,
+      "phase": "DEVELOPMENT",
+      "title": "两令相撞",
+      "storyPurpose": "把来自不同执行链的回报、相互争夺的同一批资源以及可核验的签押缺口摆到同一张案上，使玩家必须选择如何结束冲突。",
+      "sourceMaterialRefs": [
+        "publicMainline.afterPrepareCommon",
+        "publicMainline.afterPrepareVariants.controlled",
+        "publicMainline.afterPrepareVariants.contested",
+        "publicMainline.afterPrepareVariants.lostInitiative",
+        "seatLenses.seat.zhejiang_governor.afterPrepareReactions.controlled",
+        "seatLenses.seat.zhejiang_governor.afterPrepareReactions.contested",
+        "seatLenses.seat.zhejiang_governor.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.zhejiang_administration.afterPrepareReactions.controlled",
+        "seatLenses.seat.zhejiang_administration.afterPrepareReactions.contested",
+        "seatLenses.seat.zhejiang_administration.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.controlled",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.contested",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.jiangnan_merchant.afterPrepareReactions.controlled",
+        "seatLenses.seat.jiangnan_merchant.afterPrepareReactions.contested",
+        "seatLenses.seat.jiangnan_merchant.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.controlled",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.contested",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.controlled",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.contested",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.lostInitiative",
+        "npcReactions.05",
+        "npcReactions.06",
+        "npcReactions.07",
+        "npcReactions.08"
+      ],
+      "decisionContractRef": "N1.weir_crisis.prepare.reconcile",
+      "successorBeatIds": [
+        "N1.B04"
+      ],
+      "closesChapter": false
+    },
+    {
+      "beatId": "N1.B04",
+      "ordinal": 4,
+      "phase": "ESCALATION",
+      "title": "经手与见证",
+      "storyPurpose": "让毁堤记录、收件人、见证人与拒签风险成为新的压力，要求玩家在继续抢险与保住可追责链条之间作出可执行选择。",
+      "sourceMaterialRefs": [
+        "publicMainline.npcUrgent",
+        "publicMainline.afterPrepareVariants.controlled",
+        "publicMainline.afterPrepareVariants.contested",
+        "publicMainline.afterPrepareVariants.lostInitiative",
+        "seatLenses.seat.zhejiang_governor.afterPrepareReactions.controlled",
+        "seatLenses.seat.zhejiang_governor.afterPrepareReactions.contested",
+        "seatLenses.seat.zhejiang_governor.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.zhejiang_administration.afterPrepareReactions.controlled",
+        "seatLenses.seat.zhejiang_administration.afterPrepareReactions.contested",
+        "seatLenses.seat.zhejiang_administration.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.controlled",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.contested",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.jiangnan_merchant.afterPrepareReactions.controlled",
+        "seatLenses.seat.jiangnan_merchant.afterPrepareReactions.contested",
+        "seatLenses.seat.jiangnan_merchant.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.controlled",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.contested",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.controlled",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.contested",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.lostInitiative",
+        "npcReactions.09",
+        "npcReactions.10",
+        "npcReactions.11",
+        "npcReactions.12"
+      ],
+      "decisionContractRef": "N1.weir_crisis.prepare.evidence",
+      "successorBeatIds": [
+        "N1.B05"
+      ],
+      "closesChapter": false
+    },
+    {
+      "beatId": "N1.B05",
+      "ordinal": 5,
+      "phase": "ESCALATION",
+      "title": "剩下的船与兵",
+      "storyPurpose": "在时间已经损耗后缩窄可挽回范围，让有限的船、粮、差役和兵力不能同时满足所有告急处，迫使玩家明确优先次序与代价。",
+      "sourceMaterialRefs": [
+        "publicMainline.npcUrgent",
+        "publicMainline.commitConfrontation",
+        "seatLenses.seat.zhejiang_governor.commitPressure",
+        "seatLenses.seat.zhejiang_administration.commitPressure",
+        "seatLenses.seat.qingliu_law.commitPressure",
+        "seatLenses.seat.jiangnan_merchant.commitPressure",
+        "seatLenses.seat.sili_weaving.commitPressure",
+        "seatLenses.seat.cabinet_finance.commitPressure",
+        "npcReactions.13",
+        "npcReactions.14",
+        "npcReactions.15"
+      ],
+      "decisionContractRef": "N1.weir_crisis.commit.resources",
+      "successorBeatIds": [
+        "N1.B06"
+      ],
+      "closesChapter": false
+    },
+    {
+      "beatId": "N1.B06",
+      "ordinal": 6,
+      "phase": "ESCALATION",
+      "title": "谁在更正处具名",
+      "storyPurpose": "把撤令、续令、保管、借据与军务缺口转成必须有人签收和承担的责任冲突，不允许再用含混口令把风险推给现场。",
+      "sourceMaterialRefs": [
+        "publicMainline.commitConfrontation",
+        "seatLenses.seat.zhejiang_governor.commitPressure",
+        "seatLenses.seat.zhejiang_administration.commitPressure",
+        "seatLenses.seat.qingliu_law.commitPressure",
+        "seatLenses.seat.jiangnan_merchant.commitPressure",
+        "seatLenses.seat.sili_weaving.commitPressure",
+        "seatLenses.seat.cabinet_finance.commitPressure",
+        "npcReactions.16",
+        "npcReactions.17",
+        "npcReactions.18"
+      ],
+      "decisionContractRef": "N1.weir_crisis.commit.accountability",
+      "successorBeatIds": [
+        "N1.B07"
+      ],
+      "closesChapter": false
+    },
+    {
+      "beatId": "N1.B07",
+      "ordinal": 7,
+      "phase": "COMMIT",
+      "title": "封缄前的最后核对",
+      "storyPurpose": "在正式文书离案前核对去向、经手、见证和不可兼得的代价，使最后行动只能建立在当前权威事实与Catalog合法方向上。",
+      "sourceMaterialRefs": [
+        "publicMainline.commitConfrontation",
+        "seatLenses.seat.zhejiang_governor.commitPressure",
+        "seatLenses.seat.zhejiang_administration.commitPressure",
+        "seatLenses.seat.qingliu_law.commitPressure",
+        "seatLenses.seat.jiangnan_merchant.commitPressure",
+        "seatLenses.seat.sili_weaving.commitPressure",
+        "seatLenses.seat.cabinet_finance.commitPressure"
+      ],
+      "decisionContractRef": "N1.weir_crisis.commit.review",
+      "successorBeatIds": [
+        "N1.B08"
+      ],
+      "closesChapter": false
+    },
+    {
+      "beatId": "N1.B08",
+      "ordinal": 8,
+      "phase": "COMMIT",
+      "title": "诸令封缄",
+      "storyPurpose": "完成N1最后一次正式提交，把六席真实行动交给唯一Settlement选择HIGH、MID或LOW；本Beat自身不得预写结果。",
+      "sourceMaterialRefs": [
+        "publicMainline.commitConfrontation",
+        "seatLenses.seat.zhejiang_governor.commitPressure",
+        "seatLenses.seat.zhejiang_administration.commitPressure",
+        "seatLenses.seat.qingliu_law.commitPressure",
+        "seatLenses.seat.jiangnan_merchant.commitPressure",
+        "seatLenses.seat.sili_weaving.commitPressure",
+        "seatLenses.seat.cabinet_finance.commitPressure"
+      ],
+      "decisionContractRef": "N1.weir_crisis.commit.seal",
+      "successorBeatIds": [],
+      "closesChapter": true
+    }
+  ],
+  "chapterSummary": {
+    "outcomeFrameRefs": {
+      "HIGH": "chapterSummaryFrames.high",
+      "MID": "chapterSummaryFrames.mid",
+      "LOW": "chapterSummaryFrames.low"
+    },
+    "nextChapterId": "N2"
+  }
+}

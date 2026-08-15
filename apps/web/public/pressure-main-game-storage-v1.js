@@ -109,6 +109,42 @@ export class PressureMainGameStorageV1 {
     return this.toView(this.projection);
   }
 
+  async confirmChapterSummary(_view) {
+    const projection = this.projection;
+    const summary = projection.chapterSummary;
+    if (!summary || summary.confirmationState === "CONFIRMED") return this.toView(projection);
+    const sourceChapterRuntimeId = String(summary.sourceChapterRuntimeId || "");
+    if (!sourceChapterRuntimeId) throw new Error("章末总结缺少来源章节，无法安全确认。");
+    const idempotencyKey = `chapter-summary:${projection.runId}:${sourceChapterRuntimeId}:${projection.viewer.seatId}`;
+    const command = {
+      schemaVersion: PRESSURE_COMMAND_SCHEMA,
+      commandType: "CONFIRM_CHAPTER_SUMMARY",
+      runId: projection.runId,
+      routeHash: projection.route.routeHash,
+      chapterRuntimeId: sourceChapterRuntimeId,
+      chapterId: summary.chapterId,
+      seatId: projection.viewer.seatId,
+      controlEpoch: projection.viewer.control.controlEpoch,
+      expectedWorkingRevision: projection.chapter.workingRevision,
+      submissionFenceToken: projection.viewer.control.submissionFenceToken,
+      idempotencyKey,
+    };
+    const response = await this.fetchImpl(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game/action`, {
+      method: "POST",
+      credentials: "include",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: JSON.stringify(command),
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) throw httpError(response, payload, "暂时无法进入下一章，请重试。");
+    if (payload?.schemaVersion !== "pressure_chapter_summary_confirmation_response_v2" || payload?.idempotencyKey !== idempotencyKey) {
+      throw new Error("章末确认响应与本次请求不一致。");
+    }
+    this.projection = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
+    this.projection = await this.awaitDecisionNarrative(this.projection);
+    return this.toView(this.projection);
+  }
+
   async submitManeuver() {
     throw new Error("主动谋划将在基础主游戏页恢复后继续接入。");
   }

@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ourmanyworlds.example/schemas/pressure-chapter-beat-authoring-v1.schema.json",
+  "title": "Pressure Chapter Beat Authoring V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contentStatus",
+    "chapterId",
+    "title",
+    "entryBeatId",
+    "beats",
+    "chapterSummary"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "pressure_chapter_beat_authoring_v1"
+    },
+    "contentStatus": {
+      "enum": [
+        "REFERENCE",
+        "READY_FOR_IMPORT"
+      ]
+    },
+    "chapterId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entryBeatId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "beats": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/beat"
+      }
+    },
+    "chapterSummary": {
+      "$ref": "#/$defs/chapterSummary"
+    }
+  },
+  "$defs": {
+    "nonEmptyUniqueStrings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "beat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "beatId",
+        "ordinal",
+        "phase",
+        "title",
+        "storyPurpose",
+        "sourceMaterialRefs",
+        "decisionContractRef",
+        "successorBeatIds",
+        "closesChapter"
+      ],
+      "properties": {
+        "beatId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "phase": {
+          "enum": [
+            "OPENING",
+            "DEVELOPMENT",
+            "ESCALATION",
+            "COMMIT"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "storyPurpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceMaterialRefs": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/nonEmptyUniqueStrings"
+            },
+            {
+              "minItems": 1
+            }
+          ]
+        },
+        "decisionContractRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "successorBeatIds": {
+          "$ref": "#/$defs/nonEmptyUniqueStrings"
+        },
+        "closesChapter": {
+          "type": "boolean"
+        }
+      }
+    },
+    "chapterSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcomeFrameRefs",
+        "nextChapterId"
+      ],
+      "properties": {
+        "outcomeFrameRefs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "HIGH",
+            "MID",
+            "LOW"
+          ],
+          "properties": {
+            "HIGH": {
+              "type": "string",
+              "minLength": 1
+            },
+            "MID": {
+              "type": "string",
+              "minLength": 1
+            },
+            "LOW": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "nextChapterId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "description": "JSON Schema validates field shape. The product loader must additionally enforce unique beatId, unique decisionContractRef, contiguous ordinals, known forward-only successors, reachability from entryBeatId, at least one terminal beat, no successors on terminal beats, and at least one successor on non-terminal beats."
+}

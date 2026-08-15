@@ -137,6 +137,46 @@ export interface PressureGameNarrativeProjectionV1 {
   renderMode: "PROVIDER" | "AUTHORED_FALLBACK" | null;
 }
 
+
+export interface PressureGameChapterSummaryProjectionV1 {
+  sourceChapterRuntimeId: string;
+  chapterId: string;
+  title: string;
+  closingNarrative: string;
+  playerActions: string[];
+  actualResults: string[];
+  completedObjectives: string[];
+  incompleteObjectives: string[];
+  metricChanges: Array<{
+    label: string;
+    before: number;
+    delta: number;
+    after: number;
+    displayBefore: string;
+    displayDelta: string;
+    displayAfter: string;
+  }>;
+  remainingPressures: string[];
+  nextChapterHook: string;
+  confirmationState: "AWAITING_CONFIRMATION" | "CONFIRMED";
+}
+
+export interface PressureGameChapterSummarySourceV1 extends PressureGameChapterSummaryProjectionV1 {
+  runId: string;
+  routeHash: string;
+  chapterRuntimeId: string;
+  viewerSeatId: SeatIdV1;
+}
+
+export interface PressureGameChapterSummaryReaderPort {
+  readCurrent(input: {
+    runId: string;
+    routeHash: string;
+    chapterRuntimeId: string;
+    viewerSeatId: SeatIdV1;
+  }): Promise<PressureGameChapterSummarySourceV1 | null>;
+}
+
 export interface AEmotionFeedItemPortV1 extends AEmotionViewerProjectionPortV1 {
   isUnread: boolean;
   isAcknowledged: boolean;
@@ -169,6 +209,7 @@ export interface PressureChapterGameProjectionV1 {
   decision: PressureGameDecisionProjectionV1 | null;
   capabilities: PressureGameCapabilitiesV1;
   narrative: PressureGameNarrativeProjectionV1;
+  chapterSummary: PressureGameChapterSummaryProjectionV1 | null;
   feedPage: AEmotionFeedPagePortV1;
   projectionHash: string;
 }

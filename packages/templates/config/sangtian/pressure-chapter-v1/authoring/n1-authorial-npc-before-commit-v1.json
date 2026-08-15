@@ -1,0 +1,117 @@
+{
+  "npcReactions": [
+    {
+      "reactionId": "reaction.n1.hu.before_commit",
+      "actorId": "actor.hu_zongxian",
+      "phase": "BEFORE_COMMIT",
+      "triggerTags": [
+        "time_lost",
+        "authority_conflict"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law"
+      ],
+      "text": "胡宗宪让书吏删去“尽力而为”：“哪处由谁守，哪处先撤，军务缺口谁补。说不清的令，到了堰上就是害人。”",
+      "factRefs": [
+        "known.n1.zhejiang_governor.object.weir_troop_deployment",
+        "obj.nine_weirs"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.zheng.before_commit",
+      "actorId": "actor.zheng_michang",
+      "phase": "BEFORE_COMMIT",
+      "triggerTags": [
+        "authority_conflict"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law"
+      ],
+      "text": "郑泌昌合上印盒：“原令不撤，新令便是第三种说法。先定哪一道作废、谁送达、谁在回执上具名。”",
+      "factRefs": [
+        "known.n1.zhejiang_administration.object.breach_order_chain",
+        "obj.provincial_seal"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.tan.before_commit",
+      "actorId": "actor.tan_lun",
+      "phase": "BEFORE_COMMIT",
+      "triggerTags": [
+        "records_preserved",
+        "authority_conflict"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.qingliu_law"
+      ],
+      "text": "谭纶把封缄纸推到案中：“结论可以晚，交接不能空。谁收、谁见、谁保管，写清以后，我才肯让材料离手。”",
+      "factRefs": [
+        "known.n1.qingliu_law.object.sealed_evidence_index",
+        "obj.law_review_channel"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.shen.before_commit",
+      "actorId": "actor.shen_yishi",
+      "phase": "BEFORE_COMMIT",
+      "triggerTags": [
+        "resource_gap",
+        "evacuation_advanced"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.jiangnan_merchant"
+      ],
+      "text": "沈一石指着船契上的空白：“船、粮、船夫可以先动，接收与损失必须同时落笔。别让今日救急，明日变成商会自愿捐尽。”",
+      "factRefs": [
+        "known.n1.jiangnan_merchant.object.merchant_fleet",
+        "obj.merchant_credit_network"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.yang.before_commit",
+      "actorId": "actor.yang_jinshui",
+      "phase": "BEFORE_COMMIT",
+      "triggerTags": [
+        "records_preserved",
+        "authority_conflict"
+      ],
+      "knownBy": [
+        "seat.zhejiang_administration",
+        "seat.qingliu_law",
+        "seat.sili_weaving"
+      ],
+      "text": "杨金水让人重念封存与递送名单：“内廷名义能护送材料，不能替它抹去经手。谁负责到最后，先写在封条旁。”",
+      "factRefs": [
+        "known.n1.sili_weaving.object.weaving_records",
+        "obj.inner_court_dispatch_channel"
+      ]
+    },
+    {
+      "reactionId": "reaction.n1.yan.before_commit",
+      "actorId": "actor.yan_shifan",
+      "phase": "BEFORE_COMMIT",
+      "triggerTags": [
+        "resource_gap",
+        "time_lost"
+      ],
+      "knownBy": [
+        "seat.zhejiang_governor",
+        "seat.zhejiang_administration",
+        "seat.cabinet_finance"
+      ],
+      "text": "严世蕃把“酌情”二字划去：“缓多少、缺多少、谁补、由谁收件。急递只能送一份说得清的回批。”",
+      "factRefs": [
+        "known.n1.cabinet_finance.object.cabinet_urgent_dispatch",
+        "obj.capital_receipt_channel"
+      ]
+    }
+  ]
+}

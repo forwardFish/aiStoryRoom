@@ -1,0 +1,101 @@
+{
+  "seatLens": {
+    "seatId": "seat.zhejiang_governor",
+    "actorId": "actor.hu_zongxian",
+    "opening": {
+      "title": "总督问兵",
+      "dramaticPurpose": "让胡宗宪先核实可执行边界，再面对守堰与海防的真实机会成本。",
+      "text": "胡宗宪把河图推到灯下，先将“有人毁堤”四字压住，不许幕僚拿猜测替代军报。他逐一问来人：哪处还能守，哪一道调兵令已经到营，抽走的人手由谁补回海防。答话的人只敢说回报互相抵牾，却说不清哪一份应当作准。胡宗宪看着总督军令旁未干的水迹：“救人要用兵，用兵便要丢掉别处的准备。先把能执行的边界和经手人报明，余下的罪名以后再说。”门外仍有人等他给省府回令。",
+      "factRefs": [
+        "known.n1.zhejiang_governor.pressure",
+        "known.n1.zhejiang_governor.claim.n1-sf-02",
+        "known.n1.zhejiang_governor.object.weir_troop_deployment",
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "stopCondition": "停在胡宗宪尚未决定先把有限兵力投向守堰、疏散或其他军务之时。"
+    },
+    "afterPrepareReactions": {
+      "controlled": {
+        "title": "先手要价",
+        "dramaticPurpose": "把局部受控转成总督必须明确承担的军务缺口。",
+        "text": "回执证明部分人手已经按令抵达，低处撤离也有了动静。胡宗宪却没有称善，只追问被抽走的兵由谁补、哪处海防会因此变薄：“先手不是白来的。把丢掉的那一头写在同一张纸上，再来请我追加人手。”",
+        "factRefs": [
+          "known.n1.zhejiang_governor.object.weir_troop_deployment",
+          "obj.nine_weirs"
+        ],
+        "stopCondition": "停在军务缺口尚未具名，而下一项调度仍等总督承担之时。"
+      },
+      "contested": {
+        "title": "令出两门",
+        "dramaticPurpose": "迫使总督在冲突命令中先辨执行权与责任。",
+        "text": "一份回令要人守堰，另一份却称已奉命调离。胡宗宪将两张纸错开，不让任何一张盖住另一张：“先说谁能撤前一道令，再说谁愿在后一页具名。没有执行权的豪话，不许再送到堰上害人。”",
+        "factRefs": [
+          "known.n1.zhejiang_governor.object.weir_troop_deployment",
+          "obj.breach_order_chain"
+        ],
+        "stopCondition": "停在冲突命令尚未被一份有权且具名的总督处置取代之时。"
+      },
+      "lostInitiative": {
+        "title": "余地变窄",
+        "dramaticPurpose": "让总督面对时间损失后仍可执行但无法顾全的选择。",
+        "text": "迟报送来时，已有安排无法追回。胡宗宪听完，只问剩下哪些人手还能到达、哪些堰口仍受得住命令。他把河图上失去先手的地方压住：“别再替我算已经丢的。把还能做成的事报清，谁领、何处交接、要放弃什么。”",
+        "factRefs": [
+          "known.n1.zhejiang_governor.pressure",
+          "known.n1.zhejiang_governor.object.weir_troop_deployment",
+          "obj.nine_weirs"
+        ],
+        "stopCondition": "停在可挽回范围已经收窄，而总督尚未决定最后的兵力去向之时。"
+      }
+    },
+    "commitPressure": {
+      "title": "总督落令",
+      "dramaticPurpose": "把守堰、分洪、疏散与军务代价压成一次可执行的正式决断。",
+      "text": "总督军令已经铺在案前，书吏等着写明人手去向、交给谁和由谁承担海防与军饷的缺口。胡宗宪没有允许“尽力抢险”这样的空话留在纸上：“能守哪里，先撤哪里，哪一处损失由本督担保，都写清。令一出门，便不能等水退后再改成另一番说法。”",
+      "factRefs": [
+        "known.n1.zhejiang_governor.object.weir_troop_deployment",
+        "obj.nine_weirs",
+        "obj.breach_order_chain"
+      ],
+      "stopCondition": "停在军令尚未封缄，胡宗宪必须亲自确认去向、代价与责任之时。"
+    },
+    "settlementReactions": {
+      "high": {
+        "title": "功成有缺",
+        "dramaticPurpose": "让总督在受灾受控后立即承担军务损耗和首份奏报责任。",
+        "text": "主要冲击被压在少数堰区，多数高风险村落也已撤出。胡宗宪没有让人报功，只把军务缺口与可核验的经手记录并排放好：“救下多少，朝廷会问；为此少了什么，朝廷也会问。第一份奏报，谁同我把这两件事一起写进去？”",
+        "factRefs": [
+          "frozen.N1.HIGH.fact.01",
+          "frozen.N1.HIGH.fact.02",
+          "frozen.N1.HIGH.fact.03",
+          "known.n1.zhejiang_governor.object.weir_troop_deployment"
+        ],
+        "stopCondition": "停在总督尚未确定首份奏报的共同署名人与责任写法之时。"
+      },
+      "mid": {
+        "title": "两令难销",
+        "dramaticPurpose": "把部分疏散与冲突责任链变成总督必须主持的署名争夺。",
+        "text": "多处堰口失守，撤离只做成一部分，两份正式记录却各自有人作证。胡宗宪看完不作结论：“我不知道哪一张能盖过另一张。把签押、送达和实际调走的人逐项对上；谁先要我署名，谁先把自己那一层责任写明。”",
+        "factRefs": [
+          "frozen.N1.MID.fact.01",
+          "frozen.N1.MID.fact.02",
+          "frozen.N1.MID.fact.03",
+          "obj.breach_order_chain"
+        ],
+        "stopCondition": "停在冲突记录尚未核对完毕，而总督的名字正被双方争取之时。"
+      },
+      "low": {
+        "title": "灾重言轻",
+        "dramaticPurpose": "迫使总督在大范围冲击与被先手控制的解释之间选择是否公开担责。",
+        "text": "大范围民生冲击已经形成，撤离又严重迟缓，关键记录还被压得只剩片段。胡宗宪听见外头催粮，目光落在即将成稿的解释上：“一句失修最省事，也最容易把所有经手都抹掉。可若改写，谁拿得出能送达京师的材料，谁又肯同本督具名？”",
+        "factRefs": [
+          "frozen.N1.LOW.fact.01",
+          "frozen.N1.LOW.fact.02",
+          "frozen.N1.LOW.fact.03",
+          "obj.breach_order_chain"
+        ],
+        "stopCondition": "停在总督尚未决定是否以现有材料挑战先成的公开说法之时。"
+      }
+    }
+  }
+}

@@ -1,12 +1,12 @@
 {
   "schemaVersion": "sangtian_action_presentation_catalog_v1",
   "catalogId": "sangtian_pressure_action_presentation_v1",
-  "catalogVersion": "sangtian-action-presentation-1.0.1",
+  "catalogVersion": "sangtian-action-presentation-1.0.2",
   "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
   "locale": "zh-CN",
   "sourceBinding": {
-    "contentPackageVersion": "1.0.1",
-    "contentPackageSha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466",
+    "contentPackageVersion": "1.0.2",
+    "contentPackageSha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
     "sourceCommitSha": "5badb6fa62a823de7019ce6a046efffbd74268d8"
   },
   "authorityBoundary": {
@@ -29,12 +29,200 @@
       "decisions": [
         {
           "decisionPointKey": "N1.weir_crisis",
-          "purpose": "共同配置守堰、分洪、疏散兵力并封存命令链。",
+          "purpose": "在九堰同时告急时，先选择一条能够真正送达现场的疏散、守堰或证据方向。",
           "actions": [
-            { "actionType": "DEFAULT_PASS", "preferredEntry": "DEFER", "label": "本轮不采取正式行动", "description": "不追加守堰、疏散或证据行动，既有水患压力继续推进。" },
-            { "actionType": "EVACUATE_WEIRS", "preferredEntry": "PLAN", "label": "组织堰区疏散", "description": "提出调度堰区百姓与运输力量的疏散行动。" },
-            { "actionType": "SEAL_BREACH_RECORD", "preferredEntry": "INVESTIGATE", "label": "封存毁堤记录", "description": "提出封存毁堤命令、经手人与见证记录的行动。" },
-            { "actionType": "SUPPORT_WEIR", "preferredEntry": "TOKEN", "label": "增援关键堰口", "description": "提出调动可用人力与物资增援关键堰口的行动。" }
+            {
+              "actionType": "DEFAULT_PASS",
+              "preferredEntry": "DEFER",
+              "label": "本轮不采取正式行动",
+              "description": "不追加疏散、守堰或证据命令；水势、旧令和其他席位行动继续推进。"
+            },
+            {
+              "actionType": "EVACUATE_WEIRS",
+              "preferredEntry": "PLAN",
+              "label": "先发堰区疏散令",
+              "description": "先把可送达的差役与船路用于高风险村落疏散，并明确第一批接令对象。"
+            },
+            {
+              "actionType": "SEAL_BREACH_RECORD",
+              "preferredEntry": "INVESTIGATE",
+              "label": "先封毁堤经手记录",
+              "description": "先固定命令、经手与见证的保管链，防止第一轮调度把证据冲散。"
+            },
+            {
+              "actionType": "SUPPORT_WEIR",
+              "preferredEntry": "TOKEN",
+              "label": "先增援关键堰口",
+              "description": "先把能够立即送达的人手与物资写入关键堰口增援令，并承担其他处延后的代价。"
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.dispatch_route",
+          "purpose": "第一轮处置窗口已经耗去时辰；若有命令离案，必须确认继续送达还是改投仍可接令的路线。",
+          "actions": [
+            {
+              "actionType": "CONFIRM_DISPATCH_ROUTE",
+              "preferredEntry": "INVESTIGATE",
+              "label": "确认原送达路线",
+              "description": "核对收件人、经手和回执后，维持已经接上执行链的原路线。"
+            },
+            {
+              "actionType": "DEFAULT_PASS",
+              "preferredEntry": "DEFER",
+              "label": "不确认送达路线",
+              "description": "不为当前命令补充收件人与回执，现有送达争议继续存在。"
+            },
+            {
+              "actionType": "REDIRECT_DISPATCH_ROUTE",
+              "preferredEntry": "PLAN",
+              "label": "改投仍可接令的路线",
+              "description": "撤回尚未送达的部分，把命令改投仍有人手和接令能力的路线。"
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.order_reconciliation",
+          "purpose": "处理两道相反命令争夺同一批人手与船只的问题，并留下可复核的撤换或并存记录。",
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "preferredEntry": "DEFER",
+              "label": "不处置冲突命令",
+              "description": "不撤换任何旧令，也不固定冲突版本；现场继续承担两令并行的代价。"
+            },
+            {
+              "actionType": "PRESERVE_PARALLEL_ORDER_EVIDENCE",
+              "preferredEntry": "INVESTIGATE",
+              "label": "保全两令并行证据",
+              "description": "分别登记两道命令的经手、时序和去向，保留其冲突而不伪造统一口径。"
+            },
+            {
+              "actionType": "REVOKE_CONFLICTING_ORDER",
+              "preferredEntry": "PLAN",
+              "label": "具名撤换冲突旧令",
+              "description": "明确指出被撤换的旧令、撤换时点和接续命令，结束同一执行链上的相反要求。"
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.evidence_handoff",
+          "purpose": "在经手人与见证即将离散前，决定由谁收件、谁见证、如何封存命令链。",
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "preferredEntry": "DEFER",
+              "label": "不完成证据交接",
+              "description": "不指定收件、见证或保管人，文袋继续停在无人承担的门槛上。"
+            },
+            {
+              "actionType": "REGISTER_EVIDENCE_HANDOFF",
+              "preferredEntry": "INVESTIGATE",
+              "label": "登记证据交接",
+              "description": "写明交件人、收件人、时辰与保管去向，使后续能够追索。"
+            },
+            {
+              "actionType": "SEAL_WITNESS_CHAIN",
+              "preferredEntry": "PLAN",
+              "label": "封存见证链",
+              "description": "让经手与见证共同确认当前版本并封缄，防止事后改写交接事实。"
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.remaining_resources",
+          "purpose": "在先手已经消耗后，把剩余船路与人手明确押向疏散或关键堰口，不能同时许给两处。",
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "preferredEntry": "DEFER",
+              "label": "不重新分配剩余力量",
+              "description": "不为剩余船路与人手确定优先级，先前占用和水势继续收窄可挽回范围。"
+            },
+            {
+              "actionType": "PRIORITIZE_EVACUATION_ROUTE",
+              "preferredEntry": "PLAN",
+              "label": "优先保住疏散路线",
+              "description": "把剩余可用船路与差役优先用于高风险村落撤离，并接受部分堰口增援不足。"
+            },
+            {
+              "actionType": "REINFORCE_REMAINING_WEIR",
+              "preferredEntry": "TOKEN",
+              "label": "优先守住剩余关键堰口",
+              "description": "把剩余可用人手优先投入仍可稳住的关键堰口，并接受部分疏散延后。"
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.named_accountability",
+          "purpose": "为继续执行或更正命令留下具名责任，禁止用含混措辞把代价推回现场。",
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "preferredEntry": "DEFER",
+              "label": "不在更正处具名",
+              "description": "不确认谁承担继续或更正责任，现场只得到一份无法追责的含混版本。"
+            },
+            {
+              "actionType": "REQUIRE_COUNTERSIGNATURE",
+              "preferredEntry": "INVESTIGATE",
+              "label": "要求经手反签",
+              "description": "要求执行经手对去向、时辰和代价反签，形成可核验的共同责任记录。"
+            },
+            {
+              "actionType": "SIGN_COMMAND_RESPONSIBILITY",
+              "preferredEntry": "PLAN",
+              "label": "具名承担命令责任",
+              "description": "以本席权限确认继续或更正的正式版本，并留下不可事后抹去的署名。"
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.seal_review",
+          "purpose": "封缄前只核对已经发生的送达、收件、见证和未解冲突，不提前写章末结果。",
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "preferredEntry": "DEFER",
+              "label": "不做封缄前复核",
+              "description": "不补核送达与见证，也不标记未解冲突；错误只能随最终命令一起送出。"
+            },
+            {
+              "actionType": "PRESERVE_UNRESOLVED_CONFLICT",
+              "preferredEntry": "INVESTIGATE",
+              "label": "标记并保留未解冲突",
+              "description": "把仍未一致的命令版本和经手差异列入封缄附件，不把矛盾伪装成已解决。"
+            },
+            {
+              "actionType": "VERIFY_DELIVERY_RECEIPTS",
+              "preferredEntry": "PLAN",
+              "label": "核验送达与回执",
+              "description": "逐项核对去向、收件人、见证和时辰，只确认已有回执能够支持的事实。"
+            }
+          ]
+        },
+        {
+          "decisionPointKey": "N1.final_dispatch",
+          "purpose": "把最终版本封缄并送出；行动只关闭 N1，HIGH/MID/LOW 与五项增量仍由既有 Settlement 一次裁定。",
+          "actions": [
+            {
+              "actionType": "DEFAULT_PASS",
+              "preferredEntry": "DEFER",
+              "label": "不追加最终正式命令",
+              "description": "放弃最后正式行动机会；既有六席行动仍按已经提交的事实进入 Settlement。"
+            },
+            {
+              "actionType": "DISPATCH_FINAL_WEIR_ORDERS",
+              "preferredEntry": "PLAN",
+              "label": "送出最终诸令",
+              "description": "按已核验的去向、收件、见证和具名责任送出最终版本，不预写执行结果。"
+            },
+            {
+              "actionType": "SEAL_FINAL_WEIR_ORDERS",
+              "preferredEntry": "INVESTIGATE",
+              "label": "封缄最终诸令",
+              "description": "把最终版本、附件和未解冲突一并封缄，随后交由既有 Settlement 裁定后果。"
+            }
           ]
         }
       ]
@@ -296,9 +484,9 @@
   ],
   "completeness": {
     "chapterCount": 7,
-    "decisionPointCount": 26,
-    "decisionActionPairCount": 72,
+    "decisionPointCount": 33,
+    "decisionActionPairCount": 93,
     "coverageRule": "EXACT_ACCEPTED_CONTENT_DECISION_ACTION_PAIRS"
   },
-  "catalogSha256": "c95ef596f16c52c3ca75f6088a38d31f84a890cafae5be68aa0b159c2fefdd95"
+  "catalogSha256": "89ffb32717e228fca90a96d7de68c38ba6c7fdbe28df94e65f775f51b6f6f4b9"
 }

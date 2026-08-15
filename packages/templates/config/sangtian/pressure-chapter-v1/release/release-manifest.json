@@ -1,11 +1,11 @@
 {
   "schemaVersion": "sangtian_pressure_chapter_release_manifest_v1",
   "releaseId": "sangtian_pressure_chapter_release_v1",
-  "releaseVersion": "1.0.1",
+  "releaseVersion": "1.0.2",
   "hashAlgorithm": "SHA-256_PRESSURE_CHAPTER_CANONICAL_JSON_V1",
   "routeRegistry": {
     "schemaVersion": "pressure_chapter_route_registry_v1",
-    "registryVersion": "pressure-route-registry-1.0.1",
+    "registryVersion": "pressure-route-registry-1.0.2",
     "defaultRouteKey": "sangtian_pressure_chapter_v1",
     "routes": [
       {
@@ -24,12 +24,12 @@
           "endgamePolicyVersion": "sangtian_content_finale_v1",
           "resultSchemaVersion": "sangtian_pressure_result_v1"
         },
-        "contentPackageVersion": "1.0.1",
-        "contentPackageSha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466",
-        "orchestrationPackageVersion": "sangtian-orchestration-1.0.1",
-        "orchestrationPackageSha256": "0b0f7eecefcc155000ea3b0cf8a503a7c3eeb5fbb8550b5e03cd2b80a00f0941",
-        "runtimeContractVersion": "pressure-runtime-contract-1.0.1",
-        "runtimeContractSha256": "0ad6e2cb831d553a583d11f552e73164b8f68905ef7939a8a627fbaa180fe715",
+        "contentPackageVersion": "1.0.2",
+        "contentPackageSha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
+        "orchestrationPackageVersion": "sangtian-orchestration-1.0.2",
+        "orchestrationPackageSha256": "f7b80c66660cbda16d568afd9997400e648cdb8cad6bf9093a16d2bcdd7b09a4",
+        "runtimeContractVersion": "pressure-runtime-contract-1.0.2",
+        "runtimeContractSha256": "bd970a678d45f9ccb6d16575b3b1a415366d6128affee84a495a826d773c6944",
         "testMatrixVersion": "pressure-test-matrix-1.0.0",
         "testMatrixSha256": "3a10a2334dcf4f46ff09ae836ea65151187f3906aef950a030c7e52a0420c015",
         "narrativeProfileVersion": "openovel-pressure-1.0.0",
@@ -42,21 +42,28 @@
         "rendererKey": "sangtian_pressure_endgame_v1"
       }
     ],
-    "registryHash": "4842804af4f7ab10c7fc7b35bc2641637424692ecf8b38a44e5a76542cf6be67"
+    "registryHash": "3303b13984ace2e9d20660fc5039b11dd9af7864e9e3c2be28da3ad147ed9f91"
   },
   "immutableInputs": [
     {
       "artifactId": "accepted_content_package",
       "path": "../content.json",
-      "version": "1.0.1",
-      "sha256": "0baaadf0c7d057c544a7814d1056cd7ba9bf0db18868ee89fa0d687667a58466",
+      "version": "1.0.2",
+      "sha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
       "hashMode": "CANONICAL_JSON"
     },
     {
       "artifactId": "accepted_content_manifest",
       "path": "../manifest.json",
-      "version": "1.0.1",
-      "sha256": "bc3ed839d9303164e1d1424cabd8a97ac5ca7e976b8f2b889ef47a3a91362925",
+      "version": "1.0.2",
+      "sha256": "9d198415de07c6fca1228a48a23b209a91d31d7c1f16f4673e9f542b1e99d52d",
+      "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "n1_multibeat_decision_effect_authoring",
+      "path": "../authoring/n1-decision-effects-v1.json",
+      "version": "1.0.0",
+      "sha256": "1bd764cff1fdfd659f1476c3cb9b41f6a43e15da2c1544fc30ee96e49b033b2f",
       "hashMode": "CANONICAL_JSON"
     }
   ],
@@ -71,8 +78,8 @@
     {
       "artifactId": "a_emotion_policy",
       "path": "a-emotion-policy.json",
-      "version": "sangtian-a-emotion-1.0.1",
-      "sha256": "117baa80b711866e371316f2edd6ff132e36f4f7bdde2796a3fa3cfcd43570e2",
+      "version": "sangtian-a-emotion-1.0.2",
+      "sha256": "c9b2169de22044d772ca8a0d6b430144570d8e7d5b5e0926f5358298d6fa933d",
       "hashMode": "CANONICAL_JSON"
     },
     {
@@ -92,22 +99,22 @@
     {
       "artifactId": "action_effect_policy",
       "path": "action-effect-policy.json",
-      "version": "sangtian-action-effect-1.0.1",
-      "sha256": "7c100ef8b1cec5f28187d273492b6756087bf422e44399f8d1a1e77b7f92cff6",
+      "version": "sangtian-action-effect-1.0.2",
+      "sha256": "8854d46333f15fe740cd84d4c671325e7c4355bcc3eacf3b803f1e37a7e57fee",
       "hashMode": "CANONICAL_JSON"
     },
     {
       "artifactId": "action_presentation_catalog",
       "path": "action-presentation-catalog.json",
-      "version": "sangtian-action-presentation-1.0.1",
-      "sha256": "33a3970eb8b657dd8350e2e315c1494034e45a77de724ee157fe79daabdef159",
+      "version": "sangtian-action-presentation-1.0.2",
+      "sha256": "b33d05773ed89f2c90dc699feaf264e4a9aecd057039f2b27610d2b38aebed2f",
       "hashMode": "CANONICAL_JSON"
     },
     {
       "artifactId": "ai_decision_policy",
       "path": "ai-decision-policy.json",
-      "version": "sangtian-ai-decision-1.0.1",
-      "sha256": "c69066e3b367118d7205e00601e5e56d258ad93dd0731100a16850813e2c52cb",
+      "version": "sangtian-ai-decision-1.0.2",
+      "sha256": "2ec7a3d17e418cfde6aa4ecdcbe395d7c271bfa9772cd39fd8c9a534176fe78f",
       "hashMode": "CANONICAL_JSON"
     },
     {
@@ -148,8 +155,8 @@
     {
       "artifactId": "orchestration_package",
       "path": "orchestration-package.json",
-      "version": "sangtian-orchestration-1.0.1",
-      "sha256": "0b0f7eecefcc155000ea3b0cf8a503a7c3eeb5fbb8550b5e03cd2b80a00f0941",
+      "version": "sangtian-orchestration-1.0.2",
+      "sha256": "f7b80c66660cbda16d568afd9997400e648cdb8cad6bf9093a16d2bcdd7b09a4",
       "hashMode": "CANONICAL_JSON"
     },
     {
@@ -162,15 +169,15 @@
     {
       "artifactId": "runtime_contract",
       "path": "runtime-contract.json",
-      "version": "pressure-runtime-contract-1.0.1",
-      "sha256": "0ad6e2cb831d553a583d11f552e73164b8f68905ef7939a8a627fbaa180fe715",
+      "version": "pressure-runtime-contract-1.0.2",
+      "sha256": "bd970a678d45f9ccb6d16575b3b1a415366d6128affee84a495a826d773c6944",
       "hashMode": "CANONICAL_JSON"
     },
     {
       "artifactId": "source_regression_manifest",
       "path": "source-regression-manifest.json",
       "version": "pressure-source-regression-1.0.0",
-      "sha256": "3c7953045d5490e82b8204b05df40cc59432624585971b66e89c500e3bdab731",
+      "sha256": "de66303673d7973de0fe0103abae6970feaf0db4e4027ca9653e7e023133d230",
       "hashMode": "CANONICAL_JSON"
     },
     {

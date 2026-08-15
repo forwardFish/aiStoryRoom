@@ -117,6 +117,7 @@ test("narrative provider is explicit and deterministic fallback is visible", asy
   const fallback = createPressureNarrativeProviderFromEnvV1({});
   assert.equal(fallback.provider, null);
   assert.equal(fallback.turnPresentationProvider, null);
+  assert.equal(fallback.oneCallStoryProvider, null);
   assert.deepEqual(fallback.readiness, {
     ready: true,
     mode: "DETERMINISTIC_FALLBACK_ONLY",
@@ -144,5 +145,6 @@ test("narrative provider is explicit and deterministic fallback is visible", asy
   assert.equal(external.readiness.mode, "DETERMINISTIC_FALLBACK_ONLY");
   assert.equal(external.readiness.degraded, false);
   assert.ok(external.turnPresentationProvider);
+  assert.ok(external.oneCallStoryProvider);
   assert.doesNotMatch(JSON.stringify(external.readiness), /secret-provider-key/);
 });

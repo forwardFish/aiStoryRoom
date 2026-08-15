@@ -57,18 +57,6 @@ test("DeepSeek request carries the same generic story pack and one sanitized dia
       model: "test-model",
       fetchImpl: async (_url, init) => {
         requestBodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
-        if (requestBodies.length === 2) {
-          return new Response(JSON.stringify({
-            choices: [{ message: { content: JSON.stringify({
-              assessments: [{
-                unitId: "unit-001",
-                classification: "TEXTURE_OR_TRANSIENT",
-                supportRefs: [],
-              }],
-              missingRequiredRefs: [],
-            }) } }],
-          }), { status: 200, headers: { "content-type": "application/json" } });
-        }
         return new Response(JSON.stringify({
           choices: [{ message: { content: JSON.stringify({ text: "测试正文", usedFactRefs: [], claims: [] }) } }],
         }), { status: 200, headers: { "content-type": "application/json" } });
@@ -90,12 +78,7 @@ test("DeepSeek request carries the same generic story pack and one sanitized dia
   assert.equal(userPayload.storyPack.promptTemplate.mode, "SIMULATION");
   assert.equal(userPayload.authority.projectionKind, "BEAT_NARRATIVE");
   assert.equal(userPayload.authority.contextCompilerVersion, undefined);
-  assert.equal(requestBodies.length, 2);
-  const reviewMessages = requestBodies[1]!.messages as Array<{ role: string; content: string }>;
-  assert.match(reviewMessages[0]!.content, /Truth Reviewer/u);
-  const reviewPayload = JSON.parse(reviewMessages[1]!.content);
-  assert.deepEqual(reviewPayload.reviewUnits, [{ unitId: "unit-001", text: "测试正文" }]);
-  assert.deepEqual(reviewPayload.authority.facts, context().facts);
+  assert.equal(requestBodies.length, 1);
   assert.equal(logs.length, 1);
   const diagnostic = JSON.parse(logs[0]!);
   assert.equal(diagnostic.event, "PRESSURE_DECISION_STORY_PACK");

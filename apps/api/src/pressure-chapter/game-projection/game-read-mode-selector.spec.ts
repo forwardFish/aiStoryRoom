@@ -629,6 +629,7 @@ function projection(label: string): PressureChapterGameProjectionV1 {
       contentHash: null,
       renderMode: null,
     },
+    chapterSummary: null,
     feedPage: {
       schemaVersion: "a_emotion_feed_page_v1",
       roomId: RUN_ID,

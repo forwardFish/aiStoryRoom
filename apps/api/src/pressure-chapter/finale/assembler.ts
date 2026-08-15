@@ -6,7 +6,11 @@ import {
   validateTerminalResultContextV1,
   type SangtianFinaleInputV1,
 } from "@ai-story/shared";
-import { validateSangtianOwnedFinalePolicyV1 } from "@ai-story/templates";
+import {
+  PressureMetricAuthorityErrorV1,
+  assertSangtianFinaleMetricScaleCompatibleV1,
+  validateSangtianOwnedFinalePolicyV1,
+} from "@ai-story/templates";
 import {
   TERMINAL_COMMIT_ERROR_CODES as ERROR,
   failTerminalCommit,
@@ -29,6 +33,22 @@ export class N7FrozenFinaleInputAssemblerV1 {
     const raw = await this.sourceReader.readN7FrozenSource(runId);
     if (raw === null) failTerminalCommit(ERROR.SOURCE_NOT_FOUND, "finaleAssembly.runId");
     const source = validateN7FrozenFinaleSourceV1(raw, runId);
+    try {
+      assertSangtianFinaleMetricScaleCompatibleV1({
+        contentPackageSha256: source.policy.contentPackageSha256,
+        frozenChapterBundles: source.frozenChapterBundles,
+        finalWorldState: source.finalWorldState,
+      });
+    } catch (error) {
+      if (error instanceof PressureMetricAuthorityErrorV1) {
+        failTerminalCommit(
+          ERROR.INVALID_TRIGGER,
+          "finaleAssembly.metricScale",
+          error.code,
+        );
+      }
+      throw error;
+    }
     const inputWithoutHash = {
       schemaVersion: "sangtian_finale_input_v1" as const,
       runId: source.runId,

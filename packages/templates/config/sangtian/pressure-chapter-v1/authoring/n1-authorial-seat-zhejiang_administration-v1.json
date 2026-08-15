@@ -1,0 +1,99 @@
+{
+  "seatLens": {
+    "seatId": "seat.zhejiang_administration",
+    "actorId": "actor.zheng_michang",
+    "opening": {
+      "title": "省府压印",
+      "dramaticPurpose": "让郑泌昌在已知密谋与地方执行链之间面对具名、期限和官印风险。",
+      "text": "郑泌昌把省府官印放在两份待发文书中间。借汛期开堰、再以粮收田的意思，他并非全然不知；如今府县却只问哪一道令算数，谁也不肯把来路写到纸上。书吏催道：“各处等印，迟了便各自行事。”郑泌昌没有立刻伸手，只问每一道回令何时发出、谁经手、将由哪个府县接办。撤令会让旧话露出痕迹，续令又会把省府的名字压得更深。那枚印越沉默，门外的催促越急。",
+      "factRefs": [
+        "known.n1.zhejiang_administration.pressure",
+        "known.n1.zhejiang_administration.claim.n1-sf-01",
+        "known.n1.zhejiang_administration.object.breach_order_chain",
+        "obj.breach_order_chain"
+      ],
+      "stopCondition": "停在郑泌昌尚未决定哪一份地方命令可以盖印并由谁具名承办之时。"
+    },
+    "afterPrepareReactions": {
+      "controlled": {
+        "title": "印痕见效",
+        "dramaticPurpose": "让执行顺畅反而放大省府留下可追溯记录的风险。",
+        "text": "府县回报陆续送回，说明一部分命令已经真正落到差役与民夫身上。郑泌昌先问期限，再问经手：“做成了便更不能含混。把哪一处领令、谁验印、何时交接写齐，免得明日人人都说只听见口传。”",
+        "factRefs": [
+          "known.n1.zhejiang_administration.object.breach_order_chain",
+          "obj.nine_weirs"
+        ],
+        "stopCondition": "停在执行链已开始成形，而省府尚未决定保留到何种具名程度之时。"
+      },
+      "contested": {
+        "title": "两印相逼",
+        "dramaticPurpose": "把权威冲突转成省府必须撤、续或重发的文书压力。",
+        "text": "两路差役各执一份正式回令，堰上的人不敢判断哪一道在后。郑泌昌把印盒合上：“不许再添第三张含混的纸。先把原令、改令和收件人排清，谁主张续办，谁就在更正处具名。”他的话说完，书吏仍等着省府先落一笔。",
+        "factRefs": [
+          "known.n1.zhejiang_administration.object.breach_order_chain",
+          "obj.breach_order_chain"
+        ],
+        "stopCondition": "停在省府尚未用一份具名更正结束相互抵触的执行链之时。"
+      },
+      "lostInitiative": {
+        "title": "旧令成势",
+        "dramaticPurpose": "让迟延后的地方官按旧令行事，逼省府承担纠偏暴露。",
+        "text": "补令还在路上，府县已经照先到的文书分派了人手。郑泌昌听完回报，先问还有多少环节能追回，却不许书吏把“奉上命”三个字写进更正：“要改，就写明谁改、为何改、由谁接。含混一次已经够了。”",
+        "factRefs": [
+          "known.n1.zhejiang_administration.pressure",
+          "known.n1.zhejiang_administration.object.breach_order_chain"
+        ],
+        "stopCondition": "停在旧令已经形成现实，而省府尚未决定是否以具名文书纠偏之时。"
+      }
+    },
+    "commitPressure": {
+      "title": "省印定链",
+      "dramaticPurpose": "把省府最后的地方命令写成有期限、经手、官印和责任层级的真实提交。",
+      "text": "官印旁放着最终待发的公文，任何一句“酌情办理”都会把冲突继续推给县里。郑泌昌让书吏重念一遍期限、接令衙门、经手差役和撤换旧令的办法：“省府可以催，也可以止；不能一面要他们执行，一面不肯留下是谁叫他们执行。”印尚未落下，旧链与新链只能择一承担后果。",
+      "factRefs": [
+        "known.n1.zhejiang_administration.object.breach_order_chain",
+        "obj.breach_order_chain",
+        "obj.provincial_seal"
+      ],
+      "stopCondition": "停在省印尚未落下，郑泌昌必须确认唯一执行链与具名责任之时。"
+    },
+    "settlementReactions": {
+      "high": {
+        "title": "可验亦可追",
+        "dramaticPurpose": "让可核验责任链同时成为省府自保与暴露的两面。",
+        "text": "灾情被压在少数堰区，多数高风险村落撤出，毁堤命令或经手记录也终于有一条可验。郑泌昌盯着那份记录，没有松气：“能验，便能追。省府若说自己只管执行，就把何时收令、何时发令、何时改令一并摊开；少一处，反倒最像遮掩。”",
+        "factRefs": [
+          "frozen.N1.HIGH.fact.01",
+          "frozen.N1.HIGH.fact.02",
+          "frozen.N1.HIGH.fact.03",
+          "known.n1.zhejiang_administration.object.breach_order_chain"
+        ],
+        "stopCondition": "停在省府尚未决定以完整经手链自证，还是先限制公开范围之时。"
+      },
+      "mid": {
+        "title": "文书互噬",
+        "dramaticPurpose": "让冲突说法迫使省府选择自己愿意承认的印信与经手链。",
+        "text": "多处堰口失守，撤离只完成一部分，责任说法却彼此相冲。郑泌昌把两份文书逐页对看：“印都是真的，话却不能同时是真的。先查哪一份送到人手、哪一份只停在案上；省府要认哪一道，不能等别人替我们挑。”",
+        "factRefs": [
+          "frozen.N1.MID.fact.01",
+          "frozen.N1.MID.fact.02",
+          "frozen.N1.MID.fact.03",
+          "obj.breach_order_chain"
+        ],
+        "stopCondition": "停在省府尚未公开承认其中一条命令链并承担其后果之时。"
+      },
+      "low": {
+        "title": "先稿护身",
+        "dramaticPurpose": "揭示先成奏稿能暂时护住省府，却会把被压记录变成后患。",
+        "text": "民生冲击已经扩大，撤离严重迟缓，先手方又控制了公开解释。书吏把只写河工失修的稿子递来，郑泌昌先问谁署名、由哪一路送出：“写得越快，越要知道将来哪一份经手记录会回来咬住这四个字。”",
+        "factRefs": [
+          "frozen.N1.LOW.fact.01",
+          "frozen.N1.LOW.fact.02",
+          "frozen.N1.LOW.fact.03",
+          "obj.breach_order_chain"
+        ],
+        "stopCondition": "停在省府尚未决定是否发出先成奏稿并由谁为其具名之时。"
+      }
+    }
+  }
+}

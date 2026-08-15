@@ -19,6 +19,8 @@ import {
   type PressureGameCapabilityReaderPort,
   type PressureGameChapterReaderPort,
   type PressureGameChapterSourceV1,
+  type PressureGameChapterSummaryReaderPort,
+  type PressureGameChapterSummaryProjectionV1,
   type PressureGameDecisionProjectionV1,
   type PressureGameMetricProjectionV1,
   type PressureGameNarrativeProjectionV1,
@@ -63,6 +65,7 @@ export class PressureChapterGameProjectionService {
     private readonly feed: PressureGameAEmotionFeedPort,
     private readonly capabilities: PressureGameCapabilityReaderPort,
     private readonly turnPresentations: PressureTurnPresentationServiceV1 | null = null,
+    private readonly chapterSummaries: PressureGameChapterSummaryReaderPort | null = null,
   ) {}
 
   async read(
@@ -355,6 +358,18 @@ export class PressureChapterGameProjectionService {
       runId: query.runId,
       viewerSeatId: viewer.viewer.seatId,
     });
+    const chapterSummarySource = this.chapterSummaries
+      ? await this.chapterSummaries.readCurrent({
+          runId: query.runId,
+          routeHash,
+          chapterRuntimeId: chapter.chapter.chapterRuntimeId,
+          viewerSeatId: viewer.viewer.seatId,
+        })
+      : null;
+    const chapterSummary = sanitizeChapterSummary(chapterSummarySource, {
+      runId: query.runId, routeHash, chapterRuntimeId: chapter.chapter.chapterRuntimeId,
+      viewerSeatId: viewer.viewer.seatId, chapterId: chapter.chapter.chapterId,
+    });
     const base = {
       schemaVersion: PRESSURE_CHAPTER_GAME_PROJECTION_SCHEMA_V1,
       projectionVersion: chapter.projectionVersion,
@@ -376,10 +391,50 @@ export class PressureChapterGameProjectionService {
       decision,
       capabilities: resolvedCapabilities,
       narrative,
+      chapterSummary,
       feedPage,
     };
     return { ...base, projectionHash: sha256Canonical(base) };
   }
+}
+
+function sanitizeChapterSummary(
+  value: Awaited<ReturnType<PressureGameChapterSummaryReaderPort["readCurrent"]>>,
+  identity: Readonly<{ runId: string; routeHash: string; chapterRuntimeId: string; viewerSeatId: SeatIdV1; chapterId: string }>,
+): PressureGameChapterSummaryProjectionV1 | null {
+  if (value === null) return null;
+  same(identity.runId, value.runId, "chapterSummary.runId");
+  same(identity.routeHash, value.routeHash, "chapterSummary.routeHash");
+  same(identity.viewerSeatId, value.viewerSeatId, "chapterSummary.viewerSeatId");
+  const textArray = (items: string[], path: string) => {
+    if (!Array.isArray(items) || items.length > 50) failPressureGameProjection(ERROR.INVALID_SOURCE, path);
+    return items.map((item, index) => string(item, `${path}[${index}]`));
+  };
+  if (!Array.isArray(value.metricChanges) || value.metricChanges.length > 50) {
+    failPressureGameProjection(ERROR.INVALID_SOURCE, "chapterSummary.metricChanges", "ARRAY");
+  }
+  return {
+    sourceChapterRuntimeId: string(value.sourceChapterRuntimeId, "chapterSummary.sourceChapterRuntimeId"),
+    chapterId: string(value.chapterId, "chapterSummary.chapterId"),
+    title: string(value.title, "chapterSummary.title"),
+    closingNarrative: string(value.closingNarrative, "chapterSummary.closingNarrative"),
+    playerActions: textArray(value.playerActions, "chapterSummary.playerActions"),
+    actualResults: textArray(value.actualResults, "chapterSummary.actualResults"),
+    completedObjectives: textArray(value.completedObjectives, "chapterSummary.completedObjectives"),
+    incompleteObjectives: textArray(value.incompleteObjectives, "chapterSummary.incompleteObjectives"),
+    metricChanges: value.metricChanges.map((metric, index) => ({
+      label: string(metric.label, `chapterSummary.metricChanges[${index}].label`),
+      before: number(metric.before, `chapterSummary.metricChanges[${index}].before`),
+      delta: number(metric.delta, `chapterSummary.metricChanges[${index}].delta`),
+      after: number(metric.after, `chapterSummary.metricChanges[${index}].after`),
+      displayBefore: string(metric.displayBefore, `chapterSummary.metricChanges[${index}].displayBefore`),
+      displayDelta: string(metric.displayDelta, `chapterSummary.metricChanges[${index}].displayDelta`),
+      displayAfter: string(metric.displayAfter, `chapterSummary.metricChanges[${index}].displayAfter`),
+    })),
+    remainingPressures: textArray(value.remainingPressures, "chapterSummary.remainingPressures"),
+    nextChapterHook: string(value.nextChapterHook, "chapterSummary.nextChapterHook"),
+    confirmationState: enumeration(value.confirmationState, ["AWAITING_CONFIRMATION", "CONFIRMED"] as const, "chapterSummary.confirmationState"),
+  };
 }
 
 function validateQuery(query: ReadPressureChapterGameProjectionQueryV1): void {

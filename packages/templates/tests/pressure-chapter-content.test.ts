@@ -180,10 +180,10 @@ test("P0 is Genesis only with exact six seats, five tracks and source objects", 
   assert.equal("chapterSettlement" in genesis, false);
 });
 
-test("N1-N7 use content-driven 1/4/dynamic/2/7/3/5 point plans", () => {
+test("N1-N7 use content-driven 8/4/dynamic/2/7/3/5 point plans", () => {
   const loaded = loadSangtianPressureChapterPackageV1();
   assert.deepEqual(loaded.chapters.map((chapter) => chapter.chapterId), ["N1", "N2", "N3", "N4", "N5", "N6", "N7"]);
-  assert.deepEqual(loaded.chapters.map((chapter) => chapter.decisionPoints.length), [1, 4, 4, 2, 7, 3, 5]);
+  assert.deepEqual(loaded.chapters.map((chapter) => chapter.decisionPoints.length), [8, 4, 4, 2, 7, 3, 5]);
   const dynamic = loaded.chapters[2]!;
   assert.equal(dynamic.decisionPlan, "DYNAMIC");
   assert.equal(selectAvailableSangtianDecisionPointsV1(dynamic, {}).length, 1);
