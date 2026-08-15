@@ -26,6 +26,7 @@ import {
   PressureChapterGameProjectionService,
   PressureTurnPresentationServiceV1,
   type PressureTurnPresentationProviderPortV1,
+  type PressureGameChapterSummaryReaderPort,
 } from "../game-projection";
 import { PressureChapterGenesisService } from "../genesis";
 import {
@@ -191,6 +192,7 @@ import {
   PressurePromiseProductAccessAdapterV1,
   PressurePromiseProductFacadeV1,
 } from "./promise-facade";
+import { createPrismaPressureChapterSummaryProductionV2 } from "../chapter-summary-gate";
 
 export interface PressureChapterProductRootV1 {
   routeRelease: ReturnType<typeof loadPublishedSangtianActionReleaseV1>;
@@ -213,6 +215,7 @@ export interface PressureChapterProductRootV1 {
   }>;
   gameProjection: PressureChapterGameProjectionService;
   oneCallStoryGenerator: PressureOneCallStoryGeneratorV1;
+  chapterSummaryProduction: ReturnType<typeof createPrismaPressureChapterSummaryProductionV2>;
   seatTransport: PressureSeatTransportFacadeV1;
   promises: PressurePromiseProductFacadeV1;
   aEmotion: ReturnType<typeof createPrismaAEmotionPersistenceV1>;
@@ -245,6 +248,7 @@ export async function createPressureChapterProductRootV1(input: {
   narrativeProviderReadiness?: PressureNarrativeProviderReadinessV1;
   turnPresentationProvider?: PressureTurnPresentationProviderPortV1 | null;
   oneCallStoryProvider?: PressureOneCallStoryProviderPortV1 | null;
+  chapterSummaryReader?: PressureGameChapterSummaryReaderPort | null;
 }): Promise<PressureChapterProductRootV1> {
   const options = normalizeOptions(input.options);
   const httpProduction = createPressureChapterHttpProductionAdaptersV1(
@@ -503,6 +507,10 @@ export async function createPressureChapterProductRootV1(input: {
   const oneCallStoryGenerator = new PressureOneCallStoryGeneratorV1(
     input.oneCallStoryProvider ?? null,
   );
+  const chapterSummaryProduction = createPrismaPressureChapterSummaryProductionV2({
+    prisma: input.prisma as never,
+    generator: oneCallStoryGenerator,
+  });
   const gameProjection = new PressureChapterGameProjectionService(
     routes,
     gameChapterReader,
@@ -514,6 +522,7 @@ export async function createPressureChapterProductRootV1(input: {
     new PressureTurnPresentationServiceV1(
       input.turnPresentationProvider ?? null,
     ),
+    input.chapterSummaryReader ?? chapterSummaryProduction.reader,
   );
   const runtimeFacets = pressureHttpRuntimeFacetsV1(runtime);
   const httpRoutes = pressureHttpRouteReadPortV1(routes);
@@ -688,10 +697,11 @@ export async function createPressureChapterProductRootV1(input: {
     productionBridge: production.bridge,
     roomsGateway,
     httpFacade,
-    httpControllerMethods: new PressureChapterHttpControllerMethods(httpFacade),
+    httpControllerMethods: new PressureChapterHttpControllerMethods(httpFacade, chapterSummaryProduction.commandHandler),
     httpPorts,
     gameProjection,
     oneCallStoryGenerator,
+    chapterSummaryProduction,
     seatTransport,
     promises,
     aEmotion,

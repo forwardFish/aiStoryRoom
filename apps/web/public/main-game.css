@@ -1547,3 +1547,14 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .maneuver-counter { justify-self: end; color: #8a745a; font-size: 11px; }
 .leverage-panel li { display: grid; gap: 3px; margin: 8px 0; }
 .leverage-panel li small { color: #75624d; font-size: 11px; line-height: 1.4; }
+
+/* M5 chapter summary stays inside the approved center column. */
+.chapter-summary-kicker { display:block; margin-bottom:.5rem; font-size:.78rem; letter-spacing:.08em; opacity:.68; }
+.chapter-summary-section { margin-top:1.15rem; }
+.chapter-summary-section h3,.chapter-summary-hook h3 { margin:0 0 .45rem; font-size:.88rem; }
+.chapter-summary-section ul { margin:0; padding-left:1.15rem; }
+.chapter-summary-section li { margin:.3rem 0; }
+.chapter-summary-metrics { display:grid; gap:.55rem; }
+.chapter-summary-metric { display:grid; grid-template-columns:1fr auto auto; gap:.65rem; align-items:center; padding:.65rem .75rem; border:1px solid rgba(120,100,180,.18); border-radius:.75rem; }
+.chapter-summary-metric em { font-style:normal; font-weight:700; }
+.chapter-summary-hook { margin-top:1.25rem; padding-top:1rem; border-top:1px solid rgba(120,100,180,.18); }

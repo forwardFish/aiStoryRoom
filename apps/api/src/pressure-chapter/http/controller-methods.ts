@@ -2,6 +2,12 @@ import { Inject, Injectable } from "@nestjs/common";
 import type { AuthenticatedUser } from "../../auth/current-user.decorator";
 import type { LegacyPressureSlotEndpointV1 } from "./contracts";
 import { PressureChapterHttpFacade } from "./pressure-chapter-http.facade";
+import {
+  isPressureChapterSummaryConfirmationCommandV2,
+  normalizePressureChapterSummaryConfirmationCommandV2,
+  type PressureChapterSummaryConfirmationCommandV2,
+} from "../chapter-summary-gate/production";
+import { assertPressureChapterSummaryConfirmationAuthorityV2 } from "../chapter-summary-gate/confirmation-authority";
 
 /**
  * Injectable delegate for the existing RoomsController.
@@ -14,6 +20,9 @@ export class PressureChapterHttpControllerMethods {
   constructor(
     @Inject(PressureChapterHttpFacade)
     private readonly pressure: PressureChapterHttpFacade,
+    private readonly chapterSummaryCommandHandler?: {
+      handle(input: PressureChapterSummaryConfirmationCommandV2): Promise<unknown>;
+    },
   ) {}
 
   /** GET /v4/rooms/:roomId/game */
@@ -35,11 +44,21 @@ export class PressureChapterHttpControllerMethods {
   }
 
   /** POST /v4/rooms/:roomId/game/action */
-  action(
+  async action(
     user: Pick<AuthenticatedUser, "id">,
     roomId: string,
     body: unknown,
   ) {
+    if (isPressureChapterSummaryConfirmationCommandV2(body)) {
+      if (!this.chapterSummaryCommandHandler) {
+        throw new Error("PRESSURE_CHAPTER_SUMMARY_COMMAND_HANDLER_MISSING");
+      }
+      const command = normalizePressureChapterSummaryConfirmationCommandV2(body);
+      const projection = await this.pressure.getGame(toPrincipal(user), roomId);
+      assertPressureChapterSummaryConfirmationAuthorityV2(roomId, command, projection);
+      return await this.chapterSummaryCommandHandler.handle(command) as never;
+    }
+
     return this.pressure.submitDecision(toPrincipal(user), roomId, body);
   }
 

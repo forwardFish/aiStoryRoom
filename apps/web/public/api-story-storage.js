@@ -133,6 +133,12 @@ export class ApiStoryStorage {
     return payload;
   }
 
+  async confirmChapterSummary() {
+    throw new StoryApiError("当前故事运行时不支持章末确认，请重新读取正式主游戏。", {
+      code: "CHAPTER_SUMMARY_CONFIRMATION_UNSUPPORTED"
+    });
+  }
+
   async advanceDay(view) {
     this.assertView(view);
     const nextView = await this.request(`/v4/story-runs/${encodeURIComponent(view.run.id)}/advance-day`, {

@@ -2,6 +2,7 @@ import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-stor
 import { renderTransitionScreen } from "./transition-screen.js";
 import { navigateToFreshSoloRun, renderPlayAgainDialog } from "./solo-run-lifecycle.js?v=20260806-play-again-v3";
 import { bindManeuverInputs, buildManeuverCommand, clearManeuverDraft, emptyManeuverDrafts, prepareManeuverDraft, renderFourManeuverPanel, renderLeverageHand, validateManeuverCommand } from "./maneuver-four-ui.js?v=20260809-remaining-count-v1";
+import { renderPressureChapterSummary, shouldShowPressureChapterSummary } from "./pressure-chapter-summary-ui.js?v=20260815-n1-multibeat-v1";
 
 const DAY_DECISIONS = 2;
 const FINAL_DAY = 7;
@@ -251,6 +252,19 @@ export function createStoryApp({
   async function advanceDay() {
     if (!canAdvance(state.view) || state.busy) return;
     await mutate((view) => storage.advanceDay(view), "新一天的局势已经展开。");
+  }
+
+  async function confirmChapterSummary() {
+    if (!shouldShowPressureChapterSummary(state.view) || state.busy) return;
+    const confirm = typeof storage.confirmChapterSummary === "function"
+      ? (view) => storage.confirmChapterSummary(view)
+      : null;
+    if (!confirm) {
+      state.error = "当前版本尚未连接章末确认能力，请刷新后重试。";
+      render();
+      return;
+    }
+    await mutate(confirm, "下一章已经展开。");
   }
 
   async function finalize() {
@@ -569,7 +583,7 @@ export function createStoryApp({
           ${renderCausalRecalls(view)}
         </aside>
         <main class="causal-center ${mainMode === "history" ? "history-center" : ""} ${mainMode === "critical_pending" ? "critical-pending-center" : ""} ${mainMode === "decision" ? "decision-center" : ""}">
-          ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : decisionNarrativePending ? renderDecisionNarrative(view, { showContinue: true }) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
+          ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "chapter_summary" ? renderPressureChapterSummary(view, state) : decisionNarrativePending ? renderDecisionNarrative(view, { showContinue: true }) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
           ${mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" && !decisionNarrativePending ? renderDecisionZone(view, state) : ""}
         </main>
         <aside class="causal-right" aria-label="${isEnglish(view) ? "Maneuver board" : "主动谋划中枢"}">
@@ -637,6 +651,7 @@ export function createStoryApp({
     root.querySelector("#criticalDeferredOpenBtn")?.addEventListener("click", () => startCriticalResponse(root.querySelector("#criticalDeferredOpenBtn")?.dataset.eventId));
     bindManeuverInputs({ root, state, render, chooseManeuver });
     root.querySelectorAll("#advanceBtn").forEach((button) => button.addEventListener("click", advanceDay));
+    root.querySelector("#confirmChapterSummaryBtn")?.addEventListener("click", confirmChapterSummary);
     root.querySelector("#finalizeBtn")?.addEventListener("click", finalize);
     root.querySelector("#resetBtn")?.addEventListener("click", resetRun);
     root.querySelector("#resetDecisionBtn")?.addEventListener("click", resetRun);
@@ -671,6 +686,7 @@ export function createStoryApp({
     refresh,
     submitDecision,
     advanceDay,
+    confirmChapterSummary,
     finalize,
     resolveRoomRound,
     submitManeuver,
@@ -1106,6 +1122,7 @@ function resolveMainMode({ view, state, showOpening, activePrompt, simulating, o
   if (resultPause) return "result_stream";
   if (showOpening) return "opening_ready";
   if (criticalPending) return "critical_pending";
+  if (shouldShowPressureChapterSummary(view)) return "chapter_summary";
   if (activePrompt) return "decision";
   if (canAdvance(view)) return "day_end";
   if (canFinalize(view)) return "final_ready";
