@@ -936,6 +936,7 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .causal-shell:has(.v2-current-situation-summary) .leverage-panel > h2 { background-image: url('/assets/icon/45.png'); }
 .causal-shell:has(.v2-current-situation-summary) .maneuver-heading > h2 { background-image: url('/assets/icon/42.png'); }
 .causal-shell:has(.v2-current-situation-summary) .player > h2,
+.causal-shell:has(.v2-current-situation-summary) .day-mission > h2,
 .causal-shell:has(.v2-current-situation-summary) .resources-panel > h2,
 .causal-shell:has(.v2-current-situation-summary) .leverage-panel > h2 {
   min-height: 24px;
@@ -981,7 +982,7 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
   padding-top: 12px;
 }
 .causal-shell:has(.v2-current-situation-summary) .player {
-  min-height: 292px;
+  min-height: 0;
 }
 .causal-shell:has(.v2-current-situation-summary) .player .portrait {
   border-radius: 15px;
