@@ -146,6 +146,57 @@ test("public room list exposes masked creator metadata in newest-created order",
   assert.equal(JSON.stringify(result.rooms).includes("private@example.com"), false);
 });
 
+test("authenticated room lists keep owned and joined rooms out of Open Rooms", async () => {
+  const publicRows = [{
+    id: "other-room",
+    createdAt: new Date("2026-08-15T04:00:00.000Z"),
+    owner: { nickname: "Other Player", email: "other@example.com" },
+    players: [],
+    roles: [],
+    maxPlayers: 6,
+  }];
+  const mineRows = [
+    { id: "owned-room", roles: [] },
+    { id: "joined-room", roles: [] },
+  ];
+  let publicQuery: any;
+  let mineQuery: any;
+  const listService = new RoomsService(
+    {
+      storyRun: {
+        findMany: async (query: any) => {
+          if (query.where.visibility === "public") {
+            publicQuery = query;
+            return publicRows;
+          }
+          mineQuery = query;
+          return mineRows;
+        },
+      },
+    } as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+  );
+  (listService as any).projectRooms = async (input: any[]) => input.map((room) => ({ id: room.id, roles: [] }));
+
+  const result = await listService.list(undefined, { id: "current-user" } as never);
+
+  assert.deepEqual(result.rooms.map((room: any) => room.id), ["other-room"]);
+  assert.deepEqual(result.myRooms.map((room: any) => room.id), ["owned-room", "joined-room"]);
+  assert.ok(publicQuery.where.NOT.some((clause: any) => clause.ownerUserId === "current-user"));
+  assert.ok(publicQuery.where.NOT.some((clause: any) => clause.players?.some?.userId === "current-user"));
+  assert.ok(publicQuery.where.NOT.some((clause: any) => clause.pressureLifecycle?.is?.lobbyJson?.array_contains?.[0] === "current-user"));
+  assert.ok(mineQuery.where.OR.some((clause: any) => clause.ownerUserId === "current-user"));
+});
+
 test("room creator masking never exposes the email domain", () => {
   assert.equal(maskRoomCreatorLabel("forward"), "forwa****rd");
   assert.equal(maskRoomCreatorLabel("reader@example.com"), "reade****er");

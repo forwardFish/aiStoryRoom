@@ -275,7 +275,29 @@ export class RoomsService {
     if (worldId && !findGameDefinition(worldId)) throw new BadRequestException({ code: "UNKNOWN_WORLD", message: "Unknown world" });
     const [rooms, mineRows] = await Promise.all([
       this.prisma.storyRun.findMany({
-        where: { mode: "room", visibility: "public", status: "waiting_players", ...(worldId ? { templateKey: worldId } : {}) },
+        where: {
+          mode: "room",
+          visibility: "public",
+          status: "waiting_players",
+          ...(user ? {
+            NOT: [
+              { ownerUserId: user.id },
+              { players: { some: { userId: user.id } } },
+              {
+                engineVersion: PRESSURE_CHAPTER_ROUTE_V1.engineVersion,
+                pressureLifecycle: {
+                  is: {
+                    lobbyJson: {
+                      path: ["joinedUserIds"],
+                      array_contains: [user.id],
+                    },
+                  },
+                },
+              },
+            ],
+          } : {}),
+          ...(worldId ? { templateKey: worldId } : {}),
+        },
         include: { players: { include: { user: true, role: true } }, roles: true, owner: true },
         orderBy: { createdAt: "desc" }, take: 50
       }),
@@ -318,6 +340,7 @@ export class RoomsService {
         mode: "room",
         status: { in: ["waiting_players", "playing", "chapter_generated", "completed"] },
         OR: [
+          { ownerUserId: user.id },
           { players: { some: { userId: user.id } } },
           {
             engineVersion: PRESSURE_CHAPTER_ROUTE_V1.engineVersion,
