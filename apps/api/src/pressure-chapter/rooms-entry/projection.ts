@@ -112,24 +112,6 @@ export function buildPressureRoomProjection(input: {
       joinedUnseated: member.selectedSeatId === null,
     };
   });
-  const aiPlayers = lobby.seats
-    .filter((seat) => seat.controllerType === "ai")
-    .map((seat) => {
-      const definition = roleDefinitions.get(seat.seatId);
-      const presentation = publicRolePresentations.get(seat.seatId);
-      const roleRow = roleRows.get(seat.seatId);
-      return {
-        id: `pressure-ai:${room.id}:${seat.seatId}`,
-        userId: null,
-        nickname: "AI Agent",
-        playerType: "ai",
-        roleId: roleRow?.id ?? seat.seatId,
-        roleKey: definition?.roleKey ?? seat.seatId,
-        roleName: presentation?.name ?? definition?.roleName ?? seat.seatId,
-        ready: true,
-        joinedAt: room.createdAt ?? room.updatedAt,
-      };
-    });
   const isTerminal = room.status === "chapter_generated" || room.status === "completed";
   const nextAction = lobby.lifecycle === "WAITING_PLAYERS"
     ? "open"
@@ -169,7 +151,9 @@ export function buildPressureRoomProjection(input: {
     readyUserIds: lobby.members
       .filter((member) => member.ready && member.userId === viewerId)
       .map((member) => member.userId),
-    players: [...memberPlayers, ...aiPlayers],
+    // A player is a real room member. An unclaimed seat may be AI-controlled
+    // later, but that controller must not inflate the lobby participant count.
+    players: memberPlayers,
     roles: PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => {
       const definition = roleDefinitions.get(seatId);
       const presentation = publicRolePresentations.get(seatId);

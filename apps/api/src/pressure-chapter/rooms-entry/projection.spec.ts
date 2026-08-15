@@ -142,6 +142,52 @@ test("Pressure room projection never exposes another participant's account id", 
   assert.equal(publicProjection.players.some((player) => player.userId !== null), false);
 });
 
+test("unseated hosts are one lobby player, not a seventh AI participant", () => {
+  const state = lobby();
+  state.participantMode = "MULTIPLAYER";
+  state.lifecycle = "WAITING_PLAYERS";
+  state.members[0] = {
+    ...state.members[0]!,
+    selectedSeatId: null,
+    ready: false,
+  };
+  state.seats = state.seats.map((seat) => ({
+    ...seat,
+    userId: null,
+    controllerId: `ai-${seat.seatId}`,
+    controllerType: "ai" as const,
+    ready: true,
+  }));
+
+  const projection = buildPressureRoomProjection({
+    room: {
+      id: "unseated-pressure-host-1",
+      title: "Unseated host",
+      templateId: "sangtian-template",
+      templateKey: "sangtian",
+      status: "waiting_players",
+      visibility: "private",
+      inviteCode: "HOST1",
+      ownerUserId: "user-1",
+      engineVersion: PRESSURE_CHAPTER_ROUTE_V1.engineVersion,
+      strategyVersion: PRESSURE_CHAPTER_ROUTE_V1.strategyVersion,
+      updatedAt: new Date("2026-08-15T00:00:00.000Z"),
+      createdAt: new Date("2026-08-15T00:00:00.000Z"),
+      players: [],
+      roles: [],
+    },
+    lobby: state,
+    start: null,
+    viewerId: "user-1",
+  });
+
+  assert.equal(projection.maxPlayers, PRESSURE_CHAPTER_SEAT_IDS_V1.length);
+  assert.equal(projection.players.length, 1);
+  assert.equal(projection.players[0]?.nickname, "Host");
+  assert.equal(projection.players[0]?.joinedUnseated, true);
+  assert.equal(projection.roles.filter((role) => role.status === "available").length, PRESSURE_CHAPTER_SEAT_IDS_V1.length);
+});
+
 test("Pressure room roles use the same public characters without changing canonical seats", () => {
   const state = lobby();
   const projection = buildPressureRoomProjection({
