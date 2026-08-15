@@ -13,6 +13,9 @@ test("account visual polish preserves the account content and purchase table con
     "View your profile and purchase history.",
     "Purchases &amp; refunds",
     "Add Credits",
+    "World Credits",
+    "Checking balance…",
+    "Balance unavailable",
     "Order number",
     "Purchase date",
     "World Credits",
@@ -25,6 +28,10 @@ test("account visual polish preserves the account content and purchase table con
   ]) assert.ok(source.includes(text), `missing preserved account content: ${text}`);
 
   assert.match(source, /class="account-purchase-table"/);
+  assert.match(source, /data-account-credit-balance/);
+  assert.match(source, /request\("\/api\/v4\/credits\/balance"\)/);
+  assert.match(source, /"retry-credit-balance"/);
   assert.match(css, /\.account-avatar[^{]*\{[^}]*width:92px;[^}]*height:92px;/s);
-  assert.match(css, /\.account-profile-card[^{]*\{[^}]*grid-template-columns:120px minmax\(0,1fr\) auto;/s);
+  assert.match(css, /\.account-credit-balance[^{]*\{[^}]*border:1px solid #ded3ff;/s);
+  assert.match(css, /\.account-profile-card[^{]*\{[^}]*grid-template-columns:120px minmax\(0,1fr\) minmax\(188px,240px\) auto;/s);
 });

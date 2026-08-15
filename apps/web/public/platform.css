@@ -259,10 +259,17 @@ body:has(.account-page) { min-width:0; background:#f8f9fd; }
 .account-heading { padding-top:4px; }
 .account-heading h1 { font-size:44px; letter-spacing:-1.7px; }
 .account-heading p { margin-top:8px; color:#69758f; font-size:16px; }
-.account-profile-card { grid-template-columns:120px minmax(0,1fr) auto; min-height:132px; margin-top:22px; padding:20px 26px; border-color:#e3e6ef; border-radius:16px; box-shadow:0 10px 30px rgba(35,42,70,.055); }
+.account-profile-card { grid-template-columns:120px minmax(0,1fr) minmax(188px,240px) auto; gap:20px; min-height:132px; margin-top:22px; padding:20px 26px; border-color:#e3e6ef; border-radius:16px; box-shadow:0 10px 30px rgba(35,42,70,.055); }
 .account-avatar { width:92px; height:92px; border:1px solid #cbbcf8; background:linear-gradient(145deg,#f0ebff,#ddd2ff); color:#5b34d6; font-size:36px; font-weight:750; box-shadow:0 7px 18px rgba(91,52,214,.12),inset 0 0 0 1px rgba(255,255,255,.55); }
 .account-profile-copy h2 { margin-bottom:7px; font-size:25px; letter-spacing:-.4px; }
 .account-profile-copy p { font-size:15px; }
+.account-credit-balance { display:grid; align-content:center; min-height:92px; padding:14px 18px; border:1px solid #ded3ff; border-radius:12px; background:linear-gradient(135deg,#fbfaff,#f2eeff); color:#111a35; }
+.account-credit-label { color:#6c618b; font-size:12px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; }
+.account-credit-amount { margin-top:3px; color:#5d2ee1; font-size:31px; line-height:1.05; letter-spacing:-.8px; }
+.account-credit-detail { margin-top:5px; color:#68748e; font-size:12px; line-height:1.35; }
+.account-credit-unavailable { margin-top:7px; color:#68748e; font-size:15px; }
+.account-credit-retry { justify-self:start; margin-top:6px; padding:0; border:0; background:transparent; color:#5d2ee1; font-size:12px; font-weight:700; text-decoration:underline; }
+.account-credit-retry:hover,.account-credit-retry:focus-visible { color:#4321aa; outline:none; }
 .account-edit-profile { min-width:164px; min-height:48px; gap:10px; padding:0 20px; border-radius:9px; box-shadow:0 4px 12px rgba(93,46,225,.06); font-size:15px; }
 .account-edit-profile:hover,.account-edit-profile:focus-visible { background:#f7f4ff; box-shadow:0 0 0 3px rgba(116,70,242,.1); outline:none; }
 .account-edit-profile span { font-size:21px; }
@@ -284,6 +291,7 @@ body:has(.account-page) { min-width:0; background:#f8f9fd; }
   .account-heading h1 { font-size:40px; }
   .account-profile-card { grid-template-columns:92px minmax(0,1fr); gap:18px; padding:20px; }
   .account-avatar { width:82px; height:82px; font-size:32px; }
+  .account-credit-balance { grid-column:1/-1; min-height:0; }
   .account-edit-profile { min-height:48px; }
 }
 
@@ -291,8 +299,9 @@ body:has(.account-page) { min-width:0; background:#f8f9fd; }
   .account-page.page-frame.visual-tight { padding:20px 14px 32px; }
   .account-heading h1 { font-size:36px; }
   .account-heading p { font-size:15px; }
-  .account-profile-card { grid-template-columns:1fr; }
+  .account-profile-card { grid-template-columns:1fr; text-align:center; }
   .account-avatar { margin:0 auto; }
+  .account-credit-balance { text-align:left; }
 }
 /* Waiting/result references have a compact masthead; compensate the page
    margin so their first product card keeps its fixed y-coordinate. */

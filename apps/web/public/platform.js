@@ -17,6 +17,7 @@ let lobbyCountdownTimer = null;
 let roomsView = { activeTab: "open", openRooms: [], myRooms: [] };
 let currentAccount = null;
 let accountPurchaseCache = new Map();
+let accountCreditState = { status: "loading", balance: null };
 let roomDialogRecoveryTimer = null;
 let roomsRefreshPending = false;
 const pendingMutations = new Set();
@@ -500,6 +501,7 @@ async function hydrateAccount() {
     currentAccount = account;
     renderAccountProfile(account);
     bind();
+    void hydrateAccountBalance();
     await hydratePurchases();
   } catch (error) {
     if (error.status === 401) location.assign("/auth?returnTo=%2Faccount");
@@ -511,7 +513,34 @@ function renderAccountProfile(account) {
   const summary = root.querySelector("[data-account-summary]");
   if (!summary) return;
   const name = account.nickname || `${BRAND_NAME} player`;
-  summary.innerHTML = `<div class="account-avatar" aria-hidden="true"><span>${esc(emailInitial(account.email))}</span></div><div class="account-profile-copy"><h2>${esc(name)}</h2><p>${esc(account.email || "Email not available")}</p></div><button class="account-edit-profile" type="button" data-action="edit-profile"><span aria-hidden="true">✎</span>Edit profile</button>`;
+  summary.innerHTML = `<div class="account-avatar" aria-hidden="true"><span>${esc(emailInitial(account.email))}</span></div><div class="account-profile-copy"><h2>${esc(name)}</h2><p>${esc(account.email || "Email not available")}</p></div><aside class="account-credit-balance" data-account-credit-balance aria-live="polite">${accountCreditBalanceMarkup()}</aside><button class="account-edit-profile" type="button" data-action="edit-profile"><span aria-hidden="true">✎</span>Edit profile</button>`;
+}
+
+function accountCreditBalanceMarkup() {
+  if (accountCreditState.status === "error") return `<span class="account-credit-label">World Credits</span><strong class="account-credit-unavailable">Balance unavailable</strong><button class="account-credit-retry" type="button" data-action="retry-credit-balance">Retry</button>`;
+  if (accountCreditState.status !== "ready" || !accountCreditState.balance) return `<span class="account-credit-label">World Credits</span><strong class="account-credit-amount">—</strong><span class="account-credit-detail">Checking balance…</span>`;
+  const balance = accountCreditState.balance;
+  const available = new Intl.NumberFormat("en-US").format(Number(balance.available || 0));
+  const purchased = new Intl.NumberFormat("en-US").format(Number(balance.purchased || 0));
+  const bonus = new Intl.NumberFormat("en-US").format(Number(balance.bonus || 0));
+  const detail = Number(balance.available || 0) > 0 ? `Purchased ${purchased} · Bonus ${bonus}` : "No credits available";
+  return `<span class="account-credit-label">World Credits</span><strong class="account-credit-amount">${esc(available)}</strong><span class="account-credit-detail">${esc(detail)}</span>`;
+}
+
+function renderAccountCreditBalance() {
+  const target = root.querySelector("[data-account-credit-balance]");
+  if (target) target.innerHTML = accountCreditBalanceMarkup();
+}
+
+async function hydrateAccountBalance() {
+  accountCreditState = { status: "loading", balance: null };
+  renderAccountCreditBalance();
+  try {
+    accountCreditState = { status: "ready", balance: await request("/api/v4/credits/balance") };
+  } catch {
+    accountCreditState = { status: "error", balance: null };
+  }
+  renderAccountCreditBalance();
 }
 
 async function hydratePurchases() {
@@ -1553,6 +1582,7 @@ function maybeOpenWaitingEndedDialog(room) {
 const actions = {
   "toggle-password": (_event, element) => { const input = root.querySelector('input[name="password"]'); if (!input) return; const reveal = input.type === "password"; input.type = reveal ? "text" : "password"; element.setAttribute("aria-pressed", String(reveal)); element.setAttribute("aria-label", reveal ? "Hide password" : "Show password"); },
   "edit-profile": () => openProfileEditor(),
+  "retry-credit-balance": () => { void hydrateAccountBalance(); },
   "retry-purchases": () => { void hydratePurchases(); },
   "view-refund": (_event, element) => openPurchaseStatus(element.dataset.purchaseId),
   "view-dispute": (_event, element) => openPurchaseStatus(element.dataset.purchaseId, true),
