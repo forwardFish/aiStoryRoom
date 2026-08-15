@@ -210,7 +210,6 @@ function bind() {
       ? 'Choose Your Role <span class="eyebrow">☆ Creator Advantage</span>'
       : "Choose Your Role";
   }
-  root.querySelectorAll("[data-action]").forEach((element) => { element.onclick = (event) => actions[element.dataset.action]?.(event, element); });
   const worldFilter = root.querySelector("[data-world-filter]");
   if (worldFilter) {
     worldFilter.onchange = () => {
@@ -224,7 +223,7 @@ function bind() {
     };
   }
 }
-function notice(message) { let target = root.querySelector("[data-notice]"); if (!target) { target = document.createElement("p"); target.dataset.notice = ""; target.className = "notice"; root.querySelector(".page-frame")?.prepend(target); } if (target) { target.textContent = message; target.hidden = false; } }
+function notice(message) { let target = root.querySelector("[data-notice]"); if (!target) { target = document.createElement("p"); target.dataset.notice = ""; target.className = "notice"; (root.querySelector(".page-frame, .mw-room-page") || root).prepend(target); } if (target) { target.textContent = message; target.hidden = false; } }
 function clearNotice() { const target = root.querySelector("[data-notice]"); if (target) { target.textContent = ""; target.hidden = true; } }
 
 let googleIdentityLibraryPromise = null;
@@ -1486,10 +1485,14 @@ const actions = {
   "select-role": async (_event, element) => {
     if (!activeRoom || !requireSession() || element?.disabled) return;
     const roomId = activeRoom.id;
+    const roleId = element.dataset.roleId;
+    const storageKey = `many-worlds:room-role:${roomId}:${roleId}`;
+    const idempotencyKey = lobbyMutationKey(storageKey, "room-role");
     return runMutationOnce(`room:${roomId}:select-role`, element, "", async () => {
       try {
-        await request(`/api/v4/rooms/${roomId}/role`, { method:"POST", body:JSON.stringify({ roleId: element.dataset.roleId }) });
+        await request(`/api/v4/rooms/${roomId}/role`, { method:"POST", body:JSON.stringify({ roleId, idempotencyKey }) });
         if (activeRoom?.id === roomId && activeRoom.isHost && !activeRoom.hostRoleLocked) await request(`/api/v4/rooms/${roomId}/role/lock`, { method:"POST", body:"{}" });
+        localStorage.removeItem(storageKey);
         await hydrateSharedRoom(roomId);
       } catch (error) { notice(error.message || "Unable to select that role."); }
     });
@@ -1587,6 +1590,13 @@ const actions = {
   "request-refund": (_event, element) => openRefundRequest(element.dataset.purchaseId),
   "play-again": () => location.assign("/role-select?story=caesar"), "other-role": () => location.assign("/role-select?story=caesar"), "back-worlds": () => location.assign("/worlds"), "share-recap": () => { void openResultShare(); }, "open-tab": () => setRoomsTab("open"), "my-tab": () => setRoomsTab("my"), "clear-world-filter": () => location.assign("/rooms")
 };
+// Page hydration replaces the app descendants. Delegate actions once from the
+// stable root so freshly rendered room controls always remain interactive.
+root.addEventListener("click", (event) => {
+  const element = event.target instanceof Element ? event.target.closest("[data-action]") : null;
+  if (!(element instanceof HTMLElement) || !root.contains(element)) return;
+  actions[element.dataset.action]?.(event, element);
+});
 async function initializePlatform() {
   await migrateLegacySession();
   if (path === "/auth") renderAuth(); else if (path === "/account") renderAccount(); else if (path === "/admin/refunds") renderAdminRefunds(); else if (path === "/shared/result") renderSharedResult(); else if (path === "/join") renderJoin(); else if (path.startsWith("/worlds/")) await renderWorld(); else if (path === "/rooms") renderRooms(); else if (path.startsWith("/rooms/")) renderRoom(); else if (path === "/game/result") renderResult(); else location.assign("/");
