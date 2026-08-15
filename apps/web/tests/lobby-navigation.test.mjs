@@ -229,6 +229,22 @@ test("rooms disclose automatic refresh only when live polling is active", async 
   assert.equal(signedOut.document.querySelector(".rooms-auth-dialog [data-auth-form] button[type=submit]")?.textContent, "Log in");
   assert.equal(signedOut.fetchCalls.length, 0);
   assert.deepEqual(signedOut.intervals, []);
+  const authDialog = signedOut.document.querySelector(".rooms-auth-dialog");
+  const authEmail = authDialog.querySelector('input[name="email"]');
+  const forgotButton = authDialog.querySelector('[data-auth-recovery="forgot"]');
+  const resendButton = authDialog.querySelector('[data-auth-recovery="resend-verification"]');
+  assert.equal(forgotButton.textContent, "Forgot password?");
+  assert.equal(resendButton.textContent, "Resend verification email");
+  authEmail.value = "player@example.com";
+  resendButton.click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(signedOut.fetchCalls.some((url) => url.includes("/api/v4/auth/verification/resend")), true);
+  assert.match(authDialog.querySelector("[data-notice]").textContent, /new email has been sent/);
+  assert.equal(signedOut.document.querySelector(".rooms-page > [data-notice]")?.hidden, true);
+  forgotButton.click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(signedOut.fetchCalls.some((url) => url.includes("/api/v4/auth/password-reset/request")), true);
+  assert.match(authDialog.querySelector("[data-notice]").textContent, /password-reset email has been sent/);
   signedOut.window.close();
 
   const signedIn = await renderRoomsPage(true);

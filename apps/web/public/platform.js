@@ -376,7 +376,7 @@ async function completeSignedInEntry(returnTo) {
 let authSkipRestore = false;
 let authRestoreError = "";
 function authFormMarkup() {
-  return `<form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to ${BRAND_NAME}</h1><p class="auth-subtitle">${BRAND_TAGLINE}</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><div class="google-signin" data-google-signin hidden></div><p class="google-unavailable" data-google-unavailable hidden>Google sign-in is unavailable here. You can still use email.</p><div class="auth-divider google-divider"><span>or continue with email</span></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password" aria-pressed="false"></button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><span><button type="button" class="text-link" data-action="forgot">Forgot password?</button> <button type="button" class="text-link" data-action="resend-verification">Resend verification</button></span></div><button class="btn primary" type="submit">Log in</button><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form>`;
+  return `<form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to ${BRAND_NAME}</h1><p class="auth-subtitle">${BRAND_TAGLINE}</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><div class="google-signin" data-google-signin hidden></div><p class="google-unavailable" data-google-unavailable hidden>Google sign-in is unavailable here. You can still use email.</p><div class="auth-divider google-divider"><span>or continue with email</span></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password" aria-pressed="false"></button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><span class="auth-recovery-actions"><button type="button" class="text-link" data-auth-recovery="forgot">Forgot password?</button><button type="button" class="text-link" data-auth-recovery="resend-verification">Resend verification email</button></span></div><button class="btn primary" type="submit">Log in</button><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form>`;
 }
 function authNotice(container, message) {
   const target = container.querySelector("[data-notice]");
@@ -397,6 +397,28 @@ function bindAuthForm(container, returnTo) {
     form.querySelector("input[name=password]").autocomplete = next === "login" ? "current-password" : "new-password";
   };
   container.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.addEventListener("click", () => applyMode(tab.dataset.authTab)));
+  container.querySelectorAll("[data-auth-recovery]").forEach((button) => button.addEventListener("click", async () => {
+    const email = String(form.elements.email?.value || "").trim();
+    const action = button.dataset.authRecovery;
+    if (!email) {
+      authNotice(container, action === "forgot" ? "Enter your verified email address first." : "Enter the email address that needs verification first.");
+      return;
+    }
+    button.disabled = true;
+    try {
+      if (action === "forgot") {
+        await request("/api/v4/auth/password-reset/request", { method:"POST", body:JSON.stringify({ email }) });
+        authNotice(container, "If this verified account exists, a password-reset email has been sent.");
+      } else {
+        await request("/api/v4/auth/verification/resend", { method:"POST", body:JSON.stringify({ email, returnTo: safeReturnTo(returnTo) }) });
+        authNotice(container, "If this account still needs verification, a new email has been sent.");
+      }
+    } catch (error) {
+      authNotice(container, error.message || (action === "forgot" ? "Unable to request a password reset." : "Unable to resend the verification email."));
+    } finally {
+      button.disabled = false;
+    }
+  }));
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(form));
@@ -1518,8 +1540,6 @@ function maybeOpenWaitingEndedDialog(room) {
 
 const actions = {
   "toggle-password": (_event, element) => { const input = root.querySelector('input[name="password"]'); if (!input) return; const reveal = input.type === "password"; input.type = reveal ? "text" : "password"; element.setAttribute("aria-pressed", String(reveal)); element.setAttribute("aria-label", reveal ? "Hide password" : "Show password"); },
-  forgot: async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); if (!email) return notice("Enter your verified email address first."); try { await request("/api/v4/auth/password-reset/request", { method:"POST", body:JSON.stringify({ email }) }); notice("If this verified account exists, a password-reset email has been sent."); } catch (error) { notice(error.message || "Unable to request a password reset."); } },
-  "resend-verification": async () => { const email = root.querySelector('input[name="email"]')?.value?.trim(); if (!email) return notice("Enter the email address that needs verification first."); try { await request("/api/v4/auth/verification/resend", { method:"POST", body:JSON.stringify({ email, returnTo: safeReturnTo(params.get("returnTo")) }) }); notice("If this account still needs verification, a new email has been sent."); } catch (error) { notice(error.message || "Unable to resend the verification email."); } },
   "edit-profile": () => openProfileEditor(),
   "retry-purchases": () => { void hydratePurchases(); },
   "view-refund": (_event, element) => openPurchaseStatus(element.dataset.purchaseId),

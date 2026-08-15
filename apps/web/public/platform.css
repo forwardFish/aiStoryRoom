@@ -58,6 +58,9 @@ body:has(.room-top) .mw-nav a.active { border-bottom-color:transparent; color:va
 .auth-options { display:flex; justify-content:space-between; align-items:center; margin:25px 0; font-size:14px; }
 .auth-options label { display:flex; align-items:center; gap:10px; }
 .auth-options input { accent-color:var(--purple); width:19px; height:19px; }
+.auth-recovery-actions { display:flex; align-items:center; justify-content:flex-end; gap:12px; flex-wrap:wrap; }
+.auth-recovery-actions .text-link { white-space:nowrap; }
+.auth-recovery-actions .text-link + .text-link { padding-left:12px; border-left:1px solid #d7dbea; }
 .text-link { border:0; background:none; color:var(--purple); padding:0; font-weight:600; text-decoration:none; }
 .auth-card .btn { width:100%; min-height:51px; }.auth-card .btn.login-only { min-height:45px; }
 .auth-card .btn.primary { background:linear-gradient(90deg,#5b34c2 0%,#6036be 55%,#4d2abc 100%); }
