@@ -5,7 +5,6 @@ import {
 } from "@ai-story/shared";
 import { findGameDefinition } from "@ai-story/templates";
 import { gamePageProjection } from "../../game-page-projection";
-import { publicWorldRolePresentation } from "../../public-world-role-presentation";
 import type { PressureLobbyStatusV1, PressureStartStatusV1 } from "../production";
 import type { PressureRoomsEntryStoryRunLikeV1 } from "./contracts";
 
@@ -59,16 +58,8 @@ export function buildPressureRoomProjection(input: {
       return publicRole;
     }),
   };
+  const pageRoleByKey = new Map(pageWorld.roles.map((role) => [role.roleKey, role]));
   const roleDefinitions = new Map(world.roles.map((role) => [role.roleKey, role]));
-  const publicRolePresentations = new Map(world.roles.map((role) => [
-    role.roleKey,
-    publicWorldRolePresentation(world.worldId, role.roleKey, {
-      name: role.roleName,
-      identity: role.identity,
-      publicInfo: role.publicInfo,
-      portrait: role.portrait,
-    }),
-  ]));
   const roleRows = new Map(
     (((room.roles as Array<any> | undefined) ?? [])).map((role) => [role.roleKey, role]),
   );
@@ -89,7 +80,7 @@ export function buildPressureRoomProjection(input: {
   const memberPlayers = lobby.members.map((member) => {
     const seat = seatByUserId.get(member.userId) ?? null;
     const definition = seat ? roleDefinitions.get(seat.seatId) : null;
-    const presentation = seat ? publicRolePresentations.get(seat.seatId) : null;
+    const pageRole = seat ? pageRoleByKey.get(seat.seatId) : null;
     const roleRow = seat ? roleRows.get(seat.seatId) : null;
     return {
       // A room projection is a player-facing read model. Internal account IDs
@@ -105,8 +96,8 @@ export function buildPressureRoomProjection(input: {
       nickname: member.userId === room.ownerUserId ? "Host" : "Player",
       playerType: "human",
       roleId: roleRow?.id ?? seat?.seatId ?? null,
-      roleKey: definition?.roleKey ?? seat?.seatId ?? null,
-      roleName: presentation?.name ?? definition?.roleName ?? seat?.seatId ?? null,
+      roleKey: pageRole?.roleKey ?? definition?.roleKey ?? seat?.seatId ?? null,
+      roleName: pageRole?.roleName ?? definition?.roleName ?? seat?.seatId ?? null,
       ready: member.ready,
       joinedAt: room.createdAt ?? room.updatedAt,
       joinedUnseated: member.selectedSeatId === null,
@@ -154,30 +145,22 @@ export function buildPressureRoomProjection(input: {
     // A player is a real room member. An unclaimed seat may be AI-controlled
     // later, but that controller must not inflate the lobby participant count.
     players: memberPlayers,
-    roles: PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => {
-      const definition = roleDefinitions.get(seatId);
-      const presentation = publicRolePresentations.get(seatId);
+    roles: pageWorld.roles.map((pageRole) => {
+      const seatId = pageRole.roleKey;
       const roleRow = roleRows.get(seatId);
       const seat = lobby.seats.find((entry) => entry.seatId === seatId)!;
+      const privatePageRole = rawPageWorld.roles.find((entry) => entry.roleKey === seatId);
       return {
+        ...pageRole,
         id: roleRow?.id ?? seatId,
-        roleKey: definition?.roleKey ?? seatId,
-        roleName: presentation?.name ?? definition?.roleName ?? seatId,
-        identity: presentation?.identity ?? definition?.identity ?? "",
-        publicInfo: presentation?.publicInfo ?? definition?.publicInfo ?? "",
         personalGoal: seat.userId === viewerId
-          ? definition?.personalGoal ?? ""
+          ? privatePageRole?.personalGoal ?? ""
           : undefined,
-        currentState: definition?.currentState ?? "",
-        abilityText: definition?.abilityText ?? "",
-        arcText: definition?.arcText ?? "",
         knownInfo: seat.userId === viewerId
-          ? definition?.knownInfo ?? []
+          ? privatePageRole?.knownInfo ?? []
           : [],
-        cannotDo: definition?.cannotDo ?? [],
-        portrait: presentation?.portrait ?? definition?.portrait ?? "",
-        gameplayProfile: seat.userId === viewerId && definition
-          ? rawPageWorld.roles.find((item) => item.roleKey === definition.roleKey)?.gameplayProfile
+        gameplayProfile: seat.userId === viewerId
+          ? privatePageRole?.gameplayProfile
           : undefined,
         status: seat.userId ? "claimed" : "available",
         humanSelectable: true,

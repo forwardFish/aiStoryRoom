@@ -25,15 +25,6 @@ const SANGTIAN_PUBLIC_PORTRAITS = [
   "/assets/game/sangtian/generated/role-spy-scene-v1.png",
 ];
 
-const SANGTIAN_PUBLIC_BY_SEAT = new Map([
-  ["zhejiang_governor", ["浙江总督", SANGTIAN_PUBLIC_PORTRAITS[0]]],
-  ["zhejiang_administration", ["浙江巡抚", SANGTIAN_PUBLIC_PORTRAITS[1]]],
-  ["qingliu_law", ["清流县令", SANGTIAN_PUBLIC_PORTRAITS[2]]],
-  ["cabinet_finance", ["改桑书吏", SANGTIAN_PUBLIC_PORTRAITS[3]]],
-  ["jiangnan_merchant", ["江南商会会首", SANGTIAN_PUBLIC_PORTRAITS[4]]],
-  ["sili_weaving", ["司礼监织造使", SANGTIAN_PUBLIC_PORTRAITS[5]]],
-] as const);
-
 function lobby(): PressureLobbyStatusV1 {
   return {
     schemaVersion: "pressure_lobby_status_v1" as const,
@@ -212,14 +203,12 @@ test("Pressure room roles use the same public characters without changing canoni
     viewerId: "user-1",
   });
 
-  assert.deepEqual(projection.roles.map((role) => role.roleKey), PRESSURE_CHAPTER_SEAT_IDS_V1);
+  assert.deepEqual(projection.roles.map((role) => role.roleKey), projection.world.roles.map((role) => role.roleKey));
+  assert.deepEqual(projection.roles.map((role) => role.roleName), SANGTIAN_PUBLIC_NAMES);
+  assert.deepEqual(projection.roles.map((role) => role.portrait), SANGTIAN_PUBLIC_PORTRAITS);
   assert.deepEqual(
-    projection.roles.map((role) => role.roleName),
-    PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => SANGTIAN_PUBLIC_BY_SEAT.get(seatId)![0]),
-  );
-  assert.deepEqual(
-    projection.roles.map((role) => role.portrait),
-    PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => SANGTIAN_PUBLIC_BY_SEAT.get(seatId)![1]),
+    projection.roles.map(({ roleKey, roleName, identity, publicInfo, portrait }) => ({ roleKey, roleName, identity, publicInfo, portrait })),
+    projection.world.roles.map(({ roleKey, roleName, identity, publicInfo, portrait }) => ({ roleKey, roleName, identity, publicInfo, portrait })),
   );
   assert.deepEqual(projection.world.roles.map((role) => role.roleName), SANGTIAN_PUBLIC_NAMES);
   assert.deepEqual(projection.world.roles.map((role) => role.portrait), SANGTIAN_PUBLIC_PORTRAITS);
