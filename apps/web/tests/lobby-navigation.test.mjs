@@ -77,8 +77,8 @@ test("deployed platform authentication uses Vercel's same-origin API proxy", asy
 
 test("login, signup and password reset surfaces stay account-only", async () => {
   const source = await readFile(new URL("../public/platform.js", import.meta.url), "utf8");
-  const start = source.indexOf("function renderAuth()");
-  const end = source.indexOf("function renderAccount()", start);
+  const start = source.indexOf("function authFormMarkup()");
+  const end = source.indexOf("function openRoomsLoginDialog()", start);
   const authPage = source.slice(start, end);
 
   assert.match(authPage, /Welcome to \$\{BRAND_NAME\}/);
@@ -225,6 +225,8 @@ test("rooms disclose automatic refresh only when live polling is active", async 
   const signedOut = await renderRoomsPage(false);
   assert.equal(signedOut.document.querySelector("[data-room-refresh-note]")?.hidden, true);
   assert.match(signedOut.document.querySelector("[data-live-rooms]")?.textContent || "", /Log in to view live rooms/);
+  assert.equal(signedOut.document.querySelector(".rooms-auth-dialog")?.open, true);
+  assert.equal(signedOut.document.querySelector(".rooms-auth-dialog [data-auth-form] button[type=submit]")?.textContent, "Log in");
   assert.equal(signedOut.fetchCalls.length, 0);
   assert.deepEqual(signedOut.intervals, []);
   signedOut.window.close();
@@ -324,6 +326,8 @@ async function renderRoomsPage(signedIn, responseData = { rooms: [], myRooms: []
   const intervals = [];
   dom.window.setInterval = (_callback, milliseconds) => { intervals.push(milliseconds); return intervals.length; };
   dom.window.clearInterval = () => {};
+  dom.window.HTMLDialogElement.prototype.showModal = function showModal() { this.open = true; };
+  dom.window.HTMLDialogElement.prototype.close = function close() { this.open = false; this.dispatchEvent(new dom.window.Event("close")); };
   dom.window.fetch = async (url) => {
     fetchCalls.push(String(url));
     return new Response(JSON.stringify(responseData), { status: 200, headers: { "content-type": "application/json" } });

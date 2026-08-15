@@ -272,9 +272,9 @@ function renderResponsiveGoogleSignInButton(google, target) {
     googleSignInResizeObserver.observe(target);
   }
 }
-async function mountGoogleSignIn(returnTo) {
-  const target = root.querySelector("[data-google-signin]");
-  const unavailable = root.querySelector("[data-google-unavailable]");
+async function mountGoogleSignIn(returnTo, container = root) {
+  const target = container.querySelector("[data-google-signin]");
+  const unavailable = container.querySelector("[data-google-unavailable]");
   const clientId = googleWebClientId();
   if (!target || !clientId) {
     if (unavailable) unavailable.hidden = false;
@@ -297,7 +297,7 @@ async function mountGoogleSignIn(returnTo) {
           });
           await completeSignedInEntry(session.returnTo || returnTo);
         } catch (error) {
-          notice(error.code === "ACCOUNT_LINK_REQUIRED"
+          authNotice(container, error.code === "ACCOUNT_LINK_REQUIRED"
             ? "This email is already registered with Our Many Worlds. Log in with your password, then open My Account to link Google."
             : error.message || "Google sign-in could not be completed.");
         }
@@ -307,7 +307,7 @@ async function mountGoogleSignIn(returnTo) {
     renderResponsiveGoogleSignInButton(google, target);
   } catch (error) {
     if (unavailable) unavailable.hidden = false;
-    notice(error.message || "Google sign-in is temporarily unavailable. You can still use email.");
+    authNotice(container, error.message || "Google sign-in is temporarily unavailable. You can still use email.");
   }
 }
 
@@ -375,6 +375,51 @@ async function completeSignedInEntry(returnTo) {
 
 let authSkipRestore = false;
 let authRestoreError = "";
+function authFormMarkup() {
+  return `<form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to ${BRAND_NAME}</h1><p class="auth-subtitle">${BRAND_TAGLINE}</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><div class="google-signin" data-google-signin hidden></div><p class="google-unavailable" data-google-unavailable hidden>Google sign-in is unavailable here. You can still use email.</p><div class="auth-divider google-divider"><span>or continue with email</span></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password" aria-pressed="false"></button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><span><button type="button" class="text-link" data-action="forgot">Forgot password?</button> <button type="button" class="text-link" data-action="resend-verification">Resend verification</button></span></div><button class="btn primary" type="submit">Log in</button><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form>`;
+}
+function authNotice(container, message) {
+  const target = container.querySelector("[data-notice]");
+  if (!target) return;
+  target.textContent = message;
+  target.hidden = false;
+}
+function bindAuthForm(container, returnTo) {
+  let mode = "login";
+  const form = container.querySelector("[data-auth-form]");
+  if (!form) return;
+  const applyMode = (next) => {
+    mode = next;
+    container.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.classList.toggle("active", tab.dataset.authTab === next));
+    container.querySelectorAll(".signup-only").forEach((node) => { node.hidden = next !== "signup"; });
+    container.querySelectorAll(".login-only").forEach((node) => { node.hidden = next !== "login"; });
+    form.querySelector("button[type=submit]").textContent = next === "login" ? "Log in" : "Create account";
+    form.querySelector("input[name=password]").autocomplete = next === "login" ? "current-password" : "new-password";
+  };
+  container.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.addEventListener("click", () => applyMode(tab.dataset.authTab)));
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(form));
+    const email = String(data.email || "").trim();
+    const password = String(data.password || "");
+    if (!email || password.length < 8) return authNotice(container, "Enter a valid email and a password of at least 8 characters.");
+    try {
+      const endpoint = mode === "login" ? "/api/v4/auth/login" : "/api/v4/auth/register";
+      await request(endpoint, { method:"POST", body: JSON.stringify(mode === "signup" ? { email, password, nickname: data.nickname, returnTo } : { email, password }) });
+      if (mode === "signup") {
+        applyMode("login");
+        form.elements.email.value = email;
+        form.elements.password.value = "";
+        authNotice(container, "Account created. Check your email to verify it, then log in.");
+        return;
+      }
+      await completeSignedInEntry(returnTo);
+    } catch (error) {
+      authNotice(container, error.message || "Unable to authenticate. Please try again.");
+    }
+  });
+  void mountGoogleSignIn(returnTo, container);
+}
 function renderAuth() {
   const skipRestore = authSkipRestore;
   const restoreError = authRestoreError;
@@ -394,20 +439,28 @@ function renderAuth() {
     restoreBrowserSession(returnTo);
     return;
   }
-  appShell(`<section class="page-frame auth-frame"><form class="auth-card" data-auth-form novalidate><h1 class="auth-title">Welcome to ${BRAND_NAME}</h1><p class="auth-subtitle">${BRAND_TAGLINE}</p><div class="auth-tabs"><button type="button" class="active" data-auth-tab="login">Log in</button><button type="button" data-auth-tab="signup">Sign up</button></div><div data-notice class="notice" hidden></div><div class="google-signin" data-google-signin hidden></div><p class="google-unavailable" data-google-unavailable hidden>Google sign-in is unavailable here. You can still use email.</p><div class="auth-divider google-divider"><span>or continue with email</span></div><label class="field"><span>Email address</span><input required name="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label class="field"><span>Password</span><span class="password-field"><input required name="password" type="password" autocomplete="current-password" minlength="8" placeholder="Enter your password"><button type="button" class="password-reveal" data-action="toggle-password" aria-label="Show password" aria-pressed="false"></button></span></label><label class="field signup-only" hidden><span>Display name</span><input name="nickname" maxlength="80" autocomplete="nickname" placeholder="Enter your display name"></label><div class="auth-options login-only"><label><input type="checkbox" name="remember"> Remember me</label><span><button type="button" class="text-link" data-action="forgot">Forgot password?</button> <button type="button" class="text-link" data-action="resend-verification">Resend verification</button></span></div><button class="btn primary" type="submit">Log in</button><p class="auth-legal">By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p></form></section>`);
+  appShell(`<section class="page-frame auth-frame">${authFormMarkup()}</section>`);
   root.querySelector(".auth-title").textContent = `Welcome to ${BRAND_NAME}`;
   root.querySelector(".auth-subtitle").textContent = BRAND_TAGLINE;
-  if (restoreError) notice(restoreError);
-  let mode = "login";
-  const form = root.querySelector("[data-auth-form]");
-  const applyMode = (next) => { mode = next; root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.classList.toggle("active", tab.dataset.authTab === next)); root.querySelectorAll(".signup-only").forEach((node) => node.hidden = next !== "signup"); root.querySelectorAll(".login-only").forEach((node) => node.hidden = next !== "login"); form.querySelector("button[type=submit]").textContent = next === "login" ? "Log in" : "Create account"; form.querySelector("input[name=password]").autocomplete = next === "login" ? "current-password" : "new-password"; };
-  root.querySelectorAll("[data-auth-tab]").forEach((tab) => tab.addEventListener("click", () => applyMode(tab.dataset.authTab)));
-  form.addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(form)); const email = String(data.email || "").trim(); const password = String(data.password || ""); if (!email || password.length < 8) return notice("Enter a valid email and a password of at least 8 characters."); try { const endpoint = mode === "login" ? "/api/v4/auth/login" : "/api/v4/auth/register"; await request(endpoint, { method:"POST", body: JSON.stringify(mode === "signup" ? { email, password, nickname: data.nickname, returnTo } : { email, password }) }); if (mode === "signup") { applyMode("login"); form.elements.email.value = email; form.elements.password.value = ""; notice("Account created. Check your email to verify it, then log in."); return; } await completeSignedInEntry(returnTo); } catch (error) { notice(error.message || "Unable to authenticate. Please try again."); } });
+  if (restoreError) authNotice(root, restoreError);
+  bindAuthForm(root, returnTo);
   if (isVerificationLink) {
-    notice("Verifying your email…");
-    void request("/api/v4/auth/verify", { method: "POST", body: JSON.stringify({ token: legacyResetToken }) }).then(() => completeSignedInEntry(returnTo)).catch((error) => notice(error.message || "This verification link is invalid or expired."));
+    authNotice(root, "Verifying your email…");
+    void request("/api/v4/auth/verify", { method: "POST", body: JSON.stringify({ token: legacyResetToken }) }).then(() => completeSignedInEntry(returnTo)).catch((error) => authNotice(root, error.message || "This verification link is invalid or expired."));
   }
-  void mountGoogleSignIn(returnTo);
+}
+
+function openRoomsLoginDialog() {
+  if (sessionToken() || root.querySelector(".rooms-auth-dialog")) return;
+  const dialog = document.createElement("dialog");
+  dialog.className = "rooms-auth-dialog";
+  dialog.setAttribute("aria-label", "Log in to view rooms");
+  dialog.innerHTML = `<button class="dialog-close" type="button" aria-label="Close login">×</button>${authFormMarkup()}`;
+  root.append(dialog);
+  dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("close", () => dialog.remove(), { once:true });
+  bindAuthForm(dialog, path + location.search);
+  dialog.showModal();
 }
 
 function renderAccount() {
@@ -661,7 +714,8 @@ function renderRooms() {
   const worldFilter = String(params.get("worldId") || "");
   const signedIn = Boolean(sessionToken());
   appShell(`<section class="page-frame rooms-page"><div class="rooms-heading"><div><h1>Rooms</h1><p>Join an open room, create your own, or continue a room you already joined.</p></div><div class="action-row"><button class="btn rooms-join-code" data-action="join-code"><span aria-hidden="true">⌗</span>Join with Code</button><button class="btn primary rooms-create" data-action="create-room"><span aria-hidden="true">＋</span>Create Room</button></div></div><div class="tab-strip rooms-tabs" role="tablist" aria-label="Room lists"><button class="active" role="tab" aria-selected="true" data-action="open-tab">Open Rooms</button><button role="tab" aria-selected="false" data-action="my-tab">My Rooms</button></div><div data-notice class="notice" hidden></div><div class="rooms-layout"><div class="filters"><label class="select-box"><span aria-hidden="true">◎</span><select data-world-filter aria-label="Filter rooms by world"><option value="" selected>All Worlds</option><option value="sangtian">嘉靖财政危局</option><option value="caesar">Caesar: The Last Spring of the Republic</option></select><span class="select-chevron" aria-hidden="true">⌄</span></label>${roomFilterChip(worldFilter)}</div><section class="rooms-table-card" aria-live="polite"><div class="room-table head"><span>World</span><span>Room</span><span>Players</span><span>Status</span><span>Action</span></div><div data-live-rooms><p class="rooms-empty-state">Loading available rooms…</p></div></section><p class="refresh-note" data-room-refresh-note ${signedIn ? "" : "hidden"}><span aria-hidden="true">❧</span>Rooms refresh automatically.<span aria-hidden="true">❧</span></p></div></section>`, "rooms");
-  restoreRoomDialogDraft();
+  if (signedIn) restoreRoomDialogDraft();
+  else openRoomsLoginDialog();
 }
 function renderRoom() {
   appShell(sharedMultiplayerRoomMarkup({ world: null, roles: [], players: [] }, { loading: true }), "rooms");
