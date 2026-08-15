@@ -27,6 +27,7 @@ import {
 } from "../run-router";
 import { SangtianPressureGameContentMapperV1 } from "./content.adapters";
 import { failPressureChapterIntegration } from "./errors";
+import { SANGTIAN_INITIAL_PLAYER_METRICS_V1 } from "../initial-player-state/sangtian-initial-player-state";
 
 /**
  * Viewer-scoped chapter read composition. It joins only the frozen route,
@@ -188,19 +189,27 @@ implements PressureGameWorldReaderPort {
       routeHash: raw.routeHash,
       worldSequence: world.worldSequence,
       worldStateHash: world.stateHash,
-      metrics: this.loaded.content.genesis.tracks.map((track) => {
-        const value = world.tracks.values[track.trackId];
-        if (!Number.isFinite(value)) {
-          invalid(`gameWorld.tracks.${track.trackId}`, "FINITE_NUMBER");
-        }
-        return {
-          trackId: track.trackId,
-          label: track.name,
-          value,
-          displayValue: String(value),
+      metrics: world.worldSequence === 0
+        ? SANGTIAN_INITIAL_PLAYER_METRICS_V1.map((metric) => ({
+          trackId: metric.trackId,
+          label: metric.label,
+          value: metric.value,
+          displayValue: String(metric.value),
           tone: "DEFAULT" as const,
-        };
-      }),
+        }))
+        : this.loaded.content.genesis.tracks.map((track) => {
+          const value = world.tracks.values[track.trackId];
+          if (!Number.isFinite(value)) {
+            invalid(`gameWorld.tracks.${track.trackId}`, "FINITE_NUMBER");
+          }
+          return {
+            trackId: track.trackId,
+            label: track.name,
+            value,
+            displayValue: String(value),
+            tone: "DEFAULT" as const,
+          };
+        }),
     };
   }
 }

@@ -284,10 +284,10 @@ function pressureManeuverPanel(projection) {
 }
 
 function metricPresentation(metrics) {
-  return METRIC_PRESENTATION.map(([trackId, label]) => {
+  return METRIC_PRESENTATION.map(([trackId, fallbackLabel]) => {
     const source = metrics.find((metric) => metric.trackId === trackId);
     return {
-      label,
+      label: String(source?.label || fallbackLabel),
       value: source?.value ?? 0,
       suffix: trackId === "mulberry_silk" ? "%" : "",
       tone: String(source?.tone || "DEFAULT").toLowerCase(),

@@ -31,6 +31,7 @@ import {
   decodeSeatEnvelope,
   type PressureSeatSnapshotDelegateV1,
 } from "../seat-control-persistence/envelope";
+import { SANGTIAN_INITIAL_RESOURCES_BY_SEAT_V1 } from "../initial-player-state/sangtian-initial-player-state";
 
 /**
  * Read-through projection for the currently authorized seat. It reads one
@@ -107,7 +108,9 @@ export function compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1(in
   assertSeat(input.seatId);
   assertPublishedTokenPolicyV1();
   const content = loadSangtianPressureChapterPackageV1();
-  const resourceCatalog = compileResourceCatalogV1(content.content.genesis.resources);
+  const resourceCatalog = compileResourceCatalogV1(
+    SANGTIAN_INITIAL_RESOURCES_BY_SEAT_V1[input.seatId],
+  );
   const knowledge = input.world.knowledgeBySeat[input.seatId];
   const seat = content.content.genesis.seats.find(
     (candidate) => candidate.seatId === input.seatId,
@@ -132,14 +135,6 @@ export function compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1(in
       "PACKAGE_OR_SEAT",
     );
   }
-  const resourceKeys = Object.keys(input.world.resources).sort(compareCanonicalText);
-  if (sha256Canonical(resourceKeys) !== sha256Canonical(resourceCatalog.sortedResourceIds)) {
-    return failPressureProductAdapterV1(
-      ERROR.AUTHORITY_MISMATCH,
-      "SeatPrivateProjection.resources",
-      "UNPUBLISHED_RESOURCE_CATALOG",
-    );
-  }
   const payload = {
     schemaVersion: "pressure_game_viewer_private_payload_v1" as const,
     situation: {
@@ -147,20 +142,11 @@ export function compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1(in
       risk: content.content.genesis.pressure,
       judgment: [...knowledge.knownFactRefs].sort(compareCanonicalText).join("；"),
     },
-    resources: resourceCatalog.resources.map((resource) => {
-      const value = input.world.resources[resource.resourceId];
-      if (!Number.isFinite(value)) {
-        return failPressureProductAdapterV1(
-          ERROR.RECORD_INVALID,
-          `WorldState.resources.${resource.resourceId}`,
-        );
-      }
-      return {
-        resourceId: resource.resourceId,
-        value,
-        displayValue: `${value}${resource.displaySuffix}`,
-      };
-    }),
+    resources: resourceCatalog.resources.map((resource) => ({
+      resourceId: resource.resourceId,
+      value: resource.value,
+      displayValue: resource.displayValue,
+    })),
     tokens: [],
   };
   return {
@@ -178,9 +164,6 @@ export function compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1(in
 export class SangtianFrozenSeatPresentationCatalogV1
 implements PressureSeatViewerPresentationCatalogPortV1 {
   private readonly content = loadSangtianPressureChapterPackageV1();
-  private readonly resourceCatalog = compileResourceCatalogV1(
-    this.content.content.genesis.resources,
-  );
 
   constructor(private readonly prisma: PrismaService) {
     assertPublishedTokenPolicyV1();
@@ -229,9 +212,12 @@ implements PressureSeatViewerPresentationCatalogPortV1 {
         input.seatId,
       );
     }
+    const resourceCatalog = compileResourceCatalogV1(
+      SANGTIAN_INITIAL_RESOURCES_BY_SEAT_V1[input.seatId],
+    );
     return {
       roleNames: Object.freeze(roleNames),
-      resources: this.resourceCatalog.presentation,
+      resources: resourceCatalog.presentation,
       tokens: Object.freeze({}),
     };
   }
@@ -241,7 +227,8 @@ function compileResourceCatalogV1(
   resources: ReadonlyArray<Readonly<{
     resourceId: string;
     label: string;
-    displaySuffix: string;
+    value: number;
+    displayValue: string;
   }>>,
 ) {
   const presentation = Object.freeze(Object.fromEntries(
@@ -255,14 +242,14 @@ function compileResourceCatalogV1(
     resources: resources.map((resource) => ({
       resourceId: resource.resourceId,
       label: resource.label,
-      displaySuffix: resource.displaySuffix,
+      value: resource.value,
+      displayValue: resource.displayValue,
     })),
     tokenPolicy: "NONE" as const,
   });
   return Object.freeze({
     resources,
     presentation,
-    sortedResourceIds: Object.freeze(resources.map((resource) => resource.resourceId).sort(compareCanonicalText)),
     projectionVersion: `sangtian-genesis-seat-private-v1:${sha256Canonical(compiler)}`,
   });
 }

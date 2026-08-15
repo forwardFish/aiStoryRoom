@@ -39,9 +39,9 @@ function projection({ runId = "run-pressure-main-shell", optionCode = "SEAL_AND_
       },
     },
     metrics: [
-      ["fiscal_military", 42], ["civilian_land", 55], ["evidence_responsibility", 72],
-      ["mulberry_silk", 0], ["court_imperial_face", 43],
-    ].map(([trackId, value]) => ({ trackId, label: trackId, value, displayValue: String(value), tone: "DEFAULT" })),
+      ["fiscal_military", "国库余裕", 35], ["civilian_land", "民心", 55], ["evidence_responsibility", "粮价压力", 60],
+      ["mulberry_silk", "改桑进度", 8], ["court_imperial_face", "皇帝信任", 45],
+    ].map(([trackId, label, value]) => ({ trackId, label, value, displayValue: String(value), tone: "DEFAULT" })),
     situation: {
       goal: "稳定浙江局势", risk: "御史已关注改桑进度", judgment: "巡抚与县令都接触过账册",
     },
@@ -219,7 +219,8 @@ test("Pressure adapter preserves approved page data and server-sealed decision c
   assert.equal(view.player.roleName, "浙江总督");
   assert.equal(view.presentation.playerPortrait, "/assets/game/sangtian/generated/role-governor-scene-v1.png");
   assert.equal(view.decisionNarrative, N1_DECISION_NARRATIVE);
-  assert.deepEqual(view.dashboard.statusMetrics.map((item) => item.label), ["国库银两", "民心", "真相进展", "改桑进度", "皇帝信任"]);
+  assert.deepEqual(view.dashboard.statusMetrics.map((item) => item.label), ["国库余裕", "民心", "粮价压力", "改桑进度", "皇帝信任"]);
+  assert.deepEqual(view.dashboard.statusMetrics.map((item) => item.value), [35, 55, 60, 8, 45]);
   assert.deepEqual(view.activeDecision.options.map((item) => item.key), ["A", "B"]);
 
   let request;

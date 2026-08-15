@@ -414,18 +414,14 @@ test("content-bound seat projection is viewer-scoped and uses only frozen resour
   assert.equal(projection.seatId, seatId);
   assert.equal(projection.payloadHash, sha256Canonical(projection.payload));
   assert.deepEqual(payload.resources.map((resource) => resource.resourceId), [
-    "resource.silver",
-    "resource.grain",
-    "resource.soldiers",
-    "resource.advisers",
-    "resource.intelligence",
+    "troops_ready",
+    "military_grain",
+    "reserve_silver",
   ]);
   assert.deepEqual(payload.resources, [
-    { resourceId: "resource.silver", value: 42, displayValue: "42 万两" },
-    { resourceId: "resource.grain", value: 23, displayValue: "23 万石" },
-    { resourceId: "resource.soldiers", value: 4, displayValue: "4/5" },
-    { resourceId: "resource.advisers", value: 4, displayValue: "4 人" },
-    { resourceId: "resource.intelligence", value: 2, displayValue: "2 条" },
+    { resourceId: "troops_ready", value: 12000, displayValue: "12000 人" },
+    { resourceId: "military_grain", value: 18000, displayValue: "18000 石" },
+    { resourceId: "reserve_silver", value: 80000, displayValue: "80000 两" },
   ]);
   assert.deepEqual(payload.tokens, []);
   const serialized = JSON.stringify(payload);
@@ -441,9 +437,26 @@ test("content-bound seat projection is viewer-scoped and uses only frozen resour
 
   const catalog = await new SangtianFrozenSeatPresentationCatalogV1(prisma)
     .readCatalog({ runId: route.runId, seatId });
-  assert.equal(catalog?.resources["resource.grain"]?.label, "粮草");
-  assert.equal(catalog?.resources["resource.intelligence"]?.label, "密报");
+  assert.equal(catalog?.resources["military_grain"]?.label, "军粮储备");
+  assert.equal(catalog?.resources["reserve_silver"]?.label, "备用银");
   assert.deepEqual(catalog?.tokens, {});
+
+  const administratorProjection = compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1({
+    runId: route.runId,
+    seatId: "zhejiang_administration",
+    routeSnapshot: route.snapshot,
+    seatAuthority: seatSnapshot,
+    world,
+  });
+  const administratorPayload = administratorProjection.payload as {
+    resources: Array<{ resourceId: string; value: number; displayValue: string }>;
+  };
+  assert.deepEqual(administratorPayload.resources, [
+    { resourceId: "provincial_silver", value: 60000, displayValue: "60000 两" },
+    { resourceId: "official_grain", value: 30000, displayValue: "30000 石" },
+    { resourceId: "local_runners", value: 1200, displayValue: "1200 人" },
+  ]);
+  assert.notDeepEqual(administratorPayload.resources, payload.resources);
 });
 
 test("factory internalizes authority, narrative and frozen-stage adapters", async () => {
