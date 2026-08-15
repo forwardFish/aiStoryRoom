@@ -1512,7 +1512,7 @@ body:has(.rooms-page) .rooms-table-card .room-table {
 .rooms-table-card .room-table.head > span:first-child { padding-left: 16px; }
 
 .rooms-table-card .room-row {
-  min-height: 96px;
+  min-height: 108px;
   padding-block: 4px;
   border: 0;
   border-top: 1px solid rgba(105, 100, 161, .16);
@@ -1554,8 +1554,32 @@ body:has(.rooms-page) .rooms-table-card .room-table {
   transform: rotate(-18deg);
 }
 
-.rooms-table-card .room-name,
+.rooms-table-card .room-name {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.rooms-table-card .room-name > strong,
 .rooms-table-card .player-count {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rooms-table-card .room-name > strong { font-weight: 500; }
+
+.rooms-table-card .room-meta {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  color: #747d9b;
+  font-family: var(--mw-font-body);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.rooms-table-card .room-meta > * {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

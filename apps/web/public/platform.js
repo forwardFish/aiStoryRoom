@@ -729,7 +729,10 @@ function roomRow(room, index, view = "open") {
   const status = roomStatus(room, view);
   const action = roomAction(room, view);
   const playerCount = Array.isArray(room.players) ? room.players.length : 0;
-  return `<article class="room-table room-row"><div class="world-cell"><img class="thumb" src="${esc(roomWorldArtwork(room, index))}" alt=""><strong>${esc(roomWorldLabel(room.worldId))}</strong><span class="world-flourish" aria-hidden="true">❧</span></div><span class="room-name">${esc(roomDisplayTitle(room) || room.title || "Untitled room")}</span><span class="player-count">${playerCount} of ${esc(room.maxPlayers || "—")}</span><span><span class="badge ${status.tone}"><i aria-hidden="true"></i>${status.label}</span></span><span><button class="btn small room-action" ${action.attributes}>${action.label}</button></span></article>`;
+  const openRoomMetadata = view === "open"
+    ? `<span class="room-meta"><span class="room-creator">Creator ${esc(room.creatorLabel || "Player")}</span><time class="room-created" datetime="${esc(room.createdAt || "")}">Created ${esc(roomCreatedDisplay(room.createdAt))}</time></span>`
+    : "";
+  return `<article class="room-table room-row"><div class="world-cell"><img class="thumb" src="${esc(roomWorldArtwork(room, index))}" alt=""><strong>${esc(roomWorldLabel(room.worldId))}</strong><span class="world-flourish" aria-hidden="true">❧</span></div><span class="room-name"><strong>${esc(roomDisplayTitle(room) || room.title || "Untitled room")}</strong>${openRoomMetadata}</span><span class="player-count">${playerCount} of ${esc(room.maxPlayers || "—")}</span><span><span class="badge ${status.tone}"><i aria-hidden="true"></i>${status.label}</span></span><span><button class="btn small room-action" ${action.attributes}>${action.label}</button></span></article>`;
 }
 function renderRooms() {
   roomsView = { activeTab: "open", openRooms: [], myRooms: [] };
@@ -1192,6 +1195,12 @@ function roomDisplayTitle(room) {
     if (title.startsWith(prefix)) return title.slice(prefix.length).trim() || worldTitle;
   }
   return title;
+}
+
+function roomCreatedDisplay(value) {
+  const createdAt = new Date(String(value || ""));
+  if (Number.isNaN(createdAt.getTime())) return "Unknown";
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(createdAt);
 }
 
 function sharedMultiplayerRoomMarkup(room, { loading = false } = {}) {

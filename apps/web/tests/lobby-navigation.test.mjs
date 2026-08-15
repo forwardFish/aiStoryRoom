@@ -267,13 +267,17 @@ test("rooms disclose automatic refresh only when live polling is active", async 
 
 test("Open Rooms and My Rooms switch the shared table data and action", async () => {
   const rendered = await renderRoomsPage(true, {
-    rooms: [{ id: "open-1", code: "OPEN1", worldId: "caesar", title: "Night Council", status: "waiting_players", maxPlayers: 6, players: [{ id: "p1" }] }],
+    rooms: [{ id: "open-1", code: "OPEN1", worldId: "caesar", title: "Night Council", status: "waiting_players", maxPlayers: 6, players: [{ id: "p1" }], creatorLabel: "forwa****rd", createdAt: "2026-08-15T03:38:34.480Z" }],
     myRooms: [{ id: "mine-1", worldId: "caesar", title: "My Night Council", status: "waiting_players", maxPlayers: 6, players: [{ id: "p1" }, { id: "p2" }], nextAction: "open" }]
   });
 
   assert.equal(rendered.document.querySelector(".room-action")?.textContent, "Join");
+  assert.equal(rendered.document.querySelector(".room-creator")?.textContent, "Creator forwa****rd");
+  assert.equal(rendered.document.querySelector(".room-created")?.getAttribute("datetime"), "2026-08-15T03:38:34.480Z");
+  assert.match(rendered.document.querySelector(".room-created")?.textContent || "", /^Created /);
   rendered.document.querySelector('[data-action="my-tab"]')?.click();
   assert.equal(rendered.document.querySelector(".room-action")?.textContent, "Start");
+  assert.equal(rendered.document.querySelector(".room-meta"), null);
   assert.equal(rendered.document.querySelector('[data-action="my-tab"]')?.getAttribute("aria-selected"), "true");
   assert.equal(rendered.document.querySelectorAll(".rooms-table-card").length, 1);
   rendered.window.close();
