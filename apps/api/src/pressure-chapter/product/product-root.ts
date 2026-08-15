@@ -120,6 +120,10 @@ import {
 } from "../product-adapters";
 import type { PressureNarrativeProviderReadinessV1 } from "../production-config";
 import {
+  PressureOneCallStoryGeneratorV1,
+  type PressureOneCallStoryProviderPortV1,
+} from "../story-generation";
+import {
   createPrismaPressureProgressOutboxWorkerV1,
 } from "../progress-outbox/factory";
 import {
@@ -208,6 +212,7 @@ export interface PressureChapterProductRootV1 {
     clock: PressureChapterHttpClockPort;
   }>;
   gameProjection: PressureChapterGameProjectionService;
+  oneCallStoryGenerator: PressureOneCallStoryGeneratorV1;
   seatTransport: PressureSeatTransportFacadeV1;
   promises: PressurePromiseProductFacadeV1;
   aEmotion: ReturnType<typeof createPrismaAEmotionPersistenceV1>;
@@ -239,6 +244,7 @@ export async function createPressureChapterProductRootV1(input: {
   options?: Partial<PressureChapterProductOptionsV1>;
   narrativeProviderReadiness?: PressureNarrativeProviderReadinessV1;
   turnPresentationProvider?: PressureTurnPresentationProviderPortV1 | null;
+  oneCallStoryProvider?: PressureOneCallStoryProviderPortV1 | null;
 }): Promise<PressureChapterProductRootV1> {
   const options = normalizeOptions(input.options);
   const httpProduction = createPressureChapterHttpProductionAdaptersV1(
@@ -494,6 +500,9 @@ export async function createPressureChapterProductRootV1(input: {
     content,
     mapper: gameContentMapper,
   });
+  const oneCallStoryGenerator = new PressureOneCallStoryGeneratorV1(
+    input.oneCallStoryProvider ?? null,
+  );
   const gameProjection = new PressureChapterGameProjectionService(
     routes,
     gameChapterReader,
@@ -682,6 +691,7 @@ export async function createPressureChapterProductRootV1(input: {
     httpControllerMethods: new PressureChapterHttpControllerMethods(httpFacade),
     httpPorts,
     gameProjection,
+    oneCallStoryGenerator,
     seatTransport,
     promises,
     aEmotion,
