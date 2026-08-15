@@ -38,6 +38,7 @@ import {
 } from "./errors";
 import type { PressureTurnPresentationServiceV1 } from "./decision-presentation";
 import type { GameReadP0ResolvedSourcesV1 } from "./game-read-snapshot";
+import { projectPressureSharedGenesisOpeningV1 } from "./shared-genesis-opening";
 
 const NON_EMPTY = /\S/u;
 const CHAPTER_IDS = Object.freeze(["P0", "N1", "N2", "N3", "N4", "N5", "N6", "N7"] as const);
@@ -308,10 +309,12 @@ export class PressureChapterGameProjectionService {
       narrativeSource.chapterRuntimeId,
       "narrative.chapterRuntimeId",
     );
-    const narrative = sanitizeNarrative(
-      narrativeSource,
-      chapter.chapter.chapterId,
-      chapter.chapter.workingRevision,
+    const narrative = projectPressureSharedGenesisOpeningV1(
+      sanitizeNarrative(
+        narrativeSource,
+        chapter.chapter.chapterId,
+        chapter.chapter.workingRevision,
+      ),
     );
     const metrics = sanitizeMetrics(world.metrics);
     const resources = sanitizeResources(viewer.resources);

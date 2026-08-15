@@ -6,15 +6,14 @@ import {
   type OpenNovelNarrativeArtifactV1,
   type SeatIdV1,
 } from "@ai-story/shared";
-import { loadStoryPackage } from "@ai-story/templates";
 import type { PrismaService } from "../../prisma.service";
-import { loadFixedStoryOpening } from "../../solo-story-engine/fixed-opening";
 import type {
   PressureGameNarrativeReaderPort,
   PressureGameNarrativeSourceV1,
 } from "../game-projection/contracts";
 import { validateAtomicChapterCommitRecordV1 } from "../chapter-settlement";
 import { validateCommittedGenesis } from "../genesis";
+import { pressureSharedGenesisOpeningTextV1 } from "../game-projection/shared-genesis-opening";
 import {
   pressureSerializableTransaction,
   type PressureSerializableClient,
@@ -36,11 +35,6 @@ const NARRATIVE_STATUSES = Object.freeze([
 type NarrativeStatus = (typeof NARRATIVE_STATUSES)[number];
 type ProjectionKind = "GENESIS_NARRATIVE" | "BEAT_NARRATIVE" | "CHAPTER_NARRATIVE";
 type SourceAuthority = "GENESIS_FROZEN" | "CHAPTER_WORKING" | "CHAPTER_FROZEN";
-
-const SANGTIAN_FIXED_OPENING = loadFixedStoryOpening(
-  "sangtian",
-  loadStoryPackage("sangtian"),
-).opening;
 
 interface NarrativeRuntimeRowV1 {
   id: string;
@@ -265,9 +259,11 @@ implements PressureGameNarrativeReaderPort {
         );
       }
       const projection = decodeNarrativeProjection(rows[0]!, input, route.narrativeProfileVersion, source);
-      // A pending/retryable Genesis projection is an internal delivery state,
-      // not a reason to hide the authored opening and first chapter setup.
-      return projection.text === null && source.authoredFallbackText
+      // The durable Genesis projection remains validated and available to the
+      // asynchronous pipeline, but it is not the player-visible prologue
+      // authority. Every seat must enter N1 through the same approved authored
+      // prologue before the seat-specific decision scene is revealed.
+      return source.authoredFallbackText
         ? authoredGenesisFallback(input, source)
         : projection;
     });
@@ -387,7 +383,7 @@ function resolveCommittedGenesisNarrativeSource(
 }
 
 function firstPlayableNarrativeText(): string {
-  const text = SANGTIAN_FIXED_OPENING.prologueNarrative.trim();
+  const text = pressureSharedGenesisOpeningTextV1();
   if (!text) {
     return failLiveAdapter(ERROR.CONFIGURATION_REQUIRED, "FixedStoryOpening.prologueNarrative", "MISSING");
   }

@@ -311,7 +311,7 @@ test("RunRoute and committed StoryRun world adapters are stable read-only projec
   assert.equal(reads.every((name) => name.endsWith("findUnique")), true);
 });
 
-test("first N1 read selects the committed Genesis seat artifact without exposing peer or raw authority data", async () => {
+test("first N1 read validates the committed Genesis seat artifact but projects the approved shared prologue", async () => {
   const seatId = PRESSURE_CHAPTER_SEAT_IDS_V1[0];
   const genesisHash = digest("genesis-head");
   const sourceCommitHash = digest("genesis-commit");
@@ -324,9 +324,9 @@ test("first N1 read selects the committed Genesis seat artifact without exposing
     sourceCommitHash,
     sourceContentHash,
     projectorVersion,
-    text: "The committed opening visible only to this seat.",
-    status: "FALLBACK_PUBLISHED",
-    renderMode: "AUTHORED_FALLBACK",
+    text: "A short generated Genesis summary that must not replace the approved prologue.",
+    status: "PUBLISHED",
+    renderMode: "PROVIDER",
     seatId,
   });
   const calls: Array<{ method: string; query?: Record<string, any> }> = [];
@@ -382,7 +382,7 @@ test("first N1 read selects the committed Genesis seat artifact without exposing
           audienceKind: "SEAT",
           audienceSeatId: seatId,
           audienceKey: seatId,
-          status: "FALLBACK_PUBLISHED",
+          status: "PUBLISHED",
           artifactJson: structuredClone(published),
           artifactContentHash: published.contentHash,
         }];
@@ -406,7 +406,11 @@ test("first N1 read selects the committed Genesis seat artifact without exposing
   assert.equal(result?.sourceAuthority, "GENESIS_FROZEN");
   assert.equal(result?.sourceId, genesisHash);
   assert.equal(result?.sourceCommitHash, sourceCommitHash);
-  assert.equal(result?.text, "The committed opening visible only to this seat.");
+  assert.equal(result?.status, "FALLBACK_PUBLISHED");
+  assert.equal(result?.renderMode, "AUTHORED_FALLBACK");
+  assert.match(result?.text ?? "", /嘉靖三十五年，天下仍披着太平的外衣/u);
+  assert.match(result?.text ?? "", /一场谁也无法独善其身的危局，正无声逼近/u);
+  assert.doesNotMatch(result?.text ?? "", /short generated Genesis summary/iu);
   const projectionQuery = calls.find((call) => call.method === "pressureNarrativeProjection.findMany")?.query;
   assert.deepEqual(projectionQuery?.where, {
     runId: RUN_ID,
@@ -427,6 +431,90 @@ test("first N1 read selects the committed Genesis seat artifact without exposing
     JSON.stringify(result),
     /commitManifestJson|peer|rawAuthority|providerResponse/i,
   );
+});
+
+test("all six seats receive the same approved prologue even when their Genesis artifacts differ", async () => {
+  const genesisHash = digest("genesis-shared-prologue");
+  const sourceCommitHash = digest("genesis-shared-prologue-commit");
+  const reader = new PrismaPressureGameNarrativeReaderV1({
+    $transaction: async <T>(operation: (transaction: PressureNarrativeReadTransactionV1) => Promise<T>) => operation({
+      pressureChapterRuntime: {
+        findUnique: async () => ({
+          id: "chapter-runtime-N1",
+          runId: RUN_ID,
+          chapterId: "N1",
+          routeHash: ROUTE_HASH,
+          state: "CHAPTER_ACTIVE",
+          frozenBundle: null,
+          beatResolutions: [],
+        }),
+      },
+      pressureRunRouteSnapshot: {
+        findUnique: async () => ({
+          runId: RUN_ID,
+          routeHash: ROUTE_HASH,
+          narrativeProfileVersion: "narrative-v1",
+        }),
+      },
+      pressureGenesisCommit: {
+        findUnique: async () => ({
+          runId: RUN_ID,
+          genesisHash,
+          commitHash: sourceCommitHash,
+          snapshot: { runId: RUN_ID, routeHash: ROUTE_HASH, genesisHash },
+        }),
+      },
+      pressureNarrativeProjection: {
+        findMany: async (query) => {
+          const seatId = (query.where as { audienceSeatId: SeatIdV1 }).audienceSeatId;
+          const sourceContentHash = digest(`genesis-source-${seatId}`);
+          const published = publishedArtifactFixture({
+            jobId: `job-genesis-${seatId}`,
+            projectionKind: "GENESIS_NARRATIVE",
+            sourceId: genesisHash,
+            sourceCommitHash,
+            sourceContentHash,
+            projectorVersion: "projector-v1",
+            text: `Generated opening for ${seatId}.`,
+            status: "PUBLISHED",
+            renderMode: "PROVIDER",
+            seatId,
+          });
+          return [{
+            id: `projection-genesis-${seatId}`,
+            runId: RUN_ID,
+            projectionKind: "GENESIS_NARRATIVE",
+            sourceAuthority: "GENESIS_FROZEN",
+            sourceId: genesisHash,
+            sourceCommitHash,
+            sourceContentHash,
+            narrativeProfileVersion: "narrative-v1",
+            projectorVersion: "projector-v1",
+            audienceKind: "SEAT",
+            audienceSeatId: seatId,
+            audienceKey: seatId,
+            status: "PUBLISHED",
+            artifactJson: published,
+            artifactContentHash: published.contentHash,
+          }];
+        },
+      },
+    }),
+  });
+
+  const visibleTexts = await Promise.all(PRESSURE_CHAPTER_SEAT_IDS_V1.map(async (viewerSeatId) => (
+    (await reader.readCurrent({
+      runId: RUN_ID,
+      routeHash: ROUTE_HASH,
+      viewerSeatId,
+      chapterRuntimeId: "chapter-runtime-N1",
+    }))?.text ?? ""
+  )));
+
+  assert.equal(new Set(visibleTexts).size, 1);
+  assert.match(visibleTexts[0]!, /嘉靖三十五年，天下仍披着太平的外衣/u);
+  assert.match(visibleTexts[0]!, /一场谁也无法独善其身的危局，正无声逼近/u);
+  assert.doesNotMatch(visibleTexts.join("\n"), /Generated opening for/u);
 });
 
 test("Genesis narrative fallback is N1-only and fails closed on route or commit binding mismatches", async () => {

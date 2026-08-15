@@ -327,11 +327,20 @@ test("initial N1 may present committed Genesis narrative, while every later chap
   harness.narrativeSource.sourceAuthority = "GENESIS_FROZEN";
   harness.narrativeSource.sourceId = digest("n1-genesis-source");
   harness.narrativeSource.sourceCommitHash = digest("n1-genesis-commit");
+  harness.narrativeSource.status = "PUBLISHED";
+  harness.narrativeSource.text = "A short generated Genesis summary for this seat.";
+  harness.narrativeSource.contentHash = digest("n1-generated-genesis");
+  harness.narrativeSource.renderMode = "PROVIDER";
 
   const opening = await harness.service.read({ runId: harness.runId, subjectId: "user-viewer" });
   assert.equal(opening.chapter.chapterId, "N1");
   assert.equal(opening.narrative.projectionKind, "GENESIS_NARRATIVE");
   assert.equal(opening.narrative.sourceAuthority, "GENESIS_FROZEN");
+  assert.equal(opening.narrative.status, "FALLBACK_PUBLISHED");
+  assert.equal(opening.narrative.renderMode, "AUTHORED_FALLBACK");
+  assert.match(opening.narrative.text ?? "", /嘉靖三十五年，天下仍披着太平的外衣/u);
+  assert.match(opening.narrative.text ?? "", /一场谁也无法独善其身的危局，正无声逼近/u);
+  assert.doesNotMatch(opening.narrative.text ?? "", /short generated Genesis summary/iu);
 
   harness.chapterSource.chapter.workingRevision = 1;
   harness.chapterSource.decision!.expectedWorkingRevision = 1;
