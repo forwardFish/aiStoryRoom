@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { JSDOM } from "jsdom";
 
 test("password reset has a dedicated page and shares the login visual contract", async () => {
   const [html, platformHtml, sharedCss, resetSource, platformSource, vercel, server] = await Promise.all([
@@ -16,6 +17,9 @@ test("password reset has a dedicated page and shares the login visual contract",
   assert.match(html, /id="reset-password-app"/);
   assert.match(html, /data-reset-password-form/);
   assert.match(html, /Confirm new password/);
+  assert.equal((html.match(/data-password-toggle=/g) || []).length, 2);
+  assert.match(html, /aria-controls="new-password"/);
+  assert.match(html, /aria-controls="confirm-new-password"/);
   assert.doesNotMatch(html, /data-auth-form|data-google-signin|Create account|Remember me/);
   assert.match(html, /class="page-frame auth-frame reset-password-frame"/);
   assert.match(html, /class="auth-card reset-password-card"/);
@@ -33,6 +37,7 @@ test("password reset has a dedicated page and shares the login visual contract",
   assert.match(resetSource, /JSON\.stringify\(\{ token, password \}\)/);
   assert.match(resetSource, /The two passwords do not match/);
   assert.match(resetSource, /Your password has been updated/);
+  assert.match(resetSource, /input\.type = reveal \? "text" : "password"/);
   assert.match(html, /href="\/auth\?mode=login"/);
   assert.match(resetSource, /href="\/auth\?mode=login"/);
   assert.doesNotMatch(html, /reauth=1/);
@@ -45,4 +50,38 @@ test("password reset has a dedicated page and shares the login visual contract",
   assert.ok(legacyRedirect > renderAuthStart && legacyRedirect < firstAppShell, "legacy reset links must redirect before the login page renders");
   assert.match(vercel, /"source": "\/reset-password", "destination": "\/reset-password\.html"/);
   assert.match(server, /\["\/reset-password", "\/reset-password\.html"\]/);
+});
+
+test("each reset password visibility button controls only its own field", async () => {
+  const [html, resetSource] = await Promise.all([
+    readFile(new URL("../public/reset-password.html", import.meta.url), "utf8"),
+    readFile(new URL("../public/reset-password.js", import.meta.url), "utf8")
+  ]);
+  const dom = new JSDOM(html, {
+    url: "http://127.0.0.1:5177/reset-password?token=test-token",
+    runScripts: "outside-only"
+  });
+  dom.window.eval(resetSource);
+
+  const password = dom.window.document.querySelector('input[name="password"]');
+  const confirmation = dom.window.document.querySelector('input[name="confirmPassword"]');
+  const passwordToggle = dom.window.document.querySelector('[data-password-toggle="password"]');
+  const confirmationToggle = dom.window.document.querySelector('[data-password-toggle="confirmPassword"]');
+
+  passwordToggle.click();
+  assert.equal(password.type, "text");
+  assert.equal(confirmation.type, "password");
+  assert.equal(passwordToggle.getAttribute("aria-pressed"), "true");
+  assert.equal(passwordToggle.getAttribute("aria-label"), "Hide new password");
+
+  confirmationToggle.click();
+  assert.equal(password.type, "text");
+  assert.equal(confirmation.type, "text");
+  assert.equal(confirmationToggle.getAttribute("aria-pressed"), "true");
+  assert.equal(confirmationToggle.getAttribute("aria-label"), "Hide confirmed password");
+
+  passwordToggle.click();
+  assert.equal(password.type, "password");
+  assert.equal(confirmation.type, "text");
+  dom.window.close();
 });

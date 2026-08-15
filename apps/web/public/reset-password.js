@@ -25,6 +25,19 @@ if (!token) {
   showNotice("This password-reset link is invalid. Request a new link from the login page.");
 }
 
+form?.querySelectorAll("[data-password-toggle]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const input = form.elements.namedItem(button.dataset.passwordToggle || "");
+    if (!(input instanceof HTMLInputElement)) return;
+    const reveal = input.type === "password";
+    input.type = reveal ? "text" : "password";
+    button.setAttribute("aria-pressed", String(reveal));
+    button.setAttribute("aria-label", reveal
+      ? `Hide ${button.dataset.passwordToggle === "password" ? "new" : "confirmed"} password`
+      : `Show ${button.dataset.passwordToggle === "password" ? "new" : "confirmed"} password`);
+  });
+});
+
 form?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const values = Object.fromEntries(new FormData(form));
