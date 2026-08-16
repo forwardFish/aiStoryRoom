@@ -1,9 +1,40 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  logPressureDecisionBackendResponseV1,
   logPressureDecisionFailureV1,
   pressureDecisionErrorDiagnosticV1,
 } from "./decision-timing-log";
+
+test("backend response logger always prints one sanitized timing record", () => {
+  const original = console.error;
+  const calls: unknown[][] = [];
+  console.error = (...args: unknown[]) => { calls.push(args); };
+  try {
+    delete process.env.PRESSURE_DECISION_TIMING_LOG;
+    logPressureDecisionBackendResponseV1({
+      traceId: "trace-1",
+      runId: "run-1",
+      chapterId: "N1",
+      decisionPointId: "N1.d1",
+      status: "SUCCESS",
+      outcome: "WAITING_FOR_MORE",
+      stage: "RESPONSE_READY",
+      failureCode: null,
+      backendResponseReadyMs: 123.456,
+      timings: { commandCompileMs: 12, convergenceMs: 34 },
+    });
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]?.[0], "Pressure decision backend response");
+    const payload = JSON.parse(String(calls[0]?.[1]));
+    assert.equal(payload.status, "SUCCESS");
+    assert.equal(payload.backendResponseReadyMs, 123.456);
+    assert.deepEqual(payload.timings, { commandCompileMs: 12, convergenceMs: 34 });
+  } finally {
+    console.error = original;
+  }
+});
 
 test("failure diagnostics preserve stage-owning details and redact secrets", () => {
   const cause = Object.assign(new Error("database constraint failed\nsecond line"), {

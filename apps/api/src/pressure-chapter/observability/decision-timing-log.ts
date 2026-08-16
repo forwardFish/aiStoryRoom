@@ -19,6 +19,19 @@ export interface PressureDecisionFailureLogV1 {
   error: Readonly<object>;
 }
 
+export interface PressureDecisionBackendResponseLogV1 {
+  traceId: string;
+  runId: string;
+  chapterId: string;
+  decisionPointId: string;
+  status: "SUCCESS" | "FAILURE";
+  outcome: string;
+  stage: string;
+  failureCode: string | null;
+  backendResponseReadyMs: number;
+  timings: Readonly<object>;
+}
+
 /** Internal diagnostics only. It never changes authority or player responses. */
 export function logPressureDecisionTimingV1(
   input: Readonly<PressureDecisionTimingLogV1>,
@@ -36,6 +49,20 @@ export function logPressureDecisionFailureV1(
     ...input,
     error: pressureDecisionErrorDiagnosticV1(input.error),
   }));
+}
+
+/**
+ * One unconditional, sanitized completion record for every HTTP decision request.
+ * Logging must never change the player response.
+ */
+export function logPressureDecisionBackendResponseV1(
+  input: Readonly<PressureDecisionBackendResponseLogV1>,
+): void {
+  try {
+    console.error("Pressure decision backend response", JSON.stringify(input));
+  } catch {
+    // Observability is never allowed to break the decision request.
+  }
 }
 
 export function pressureDecisionErrorDiagnosticV1(error: unknown): Readonly<object> {

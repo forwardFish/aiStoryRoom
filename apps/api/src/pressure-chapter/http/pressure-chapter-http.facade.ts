@@ -15,8 +15,10 @@ import {
   type PressureGameReadRuntimeObserverPortV1,
 } from "../observability/game-read-runtime-observer";
 import {
+  logPressureDecisionBackendResponseV1,
   logPressureDecisionFailureV1,
   logPressureDecisionTimingV1,
+  pressureDecisionFailureCodeV1,
 } from "../observability/decision-timing-log";
 import { computePressureChatRequestFingerprint } from "../interaction/chat.service";
 import {
@@ -171,6 +173,10 @@ export class PressureChapterHttpFacade {
     return pressureHttpBoundary(async () => {
       const endToEndStartedAt = performance.now();
       let failureStage = "INPUT_VALIDATION";
+      let responseStatus: "SUCCESS" | "FAILURE" = "FAILURE";
+      let responseOutcome = "FAILED";
+      let responseStage = failureStage;
+      let responseFailureCode: string | null = null;
       const httpTimings: Record<string, number> = {
         sql7AttemptMs: 0,
         accessContextMs: 0,
@@ -209,6 +215,9 @@ export class PressureChapterHttpFacade {
            });
         httpTimings.sql7AttemptMs = elapsed(sql7StartedAt);
         if (sql7.status === "COMMITTED") {
+          responseStatus = "SUCCESS";
+          responseOutcome = "SQL7_COMMITTED";
+          responseStage = "RESPONSE_READY";
           httpTimings.totalMs = elapsed(endToEndStartedAt);
           logPressureDecisionTimingV1({
             path: "HTTP",
@@ -228,6 +237,9 @@ export class PressureChapterHttpFacade {
             runId: replayContext.access.runId,
             subjectId: replayContext.access.subjectId,
           });
+          responseStatus = "SUCCESS";
+          responseOutcome = "SQL7_REPLAYED";
+          responseStage = "RESPONSE_READY";
           return {
             schemaVersion: "pressure_chapter_submit_decision_http_response_v1",
             idempotencyKey: sql7.idempotencyKey,
@@ -356,6 +368,9 @@ export class PressureChapterHttpFacade {
         failureCode: null,
         timings: httpTimings,
       });
+      responseStatus = "SUCCESS";
+      responseOutcome = convergence?.outcome ?? "LEGACY_SUBMIT";
+      responseStage = "RESPONSE_READY";
       return {
         schemaVersion: "pressure_chapter_submit_decision_http_response_v1",
         idempotencyKey: command.idempotencyKey,
@@ -363,6 +378,8 @@ export class PressureChapterHttpFacade {
       };
       } catch (error) {
         httpTimings.totalMs = elapsed(endToEndStartedAt);
+        responseStage = failureStage;
+        responseFailureCode = pressureDecisionFailureCodeV1(error);
         logPressureDecisionFailureV1({
           path: "HTTP",
           traceId: requestLog.traceId,
@@ -374,6 +391,20 @@ export class PressureChapterHttpFacade {
           error,
         });
         throw error;
+      } finally {
+        httpTimings.totalMs = elapsed(endToEndStartedAt);
+        logPressureDecisionBackendResponseV1({
+          traceId: requestLog.traceId,
+          runId: requestLog.runId,
+          chapterId: requestLog.chapterId,
+          decisionPointId: requestLog.decisionPointId,
+          status: responseStatus,
+          outcome: responseOutcome,
+          stage: responseStage,
+          failureCode: responseFailureCode,
+          backendResponseReadyMs: httpTimings.totalMs,
+          timings: httpTimings,
+        });
       }
     });
   }
