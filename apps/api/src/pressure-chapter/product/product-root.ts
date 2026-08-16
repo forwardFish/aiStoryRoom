@@ -122,7 +122,6 @@ import {
 import {
   compileSangtianSeatPrivateProjectionFromCapturedAuthoritiesV1,
   createPressureChapterInternalProductionPortsV1,
-  SangtianFrozenSeatPresentationCatalogV1,
 } from "../product-adapters";
 import {
   resolvePressureGameReadConfigurationV1,
@@ -166,17 +165,6 @@ import {
   type PressureSeatControlPersistenceDependenciesV1,
 } from "../seat-control-persistence";
 import { WorkingLedgerService } from "../working-ledger/working-ledger.service";
-import {
-  createPrismaDecisionToNextProjectionSnapshotReaderV1,
-  planPressureSql7PreparedAutomationActionBatchV1,
-  PressureSql7CommandCompilerAdapterV1,
-  PressureSql7FirstSubmitServiceV1,
-  PressureSql7PreparedInputsAdapterV1,
-  PressureSql7ReceiptProjectionAdapterV1,
-  PressureSql7SettlementN2PlanBuilderV1,
-  PrismaPressureSql7CommitRepositoryV1,
-  type PressureSql7PrismaClientV1,
-} from "../sql7-fast-path";
 import {
   DefaultPressureWorkerSchedulerV1,
   PressureWorkerRuntimeServiceV1,
@@ -627,35 +615,6 @@ export async function createPressureChapterProductRootV1(input: {
     decisionAutomation.snapshots,
     decisionAutomation.policy.artifactSha256,
   );
-  const sql7PreparedInputs = new PressureSql7PreparedInputsAdapterV1(
-    settlementPolicy,
-    content,
-    workingSeeds,
-    gameContentMapper,
-    new SangtianFrozenSeatPresentationCatalogV1(input.prisma),
-  );
-  const sql7FirstSubmit = new PressureSql7FirstSubmitServiceV1(
-    createPrismaDecisionToNextProjectionSnapshotReaderV1(input.prisma),
-    new PressureSql7CommandCompilerAdapterV1(
-      decisionCompiler,
-      decisionAutomation.policy.artifactSha256,
-    ),
-    {
-      plan: (sql7Input) => planPressureSql7PreparedAutomationActionBatchV1(
-        sql7Input,
-        {
-          content,
-          policy: decisionAutomation.policy,
-          compiler: decisionAutomation.compiler,
-        },
-      ),
-    },
-    new PressureSql7SettlementN2PlanBuilderV1(sql7PreparedInputs),
-    new PrismaPressureSql7CommitRepositoryV1(
-      input.prisma as unknown as PressureSql7PrismaClientV1,
-    ),
-    new PressureSql7ReceiptProjectionAdapterV1(gameProjection),
-  );
   const narrativeLane: PressureWorkerLanePortV1 = Object.freeze({
     tick: (workerId: string) => narrative.consumeNext(workerId),
   });
@@ -731,7 +690,10 @@ export async function createPressureChapterProductRootV1(input: {
     httpPorts.replay,
     httpPorts.clock,
     decisionAutomation.service,
-    sql7FirstSubmit,
+    // Every Beat, including the first N1 decision, uses the same generic
+    // convergence authority. The historical first-N1 SQL7 service remains
+    // available for isolated performance work but is not a product writer.
+    undefined,
     gameRead.reader,
     gameReadConfiguration.mode,
     gameReadRuntimeObserver,
