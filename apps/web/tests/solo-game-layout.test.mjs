@@ -26,3 +26,14 @@ test("solo game resource panels keep their natural height instead of shrinking",
     /\.causal-shell:has\(\.v2-current-situation-summary\) \.causal-left > \.causal-panel \{\s*flex: 0 0 auto;/,
   );
 });
+
+test("Pressure decision cards stay centered and long generated copy cannot widen the page", () => {
+  assert.match(
+    styles,
+    /\.causal-shell\[data-pressure-chapter="true"\] \.causal-center\.decision-center \.decision-composer \{[^}]*box-sizing: border-box;[^}]*max-width: 680px;[^}]*min-width: 0;[^}]*justify-self: center;/,
+  );
+  assert.match(
+    styles,
+    /\.causal-shell\[data-pressure-chapter="true"\] \.decision-composer \.decision-zone-head h2,[^}]*\.option-copy \{[^}]*min-width: 0;[^}]*white-space: normal;[^}]*overflow-wrap: anywhere;/,
+  );
+});

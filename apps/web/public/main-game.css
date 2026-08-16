@@ -463,6 +463,25 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
   white-space: nowrap;
 }
 
+/* Pressure decisions can contain generated Chinese copy. Keep that copy inside
+   the approved center column so a long question cannot create horizontal page
+   scrolling and make the entire decision card appear right-shifted. */
+.causal-shell[data-pressure-chapter="true"] .causal-center.decision-center .decision-composer {
+  box-sizing: border-box;
+  width: min(680px, calc(100% - 48px));
+  max-width: 680px;
+  min-width: 0;
+  justify-self: center;
+  margin-inline: auto;
+}
+.causal-shell[data-pressure-chapter="true"] .decision-composer .decision-zone-head h2,
+.causal-shell[data-pressure-chapter="true"] .decision-composer .option-copy {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* Shared room connection failure: full-screen recovery state. */
 .shared-room-error {
   --shared-error-ink: #0b174a;
