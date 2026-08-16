@@ -98,6 +98,9 @@ test("current N2 projection is blocked by the latest unconfirmed N1 summary and 
   assert.equal(first?.confirmationState, "AWAITING_CONFIRMATION");
   assert.equal(state.providerCalls(), 1);
   assert.equal(state.storyEvent.records.size, 1);
+  const persisted = [...state.storyEvent.records.values()][0];
+  assert.equal(persisted.audienceType, "PRIVATE");
+  assert.deepEqual(persisted.audienceRoleIdsJson, ["zhejiang_governor"]);
 });
 
 test("confirmation is viewer-scoped, idempotent and reveals the already authoritative next chapter", async () => {

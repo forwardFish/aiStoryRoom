@@ -409,7 +409,7 @@ function eventData(identity: PressureChapterSummaryIdentityV2, dedupeKey: string
     payloadJson,
     sequence: null,
     dedupeKey,
-    audienceType: "SEAT_PRIVATE",
+    audienceType: "PRIVATE",
     audienceRoleIdsJson: [identity.viewerSeatId],
     sourceActionId: null,
   };
