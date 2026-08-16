@@ -408,6 +408,18 @@ test("committed authority projection skips the full post-submit game read", asyn
   assert.match(harness.calls.join(","), /game-read-committed/u);
 });
 
+test("GET Narrative update authorizes once and skips full game and route dispatch reads", async () => {
+  const harness = createHarness();
+  const value = await harness.facade.getNarrativeUpdate(
+    harness.principal,
+    ROOM_ID,
+    "chapter-runtime-2",
+  );
+  assert.equal(value.schemaVersion, "pressure_game_narrative_update_v1");
+  assert.deepEqual(harness.calls, ["access", "narrative-update-read"]);
+  assert.equal(harness.gameReads, 0);
+});
+
 test("FAST post-submit projection uses the configured aggregate reader", async () => {
   const harness = createHarness({
     convergence: true,
@@ -844,6 +856,17 @@ function createHarness(options: {
         runId: RUN_ID,
         roomId: ROOM_ID,
       } as unknown as PressureChapterGameProjectionV1;
+    },
+    async readNarrativeUpdate(input) {
+      calls.push("narrative-update-read");
+      return {
+        schemaVersion: "pressure_game_narrative_update_v1",
+        runId: input.runId,
+        routeHash: stored.snapshot.routeHash,
+        chapterRuntimeId: input.chapterRuntimeId,
+        viewerSeatId: SEAT_ID,
+        narrative: null,
+      };
     },
   };
   const selectedGameRead = options.dedicatedGameRead ? {

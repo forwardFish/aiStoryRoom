@@ -137,6 +137,21 @@ export interface PressureGameNarrativeProjectionV1 {
   renderMode: "PROVIDER" | "AUTHORED_FALLBACK" | null;
 }
 
+export interface PressureGameNarrativeUpdateV1 {
+  schemaVersion: "pressure_game_narrative_update_v1";
+  runId: string;
+  routeHash: string;
+  chapterRuntimeId: string;
+  viewerSeatId: SeatIdV1;
+  narrative: PressureGameNarrativeProjectionV1 | null;
+}
+
+export interface ReadPressureGameNarrativeUpdateQueryV1 {
+  runId: string;
+  subjectId: string;
+  chapterRuntimeId: string;
+}
+
 
 export interface PressureGameChapterSummaryProjectionV1 {
   sourceChapterRuntimeId: string;

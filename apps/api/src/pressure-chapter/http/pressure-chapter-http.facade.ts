@@ -121,6 +121,30 @@ export class PressureChapterHttpFacade {
     ));
   }
 
+  getNarrativeUpdate(
+    principalValue: PressureChapterHttpPrincipalV1,
+    roomIdValue: string,
+    chapterRuntimeIdValue: string,
+  ) {
+    return pressureHttpBoundary(async () => {
+      const principal = parsePrincipal(principalValue);
+      const roomId = requiredString(roomIdValue, "roomId");
+      const chapterRuntimeId = requiredString(
+        chapterRuntimeIdValue,
+        "chapterRuntimeId",
+      );
+      const access = await this.resolveAccess(principal, roomId);
+      if (!this.game.readNarrativeUpdate) {
+        failPressureChapterHttp(ERROR.DEPENDENCY_FAILURE, "game.readNarrativeUpdate");
+      }
+      return this.game.readNarrativeUpdate({
+        runId: access.runId,
+        subjectId: access.subjectId,
+        chapterRuntimeId,
+      });
+    });
+  }
+
   getResult(
     principalValue: PressureChapterHttpPrincipalV1,
     roomIdValue: string,

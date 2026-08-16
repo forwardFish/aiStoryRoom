@@ -7,6 +7,7 @@ import type {
 } from "@ai-story/shared";
 import type {
   PressureChapterGameProjectionV1,
+  PressureGameNarrativeUpdateV1,
   ReadPressureChapterGameProjectionFromAuthorityV1,
 } from "../game-projection";
 import type {
@@ -79,6 +80,11 @@ export interface PressureChapterHttpGamePort {
   readFromCommittedAuthority?(
     input: ReadPressureChapterGameProjectionFromAuthorityV1,
   ): Promise<PressureChapterGameProjectionV1>;
+  readNarrativeUpdate?(input: {
+    runId: string;
+    subjectId: string;
+    chapterRuntimeId: string;
+  }): Promise<PressureGameNarrativeUpdateV1>;
 }
 
 /** Command surface implemented by PressureChapterRuntimeFacade. */

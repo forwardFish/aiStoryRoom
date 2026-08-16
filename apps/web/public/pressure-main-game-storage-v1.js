@@ -1,6 +1,7 @@
 const PRESSURE_SCHEMA = "pressure_chapter_game_projection_v1";
 const PRESSURE_COMMAND_SCHEMA = "pressure_chapter_game_command_v1";
 const PRESSURE_SUBMIT_RESPONSE_SCHEMA = "pressure_chapter_submit_decision_http_response_v1";
+const PRESSURE_NARRATIVE_UPDATE_SCHEMA = "pressure_game_narrative_update_v1";
 
 const METRIC_PRESENTATION = [
   ["fiscal_military", "国库银两"],
@@ -25,6 +26,9 @@ export class PressureMainGameStorageV1 {
     initialProjection,
     fetchImpl = globalThis.fetch?.bind(globalThis),
     createIdempotencyKey,
+    narrativePollIntervalMs = 300,
+    narrativePollAttempts = 20,
+    waitImpl = defaultWait,
   } = {}) {
     if (!runId) throw new TypeError("PressureMainGameStorageV1 requires runId");
     if (typeof fetchImpl !== "function") throw new TypeError("PressureMainGameStorageV1 requires fetch");
@@ -33,6 +37,9 @@ export class PressureMainGameStorageV1 {
     this.projection = assertProjection(initialProjection, runId);
     this.fetchImpl = fetchImpl;
     this.createIdempotencyKey = createIdempotencyKey || defaultIdempotencyKey;
+    this.narrativePollIntervalMs = narrativePollIntervalMs;
+    this.narrativePollAttempts = narrativePollAttempts;
+    this.waitImpl = waitImpl;
   }
 
   async restoreOrCreate() {
@@ -97,7 +104,29 @@ export class PressureMainGameStorageV1 {
       throw new Error("决定响应与本次提交不一致。");
     }
     this.projection = assertProjection(payload.projection, this.runId);
+    if (needsNarrativeUpdate(this.projection)) {
+      this.projection = await this.waitForNarrativeUpdate(this.projection);
+    }
     return this.toView(this.projection);
+  }
+
+  async waitForNarrativeUpdate(projection) {
+    for (let attempt = 0; attempt < this.narrativePollAttempts; attempt += 1) {
+      if (attempt > 0) await this.waitImpl(this.narrativePollIntervalMs);
+      const chapterRuntimeId = projection.chapter.chapterRuntimeId;
+      const response = await this.fetchImpl(
+        `/api/v4/rooms/${encodeURIComponent(this.runId)}/game/narrative-update?chapterRuntimeId=${encodeURIComponent(chapterRuntimeId)}`,
+        { credentials: "include", headers: { accept: "application/json" } },
+      );
+      const update = await response.json().catch(() => null);
+      if (!response.ok) throw httpError(response, update, "下一段剧情暂时无法读取。");
+      assertNarrativeUpdate(update, projection);
+      if (update.narrative) {
+        projection = { ...projection, narrative: update.narrative };
+      }
+      if (!needsNarrativeUpdate(projection)) return projection;
+    }
+    return projection;
   }
 
   async confirmChapterSummary(_view) {
@@ -257,7 +286,9 @@ function decisionNarrativeText(projection) {
   if (projection.narrative?.projectionKind === "GENESIS_NARRATIVE") return summary;
   const published = projection.narrative?.status === "PUBLISHED"
     || projection.narrative?.status === "FALLBACK_PUBLISHED";
-  return published && [...summary].length >= 30 ? summary : "";
+  const narrative = String(projection.narrative?.text || "").trim();
+  if (!published) return "";
+  return [...narrative].length >= 30 ? narrative : [...summary].length >= 30 ? summary : "";
 }
 
 function pressureManeuverPanel(projection) {
@@ -304,6 +335,30 @@ function assertProjection(value, expectedRunId) {
   if (value.schemaVersion !== PRESSURE_SCHEMA) throw new Error("故事投影版本不受支持。");
   if (expectedRunId && value.runId !== expectedRunId) throw new Error("故事投影属于另一局游戏。");
   return value;
+}
+
+function needsNarrativeUpdate(projection) {
+  if (!projection?.decision) return false;
+  const status = projection.narrative?.status;
+  return status !== "PUBLISHED" && status !== "FALLBACK_PUBLISHED";
+}
+
+function assertNarrativeUpdate(value, projection) {
+  if (
+    !value
+    || value.schemaVersion !== PRESSURE_NARRATIVE_UPDATE_SCHEMA
+    || value.runId !== projection.runId
+    || value.routeHash !== projection.route.routeHash
+    || value.chapterRuntimeId !== projection.chapter.chapterRuntimeId
+    || value.viewerSeatId !== projection.viewer.seatId
+  ) {
+    throw new Error("剧情更新与当前游戏不一致。");
+  }
+  return value;
+}
+
+function defaultWait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function httpError(response, payload, fallback) {

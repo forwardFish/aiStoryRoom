@@ -38,6 +38,19 @@ export class PressureChapterHttpControllerMethods {
     });
   }
 
+  /** GET /v4/rooms/:roomId/game/narrative-update */
+  narrativeUpdate(
+    user: Pick<AuthenticatedUser, "id">,
+    roomId: string,
+    chapterRuntimeId: string,
+  ) {
+    return this.pressure.getNarrativeUpdate(
+      toPrincipal(user),
+      roomId,
+      chapterRuntimeId,
+    );
+  }
+
   /** GET /v4/rooms/:roomId/result */
   result(user: Pick<AuthenticatedUser, "id">, roomId: string) {
     return this.pressure.getResult(toPrincipal(user), roomId);

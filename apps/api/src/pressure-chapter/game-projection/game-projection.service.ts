@@ -24,6 +24,7 @@ import {
   type PressureGameDecisionProjectionV1,
   type PressureGameMetricProjectionV1,
   type PressureGameNarrativeProjectionV1,
+  type PressureGameNarrativeUpdateV1,
   type PressureGameNarrativeReaderPort,
   type PressureGameResourceProjectionV1,
   type PressureGameRouteReaderPort,
@@ -33,6 +34,7 @@ import {
   type ProjectPressureChapterGameProjectionFromSourcesV1,
   type ReadPressureChapterGameProjectionFromAuthorityV1,
   type ReadPressureChapterGameProjectionQueryV1,
+  type ReadPressureGameNarrativeUpdateQueryV1,
 } from "./contracts";
 import {
   PRESSURE_GAME_PROJECTION_ERROR_CODES as ERROR,
@@ -83,6 +85,52 @@ export class PressureChapterGameProjectionService {
     }
     same(query.runId, stored.runId, "route.runId");
     return this.readResolved(query, stored.snapshot, null);
+  }
+
+  async readNarrativeUpdate(
+    query: ReadPressureGameNarrativeUpdateQueryV1,
+  ): Promise<PressureGameNarrativeUpdateV1> {
+    string(query.runId, "query.runId");
+    string(query.subjectId, "query.subjectId");
+    string(query.chapterRuntimeId, "query.chapterRuntimeId");
+    let stored;
+    try {
+      stored = assertStoredRunRouteRecord(
+        await this.routes.readStoredRoute(query.runId),
+      );
+    } catch {
+      failPressureGameProjection(ERROR.ROUTE_NOT_FOUND, query.runId);
+    }
+    same(query.runId, stored.runId, "route.runId");
+    const viewer = await this.viewers.readViewer({
+      runId: query.runId,
+      subjectId: query.subjectId,
+    });
+    if (!viewer) failPressureGameProjection(ERROR.VIEWER_NOT_FOUND, query.subjectId);
+    same(query.runId, viewer.runId, "viewer.runId");
+    same(query.subjectId, viewer.subjectId, "viewer.subjectId");
+    same(stored.snapshot.routeHash, viewer.routeHash, "viewer.routeHash");
+    validateViewer(viewer.viewer);
+    const source = await this.narratives.readCurrent({
+      runId: query.runId,
+      routeHash: stored.snapshot.routeHash,
+      viewerSeatId: viewer.viewer.seatId,
+      chapterRuntimeId: query.chapterRuntimeId,
+    });
+    if (source) {
+      same(query.runId, source.runId, "narrative.runId");
+      same(stored.snapshot.routeHash, source.routeHash, "narrative.routeHash");
+      same(viewer.viewer.seatId, source.viewerSeatId, "narrative.viewerSeatId");
+      same(query.chapterRuntimeId, source.chapterRuntimeId, "narrative.chapterRuntimeId");
+    }
+    return {
+      schemaVersion: "pressure_game_narrative_update_v1",
+      runId: query.runId,
+      routeHash: stored.snapshot.routeHash,
+      chapterRuntimeId: query.chapterRuntimeId,
+      viewerSeatId: viewer.viewer.seatId,
+      narrative: source ? sanitizeNarrativeUpdate(source) : null,
+    };
   }
 
   async readFromCommittedAuthority(
@@ -737,6 +785,61 @@ function sanitizeNarrative(
     || (!genesisNarrativeIsCurrentOpening && !nonGenesisNarrativeIsCurrentChapter)
   ) {
     failPressureGameProjection(ERROR.SCOPE_MISMATCH, "narrative.projectionKind", "AUTHORITY_OR_CHAPTER");
+  }
+  string(source.sourceId, "narrative.sourceId");
+  if (!isSha256(source.sourceCommitHash)) {
+    failPressureGameProjection(ERROR.INVALID_SOURCE, "narrative.sourceCommitHash", "SHA256");
+  }
+  const published = status === "PUBLISHED" || status === "FALLBACK_PUBLISHED";
+  if (published) {
+    string(source.text, "narrative.text");
+    if (!isSha256(source.contentHash)) {
+      failPressureGameProjection(ERROR.INVALID_SOURCE, "narrative.contentHash", "SHA256");
+    }
+    const expectedMode = status === "PUBLISHED" ? "PROVIDER" : "AUTHORED_FALLBACK";
+    if (source.renderMode !== expectedMode) {
+      failPressureGameProjection(ERROR.INVALID_SOURCE, "narrative.renderMode", "STATUS_MISMATCH");
+    }
+  } else if (source.text !== null || source.contentHash !== null || source.renderMode !== null) {
+    failPressureGameProjection(ERROR.VIEWER_DATA_UNSAFE, "narrative", "UNPUBLISHED_CONTENT_PRESENT");
+  }
+  return {
+    status,
+    projectionKind,
+    sourceAuthority,
+    sourceId: source.sourceId,
+    sourceCommitHash: source.sourceCommitHash,
+    text: source.text,
+    contentHash: source.contentHash,
+    renderMode: source.renderMode,
+  };
+}
+
+function sanitizeNarrativeUpdate(
+  source: PressureGameNarrativeProjectionV1,
+): PressureGameNarrativeProjectionV1 {
+  const status = enumeration(
+    source.status,
+    ["PENDING", "GENERATING", "VALIDATING", "PUBLISHED", "FALLBACK_PUBLISHED", "FAILED_RETRYABLE"] as const,
+    "narrative.status",
+  );
+  const projectionKind = enumeration(
+    source.projectionKind,
+    ["GENESIS_NARRATIVE", "BEAT_NARRATIVE", "CHAPTER_NARRATIVE"] as const,
+    "narrative.projectionKind",
+  );
+  const sourceAuthority = enumeration(
+    source.sourceAuthority,
+    ["GENESIS_FROZEN", "CHAPTER_WORKING", "CHAPTER_FROZEN"] as const,
+    "narrative.sourceAuthority",
+  );
+  const expectedAuthority = projectionKind === "GENESIS_NARRATIVE"
+    ? "GENESIS_FROZEN"
+    : projectionKind === "BEAT_NARRATIVE"
+      ? "CHAPTER_WORKING"
+      : "CHAPTER_FROZEN";
+  if (sourceAuthority !== expectedAuthority) {
+    failPressureGameProjection(ERROR.SCOPE_MISMATCH, "narrative.sourceAuthority");
   }
   string(source.sourceId, "narrative.sourceId");
   if (!isSha256(source.sourceCommitHash)) {

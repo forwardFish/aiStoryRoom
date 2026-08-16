@@ -38,6 +38,39 @@ const digest = (label: string): string => sha256Canonical({ label });
 const VIEWER_SEAT = PRESSURE_CHAPTER_SEAT_IDS_V1[0];
 const SECOND_VIEWER_SEAT = PRESSURE_CHAPTER_SEAT_IDS_V1[1];
 
+test("lightweight Narrative update returns only the current seat-bound Narrative", async () => {
+  const harness = await createHarness({
+    runId: "game-projection-narrative-update",
+    metricSeed: 31,
+    goal: "Read the current narrative without rebuilding the game page.",
+    resourceValue: 9,
+    tokenLabel: "Narrative update token",
+  });
+
+  const update = await harness.service.readNarrativeUpdate({
+    runId: harness.runId,
+    subjectId: harness.viewerSource.subjectId,
+    chapterRuntimeId: harness.chapterSource.chapter.chapterRuntimeId,
+  });
+
+  assert.equal(update.schemaVersion, "pressure_game_narrative_update_v1");
+  assert.equal(update.runId, harness.runId);
+  assert.equal(update.routeHash, harness.route.snapshot.routeHash);
+  assert.equal(update.viewerSeatId, VIEWER_SEAT);
+  assert.deepEqual(update.narrative, {
+    status: harness.narrativeSource.status,
+    projectionKind: harness.narrativeSource.projectionKind,
+    sourceAuthority: harness.narrativeSource.sourceAuthority,
+    sourceId: harness.narrativeSource.sourceId,
+    sourceCommitHash: harness.narrativeSource.sourceCommitHash,
+    text: harness.narrativeSource.text,
+    contentHash: harness.narrativeSource.contentHash,
+    renderMode: harness.narrativeSource.renderMode,
+  });
+  assert.equal(harness.chapterReadScopes.length, 0);
+  assert.equal(harness.readCounts.capabilities, 0);
+});
+
 test("chapter decisions are read with the trusted viewer seat and isolate REQUIRED from NOT_REQUIRED", async () => {
   const harness = await createHarness({
     runId: "game-projection-two-viewers",

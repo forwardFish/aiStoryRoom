@@ -26,6 +26,11 @@ export interface PressureRoomsEntryHttpDelegateV1 {
     feedCursor?: string,
     feedLimit?: string | number,
   ): Promise<unknown> | unknown;
+  narrativeUpdate(
+    user: { id: string },
+    roomId: string,
+    chapterRuntimeId: string,
+  ): Promise<unknown> | unknown;
   result(user: { id: string }, roomId: string): Promise<unknown> | unknown;
   action(user: { id: string }, roomId: string, body: unknown): Promise<unknown> | unknown;
   chat(user: { id: string }, roomId: string, body: unknown): Promise<unknown> | unknown;

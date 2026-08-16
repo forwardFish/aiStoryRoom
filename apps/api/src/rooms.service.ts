@@ -1007,6 +1007,28 @@ export class RoomsService {
     };
   }
 
+  async pressureNarrativeUpdate(
+    user: AuthenticatedUser,
+    roomId: string,
+    chapterRuntimeId: string,
+  ) {
+    const engine = await this.prisma.storyRun.findUnique({
+      where: { id: roomId },
+      select: { engineVersion: true },
+    });
+    if (engine?.engineVersion !== PRESSURE_CHAPTER_ROUTE_V1.engineVersion) {
+      throw new ConflictException({
+        code: "PRESSURE_ROOM_REQUIRED",
+        message: "This endpoint requires a Pressure room",
+      });
+    }
+    return this.requirePressureHttp().narrativeUpdate(
+      user,
+      roomId,
+      chapterRuntimeId,
+    );
+  }
+
   async result(user: AuthenticatedUser, roomId: string) {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
     if (engine?.engineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion) return this.requirePressureHttp().result(user, roomId);

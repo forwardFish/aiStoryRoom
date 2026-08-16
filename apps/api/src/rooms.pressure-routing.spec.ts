@@ -171,6 +171,7 @@ test("pressure game, result, action, chat, replay, and legacy slot routing deleg
   const calls: Array<[string, any[]]> = [];
   const pressureHttp = {
     game: async (...args: any[]) => { calls.push(["game", args]); return { ok: true }; },
+    narrativeUpdate: async (...args: any[]) => { calls.push(["narrativeUpdate", args]); return { ok: true }; },
     result: async (...args: any[]) => { calls.push(["result", args]); return { ok: true }; },
     action: async (...args: any[]) => { calls.push(["action", args]); return { ok: true }; },
     chat: async (...args: any[]) => { calls.push(["chat", args]); return { ok: true }; },
@@ -181,6 +182,7 @@ test("pressure game, result, action, chat, replay, and legacy slot routing deleg
   (service as any).pressureHttp = pressureHttp;
 
   await service.game({ id: "user-1" } as never, "pressure-room-1", "cursor-1", "5");
+  await service.pressureNarrativeUpdate({ id: "user-1" } as never, "pressure-room-1", "chapter-runtime-1");
   await service.result({ id: "user-1" } as never, "pressure-room-1");
   await service.submitGameAction({ id: "user-1" } as never, "pressure-room-1", { idempotencyKey: "decision-1" } as any);
   await service.submitPressureChat({ id: "user-1" } as never, "pressure-room-1", { idempotencyKey: "chat-1" });
@@ -191,6 +193,7 @@ test("pressure game, result, action, chat, replay, and legacy slot routing deleg
 
   assert.deepEqual(calls.map(([name]) => name), [
     "game",
+    "narrativeUpdate",
     "result",
     "action",
     "chat",

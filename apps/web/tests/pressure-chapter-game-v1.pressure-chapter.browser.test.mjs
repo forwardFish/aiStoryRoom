@@ -256,31 +256,51 @@ test("Pressure adapter preserves approved page data and server-sealed decision c
   assert.equal(result.pressureProjection.decision.options[0].code, "NEXT_OPTION");
 });
 
-test("N2 does not poll the full game projection while Narrative is pending", async () => {
+test("pending Narrative uses only the lightweight update endpoint and becomes playable", async () => {
+  const initial = projection({ runId: "run-pressure-n2-narrative" });
   const pending = n2Projection();
-  const pendingView = pressureProjectionToMainGameViewV1(pending);
-  assert.equal(pendingView.decisionNarrative, "");
-  assert.equal(pendingView.activeDecision, null);
-  assert.equal(pendingView.v2CurrentTurn.status, "RESOLVING");
-  assert.doesNotMatch(pendingView.decisionNarrative, /起草救济请求与原因说明/u);
-
-  let reads = 0;
+  const published = n2Projection({ published: true });
+  const requests = [];
   const storage = new PressureMainGameStorageV1({
-    runId: pending.runId,
-    initialProjection: pending,
-    fetchImpl: async () => {
-      reads += 1;
-      return new Response(JSON.stringify(n2Projection({ published: true })), {
+    runId: initial.runId,
+    initialProjection: initial,
+    narrativePollAttempts: 3,
+    waitImpl: async () => {},
+    createIdempotencyKey: () => "idem-light-narrative-1",
+    fetchImpl: async (url) => {
+      requests.push(url);
+      if (String(url).endsWith("/game/action")) {
+        return new Response(JSON.stringify({
+          schemaVersion: "pressure_chapter_submit_decision_http_response_v1",
+          idempotencyKey: "idem-light-narrative-1",
+          projection: pending,
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      const ready = requests.filter((item) => String(item).includes("narrative-update")).length > 1;
+      const source = ready ? published : pending;
+      return new Response(JSON.stringify({
+        schemaVersion: "pressure_game_narrative_update_v1",
+        runId: source.runId,
+        routeHash: source.route.routeHash,
+        chapterRuntimeId: source.chapter.chapterRuntimeId,
+        viewerSeatId: source.viewer.seatId,
+        narrative: source.narrative,
+      }), {
         status: 200,
         headers: { "content-type": "application/json" },
       });
     },
   });
-  const pendingResult = await storage.restoreOrCreate();
-  assert.equal(reads, 0);
-  assert.equal(pendingResult.decisionNarrative, "");
-  assert.equal(pendingResult.activeDecision, null);
-  assert.equal(pendingResult.v2CurrentTurn.status, "RESOLVING");
+  const result = await storage.submitDecision(
+    pressureProjectionToMainGameViewV1(initial),
+    { optionKey: "A", customText: "" },
+  );
+  assert.equal(requests[0], `/api/v4/rooms/${initial.runId}/game/action`);
+  assert.equal(requests.filter((item) => String(item).endsWith("/game")).length, 0);
+  assert.equal(requests.filter((item) => String(item).includes("narrative-update")).length, 2);
+  assert.match(result.decisionNarrative, /堰区的急报暂时告一段落/u);
+  assert.ok(result.activeDecision);
+  assert.equal(result.v2CurrentTurn.status, "OPEN");
 });
 
 test("completed Pressure run uses the existing result route without mounting a parallel page", async () => {
