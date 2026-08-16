@@ -723,8 +723,16 @@ function buildSystemDefaultAccess(input: {
     || directive.controlEpoch !== actionContext.controlEpoch
     || directive.idempotencyKey !== actionContext.idempotencyKey
     || directive.trigger !== trigger
-    || directive.defaultPolicyRef !== systemDefault.defaultPolicyRef
-    || directive.defaultPolicyHash !== systemDefault.defaultPolicyHash
+    // A seat-control directive proves that the reserved system actor is
+    // permitted to act for this seat at this authority snapshot. Its frozen
+    // policy is deliberately different from the authored decision policy
+    // carried by systemDefault: the latter selects the actual action for the
+    // active decision point. Comparing the two policy identities made every
+    // valid per-decision AI-failure default look forged.
+    || directive.defaultPolicyRef
+      !== seatControlRow.snapshot.frozenPolicy.deterministicDefaultPolicyRef
+    || directive.defaultPolicyHash
+      !== seatControlRow.snapshot.frozenPolicy.deterministicDefaultPolicyHash
     || directive.canonicalActionPayloadHash !== actionContext.payloadHash
     || directive.canonicalActionPayloadHash !== systemDefault.canonicalActionPayloadHash
     || directive.authorityStateHash !== seatControlRow.stateHash

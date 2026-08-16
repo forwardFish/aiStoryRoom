@@ -371,6 +371,42 @@ test("interaction access authorizes only the exact committed deterministic defau
   assert.equal(fake.calls.includes("seatControl.findUnique"), true);
 });
 
+test("interaction access separates frozen seat authority from the authored default action policy", async () => {
+  const systemDefault: PressureSystemDefaultAccessContextV1 = {
+    reason: "AI_FAILURE",
+    defaultPolicyRef: "decision.n1.ai-failure.default",
+    defaultPolicyHash: digest("decision.n1.ai-failure.default"),
+    canonicalActionPayloadHash: digest("decision.n1.ai-failure.payload"),
+  };
+  const fake = new InteractionAccessFake({
+    subjectId: "pressure-ai:seat",
+    mode: "SYSTEM_DEFAULT",
+    systemDefault,
+    directivePolicyRef: "default-policy",
+    directivePolicyHash: digest("default-policy"),
+    directiveTrigger: "AI_FAILURE",
+  });
+  const repository = new PrismaPressureInteractionAccessRepository(fake.client);
+
+  const access = await repository.load({
+    subjectId: "pressure-ai:seat",
+    runId: fake.runtime.runId,
+    chapterRuntimeId: fake.runtime.id,
+    actionContext: {
+      decisionPointId: "dp-investigate",
+      seatId: ACTOR,
+      controlEpoch: 7,
+      actionType: "DEFAULT_PASS",
+      payloadHash: systemDefault.canonicalActionPayloadHash,
+      idempotencyKey: "default-action-1",
+    },
+    systemDefault,
+  });
+
+  assert.deepEqual(access.controlledSeatIds, [ACTOR]);
+  assert.deepEqual(access.allowedActionTypes, ["DEFAULT_PASS"]);
+});
+
 test("interaction access rejects spoofed default subject, payload, route, decision, and epoch mismatches", async () => {
   const expected = systemDefaultContext("default-action-1");
   for (const [label, setup] of [
@@ -811,6 +847,9 @@ class InteractionAccessFake {
     mode: "HUMAN" | "SYSTEM_DEFAULT";
     systemDefault?: PressureSystemDefaultAccessContextV1;
     directivePayloadHash?: string;
+    directivePolicyRef?: string;
+    directivePolicyHash?: string;
+    directiveTrigger?: "HUMAN_DEADLINE" | "AI_FAILURE";
     directiveDecisionPointId?: string;
     snapshotControlEpoch?: number;
     snapshotControllerId?: string;
@@ -831,12 +870,13 @@ class InteractionAccessFake {
     this.directive = input.systemDefault
       ? seatDefaultDirectiveFixture({
           idempotencyKey: "default-action-1",
-          defaultPolicyRef: input.systemDefault.defaultPolicyRef,
-          defaultPolicyHash: input.systemDefault.defaultPolicyHash,
+          defaultPolicyRef: input.directivePolicyRef ?? input.systemDefault.defaultPolicyRef,
+          defaultPolicyHash: input.directivePolicyHash ?? input.systemDefault.defaultPolicyHash,
           canonicalActionPayloadHash: input.directivePayloadHash
             ?? input.systemDefault.canonicalActionPayloadHash,
           decisionPointId: input.directiveDecisionPointId ?? "dp-investigate",
           controlEpoch: input.snapshotControlEpoch ?? 7,
+          trigger: input.directiveTrigger,
         })
       : null;
     this.seatControlSnapshot = input.systemDefault || input.mode === "HUMAN"
@@ -1128,6 +1168,7 @@ function seatDefaultDirectiveFixture(input: {
   canonicalActionPayloadHash: string;
   decisionPointId: string;
   controlEpoch: number;
+  trigger?: "HUMAN_DEADLINE" | "AI_FAILURE";
 }): SeatDefaultDirectiveV1 {
   const base = {
     schemaVersion: "pressure_seat_default_directive_v1" as const,
@@ -1135,7 +1176,7 @@ function seatDefaultDirectiveFixture(input: {
     decisionPointId: input.decisionPointId,
     seatId: ACTOR,
     controlEpoch: input.controlEpoch,
-    trigger: "HUMAN_DEADLINE" as const,
+    trigger: input.trigger ?? "HUMAN_DEADLINE",
     defaultPolicyRef: input.defaultPolicyRef,
     defaultPolicyHash: input.defaultPolicyHash,
     canonicalActionPayloadHash: input.canonicalActionPayloadHash,

@@ -11,6 +11,7 @@ import {
   readPressureDecisionCommittedAuthorityV1,
   runWithPressureDecisionConvergenceTimingV1,
 } from "../observability/decision-convergence-timing";
+import { logPressureDecisionTimingV1 } from "../observability/decision-timing-log";
 import {
   validateAuthoredChapterRuntimeV1,
   validateOrchestratorStateV1,
@@ -633,6 +634,15 @@ export class PressureDecisionConvergenceServiceV1 {
     metrics.timings.projectionMs = nonNegativeNumber(input.projectionMs);
     metrics.timings.endToEndMs = nonNegativeNumber(input.endToEndMs);
     await this.ports.diagnostics.record(metrics);
+    logPressureDecisionTimingV1({
+      path: "HTTP",
+      runId: metrics.runId,
+      chapterId: metrics.chapterId ?? "UNKNOWN",
+      decisionPointId: metrics.decisionPointId ?? "UNKNOWN",
+      outcome: result.outcome,
+      failureCode: null,
+      timings: metrics.timings,
+    });
   }
 
   private async resumeOnce(
@@ -702,6 +712,15 @@ export class PressureDecisionConvergenceServiceV1 {
     if (command.trigger === "RECOVERY") {
       await this.ports.diagnostics.record(result.metrics);
     }
+    logPressureDecisionTimingV1({
+      path: "GENERIC_CONVERGENCE",
+      runId: command.runId,
+      chapterId: metrics.chapterId ?? command.source?.chapterId ?? "UNKNOWN",
+      decisionPointId: metrics.decisionPointId ?? command.source?.decisionPointId ?? "UNKNOWN",
+      outcome,
+      failureCode: null,
+      timings: metrics.timings,
+    });
     return result;
   }
 }

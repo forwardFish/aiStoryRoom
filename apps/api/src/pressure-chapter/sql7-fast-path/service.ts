@@ -11,6 +11,11 @@ import type {
   PressureChapterSubmitDecisionHttpResponseV1,
 } from "../http/contracts";
 import type { SubmitOrchestratedActionCommandV1 } from "../orchestrator/contracts";
+import {
+  logPressureDecisionTimingV1,
+  pressureDecisionElapsedMsV1,
+  pressureDecisionFailureCodeV1,
+} from "../observability/decision-timing-log";
 import type {
   CommittedDecisionToNextProjectionAuthorityV1,
   PressureSql7CommitPlanV1,
@@ -108,89 +113,135 @@ export class PressureSql7FirstSubmitServiceV1 {
   ) {}
 
   async submit(input: Readonly<PressureSql7SubmitInputV1>): Promise<PressureSql7SubmitResultV1> {
-    if (!isEligibleFirstN1Submit(input)) {
-      return { status: "NOT_APPLICABLE", reason: "INPUT_NOT_ELIGIBLE" };
-    }
-
-    const snapshot = await this.snapshots.capture({
-      roomId: input.roomId,
-      runId: input.command.runId,
-      subjectId: input.principal.subjectId,
-      seatId: input.command.seatId,
-      chapterRuntimeId: input.command.chapterRuntimeId,
-      decisionPointId: input.command.decisionPointId,
-      expectedRouteHash: input.command.routeHash,
-      expectedWorkingRevision: input.command.expectedWorkingRevision,
-      expectedControlEpoch: input.command.controlEpoch,
-      expectedSubmissionFenceToken: input.command.submissionFenceToken,
-      idempotencyKey: input.command.idempotencyKey,
-      capturedAtMs: input.nowMs,
-    });
-    if (!snapshot) {
-      return { status: "NOT_APPLICABLE", reason: "SNAPSHOT_UNAVAILABLE" };
-    }
-    if (snapshot.schemaVersion === "pressure_decision_to_next_projection_prior_action_snapshot_v1") {
-      assertPriorActionReplayBinding(snapshot, input);
-      if (!snapshot.settlementCompleted) {
-        return { status: "NOT_APPLICABLE", reason: "PRIOR_ACTION_REQUIRES_RECOVERY" };
-      }
-      return {
-        status: "REPLAYED",
-        idempotencyKey: input.command.idempotencyKey,
-        applicationSqlCount: 1,
-      };
-    }
-
-    assertSnapshotBinding(snapshot, input);
-    const humanCommand = await this.compiler.compile({
-      principal: structuredClone(input.principal),
-      roomId: input.roomId,
-      command: structuredClone(input.command),
-      snapshot,
-      nowMs: input.nowMs,
-    });
-    assertHumanCommandBinding(humanCommand, snapshot, input);
-
-    const batch = await this.batches.plan({ snapshot, humanCommand, nowMs: input.nowMs });
-    assertBatchBinding(batch, humanCommand, snapshot);
-    const progression = classifyPressureSql7BatchProgressionV1(batch);
-    if (progression.kind === "NEXT_BEAT") {
-      // The existing generic convergence transaction owns intermediate Beat
-      // commits. Returning NOT_APPLICABLE before any write avoids the old
-      // first-N1-is-always-N2 assumption without creating a parallel writer.
-      return {
-        status: "NOT_APPLICABLE",
-        reason: "INTERMEDIATE_BEAT_REQUIRES_GENERIC_COMMIT",
-      };
-    }
-    const commitPlan = await this.settlementN2.build({
-      snapshot,
-      humanCommand,
-      batch,
-      nowMs: input.nowMs,
-    });
-    assertCommitPlanBinding(commitPlan, humanCommand, snapshot);
-
-    // From here on no NOT_APPLICABLE result is legal: a failed commit or an
-    // incomplete receipt must surface as an error and must never fall back.
-    const committed = await this.commits.commit(commitPlan);
-    assertCommittedReceipt(committed, commitPlan, snapshot);
-    const projection = await this.projections.project({
-      snapshot,
-      authority: committed.authority,
-    });
-    assertPublicProjection(projection, input, committed.authority);
-
-    return {
-      status: "COMMITTED",
-      response: {
-        schemaVersion: "pressure_chapter_submit_decision_http_response_v1",
-        idempotencyKey: input.command.idempotencyKey,
-        projection: structuredClone(projection),
-      },
-      authority: structuredClone(committed.authority),
-      applicationSqlCount: 1 + committed.queryBudget.applicationSqlCount,
+    const totalStartedAt = performance.now();
+    const timings: Record<string, number> = {
+      snapshotMs: 0,
+      humanCompileMs: 0,
+      aiBatchPlanMs: 0,
+      settlementPlanMs: 0,
+      commitMs: 0,
+      projectionMs: 0,
+      totalMs: 0,
     };
+    let outcome = "FAILED";
+    let failureCode: string | null = null;
+    try {
+      if (!isEligibleFirstN1Submit(input)) {
+        outcome = "NOT_APPLICABLE:INPUT_NOT_ELIGIBLE";
+        return { status: "NOT_APPLICABLE", reason: "INPUT_NOT_ELIGIBLE" };
+      }
+
+      const snapshotStartedAt = performance.now();
+      const snapshot = await this.snapshots.capture({
+        roomId: input.roomId,
+        runId: input.command.runId,
+        subjectId: input.principal.subjectId,
+        seatId: input.command.seatId,
+        chapterRuntimeId: input.command.chapterRuntimeId,
+        decisionPointId: input.command.decisionPointId,
+        expectedRouteHash: input.command.routeHash,
+        expectedWorkingRevision: input.command.expectedWorkingRevision,
+        expectedControlEpoch: input.command.controlEpoch,
+        expectedSubmissionFenceToken: input.command.submissionFenceToken,
+        idempotencyKey: input.command.idempotencyKey,
+        capturedAtMs: input.nowMs,
+      });
+      timings.snapshotMs = pressureDecisionElapsedMsV1(snapshotStartedAt);
+      if (!snapshot) {
+        outcome = "NOT_APPLICABLE:SNAPSHOT_UNAVAILABLE";
+        return { status: "NOT_APPLICABLE", reason: "SNAPSHOT_UNAVAILABLE" };
+      }
+      if (snapshot.schemaVersion === "pressure_decision_to_next_projection_prior_action_snapshot_v1") {
+        assertPriorActionReplayBinding(snapshot, input);
+        if (!snapshot.settlementCompleted) {
+          outcome = "NOT_APPLICABLE:PRIOR_ACTION_REQUIRES_RECOVERY";
+          return { status: "NOT_APPLICABLE", reason: "PRIOR_ACTION_REQUIRES_RECOVERY" };
+        }
+        outcome = "REPLAYED";
+        return {
+          status: "REPLAYED",
+          idempotencyKey: input.command.idempotencyKey,
+          applicationSqlCount: 1,
+        };
+      }
+
+      assertSnapshotBinding(snapshot, input);
+      const humanCompileStartedAt = performance.now();
+      const humanCommand = await this.compiler.compile({
+        principal: structuredClone(input.principal),
+        roomId: input.roomId,
+        command: structuredClone(input.command),
+        snapshot,
+        nowMs: input.nowMs,
+      });
+      timings.humanCompileMs = pressureDecisionElapsedMsV1(humanCompileStartedAt);
+      assertHumanCommandBinding(humanCommand, snapshot, input);
+
+      const aiBatchPlanStartedAt = performance.now();
+      const batch = await this.batches.plan({ snapshot, humanCommand, nowMs: input.nowMs });
+      timings.aiBatchPlanMs = pressureDecisionElapsedMsV1(aiBatchPlanStartedAt);
+      assertBatchBinding(batch, humanCommand, snapshot);
+      const progression = classifyPressureSql7BatchProgressionV1(batch);
+      if (progression.kind === "NEXT_BEAT") {
+        // The existing generic convergence transaction owns intermediate Beat
+        // commits. Returning NOT_APPLICABLE before any write avoids the old
+        // first-N1-is-always-N2 assumption without creating a parallel writer.
+        outcome = "NOT_APPLICABLE:INTERMEDIATE_BEAT_REQUIRES_GENERIC_COMMIT";
+        return {
+          status: "NOT_APPLICABLE",
+          reason: "INTERMEDIATE_BEAT_REQUIRES_GENERIC_COMMIT",
+        };
+      }
+      const settlementPlanStartedAt = performance.now();
+      const commitPlan = await this.settlementN2.build({
+        snapshot,
+        humanCommand,
+        batch,
+        nowMs: input.nowMs,
+      });
+      timings.settlementPlanMs = pressureDecisionElapsedMsV1(settlementPlanStartedAt);
+      assertCommitPlanBinding(commitPlan, humanCommand, snapshot);
+
+      // From here on no NOT_APPLICABLE result is legal: a failed commit or an
+      // incomplete receipt must surface as an error and must never fall back.
+      const commitStartedAt = performance.now();
+      const committed = await this.commits.commit(commitPlan);
+      timings.commitMs = pressureDecisionElapsedMsV1(commitStartedAt);
+      assertCommittedReceipt(committed, commitPlan, snapshot);
+      const projectionStartedAt = performance.now();
+      const projection = await this.projections.project({
+        snapshot,
+        authority: committed.authority,
+      });
+      timings.projectionMs = pressureDecisionElapsedMsV1(projectionStartedAt);
+      assertPublicProjection(projection, input, committed.authority);
+
+      outcome = "COMMITTED";
+      return {
+        status: "COMMITTED",
+        response: {
+          schemaVersion: "pressure_chapter_submit_decision_http_response_v1",
+          idempotencyKey: input.command.idempotencyKey,
+          projection: structuredClone(projection),
+        },
+        authority: structuredClone(committed.authority),
+        applicationSqlCount: 1 + committed.queryBudget.applicationSqlCount,
+      };
+    } catch (error) {
+      failureCode = pressureDecisionFailureCodeV1(error);
+      throw error;
+    } finally {
+      timings.totalMs = pressureDecisionElapsedMsV1(totalStartedAt);
+      logPressureDecisionTimingV1({
+        path: "SQL7",
+        runId: input.command.runId,
+        chapterId: input.command.chapterId,
+        decisionPointId: input.command.decisionPointId,
+        outcome,
+        failureCode,
+        timings,
+      });
+    }
   }
 }
 

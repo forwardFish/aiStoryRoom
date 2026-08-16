@@ -408,6 +408,26 @@ test("committed authority projection skips the full post-submit game read", asyn
   assert.match(harness.calls.join(","), /game-read-committed/u);
 });
 
+test("FAST post-submit projection uses the configured aggregate reader", async () => {
+  const harness = createHarness({
+    convergence: true,
+    sharedSnapshot: true,
+    committedAuthority: true,
+    dedicatedGameRead: true,
+    gameReadMode: "FAST",
+  });
+  await harness.facade.submitDecision(
+    harness.principal,
+    ROOM_ID,
+    decisionCommand(harness.stored.snapshot.routeHash),
+  );
+  assert.equal(harness.selectedGameReads, 1);
+  assert.equal(harness.gameReads, 0);
+  assert.equal(harness.seededGameReads, 0);
+  assert.match(harness.calls.join(","), /selected-game-read/u);
+  assert.doesNotMatch(harness.calls.join(","), /game-read-committed/u);
+});
+
 test("SQL7 COMMITTED returns directly without legacy authorization or reads", async () => {
   const harness = createHarness({ sql7: "COMMITTED" });
   const response = await harness.facade.submitDecision(

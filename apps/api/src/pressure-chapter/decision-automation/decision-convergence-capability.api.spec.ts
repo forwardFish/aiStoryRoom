@@ -92,9 +92,10 @@ test("HTTP waits only for authority convergence and viewer-safe final projection
   );
   const submitIndex = http.indexOf("await this.actions.submitAction(compiled)");
   const convergeIndex = http.indexOf("await this.convergence.converge");
-  const projectionIndex = http.indexOf("const projection = convergence?.committedAuthority");
+  const projectionIndex = http.indexOf("const projection = this.gameReadMode !== \"REPLAY\"");
   assert.ok(submitIndex >= 0 && convergeIndex > submitIndex && projectionIndex > convergeIndex);
   assert.doesNotMatch(http.slice(submitIndex, projectionIndex), /narrative|aEmotion|provider/iu);
+  assert.match(http.slice(projectionIndex), /this\.gameRead\.read/u);
   assert.match(http.slice(projectionIndex), /readFromCommittedAuthority/u);
   assert.match(http.slice(projectionIndex), /: await this\.game\.read/u);
 });

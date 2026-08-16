@@ -423,6 +423,16 @@ function batchFixture(human: SubmitOrchestratedActionCommandV1): PreparedAutomat
       },
       authority: { snapshotHash: CONVERGENCE_HASH },
     })),
+    beatPlan: {
+      settlementInput: { inputHash: HASH },
+      postBeatOrchestratorState: {
+        phase: "SETTLING",
+        currentChapterId: "N1",
+        chapterRuntimeId: RUNTIME_ID,
+        activeDecision: null,
+        settlementInputHash: HASH,
+      },
+    },
     batchHash: HASH,
   } as PreparedAutomationActionBatchV1;
 }

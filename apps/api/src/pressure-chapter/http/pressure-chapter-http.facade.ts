@@ -14,6 +14,7 @@ import {
   NoopPressureGameReadRuntimeObserverV1,
   type PressureGameReadRuntimeObserverPortV1,
 } from "../observability/game-read-runtime-observer";
+import { logPressureDecisionTimingV1 } from "../observability/decision-timing-log";
 import { computePressureChatRequestFingerprint } from "../interaction/chat.service";
 import {
   canonicalizeWorkingActionIntentV1,
@@ -142,11 +143,21 @@ export class PressureChapterHttpFacade {
   ): Promise<PressureChapterSubmitDecisionHttpResponseV1> {
     return pressureHttpBoundary(async () => {
       const endToEndStartedAt = performance.now();
+      const httpTimings: Record<string, number> = {
+        sql7AttemptMs: 0,
+        accessContextMs: 0,
+        commandCompileMs: 0,
+        humanSubmitMs: 0,
+        convergenceMs: 0,
+        projectionMs: 0,
+        totalMs: 0,
+      };
       const principal = parsePrincipal(principalValue);
       const roomId = requiredString(roomIdValue, "roomId");
       const command = parseSubmitDecisionCommand(bodyValue);
       if (this.sql7 && command.chapterId === "N1") {
         const sql7NowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
+        const sql7StartedAt = performance.now();
         const sql7 = await this.sql7.submit({
             principal: structuredClone(principal),
             roomId,
@@ -163,9 +174,22 @@ export class PressureChapterHttpFacade {
               ? error.message.replace(/[\r\n]+/g, " ").slice(0, 500)
               : "UNKNOWN",
           }));
-          throw error;
+           throw error;
+           });
+        httpTimings.sql7AttemptMs = elapsed(sql7StartedAt);
+        if (sql7.status === "COMMITTED") {
+          httpTimings.totalMs = elapsed(endToEndStartedAt);
+          logPressureDecisionTimingV1({
+            path: "HTTP",
+            runId: command.runId,
+            chapterId: command.chapterId,
+            decisionPointId: command.decisionPointId,
+            outcome: "SQL7_COMMITTED",
+            failureCode: null,
+            timings: httpTimings,
           });
-        if (sql7.status === "COMMITTED") return sql7.response;
+          return sql7.response;
+        }
         if (sql7.status === "REPLAYED") {
           const replayContext = await this.resolveContext(principal, roomId, "ACTION");
           assertPublicDecisionScope(command, replayContext.access, replayContext.stored);
@@ -180,7 +204,9 @@ export class PressureChapterHttpFacade {
           };
         }
       }
+      const contextStartedAt = performance.now();
       const context = await this.resolveContext(principal, roomId, "ACTION");
+      httpTimings.accessContextMs = elapsed(contextStartedAt);
       assertPublicDecisionScope(command, context.access, context.stored);
       const nowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
       const compilerInput = {
@@ -189,12 +215,14 @@ export class PressureChapterHttpFacade {
         command: structuredClone(command),
         nowMs,
       };
+      const commandCompileStartedAt = performance.now();
       const compilation = this.decisionCompiler.compileWithSnapshot
         ? await this.decisionCompiler.compileWithSnapshot(compilerInput)
         : {
             command: await this.decisionCompiler.compile(compilerInput),
             snapshot: null,
           };
+      httpTimings.commandCompileMs = elapsed(commandCompileStartedAt);
       const compiled = validateCompiledDecisionCommand(
         compilation.command,
         context.access,
@@ -207,7 +235,9 @@ export class PressureChapterHttpFacade {
         await this.actions.submitAction(compiled);
       }
       const humanSubmitMs = elapsed(humanSubmitStartedAt);
+      httpTimings.humanSubmitMs = humanSubmitMs;
       const postSubmitNowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
+      const convergenceStartedAt = performance.now();
       const convergence = this.convergence
         ? await this.convergence.converge({
             trigger: "HTTP_POST_SUBMIT",
@@ -226,11 +256,17 @@ export class PressureChapterHttpFacade {
               : null,
           })
         : null;
+      httpTimings.convergenceMs = elapsed(convergenceStartedAt);
       const projectionStartedAt = performance.now();
-      const projection = convergence?.committedAuthority
-        && compilation.snapshot
-        && this.game.readFromCommittedAuthority
-        ? await this.game.readFromCommittedAuthority({
+      const projection = this.gameReadMode !== "REPLAY"
+        ? await this.gameRead.read({
+            runId: context.access.runId,
+            subjectId: context.access.subjectId,
+          })
+        : convergence?.committedAuthority
+          && compilation.snapshot
+          && this.game.readFromCommittedAuthority
+          ? await this.game.readFromCommittedAuthority({
             runId: context.access.runId,
             subjectId: context.access.subjectId,
             roomId: compilation.snapshot.viewer.roomId,
@@ -245,12 +281,13 @@ export class PressureChapterHttpFacade {
             chapterDescriptor: structuredClone(
               convergence.committedAuthority.chapterDescriptor,
             ),
-          })
-        : await this.game.read({
+            })
+          : await this.game.read({
             runId: context.access.runId,
             subjectId: context.access.subjectId,
-          });
+            });
       const projectionMs = elapsed(projectionStartedAt);
+      httpTimings.projectionMs = projectionMs;
       if (this.convergence && convergence) {
         try {
           const recording = this.convergence.recordHttpCompletion(convergence, {
@@ -273,6 +310,16 @@ export class PressureChapterHttpFacade {
           );
         }
       }
+      httpTimings.totalMs = elapsed(endToEndStartedAt);
+      logPressureDecisionTimingV1({
+        path: "HTTP",
+        runId: command.runId,
+        chapterId: command.chapterId,
+        decisionPointId: command.decisionPointId,
+        outcome: convergence?.outcome ?? "LEGACY_SUBMIT",
+        failureCode: null,
+        timings: httpTimings,
+      });
       return {
         schemaVersion: "pressure_chapter_submit_decision_http_response_v1",
         idempotencyKey: command.idempotencyKey,
