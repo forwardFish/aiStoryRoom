@@ -256,7 +256,7 @@ test("Pressure adapter preserves approved page data and server-sealed decision c
   assert.equal(result.pressureProjection.decision.options[0].code, "NEXT_OPTION");
 });
 
-test("N2 waits for published Narrative and never exposes the Catalog purpose as story", async () => {
+test("N2 does not poll the full game projection while Narrative is pending", async () => {
   const pending = n2Projection();
   const pendingView = pressureProjectionToMainGameViewV1(pending);
   assert.equal(pendingView.decisionNarrative, "");
@@ -264,27 +264,23 @@ test("N2 waits for published Narrative and never exposes the Catalog purpose as 
   assert.equal(pendingView.v2CurrentTurn.status, "RESOLVING");
   assert.doesNotMatch(pendingView.decisionNarrative, /起草救济请求与原因说明/u);
 
-  const published = n2Projection({ published: true });
   let reads = 0;
   const storage = new PressureMainGameStorageV1({
     runId: pending.runId,
     initialProjection: pending,
-    narrativePollIntervalMs: 0,
-    narrativePollAttempts: 2,
     fetchImpl: async () => {
       reads += 1;
-      return new Response(JSON.stringify(published), {
+      return new Response(JSON.stringify(n2Projection({ published: true })), {
         status: 200,
         headers: { "content-type": "application/json" },
       });
     },
   });
-  const readyView = await storage.restoreOrCreate();
-  assert.equal(reads, 1);
-  assert.equal(readyView.decisionNarrative, published.decision.summary);
-  assert.ok(readyView.activeDecision);
-  assert.equal(readyView.activeDecision.title, published.decision.title);
-  assert.doesNotMatch(readyView.decisionNarrative, /起草救济请求与原因说明/u);
+  const pendingResult = await storage.restoreOrCreate();
+  assert.equal(reads, 0);
+  assert.equal(pendingResult.decisionNarrative, "");
+  assert.equal(pendingResult.activeDecision, null);
+  assert.equal(pendingResult.v2CurrentTurn.status, "RESOLVING");
 });
 
 test("completed Pressure run uses the existing result route without mounting a parallel page", async () => {

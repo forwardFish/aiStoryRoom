@@ -25,9 +25,6 @@ export class PressureMainGameStorageV1 {
     initialProjection,
     fetchImpl = globalThis.fetch?.bind(globalThis),
     createIdempotencyKey,
-    narrativePollIntervalMs = 400,
-    narrativePollAttempts = 75,
-    setTimeoutImpl = globalThis.setTimeout?.bind(globalThis),
   } = {}) {
     if (!runId) throw new TypeError("PressureMainGameStorageV1 requires runId");
     if (typeof fetchImpl !== "function") throw new TypeError("PressureMainGameStorageV1 requires fetch");
@@ -36,19 +33,14 @@ export class PressureMainGameStorageV1 {
     this.projection = assertProjection(initialProjection, runId);
     this.fetchImpl = fetchImpl;
     this.createIdempotencyKey = createIdempotencyKey || defaultIdempotencyKey;
-    this.narrativePollIntervalMs = narrativePollIntervalMs;
-    this.narrativePollAttempts = narrativePollAttempts;
-    this.setTimeoutImpl = setTimeoutImpl;
   }
 
   async restoreOrCreate() {
-    this.projection = await this.awaitDecisionNarrative(this.projection);
     return this.toView(this.projection);
   }
 
   async getRun() {
     this.projection = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
-    this.projection = await this.awaitDecisionNarrative(this.projection);
     return this.toView(this.projection);
   }
 
@@ -105,7 +97,6 @@ export class PressureMainGameStorageV1 {
       throw new Error("决定响应与本次提交不一致。");
     }
     this.projection = assertProjection(payload.projection, this.runId);
-    this.projection = await this.awaitDecisionNarrative(this.projection);
     return this.toView(this.projection);
   }
 
@@ -141,7 +132,6 @@ export class PressureMainGameStorageV1 {
       throw new Error("章末确认响应与本次请求不一致。");
     }
     this.projection = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
-    this.projection = await this.awaitDecisionNarrative(this.projection);
     return this.toView(this.projection);
   }
 
@@ -163,14 +153,6 @@ export class PressureMainGameStorageV1 {
     return assertProjection(payload, this.runId);
   }
 
-  async awaitDecisionNarrative(initialProjection) {
-    let projection = initialProjection;
-    for (let attempt = 0; needsDecisionNarrative(projection) && attempt < this.narrativePollAttempts; attempt += 1) {
-      await delay(this.narrativePollIntervalMs, this.setTimeoutImpl);
-      projection = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
-    }
-    return projection;
-  }
 }
 
 export function pressureProjectionToMainGameViewV1(projectionValue) {
@@ -276,20 +258,6 @@ function decisionNarrativeText(projection) {
   const published = projection.narrative?.status === "PUBLISHED"
     || projection.narrative?.status === "FALLBACK_PUBLISHED";
   return published && [...summary].length >= 30 ? summary : "";
-}
-
-function needsDecisionNarrative(projection) {
-  return Boolean(
-    projection?.decision
-    && projection?.chapter?.phase === "ACTIVE"
-    && projection?.narrative?.projectionKind !== "GENESIS_NARRATIVE"
-    && !decisionNarrativeText(projection),
-  );
-}
-
-function delay(milliseconds, setTimeoutImpl) {
-  if (typeof setTimeoutImpl !== "function") return Promise.resolve();
-  return new Promise((resolve) => setTimeoutImpl(resolve, Math.max(0, milliseconds)));
 }
 
 function pressureManeuverPanel(projection) {
