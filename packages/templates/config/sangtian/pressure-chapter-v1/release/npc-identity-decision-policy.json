@@ -1,0 +1,2398 @@
+{
+  "schemaVersion": "sangtian_npc_identity_decision_policy_v1",
+  "policyRef": "sangtian.npc.identity-decision.v1",
+  "policyVersion": "sangtian-npc-identity-decision-1.0.0",
+  "selectorVersion": "sangtian-npc-identity-score-selector-1.0.0",
+  "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
+  "sourceBinding": {
+    "contentPackageVersion": "1.0.2",
+    "contentPackageSha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9"
+  },
+  "legacyBindingPolicy": {
+    "policyRef": "sangtian.ai.decision.v1",
+    "policyVersion": "sangtian-ai-decision-1.0.2",
+    "artifactSha256": "2ec7a3d17e418cfde6aa4ecdcbe395d7c271bfa9772cd39fd8c9a534176fe78f",
+    "retainedRole": "ELIGIBLE_ACTION_AND_REQUIRED_SEAT_BINDING_ONLY",
+    "supersededPrimaryAlgorithm": "SHA256_CANONICAL_PREFIX_MODULO_RANKED_NON_DEFAULT_V1"
+  },
+  "authorityBoundary": {
+    "providerCallCount": 0,
+    "mayCreateActionTypes": false,
+    "mayCompileWorkingIntent": false,
+    "maySupplySettlementFacts": false
+  },
+  "scoring": {
+    "baseScoreWeight": 1,
+    "identityResponsibilityWeight": 30,
+    "activePressureWeight": 20,
+    "authorityMatchWeight": 18,
+    "capabilityMatchWeight": 14,
+    "activeCommitmentWeight": 12,
+    "brokenCommitmentPenalty": 16,
+    "availableResourceWeight": 10,
+    "resourceConflictPenalty": 36,
+    "overreachPenalty": 28
+  },
+  "seatProfiles": [
+    {
+      "seatId": "cabinet_finance",
+      "identityProfileRef": "sangtian.identity.cabinet_finance.v1",
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "FINANCIAL_OVERSIGHT",
+        "FISCAL_STABILITY",
+        "RELIEF_BUDGET",
+        "RESOURCE_ALLOCATION",
+        "TREASURY"
+      ],
+      "authorityTags": [
+        "AUDIT_AUTHORITY",
+        "EXECUTIVE_SIGNATURE",
+        "RESOURCE_AUTHORITY"
+      ],
+      "capabilityAffinityTags": [
+        "AUDIT_CAPABILITY",
+        "BUDGET_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentAffinityTags": [
+        "FUND_RELIEF",
+        "PRESERVE_EVIDENCE",
+        "PRESERVE_TREASURY"
+      ],
+      "resourceStewardshipTags": [
+        "CREDIT_CAPACITY",
+        "RELIEF_FUNDS",
+        "TREASURY_FUNDS"
+      ],
+      "abstainThreshold": 50
+    },
+    {
+      "seatId": "jiangnan_merchant",
+      "identityProfileRef": "sangtian.identity.jiangnan_merchant.v1",
+      "responsibilityTags": [
+        "COMMERCIAL_CONTINUITY",
+        "EVACUATION_LOGISTICS",
+        "GRAIN_SUPPLY",
+        "MARKET_STABILITY",
+        "SHIPPING"
+      ],
+      "authorityTags": [
+        "COMMERCIAL_AUTHORITY",
+        "LOGISTICS_AUTHORITY",
+        "PUBLIC_DECLARATION",
+        "RESOURCE_AUTHORITY"
+      ],
+      "capabilityAffinityTags": [
+        "CREDIT_CAPABILITY",
+        "FLEET_CAPABILITY",
+        "MARKET_CAPABILITY",
+        "WAREHOUSE_CAPABILITY"
+      ],
+      "commitmentAffinityTags": [
+        "DELIVER_GRAIN",
+        "KEEP_ROUTES_OPEN",
+        "PROTECT_CREWS"
+      ],
+      "resourceStewardshipTags": [
+        "CARGO_CAPACITY",
+        "CREDIT_CAPACITY",
+        "GRAIN_STOCK",
+        "MERCHANT_FLEET"
+      ],
+      "abstainThreshold": 48
+    },
+    {
+      "seatId": "qingliu_law",
+      "identityProfileRef": "sangtian.identity.qingliu_law.v1",
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "LEGAL_PROCESS",
+        "PROCEDURAL_INTEGRITY",
+        "WITNESS_PROTECTION"
+      ],
+      "authorityTags": [
+        "AUDIT_AUTHORITY",
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "capabilityAffinityTags": [
+        "EVIDENCE_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "WITNESS_CAPABILITY"
+      ],
+      "commitmentAffinityTags": [
+        "PRESERVE_EVIDENCE",
+        "PROTECT_WITNESSES",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceStewardshipTags": [
+        "EVIDENCE_ARCHIVE",
+        "LEGAL_RECORDS",
+        "WITNESS_ACCESS"
+      ],
+      "abstainThreshold": 52
+    },
+    {
+      "seatId": "sili_weaving",
+      "identityProfileRef": "sangtian.identity.sili_weaving.v1",
+      "responsibilityTags": [
+        "COURT_EXPOSURE",
+        "IMPERIAL_DIRECTIVE",
+        "PALACE_ACCOUNTABILITY",
+        "PUBLIC_FRAME",
+        "SEALED_DISPATCH"
+      ],
+      "authorityTags": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_SIGNATURE",
+        "PUBLIC_DECLARATION",
+        "SEAL_AUTHORITY"
+      ],
+      "capabilityAffinityTags": [
+        "COURT_CHANNEL_CAPABILITY",
+        "DISPATCH_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentAffinityTags": [
+        "HONOR_IMPERIAL_ORDER",
+        "PRESERVE_COURT_RECORD",
+        "REPORT_TO_PALACE"
+      ],
+      "resourceStewardshipTags": [
+        "COURT_CREDIT",
+        "IMPERIAL_DISPATCH",
+        "WEAVING_FUNDS"
+      ],
+      "abstainThreshold": 52
+    },
+    {
+      "seatId": "zhejiang_administration",
+      "identityProfileRef": "sangtian.identity.zhejiang_administration.v1",
+      "responsibilityTags": [
+        "CIVIL_RELIEF",
+        "IMPLEMENTATION",
+        "LOCAL_ADMINISTRATION",
+        "MAGISTRATE_COORDINATION",
+        "RECORDS"
+      ],
+      "authorityTags": [
+        "AUDIT_AUTHORITY",
+        "EMERGENCY_AUTHORITY",
+        "EVIDENCE_AUTHORITY",
+        "LOCAL_AUTHORITY",
+        "LOGISTICS_AUTHORITY",
+        "PUBLIC_DECLARATION",
+        "RESOURCE_AUTHORITY"
+      ],
+      "capabilityAffinityTags": [
+        "CLERK_CAPABILITY",
+        "DISPATCH_CAPABILITY",
+        "EMERGENCY_CAPABILITY",
+        "LOCAL_RECORD_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "RELIEF_CAPABILITY"
+      ],
+      "commitmentAffinityTags": [
+        "DELIVER_LOCAL_RELIEF",
+        "KEEP_RECORDS_TRACEABLE",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceStewardshipTags": [
+        "CLERK_CAPACITY",
+        "COUNTY_STORES",
+        "EVACUATION_CAPACITY",
+        "LOCAL_RELIEF"
+      ],
+      "abstainThreshold": 48
+    },
+    {
+      "seatId": "zhejiang_governor",
+      "identityProfileRef": "sangtian.identity.zhejiang_governor.v1",
+      "responsibilityTags": [
+        "EVACUATION",
+        "EXECUTIVE_COMMAND",
+        "FLOOD_CONTROL",
+        "MILITARY_COORDINATION",
+        "PROVINCIAL_ORDER"
+      ],
+      "authorityTags": [
+        "EMERGENCY_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "EXECUTIVE_SIGNATURE",
+        "LOGISTICS_AUTHORITY",
+        "PUBLIC_DECLARATION",
+        "RESOURCE_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "capabilityAffinityTags": [
+        "COMMAND_CAPABILITY",
+        "DISPATCH_CAPABILITY",
+        "EMERGENCY_CAPABILITY",
+        "FLOOD_CAPABILITY",
+        "MOBILIZATION_CAPABILITY",
+        "RELIEF_CAPABILITY"
+      ],
+      "commitmentAffinityTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "PROTECT_POPULATION",
+        "SECURE_WEIRS"
+      ],
+      "resourceStewardshipTags": [
+        "EVACUATION_CAPACITY",
+        "IMPERIAL_DISPATCH",
+        "PROVINCIAL_FORCE",
+        "RELIEF_FUNDS",
+        "WEIR_CREWS"
+      ],
+      "abstainThreshold": 50
+    }
+  ],
+  "actionRules": [
+    {
+      "actionType": "ADD_CAUSE",
+      "baseScore": 10,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EXECUTIVE_COMMAND",
+        "FISCAL_STABILITY",
+        "IMPERIAL_DIRECTIVE",
+        "LOCAL_ADMINISTRATION",
+        "PROCEDURAL_INTEGRITY"
+      ],
+      "pressureTags": [
+        "MEMORIAL_PENDING",
+        "PROCEDURE_GAP",
+        "RELIEF_SHORTAGE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_SIGNATURE",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COURT_CHANNEL_CAPABILITY",
+        "DISPATCH_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HONOR_IMPERIAL_ORDER",
+        "KEEP_RECORDS_TRACEABLE",
+        "REPORT_TO_PALACE",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "ADD_RELIEF_REQUEST",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "CIVIL_RELIEF",
+        "EVACUATION",
+        "FISCAL_STABILITY",
+        "GRAIN_SUPPLY",
+        "RELIEF_BUDGET",
+        "RESOURCE_ALLOCATION"
+      ],
+      "pressureTags": [
+        "GRAIN_SHORTAGE",
+        "RELIEF_SHORTAGE",
+        "TREASURY_PRESSURE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EMERGENCY_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "RELIEF_CAPABILITY",
+        "WAREHOUSE_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "DELIVER_GRAIN",
+        "DELIVER_LOCAL_RELIEF",
+        "FUND_RELIEF",
+        "PROTECT_POPULATION"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "GRAIN_STOCK",
+            "LOCAL_RELIEF",
+            "RELIEF_FUNDS",
+            "TREASURY_FUNDS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "ALLOCATE_GRAIN",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "CIVIL_RELIEF",
+        "GRAIN_SUPPLY",
+        "IMPLEMENTATION",
+        "RESOURCE_ALLOCATION",
+        "SHIPPING"
+      ],
+      "pressureTags": [
+        "GRAIN_SHORTAGE",
+        "RELIEF_SHORTAGE",
+        "SUPPLY_ROUTE_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "LOGISTICS_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "FLEET_CAPABILITY",
+        "RELIEF_CAPABILITY",
+        "WAREHOUSE_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "DELIVER_GRAIN",
+        "DELIVER_LOCAL_RELIEF",
+        "KEEP_ROUTES_OPEN"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "COUNTY_STORES",
+            "GRAIN_STOCK",
+            "LOCAL_RELIEF"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "ALLOCATE_RELIEF",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "CIVIL_RELIEF",
+        "EVACUATION",
+        "FISCAL_STABILITY",
+        "GRAIN_SUPPLY",
+        "RELIEF_BUDGET",
+        "RESOURCE_ALLOCATION"
+      ],
+      "pressureTags": [
+        "GRAIN_SHORTAGE",
+        "RELIEF_SHORTAGE",
+        "TREASURY_PRESSURE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EMERGENCY_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "RELIEF_CAPABILITY",
+        "WAREHOUSE_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "DELIVER_GRAIN",
+        "DELIVER_LOCAL_RELIEF",
+        "FUND_RELIEF",
+        "PROTECT_POPULATION"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "GRAIN_STOCK",
+            "LOCAL_RELIEF",
+            "RELIEF_FUNDS",
+            "TREASURY_FUNDS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "ATTACH_CONFESSION",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS",
+        "WITNESS_PROTECTION"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "RECORD_GAP",
+        "WITNESS_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "EVIDENCE_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "PROTECT_WITNESSES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "AUDIT_ASSETS",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "COMMERCIAL_CONTINUITY",
+        "FINANCIAL_OVERSIGHT",
+        "FISCAL_STABILITY",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "ASSET_OPACITY",
+        "EVIDENCE_GAP",
+        "TREASURY_PRESSURE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "AUDIT_AUTHORITY",
+        "EVIDENCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "AUDIT_CAPABILITY",
+        "EVIDENCE_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_EVIDENCE",
+        "PRESERVE_TREASURY"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "CLAIM_GRAIN",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "CIVIL_RELIEF",
+        "GRAIN_SUPPLY",
+        "IMPLEMENTATION",
+        "RESOURCE_ALLOCATION",
+        "SHIPPING"
+      ],
+      "pressureTags": [
+        "GRAIN_SHORTAGE",
+        "RELIEF_SHORTAGE",
+        "SUPPLY_ROUTE_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "LOGISTICS_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "FLEET_CAPABILITY",
+        "RELIEF_CAPABILITY",
+        "WAREHOUSE_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "DELIVER_GRAIN",
+        "DELIVER_LOCAL_RELIEF",
+        "KEEP_ROUTES_OPEN"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "COUNTY_STORES",
+            "GRAIN_STOCK",
+            "LOCAL_RELIEF"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "CONFIRM_DISPATCH_ROUTE",
+      "baseScore": 10,
+      "responsibilityTags": [
+        "EVACUATION_LOGISTICS",
+        "LOCAL_ADMINISTRATION",
+        "PROVINCIAL_ORDER",
+        "SEALED_DISPATCH",
+        "SHIPPING"
+      ],
+      "pressureTags": [
+        "DISPATCH_RISK",
+        "ROUTE_DISRUPTION"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LOGISTICS_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "DISPATCH_CAPABILITY",
+        "FLEET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_ROUTES_OPEN",
+        "REPORT_TO_PALACE",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "CONFIRM_MANIFEST",
+      "baseScore": 14,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "CIVIL_RELIEF",
+        "COMMERCIAL_CONTINUITY",
+        "COURT_EXPOSURE",
+        "EVIDENCE_CHAIN",
+        "EXECUTIVE_COMMAND",
+        "FISCAL_STABILITY",
+        "IMPERIAL_DIRECTIVE",
+        "LOCAL_ADMINISTRATION",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "PROVINCIAL_ORDER",
+        "RECORDS",
+        "RESOURCE_ALLOCATION",
+        "SEALED_DISPATCH"
+      ],
+      "pressureTags": [
+        "CHAPTER_RECORD_INCOMPLETE",
+        "MANIFEST_INCOMPLETE",
+        "PROCEDURE_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "AUDIT_AUTHORITY",
+        "COURT_AUTHORITY",
+        "EVIDENCE_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "LOCAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "AUDIT_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "EVIDENCE_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "REPORT_TO_PALACE"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "CORROBORATE_PACKET",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "COURT_EXPOSURE",
+        "FISCAL_STABILITY",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "PROCEDURE_GAP",
+        "RECORD_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "AUDIT_AUTHORITY",
+        "COURT_AUTHORITY",
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "AUDIT_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "EVIDENCE_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "DECLARE_PUBLIC_FRAME",
+      "baseScore": 10,
+      "responsibilityTags": [
+        "COMMERCIAL_CONTINUITY",
+        "COURT_EXPOSURE",
+        "LOCAL_ADMINISTRATION",
+        "PROVINCIAL_ORDER",
+        "PUBLIC_FRAME"
+      ],
+      "pressureTags": [
+        "PALACE_EXPOSURE",
+        "PUBLIC_CONFIDENCE_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "PUBLIC_DECLARATION"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "MARKET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "REPORT_TO_PALACE",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "DELIVER_LEDGER",
+      "baseScore": 10,
+      "responsibilityTags": [
+        "COMMERCIAL_CONTINUITY",
+        "COURT_EXPOSURE",
+        "EXECUTIVE_COMMAND",
+        "RECORDS",
+        "SEALED_DISPATCH",
+        "TREASURY"
+      ],
+      "pressureTags": [
+        "LEDGER_UNRESOLVED",
+        "PALACE_EXPOSURE",
+        "RECORD_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "AUDIT_AUTHORITY",
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LOGISTICS_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "AUDIT_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "DISPATCH_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_TREASURY",
+        "REPORT_TO_PALACE"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "IMPERIAL_DISPATCH"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "DISPATCH_FINAL_WEIR_ORDERS",
+      "baseScore": 14,
+      "responsibilityTags": [
+        "EXECUTIVE_COMMAND",
+        "IMPERIAL_DIRECTIVE",
+        "LOCAL_ADMINISTRATION",
+        "PROVINCIAL_ORDER",
+        "SEALED_DISPATCH"
+      ],
+      "pressureTags": [
+        "DISPATCH_RISK",
+        "ORDER_CONFLICT",
+        "ROUTE_DISRUPTION"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LOGISTICS_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "DISPATCH_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "HONOR_IMPERIAL_ORDER",
+        "KEEP_ROUTES_OPEN"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "DISPATCH_MEMORIAL",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "COURT_EXPOSURE",
+        "EXECUTIVE_COMMAND",
+        "IMPERIAL_DIRECTIVE",
+        "PALACE_ACCOUNTABILITY",
+        "SEALED_DISPATCH"
+      ],
+      "pressureTags": [
+        "DISPATCH_RISK",
+        "MEMORIAL_PENDING",
+        "PALACE_EXPOSURE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COURT_CHANNEL_CAPABILITY",
+        "DISPATCH_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HONOR_IMPERIAL_ORDER",
+        "PRESERVE_COURT_RECORD",
+        "REPORT_TO_PALACE"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "IMPERIAL_DISPATCH"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "EVACUATE_WEIRS",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "CIVIL_RELIEF",
+        "EVACUATION",
+        "EVACUATION_LOGISTICS",
+        "EXECUTIVE_COMMAND",
+        "LOCAL_ADMINISTRATION"
+      ],
+      "pressureTags": [
+        "FLOOD_RISK",
+        "POPULATION_AT_RISK",
+        "ROUTE_DISRUPTION"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EMERGENCY_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LOGISTICS_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "EMERGENCY_CAPABILITY",
+        "FLEET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "PROTECT_CREWS",
+        "PROTECT_POPULATION",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "EVACUATION_CAPACITY",
+            "MERCHANT_FLEET",
+            "PROVINCIAL_FORCE"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "INSPECT_FLEET",
+      "baseScore": 10,
+      "responsibilityTags": [
+        "COMMERCIAL_CONTINUITY",
+        "COURT_EXPOSURE",
+        "LOCAL_ADMINISTRATION",
+        "SHIPPING"
+      ],
+      "pressureTags": [
+        "FLEET_UNVERIFIED",
+        "SUPPLY_ROUTE_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COMMERCIAL_AUTHORITY",
+        "COURT_AUTHORITY",
+        "LOCAL_AUTHORITY",
+        "LOGISTICS_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "CLERK_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "FLEET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_ROUTES_OPEN",
+        "PROTECT_CREWS",
+        "REPORT_TO_PALACE"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "MERCHANT_FLEET"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "LIMIT_EXPOSURE",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "COURT_EXPOSURE",
+        "EXECUTIVE_COMMAND",
+        "FISCAL_STABILITY",
+        "PALACE_ACCOUNTABILITY",
+        "TREASURY"
+      ],
+      "pressureTags": [
+        "FUND_EXPOSURE",
+        "PALACE_EXPOSURE",
+        "TREASURY_PRESSURE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "COMMAND_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_TREASURY",
+        "REPORT_TO_PALACE"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "COURT_CREDIT",
+            "TREASURY_FUNDS",
+            "WEAVING_FUNDS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "LIMIT_LAND_PURCHASE",
+      "baseScore": 11,
+      "responsibilityTags": [
+        "FISCAL_STABILITY",
+        "LEGAL_PROCESS",
+        "LOCAL_ADMINISTRATION",
+        "MARKET_STABILITY",
+        "PROCEDURAL_INTEGRITY"
+      ],
+      "pressureTags": [
+        "LAND_MARKET_STRESS",
+        "PRICE_INSTABILITY",
+        "PROCEDURE_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COMMERCIAL_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "LOCAL_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "LOCAL_RECORD_CAPABILITY",
+        "MARKET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_TREASURY",
+        "REQUIRE_DUE_PROCESS",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "OFFER_CREDIT",
+      "baseScore": 11,
+      "responsibilityTags": [
+        "COMMERCIAL_CONTINUITY",
+        "FISCAL_STABILITY",
+        "MARKET_STABILITY",
+        "RESOURCE_ALLOCATION"
+      ],
+      "pressureTags": [
+        "CREDIT_GAP",
+        "RELIEF_SHORTAGE",
+        "TREASURY_PRESSURE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COMMERCIAL_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "CREDIT_CAPABILITY",
+        "MARKET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "FUND_RELIEF",
+        "PRESERVE_TREASURY"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "CREDIT_CAPACITY",
+            "TREASURY_FUNDS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "OPEN_ROUTE",
+      "baseScore": 10,
+      "responsibilityTags": [
+        "EVACUATION_LOGISTICS",
+        "LOCAL_ADMINISTRATION",
+        "PROVINCIAL_ORDER",
+        "SEALED_DISPATCH",
+        "SHIPPING"
+      ],
+      "pressureTags": [
+        "DISPATCH_RISK",
+        "ROUTE_DISRUPTION"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LOGISTICS_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "DISPATCH_CAPABILITY",
+        "FLEET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_ROUTES_OPEN",
+        "REPORT_TO_PALACE",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "PLEDGE_REPAYMENT",
+      "baseScore": 11,
+      "responsibilityTags": [
+        "COMMERCIAL_CONTINUITY",
+        "FISCAL_STABILITY",
+        "MARKET_STABILITY",
+        "RESOURCE_ALLOCATION"
+      ],
+      "pressureTags": [
+        "CREDIT_GAP",
+        "RELIEF_SHORTAGE",
+        "TREASURY_PRESSURE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COMMERCIAL_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "CREDIT_CAPABILITY",
+        "MARKET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "FUND_RELIEF",
+        "PRESERVE_TREASURY"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "CREDIT_CAPACITY",
+            "TREASURY_FUNDS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "PRESERVE_PARALLEL_ORDER_EVIDENCE",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "IMPERIAL_DIRECTIVE",
+        "PROCEDURAL_INTEGRITY",
+        "PROVINCIAL_ORDER",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "ORDER_CONFLICT",
+        "RECORD_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EVIDENCE_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COURT_CHANNEL_CAPABILITY",
+        "EVIDENCE_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "HONOR_IMPERIAL_ORDER",
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_EVIDENCE"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "PRESERVE_UNRESOLVED_CONFLICT",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "IMPERIAL_DIRECTIVE",
+        "PROCEDURAL_INTEGRITY",
+        "PROVINCIAL_ORDER",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "ORDER_CONFLICT",
+        "RECORD_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EVIDENCE_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COURT_CHANNEL_CAPABILITY",
+        "EVIDENCE_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "HONOR_IMPERIAL_ORDER",
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_EVIDENCE"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "PRIORITIZE_EVACUATION_ROUTE",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "CIVIL_RELIEF",
+        "EVACUATION",
+        "EVACUATION_LOGISTICS",
+        "EXECUTIVE_COMMAND",
+        "LOCAL_ADMINISTRATION"
+      ],
+      "pressureTags": [
+        "FLOOD_RISK",
+        "POPULATION_AT_RISK",
+        "ROUTE_DISRUPTION"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EMERGENCY_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LOGISTICS_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "EMERGENCY_CAPABILITY",
+        "FLEET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "PROTECT_CREWS",
+        "PROTECT_POPULATION",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "EVACUATION_CAPACITY",
+            "MERCHANT_FLEET",
+            "PROVINCIAL_FORCE"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "PROPOSE_RELIEF",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "CIVIL_RELIEF",
+        "EVACUATION",
+        "FISCAL_STABILITY",
+        "GRAIN_SUPPLY",
+        "RELIEF_BUDGET",
+        "RESOURCE_ALLOCATION"
+      ],
+      "pressureTags": [
+        "GRAIN_SHORTAGE",
+        "RELIEF_SHORTAGE",
+        "TREASURY_PRESSURE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EMERGENCY_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "RELIEF_CAPABILITY",
+        "WAREHOUSE_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "DELIVER_GRAIN",
+        "DELIVER_LOCAL_RELIEF",
+        "FUND_RELIEF",
+        "PROTECT_POPULATION"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "GRAIN_STOCK",
+            "LOCAL_RELIEF",
+            "RELIEF_FUNDS",
+            "TREASURY_FUNDS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "PROTECT_DEEDS",
+      "baseScore": 10,
+      "responsibilityTags": [
+        "EVIDENCE_CHAIN",
+        "LEGAL_PROCESS",
+        "LOCAL_ADMINISTRATION",
+        "MARKET_STABILITY",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "DEED_INTEGRITY_RISK",
+        "EVIDENCE_GAP",
+        "LAND_MARKET_STRESS"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "LOCAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "EVIDENCE_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "LOCAL_RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_EVIDENCE",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "PROTECT_WITNESS",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "EXECUTIVE_COMMAND",
+        "LEGAL_PROCESS",
+        "LOCAL_ADMINISTRATION",
+        "PROCEDURAL_INTEGRITY",
+        "WITNESS_PROTECTION"
+      ],
+      "pressureTags": [
+        "EXECUTION_RISK",
+        "PROCEDURE_GAP",
+        "WITNESS_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "WITNESS_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "PROTECT_POPULATION",
+        "PROTECT_WITNESSES",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "WITNESS_ACCESS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "PURCHASE_LAND",
+      "baseScore": 10,
+      "responsibilityTags": [
+        "COMMERCIAL_CONTINUITY",
+        "FISCAL_STABILITY",
+        "LOCAL_ADMINISTRATION",
+        "MARKET_STABILITY"
+      ],
+      "pressureTags": [
+        "LAND_MARKET_STRESS",
+        "PRICE_INSTABILITY"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COMMERCIAL_AUTHORITY",
+        "LOCAL_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "CREDIT_CAPABILITY",
+        "MARKET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "PRESERVE_TREASURY",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "CREDIT_CAPACITY",
+            "TREASURY_FUNDS",
+            "WEAVING_FUNDS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "RECONCILE_CONTRACT",
+      "baseScore": 11,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "COMMERCIAL_CONTINUITY",
+        "FISCAL_STABILITY",
+        "LEGAL_PROCESS",
+        "PROCEDURAL_INTEGRITY"
+      ],
+      "pressureTags": [
+        "CONTRACT_CONFLICT",
+        "EVIDENCE_GAP",
+        "TREASURY_PRESSURE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "AUDIT_AUTHORITY",
+        "COMMERCIAL_AUTHORITY",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "AUDIT_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "MARKET_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_EVIDENCE",
+        "PRESERVE_TREASURY",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "RECORD_EXPLANATION",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EXECUTIVE_COMMAND",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "ACCOUNTABILITY_GAP",
+        "ORDER_CONFLICT",
+        "SCAPEGOAT_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "EXECUTIVE_SIGNATURE",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "PRESERVE_COURT_RECORD",
+        "REPORT_TO_PALACE",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "REDIRECT_DISPATCH_ROUTE",
+      "baseScore": 14,
+      "responsibilityTags": [
+        "EXECUTIVE_COMMAND",
+        "IMPERIAL_DIRECTIVE",
+        "LOCAL_ADMINISTRATION",
+        "PROVINCIAL_ORDER",
+        "SEALED_DISPATCH"
+      ],
+      "pressureTags": [
+        "DISPATCH_RISK",
+        "ORDER_CONFLICT",
+        "ROUTE_DISRUPTION"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LOGISTICS_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "DISPATCH_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "HONOR_IMPERIAL_ORDER",
+        "KEEP_ROUTES_OPEN"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "REFUSE_SCAPEGOAT",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EXECUTIVE_COMMAND",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "ACCOUNTABILITY_GAP",
+        "ORDER_CONFLICT",
+        "SCAPEGOAT_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "EXECUTIVE_SIGNATURE",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "PRESERVE_COURT_RECORD",
+        "REPORT_TO_PALACE",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "REGISTER_EVIDENCE_HANDOFF",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS",
+        "WITNESS_PROTECTION"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "RECORD_GAP",
+        "WITNESS_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "EVIDENCE_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "PROTECT_WITNESSES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "REINFORCE_REMAINING_WEIR",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "FLOOD_CONTROL",
+        "IMPLEMENTATION",
+        "RELIEF_BUDGET",
+        "RESOURCE_ALLOCATION"
+      ],
+      "pressureTags": [
+        "FLOOD_RISK",
+        "WEIR_FAILURE_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EMERGENCY_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "FLOOD_CAPABILITY",
+        "MOBILIZATION_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "FUND_RELIEF",
+        "SECURE_WEIRS",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "RELIEF_FUNDS",
+            "TREASURY_FUNDS",
+            "WEIR_CREWS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "REQUEST_REVIEW",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "EXECUTIVE_COMMAND",
+        "LEGAL_PROCESS",
+        "LOCAL_ADMINISTRATION",
+        "PROCEDURAL_INTEGRITY",
+        "WITNESS_PROTECTION"
+      ],
+      "pressureTags": [
+        "EXECUTION_RISK",
+        "PROCEDURE_GAP",
+        "WITNESS_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "WITNESS_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "PROTECT_POPULATION",
+        "PROTECT_WITNESSES",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "WITNESS_ACCESS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "REQUIRE_COUNTERSIGNATURE",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EXECUTIVE_COMMAND",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "ACCOUNTABILITY_GAP",
+        "ORDER_CONFLICT",
+        "SCAPEGOAT_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "EXECUTIVE_SIGNATURE",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "PRESERVE_COURT_RECORD",
+        "REPORT_TO_PALACE",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "REVIEW_PRICE_FLOOR",
+      "baseScore": 11,
+      "responsibilityTags": [
+        "FISCAL_STABILITY",
+        "LEGAL_PROCESS",
+        "LOCAL_ADMINISTRATION",
+        "MARKET_STABILITY",
+        "PROCEDURAL_INTEGRITY"
+      ],
+      "pressureTags": [
+        "LAND_MARKET_STRESS",
+        "PRICE_INSTABILITY",
+        "PROCEDURE_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COMMERCIAL_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "LOCAL_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "LOCAL_RECORD_CAPABILITY",
+        "MARKET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_TREASURY",
+        "REQUIRE_DUE_PROCESS",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "REVIEW_TESTIMONY",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "EVIDENCE_CHAIN",
+        "EXECUTIVE_COMMAND",
+        "LOCAL_ADMINISTRATION",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS",
+        "WITNESS_PROTECTION"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "TESTIMONY_CONFLICT",
+        "WITNESS_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "EVIDENCE_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "WITNESS_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_EVIDENCE",
+        "PROTECT_WITNESSES",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "REVOKE_CONFLICTING_ORDER",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "IMPERIAL_DIRECTIVE",
+        "PROCEDURAL_INTEGRITY",
+        "PROVINCIAL_ORDER",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "ORDER_CONFLICT",
+        "RECORD_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EVIDENCE_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COURT_CHANNEL_CAPABILITY",
+        "EVIDENCE_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "HONOR_IMPERIAL_ORDER",
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_EVIDENCE"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SEAL_BREACH_RECORD",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS",
+        "WITNESS_PROTECTION"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "RECORD_GAP",
+        "WITNESS_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "EVIDENCE_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "PROTECT_WITNESSES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SEAL_CASE_FILE",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS",
+        "WITNESS_PROTECTION"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "RECORD_GAP",
+        "WITNESS_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "EVIDENCE_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "PROTECT_WITNESSES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SEAL_CHAPTER",
+      "baseScore": 14,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "CIVIL_RELIEF",
+        "COMMERCIAL_CONTINUITY",
+        "COURT_EXPOSURE",
+        "EVIDENCE_CHAIN",
+        "EXECUTIVE_COMMAND",
+        "FISCAL_STABILITY",
+        "IMPERIAL_DIRECTIVE",
+        "LOCAL_ADMINISTRATION",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "PROVINCIAL_ORDER",
+        "RECORDS",
+        "RESOURCE_ALLOCATION",
+        "SEALED_DISPATCH"
+      ],
+      "pressureTags": [
+        "CHAPTER_RECORD_INCOMPLETE",
+        "MANIFEST_INCOMPLETE",
+        "PROCEDURE_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "AUDIT_AUTHORITY",
+        "COURT_AUTHORITY",
+        "EVIDENCE_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "LOCAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "AUDIT_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "EVIDENCE_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "REPORT_TO_PALACE"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SEAL_CONFESSION",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS",
+        "WITNESS_PROTECTION"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "RECORD_GAP",
+        "WITNESS_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "EVIDENCE_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "PROTECT_WITNESSES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SEAL_DEED_SAMPLE",
+      "baseScore": 10,
+      "responsibilityTags": [
+        "EVIDENCE_CHAIN",
+        "LEGAL_PROCESS",
+        "LOCAL_ADMINISTRATION",
+        "MARKET_STABILITY",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "DEED_INTEGRITY_RISK",
+        "EVIDENCE_GAP",
+        "LAND_MARKET_STRESS"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "LOCAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "EVIDENCE_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "LOCAL_RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_EVIDENCE",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SEAL_DISPATCH",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "COURT_EXPOSURE",
+        "EXECUTIVE_COMMAND",
+        "IMPERIAL_DIRECTIVE",
+        "PALACE_ACCOUNTABILITY",
+        "SEALED_DISPATCH"
+      ],
+      "pressureTags": [
+        "DISPATCH_RISK",
+        "MEMORIAL_PENDING",
+        "PALACE_EXPOSURE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COURT_CHANNEL_CAPABILITY",
+        "DISPATCH_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HONOR_IMPERIAL_ORDER",
+        "PRESERVE_COURT_RECORD",
+        "REPORT_TO_PALACE"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "IMPERIAL_DISPATCH"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "SEAL_FINAL_WEIR_ORDERS",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "IMPERIAL_DIRECTIVE",
+        "PROCEDURAL_INTEGRITY",
+        "PROVINCIAL_ORDER",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "ORDER_CONFLICT",
+        "RECORD_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EVIDENCE_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COURT_CHANNEL_CAPABILITY",
+        "EVIDENCE_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "HONOR_IMPERIAL_ORDER",
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_EVIDENCE"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SEAL_LEDGER",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "COURT_EXPOSURE",
+        "EVIDENCE_CHAIN",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS",
+        "TREASURY"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "LEDGER_UNRESOLVED",
+        "RECORD_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "AUDIT_AUTHORITY",
+        "EVIDENCE_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "AUDIT_CAPABILITY",
+        "EVIDENCE_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "PRESERVE_TREASURY"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SEAL_TESTIMONY",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "EVIDENCE_CHAIN",
+        "EXECUTIVE_COMMAND",
+        "LOCAL_ADMINISTRATION",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS",
+        "WITNESS_PROTECTION"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "TESTIMONY_CONFLICT",
+        "WITNESS_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "EVIDENCE_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "WITNESS_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_EVIDENCE",
+        "PROTECT_WITNESSES",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SEAL_WITNESS_CHAIN",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS",
+        "WITNESS_PROTECTION"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "RECORD_GAP",
+        "WITNESS_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "EVIDENCE_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "PROTECT_WITNESSES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SECURE_FUNDS",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "COURT_EXPOSURE",
+        "EXECUTIVE_COMMAND",
+        "FISCAL_STABILITY",
+        "PALACE_ACCOUNTABILITY",
+        "TREASURY"
+      ],
+      "pressureTags": [
+        "FUND_EXPOSURE",
+        "PALACE_EXPOSURE",
+        "TREASURY_PRESSURE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "COMMAND_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_TREASURY",
+        "REPORT_TO_PALACE"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "COURT_CREDIT",
+            "TREASURY_FUNDS",
+            "WEAVING_FUNDS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "SET_PRICE_FLOOR",
+      "baseScore": 11,
+      "responsibilityTags": [
+        "FISCAL_STABILITY",
+        "LEGAL_PROCESS",
+        "LOCAL_ADMINISTRATION",
+        "MARKET_STABILITY",
+        "PROCEDURAL_INTEGRITY"
+      ],
+      "pressureTags": [
+        "LAND_MARKET_STRESS",
+        "PRICE_INSTABILITY",
+        "PROCEDURE_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COMMERCIAL_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "LOCAL_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "LOCAL_RECORD_CAPABILITY",
+        "MARKET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_TREASURY",
+        "REQUIRE_DUE_PROCESS",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SIGN_COMMAND_RESPONSIBILITY",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EXECUTIVE_COMMAND",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "ACCOUNTABILITY_GAP",
+        "ORDER_CONFLICT",
+        "SCAPEGOAT_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "EXECUTIVE_SIGNATURE",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "PRESERVE_COURT_RECORD",
+        "REPORT_TO_PALACE",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SIGN_EXECUTION",
+      "baseScore": 8,
+      "responsibilityTags": [
+        "EXECUTIVE_COMMAND",
+        "IMPERIAL_DIRECTIVE",
+        "LEGAL_PROCESS",
+        "PALACE_ACCOUNTABILITY"
+      ],
+      "pressureTags": [
+        "EXECUTION_RISK",
+        "IMPERIAL_DEADLINE",
+        "PROCEDURE_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "LEGAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HOLD_PROVINCIAL_ORDER",
+        "HONOR_IMPERIAL_ORDER",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SIGN_MEMORIAL",
+      "baseScore": 10,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EXECUTIVE_COMMAND",
+        "FISCAL_STABILITY",
+        "IMPERIAL_DIRECTIVE",
+        "LOCAL_ADMINISTRATION",
+        "PROCEDURAL_INTEGRITY"
+      ],
+      "pressureTags": [
+        "MEMORIAL_PENDING",
+        "PROCEDURE_GAP",
+        "RELIEF_SHORTAGE"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_SIGNATURE",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COURT_CHANNEL_CAPABILITY",
+        "DISPATCH_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "HONOR_IMPERIAL_ORDER",
+        "KEEP_RECORDS_TRACEABLE",
+        "REPORT_TO_PALACE",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "SUPPORT_WEIR",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "FLOOD_CONTROL",
+        "IMPLEMENTATION",
+        "RELIEF_BUDGET",
+        "RESOURCE_ALLOCATION"
+      ],
+      "pressureTags": [
+        "FLOOD_RISK",
+        "WEIR_FAILURE_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EMERGENCY_AUTHORITY",
+        "RESOURCE_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "BUDGET_CAPABILITY",
+        "FLOOD_CAPABILITY",
+        "MOBILIZATION_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "FUND_RELIEF",
+        "SECURE_WEIRS",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": [
+        {
+          "resourceTags": [
+            "RELIEF_FUNDS",
+            "TREASURY_FUNDS",
+            "WEIR_CREWS"
+          ],
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "actionType": "VALIDATE_PROCEDURE",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "COURT_EXPOSURE",
+        "FISCAL_STABILITY",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "PROCEDURE_GAP",
+        "RECORD_GAP"
+      ],
+      "requiredAuthorityAnyOf": [
+        "AUDIT_AUTHORITY",
+        "COURT_AUTHORITY",
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "AUDIT_CAPABILITY",
+        "COURT_CHANNEL_CAPABILITY",
+        "EVIDENCE_CAPABILITY",
+        "LEGAL_CAPABILITY",
+        "RECORD_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "REQUIRE_DUE_PROCESS"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "VERIFY_DELIVERY_RECEIPTS",
+      "baseScore": 12,
+      "responsibilityTags": [
+        "ACCOUNTABILITY",
+        "EVIDENCE_CHAIN",
+        "PALACE_ACCOUNTABILITY",
+        "PROCEDURAL_INTEGRITY",
+        "RECORDS",
+        "WITNESS_PROTECTION"
+      ],
+      "pressureTags": [
+        "EVIDENCE_GAP",
+        "RECORD_GAP",
+        "WITNESS_RISK"
+      ],
+      "requiredAuthorityAnyOf": [
+        "EVIDENCE_AUTHORITY",
+        "LEGAL_AUTHORITY",
+        "SEAL_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "EVIDENCE_CAPABILITY",
+        "RECORD_CAPABILITY",
+        "SEAL_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_RECORDS_TRACEABLE",
+        "PRESERVE_COURT_RECORD",
+        "PRESERVE_EVIDENCE",
+        "PROTECT_WITNESSES"
+      ],
+      "resourceRequirements": []
+    },
+    {
+      "actionType": "VERIFY_ROUTE",
+      "baseScore": 10,
+      "responsibilityTags": [
+        "EVACUATION_LOGISTICS",
+        "LOCAL_ADMINISTRATION",
+        "PROVINCIAL_ORDER",
+        "SEALED_DISPATCH",
+        "SHIPPING"
+      ],
+      "pressureTags": [
+        "DISPATCH_RISK",
+        "ROUTE_DISRUPTION"
+      ],
+      "requiredAuthorityAnyOf": [
+        "COURT_AUTHORITY",
+        "EXECUTIVE_AUTHORITY",
+        "LOGISTICS_AUTHORITY"
+      ],
+      "requiredCapabilityAnyOf": [
+        "COMMAND_CAPABILITY",
+        "DISPATCH_CAPABILITY",
+        "FLEET_CAPABILITY"
+      ],
+      "commitmentTags": [
+        "KEEP_ROUTES_OPEN",
+        "REPORT_TO_PALACE",
+        "STABILIZE_COUNTIES"
+      ],
+      "resourceRequirements": []
+    }
+  ],
+  "coverage": {
+    "chapterCount": 7,
+    "seatCount": 6,
+    "actionRuleCount": 58,
+    "chapterRule": "GENERIC_N1_TO_N7_NO_CHAPTER_BRANCHES",
+    "profileRule": "EXACT_PRESSURE_SIX_SEAT_IDENTITIES",
+    "actionRuleCoverage": "EXACT_LEGACY_NPC_NON_DEFAULT_ACTION_TYPES",
+    "decisionReachabilityCoverage": "EVERY_PUBLISHED_DECISION_HAS_REQUIRED_SEAT_WITH_REACHABLE_NON_DEFAULT_ACTION"
+  },
+  "policySha256": "707ef08e7afed3acd02f47320bbaf3472afb87f7d6487944562c7ec27eab53cc"
+}

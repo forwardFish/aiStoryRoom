@@ -65,6 +65,13 @@
       "version": "1.0.0",
       "sha256": "1bd764cff1fdfd659f1476c3cb9b41f6a43e15da2c1544fc30ee96e49b033b2f",
       "hashMode": "CANONICAL_JSON"
+    },
+    {
+      "artifactId": "npc_identity_decision_policy",
+      "path": "npc-identity-decision-policy.json",
+      "version": "sangtian-npc-identity-decision-1.0.0",
+      "sha256": "5f399a4496d76c3728be74e74c146f7edeab7ac29e4bb7c8a14de687512ff00e",
+      "hashMode": "CANONICAL_JSON"
     }
   ],
   "artifacts": [
