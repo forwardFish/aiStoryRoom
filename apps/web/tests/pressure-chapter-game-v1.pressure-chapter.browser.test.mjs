@@ -216,6 +216,40 @@ test("fresh Pressure N1 shows the complete scene before releasing explained deci
   dom.window.close();
 });
 
+test("an advanced Pressure run resumes the current Beat without replaying Genesis", async () => {
+  const input = projection({ runId: "run-pressure-resume-current-beat" });
+  input.chapter.workingRevision = 2;
+  input.decision.expectedWorkingRevision = 2;
+  input.decision.decisionPointId = "N1.order_reconciliation";
+  input.decision.title = "眼前这叠回执里，哪一道命令需要先处理？";
+  input.narrative = {
+    ...input.narrative,
+    projectionKind: "BEAT_NARRATIVE",
+    sourceAuthority: "CHAPTER_WORKING",
+    sourceId: `${input.runId}:beat:2`,
+    text: "第二批回执已经送到案前。此前发出的命令有的接上执行链，有的仍被压在驿路上，胡宗宪必须先处理眼前的冲突。",
+  };
+  const dom = new JSDOM('<!doctype html><main id="app"></main>', {
+    url: `http://game.test/game?runId=${input.runId}`, pretendToBeVisual: true,
+  });
+  dom.window.__STORY_STREAM_DELAY_MULTIPLIER__ = 0;
+  const root = dom.window.document.querySelector("#app");
+
+  await bootGamePage({
+    root,
+    window: dom.window,
+    fetchImpl: async () => new Response(JSON.stringify(input), { status: 200, headers: { "content-type": "application/json" } }),
+    loadPressureMainGameStorage: async () => ({ PressureMainGameStorageV1 }),
+    loadSolo: async () => ({ createStoryApp }),
+  });
+
+  assert.equal(root.querySelector('[data-testid="role-opening"]'), null);
+  assert.equal(root.querySelector("#beginStoryBtn"), null);
+  assert.match(root.querySelector('[data-testid="decision-narrative"]')?.textContent ?? "", /第二批回执已经送到案前/u);
+  assert.ok(root.querySelector("#beginDecisionBtn"));
+  dom.window.close();
+});
+
 test("Pressure adapter preserves approved page data and server-sealed decision command", async () => {
   const input = projection();
   const view = pressureProjectionToMainGameViewV1(input);

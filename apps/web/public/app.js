@@ -67,7 +67,8 @@ export function createStoryApp({
       const restoredView = await storage.restoreOrCreate();
       acceptView(restoredView);
       if (restoredView?.v2CurrentTurn?.status === "RESOLVING") state.showOpening = false;
-      else if (state.showOpening && ((restoredView?.continuousV2 === true && restoredView?.run?.status !== "finished") || isOpeningDecisionState(restoredView))) startOpeningStream(restoredView);
+      else if (!shouldShowOpeningForView(restoredView)) state.showOpening = false;
+      else if (state.showOpening) startOpeningStream(restoredView);
     } catch (error) {
       if (Number(error?.status) === 401) {
         const returnTo = `${browserWindow?.location?.pathname || "/game"}${browserWindow?.location?.search || ""}${browserWindow?.location?.hash || ""}`;
@@ -551,9 +552,7 @@ export function createStoryApp({
     }
 
     const view = state.view;
-    const showOpening = state.showOpening && (view.continuousV2 === true
-      ? view.run.status !== "finished"
-      : array(view.decisionHistory).length === 0 && Number(view.run.currentDay) === 1);
+    const showOpening = state.showOpening && shouldShowOpeningForView(view);
     const activePrompt = activePromptForView(view);
     const simulating = state.busy && !showOpening;
     const openingPause = showOpening && !state.historyOpen && Boolean(state.openingStream);
@@ -1131,6 +1130,18 @@ function resolveMainMode({ view, state, showOpening, activePrompt, simulating, o
 
 function isOpeningDecisionState(view) {
   return Boolean(view?.run) && Number(view.run.currentDay) === 1 && array(view.decisionHistory).length === 0;
+}
+
+function shouldShowOpeningForView(view) {
+  const pressure = view?.pressureProjection;
+  if (pressure) {
+    return Number(pressure.chapter?.workingRevision) === 0
+      && pressure.narrative?.projectionKind === "GENESIS_NARRATIVE"
+      && view?.run?.status !== "finished";
+  }
+  return view?.continuousV2 === true
+    ? view?.run?.status !== "finished"
+    : isOpeningDecisionState(view);
 }
 
 function decisionNarrativeKey(view) {
