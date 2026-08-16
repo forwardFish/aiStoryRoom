@@ -40,6 +40,7 @@ import {
 } from "./errors";
 import type { PressureTurnPresentationServiceV1 } from "./decision-presentation";
 import type { GameReadP0ResolvedSourcesV1 } from "./game-read-snapshot";
+import { projectPressureMetricDisplayLabelV1 } from "./metric-display-labels";
 import { projectPressureSharedGenesisOpeningV1 } from "./shared-genesis-opening";
 
 const NON_EMPTY = /\S/u;
@@ -508,7 +509,7 @@ function sanitizeMetrics(metrics: PressureGameMetricProjectionV1[]): PressureGam
       }
       return {
         trackId: metric.trackId,
-        label: metric.label,
+        label: projectPressureMetricDisplayLabelV1(metric.trackId, metric.label),
         value: metric.value,
         displayValue: metric.displayValue,
         tone: metric.tone,

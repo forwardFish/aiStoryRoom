@@ -114,7 +114,7 @@ test("authority-seeded read is byte-equivalent and skips route/state/Working cha
     viewerSeatId: VIEWER_SEAT,
     chapter: {} as any,
     workingProjection: {} as any,
-    chapterDescriptor: {} as any,
+    chapterDescriptor: committedChapterDescriptor(harness.chapterSource),
   });
   assert.deepEqual(seeded, ordinary);
   assert.equal(harness.chapterReadScopes.length, chapterReadsBefore);
@@ -148,7 +148,7 @@ test("authority-seeded next chapter remains playable while frozen narrative is P
     viewerSeatId: VIEWER_SEAT,
     chapter: {} as any,
     workingProjection: {} as any,
-    chapterDescriptor: {} as any,
+    chapterDescriptor: committedChapterDescriptor(harness.chapterSource),
   });
 
   assert.equal(projection.narrative.status, "PENDING");
@@ -469,6 +469,45 @@ test("missing or duplicated central metrics fail closed instead of filling brows
   );
 });
 
+test("game projection owns the five player-facing metric labels by track identity", async () => {
+  const harness = await createHarness({
+    runId: "game-projection-display-labels",
+    metricSeed: 10,
+    goal: "验证展示名称。",
+    resourceValue: 1,
+    tokenLabel: "展示名称筹码",
+  });
+  const oldLabels = ["财政与军饷", "民生与土地", "证据与责任", "改桑与丝绸", "朝局与皇权颜面"];
+  harness.worldSource.metrics.forEach((metric, index) => {
+    metric.label = oldLabels[index]!;
+  });
+
+  const projection = await harness.service.read({
+    runId: harness.runId,
+    subjectId: "user-viewer",
+  });
+  assert.deepEqual(
+    Object.fromEntries(projection.metrics.map((metric) => [metric.trackId, metric.label])),
+    {
+      fiscal_military: "国库银两",
+      civilian_land: "民心",
+      evidence_responsibility: "真相进展",
+      mulberry_silk: "改桑进度",
+      court_imperial_face: "皇帝信任",
+    },
+  );
+  assert.deepEqual(
+    Object.fromEntries(projection.metrics.map((metric) => [metric.trackId, metric.value])),
+    {
+      fiscal_military: 12,
+      civilian_land: 10,
+      evidence_responsibility: 13,
+      mulberry_silk: 11,
+      court_imperial_face: 14,
+    },
+  );
+});
+
 test("decision workbench entry is content-owned and unknown option fields fail closed", async () => {
   const invalidEntry = await createHarness({
     runId: "game-projection-preferred-entry",
@@ -683,6 +722,19 @@ function metric(trackId: TrackIdV1, value: number): PressureGameMetricProjection
     displayValue: String(value),
     tone: value > 60 ? "GOOD" : value < 20 ? "WARN" : "DEFAULT",
   };
+}
+
+function committedChapterDescriptor(chapter: PressureGameChapterSourceV1) {
+  return {
+    decisions: chapter.decision
+      ? [{
+          decisionPointId: chapter.decision.decisionPointId,
+          execution: {
+            allowedActionTypes: chapter.decision.options.map((option) => option.actionType),
+          },
+        }]
+      : [],
+  } as any;
 }
 
 class InMemoryRouteRepository implements RunRouteRepositoryPort {
