@@ -43,7 +43,7 @@ const COMMAND: PressureChapterSubmitDecisionCommandV1 = {
   seatId: HUMAN_SEAT,
   controlEpoch: 1,
   expectedWorkingRevision: 1,
-  decisionPointId: "N1.D1",
+  decisionPointId: "N1.weir_crisis",
   submissionFenceToken: HASH,
   idempotencyKey: "submit-1",
   optionCode: "SUPPORT",
@@ -175,6 +175,17 @@ test("unverified driver SQL evidence does not invalidate a committed authority r
   assert.equal(result.status, "COMMITTED");
   assert.equal(harness.calls.commit, 1);
   assert.equal(harness.calls.projection, 1);
+});
+
+test("later N1 Beat is NOT_APPLICABLE before snapshot and performs zero database work", async () => {
+  const harness = createHarness();
+  const result = await harness.service.submit(input({
+    command: { ...COMMAND, decisionPointId: "N1.final_dispatch" },
+  }));
+
+  assert.deepEqual(result, { status: "NOT_APPLICABLE", reason: "INPUT_NOT_ELIGIBLE" });
+  assert.equal(harness.calls.snapshot, 0);
+  assert.equal(harness.calls.commit, 0);
 });
 
 function input(overrides: Partial<{

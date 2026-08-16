@@ -296,6 +296,7 @@ function isEligibleFirstN1Submit(input: Readonly<PressureSql7SubmitInputV1>): bo
     && input.roomId === command?.runId
     && command.commandType === "SUBMIT_DECISION"
     && command.chapterId === "N1"
+    && command.decisionPointId === "N1.weir_crisis"
     && command.runId?.trim()
     && command.chapterRuntimeId?.trim()
     && command.decisionPointId?.trim()
