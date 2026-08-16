@@ -82,6 +82,23 @@ test("a required pending human gates policy, compiler, W5 writes and resume", as
   assert.equal(result.metrics.resumeCount, 0);
 });
 
+test("a submitted human action is persisted before another required human responds", async () => {
+  const harness = await Harness.create(2, true, true);
+  const firstHumanSeat = harness.route.humanSeatIdsAtStart[0]! as SeatIdV1;
+  const result = await harness.service.converge({
+    ...harness.command("HTTP_POST_SUBMIT"),
+    humanAction: humanCommand(harness, firstHumanSeat),
+  });
+
+  assert.equal(result.outcome, "WAITING_FOR_HUMANS");
+  assert.equal(result.metrics.pendingHumanCount, 2);
+  assert.equal(result.metrics.policyCallCount, 0);
+  assert.equal(result.metrics.compileCount, 0);
+  assert.equal(result.metrics.appendTxCount, 1);
+  assert.equal(result.metrics.resumeCount, 0);
+  assert.deepEqual(harness.appendedSeatIds, [firstHumanSeat]);
+});
+
 test("the recovery worker groups all seat discoveries into one decision batch", async () => {
   const harness = await Harness.create(1, false);
   harness.scannerTasks = harness.makeScannerTasks();
@@ -445,7 +462,11 @@ class Harness {
     this.service = new PressureDecisionConvergenceServiceV1(this.dependencies, { retryMs: 10 });
   }
 
-  static async create(humanCount: number, pendingHuman: boolean): Promise<Harness> {
+  static async create(
+    humanCount: number,
+    pendingHuman: boolean,
+    allHumansPending = false,
+  ): Promise<Harness> {
     const humanSeats = PRESSURE_CHAPTER_SEAT_IDS_V1.slice(0, humanCount);
     const route = makeRoute(humanSeats);
     const content = new SangtianAuthoredChapterContentAdapterV1();
@@ -472,7 +493,7 @@ class Harness {
     const stateHash = workingStateHash(working);
     const activeSeats = PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId, index) => {
       const human = index < humanCount;
-      const pending = human && pendingHuman && index === humanCount - 1;
+      const pending = human && pendingHuman && (allHumansPending || index === humanCount - 1);
       return {
         seatId,
         requirement: decision.seatRequirements[seatId],
@@ -506,7 +527,9 @@ class Harness {
       chapterSeatSummaries: PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId, index) => ({
         seatId,
         requirement: decision.seatRequirements[seatId],
-        sealedActionIds: index < humanCount && !(pendingHuman && index === humanCount - 1)
+        sealedActionIds: index < humanCount && !(
+          pendingHuman && (allHumansPending || index === humanCount - 1)
+        )
           ? [`human-${seatId}`]
           : [],
         defaultActionIds: [],
@@ -800,8 +823,10 @@ function compiledCommand(
   };
 }
 
-function humanCommand(harness: Harness): SubmitOrchestratedActionCommandV1 {
-  const seatId = harness.route.humanSeatIdsAtStart[0]! as SeatIdV1;
+function humanCommand(
+  harness: Harness,
+  seatId = harness.route.humanSeatIdsAtStart[0]! as SeatIdV1,
+): SubmitOrchestratedActionCommandV1 {
   const authority = harness.seatAuthority.seatControls.find((item) => item.seatId === seatId)!;
   const authored = harness.descriptor.decisions.find(
     (item) => item.decisionPointId === harness.chapter.activeDecision!.decisionPointId,

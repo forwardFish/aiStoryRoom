@@ -15,6 +15,12 @@ test("prepared W5 append is one bounded Serializable transaction", () => {
   assert.equal((source.match(/pressureFastSerializableTransaction\(/gu) ?? []).length >= 2, true);
 });
 
+test("waiting human persistence is fail-closed outside MULTIPLAYER", () => {
+  assert.match(source, /raw\.authority\.actorKind === "HUMAN"/u);
+  assert.match(source, /route\.participantMode !== "MULTIPLAYER"/u);
+  assert.match(source, /Waiting human persistence only accepts MULTIPLAYER routes/u);
+});
+
 test("prepared W5 batch writes actions, ledger events, orchestrator state and one runtime CAS", () => {
   assert.match(source, /pressureDecisionAction\.create/u);
   assert.match(source, /storyEvent\.createMany/u);

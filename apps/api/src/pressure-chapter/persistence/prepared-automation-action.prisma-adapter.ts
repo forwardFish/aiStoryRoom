@@ -599,10 +599,16 @@ implements PreparedAutomationActionSubmissionPortV1 {
   async submitPrepared(
     raw: AppendPreparedAutomationActionCommandV1,
   ): Promise<AppendPreparedAutomationActionResultV1> {
-    if (raw.authority.actorKind !== "AI") {
-      throw invalid("Legacy prepared append only accepts AI authority", raw.command.action.actionId);
-    }
     const route = validateRunRouteSnapshotV1(raw.command.routeSnapshot);
+    if (
+      raw.authority.actorKind === "HUMAN"
+      && route.participantMode !== "MULTIPLAYER"
+    ) {
+      throw invalid(
+        "Waiting human persistence only accepts MULTIPLAYER routes",
+        raw.command.action.actionId,
+      );
+    }
     const routeSeatIds = route.seatIds.map((seatId, index) =>
       validateSeatIdV1(seatId, `routeSnapshot.seatIds[${index}]`));
     const action = validateDecisionActionV1(raw.command.action);
@@ -772,20 +778,26 @@ implements PreparedAutomationActionSubmissionPortV1 {
           return stale(action.actionId, currentHead, "SEAT_FENCE");
         }
         if (
-          seat.mode !== "AI_ACTIVE"
-          || seat.activeControllerId !== raw.authority.expectedControllerId
-          || seat.activeControllerId !== seat.designatedAiControllerId
+          seat.activeControllerId !== raw.authority.expectedControllerId
           || raw.command.subjectId !== seat.activeControllerId
         ) return stale(action.actionId, currentHead, "SEAT_CONTROLLER");
         if (seatSnapshot.stateHash !== raw.authority.expectedSeatAuthorityStateHash) {
           return stale(action.actionId, currentHead, "SEAT_AUTHORITY");
         }
         const payload = action.payload as Record<string, unknown>;
-        if (
-          payload.source !== "CONTENT_OWNED_AI_POLICY"
-          || payload.policyHash !== raw.authority.expectedAiPolicyHash
-          || !isSha256(String(payload.selectionHash ?? ""))
-        ) return stale(action.actionId, currentHead, "AI_POLICY");
+        if (raw.authority.actorKind === "AI") {
+          if (
+            seat.mode !== "AI_ACTIVE"
+            || seat.activeControllerId !== seat.designatedAiControllerId
+            || payload.source !== "CONTENT_OWNED_AI_POLICY"
+            || payload.policyHash !== raw.authority.expectedAiPolicyHash
+            || !isSha256(String(payload.selectionHash ?? ""))
+          ) return stale(action.actionId, currentHead, "AI_POLICY");
+        } else if (
+          seat.mode !== "HUMAN_ACTIVE"
+          || raw.authority.expectedAiPolicyHash !== null
+          || payload.source === "CONTENT_OWNED_AI_POLICY"
+        ) return stale(action.actionId, currentHead, "SEAT_CONTROLLER");
 
         const access = buildPreparedAccess(
           routeSeatIds,

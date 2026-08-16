@@ -262,9 +262,21 @@ export class PressureDecisionConvergenceServiceV1 {
     const unresolvedHumans = classified.humans.filter((item) => (
       item.seat.seatId !== preparedHuman?.command.action.seatId
     ));
-    if (unresolvedHumans.length > 0) {
-      // Frozen product rule: ordinary AI work never runs ahead of a required human.
-      return this.finish(command, metrics, "WAITING_FOR_HUMANS", [], chapter, endToEndStartedAt);
+    if (route.participantMode === "MULTIPLAYER" && unresolvedHumans.length > 0) {
+      // Persist the authenticated human action before waiting for another
+      // human. Otherwise two humans can each observe the other as pending
+      // while neither action ever crosses W5.
+      const actionIds = preparedHuman
+        ? await this.persistWaitingHuman(preparedHuman, metrics)
+        : [];
+      return this.finish(
+        command,
+        metrics,
+        actionIds === null ? "STALE_SKIPPED" : "WAITING_FOR_HUMANS",
+        actionIds ?? [],
+        chapter,
+        endToEndStartedAt,
+      );
     }
 
     if (classified.ai.length === 0 && !preparedHuman) {
@@ -624,6 +636,33 @@ export class PressureDecisionConvergenceServiceV1 {
       endToEndStartedAt,
       committedAuthority,
     );
+  }
+
+  private async persistWaitingHuman(
+    preparedHuman: AppendPreparedAutomationActionCommandV1,
+    metrics: DecisionConvergenceDiagnosticsV1,
+  ): Promise<string[] | null> {
+    const appendStartedAt = performance.now();
+    const callStartedAt = performance.now();
+    metrics.appendTxCount += 1;
+    const result = await this.ports.preparedActions.submitPrepared(preparedHuman);
+    metrics.timings.ledgerAppendEachMs.push(elapsed(callStartedAt));
+    metrics.timings.ledgerAppendTotalMs += elapsed(appendStartedAt);
+    if (
+      result.actionId !== preparedHuman.command.action.actionId
+      || !isSha256(result.ledgerHeadHash)
+    ) mismatch(ERROR.PORT_RESULT_INVALID, "preparedHuman.result", "INVALID_BINDING");
+    if (result.status === "APPENDED") return [result.actionId];
+    if (result.status === "REPLAYED") {
+      metrics.replayCount += 1;
+      return [result.actionId];
+    }
+    if (result.status === "HEAD_CONFLICT") {
+      metrics.headConflictCount += 1;
+    } else {
+      countStale(metrics, result.staleReason);
+    }
+    return null;
   }
 
   /** Completes the HTTP-only timing envelope without changing its response. */
