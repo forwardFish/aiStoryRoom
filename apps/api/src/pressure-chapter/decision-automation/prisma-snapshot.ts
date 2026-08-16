@@ -295,26 +295,38 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
       const active = chapter.activeDecision;
       const activeSeat = active?.seats.find((seat) => seat.seatId === submit.seatId);
       const seat = seatAuthority.seatControls.find((item) => item.seatId === submit.seatId);
-      if (
-        !viewerRow
-        || viewerRow.runId !== submit.runId
-        || viewerRow.userId !== submit.subjectId
-        || viewerRow.playerType !== "human"
-        || viewerRow.status !== "active"
-        || viewerRow.role?.roleKey !== submit.seatId
-        || chapter.phase !== "ACTIVE"
-        || chapter.chapterRuntimeId !== submit.chapterRuntimeId
-        || active?.decisionPointId !== submit.decisionPointId
-        || activeSeat?.requirement !== "REQUIRED"
-        || activeSeat.completion !== "PENDING"
-        || projection.state.revision !== submit.expectedWorkingRevision
-        || runtime.state !== "DECISION_POINT_OPEN" && runtime.state !== "ACTION_DRAFTING"
-        || !seat
-        || seat.mode !== "HUMAN_ACTIVE"
-        || seat.activeControllerId !== submit.subjectId
-        || seat.controlEpoch !== submit.expectedControlEpoch
-        || seat.submissionFenceToken !== submit.expectedSubmissionFenceToken
-      ) invalid("submit.authority", "STALE_OR_NOT_AUTHORIZED", input.runId);
+      const authorityMismatches = [
+        !viewerRow ? "viewer.missing" : null,
+        viewerRow && viewerRow.runId !== submit.runId ? "viewer.run" : null,
+        viewerRow && viewerRow.userId !== submit.subjectId ? "viewer.subject" : null,
+        viewerRow && viewerRow.playerType !== "human" ? "viewer.playerType" : null,
+        viewerRow && viewerRow.status !== "active" ? "viewer.status" : null,
+        viewerRow && viewerRow.role?.roleKey !== submit.seatId ? "viewer.seat" : null,
+        chapter.phase !== "ACTIVE" ? "chapter.phase" : null,
+        chapter.chapterRuntimeId !== submit.chapterRuntimeId ? "chapter.runtime" : null,
+        active?.decisionPointId !== submit.decisionPointId ? "decision.point" : null,
+        activeSeat?.requirement !== "REQUIRED" ? "decision.requirement" : null,
+        activeSeat?.completion !== "PENDING" ? "decision.completion" : null,
+        projection.state.revision !== submit.expectedWorkingRevision ? "working.revision" : null,
+        runtime.state !== "DECISION_POINT_OPEN" && runtime.state !== "ACTION_DRAFTING"
+          ? "runtime.state"
+          : null,
+        !seat ? "control.missing" : null,
+        seat && seat.mode !== "HUMAN_ACTIVE" ? "control.mode" : null,
+        seat && seat.activeControllerId !== submit.subjectId ? "control.subject" : null,
+        seat && seat.controlEpoch !== submit.expectedControlEpoch ? "control.epoch" : null,
+        seat && seat.submissionFenceToken !== submit.expectedSubmissionFenceToken
+          ? "control.fence"
+          : null,
+      ].filter((value): value is string => value !== null);
+      if (authorityMismatches.length > 0) {
+        invalid(
+          "submit.authority",
+          "STALE_OR_NOT_AUTHORIZED",
+          input.runId,
+          { mismatchKeys: authorityMismatches },
+        );
+      }
 
       return withDecisionSubmitSnapshotHashV1({
         schemaVersion: "pressure_decision_submit_snapshot_v1",
@@ -387,10 +399,15 @@ export function createPrismaDecisionConvergenceSnapshotReaderV1(
   );
 }
 
-function invalid(path: string, detail: string, runId: string): never {
+function invalid(
+  path: string,
+  detail: string,
+  runId: string,
+  diagnostics: Readonly<Record<string, unknown>> = {},
+): never {
   return failDecisionAutomation(
     ERROR.PORT_RESULT_INVALID,
     `Decision convergence snapshot failed at ${path}`,
-    { path, detail, runId },
+    { path, detail, runId, ...diagnostics },
   );
 }

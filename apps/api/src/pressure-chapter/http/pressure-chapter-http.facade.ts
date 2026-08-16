@@ -14,7 +14,10 @@ import {
   NoopPressureGameReadRuntimeObserverV1,
   type PressureGameReadRuntimeObserverPortV1,
 } from "../observability/game-read-runtime-observer";
-import { logPressureDecisionTimingV1 } from "../observability/decision-timing-log";
+import {
+  logPressureDecisionFailureV1,
+  logPressureDecisionTimingV1,
+} from "../observability/decision-timing-log";
 import { computePressureChatRequestFingerprint } from "../interaction/chat.service";
 import {
   canonicalizeWorkingActionIntentV1,
@@ -167,6 +170,7 @@ export class PressureChapterHttpFacade {
   ): Promise<PressureChapterSubmitDecisionHttpResponseV1> {
     return pressureHttpBoundary(async () => {
       const endToEndStartedAt = performance.now();
+      let failureStage = "INPUT_VALIDATION";
       const httpTimings: Record<string, number> = {
         sql7AttemptMs: 0,
         accessContextMs: 0,
@@ -176,11 +180,14 @@ export class PressureChapterHttpFacade {
         projectionMs: 0,
         totalMs: 0,
       };
+      const requestLog = decisionRequestLogIdentity(roomIdValue, bodyValue);
+      try {
       const principal = parsePrincipal(principalValue);
       const roomId = requiredString(roomIdValue, "roomId");
       const command = parseSubmitDecisionCommand(bodyValue);
       if (this.sql7 && command.chapterId === "N1") {
         const sql7NowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
+        failureStage = "SQL7_SUBMIT";
         const sql7StartedAt = performance.now();
         const sql7 = await this.sql7.submit({
             principal: structuredClone(principal),
@@ -228,6 +235,7 @@ export class PressureChapterHttpFacade {
           };
         }
       }
+      failureStage = "ACCESS_CONTEXT";
       const contextStartedAt = performance.now();
       const context = await this.resolveContext(principal, roomId, "ACTION");
       httpTimings.accessContextMs = elapsed(contextStartedAt);
@@ -239,6 +247,7 @@ export class PressureChapterHttpFacade {
         command: structuredClone(command),
         nowMs,
       };
+      failureStage = "COMMAND_COMPILE";
       const commandCompileStartedAt = performance.now();
       const compilation = this.decisionCompiler.compileWithSnapshot
         ? await this.decisionCompiler.compileWithSnapshot(compilerInput)
@@ -254,6 +263,7 @@ export class PressureChapterHttpFacade {
         command,
         nowMs,
       );
+      failureStage = "HUMAN_SUBMIT";
       const humanSubmitStartedAt = performance.now();
       if (!this.convergence) {
         await this.actions.submitAction(compiled);
@@ -261,6 +271,7 @@ export class PressureChapterHttpFacade {
       const humanSubmitMs = elapsed(humanSubmitStartedAt);
       httpTimings.humanSubmitMs = humanSubmitMs;
       const postSubmitNowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
+      failureStage = "CONVERGENCE";
       const convergenceStartedAt = performance.now();
       const convergence = this.convergence
         ? await this.convergence.converge({
@@ -281,6 +292,7 @@ export class PressureChapterHttpFacade {
           })
         : null;
       httpTimings.convergenceMs = elapsed(convergenceStartedAt);
+      failureStage = "PAGE_PROJECTION";
       const projectionStartedAt = performance.now();
       const projection = this.gameReadMode !== "REPLAY"
         ? await this.gameRead.read({
@@ -349,6 +361,20 @@ export class PressureChapterHttpFacade {
         idempotencyKey: command.idempotencyKey,
         projection,
       };
+      } catch (error) {
+        httpTimings.totalMs = elapsed(endToEndStartedAt);
+        logPressureDecisionFailureV1({
+          path: "HTTP",
+          traceId: requestLog.traceId,
+          runId: requestLog.runId,
+          chapterId: requestLog.chapterId,
+          decisionPointId: requestLog.decisionPointId,
+          stage: failureStage,
+          timings: httpTimings,
+          error,
+        });
+        throw error;
+      }
     });
   }
 
@@ -573,6 +599,33 @@ function logConvergenceDiagnosticsFailure(
     batchId,
     message: error instanceof Error ? error.message : "UNKNOWN",
   });
+}
+
+function decisionRequestLogIdentity(roomIdValue: string, bodyValue: unknown): {
+  traceId: string;
+  runId: string;
+  chapterId: string;
+  decisionPointId: string;
+} {
+  const body = bodyValue && typeof bodyValue === "object" && !Array.isArray(bodyValue)
+    ? bodyValue as Record<string, unknown>
+    : {};
+  const roomId = typeof roomIdValue === "string" ? roomIdValue : "UNKNOWN";
+  const runId = typeof body.runId === "string" ? body.runId : roomId;
+  const chapterId = typeof body.chapterId === "string" ? body.chapterId : "UNKNOWN";
+  const decisionPointId = typeof body.decisionPointId === "string"
+    ? body.decisionPointId
+    : "UNKNOWN";
+  const idempotencyKey = typeof body.idempotencyKey === "string"
+    ? body.idempotencyKey
+    : "UNKNOWN";
+  return {
+    traceId: sha256Canonical({ roomId, runId, chapterId, decisionPointId, idempotencyKey })
+      .slice(0, 16),
+    runId,
+    chapterId,
+    decisionPointId,
+  };
 }
 
 function elapsed(startedAt: number): number {

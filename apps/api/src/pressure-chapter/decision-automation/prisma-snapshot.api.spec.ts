@@ -25,6 +25,10 @@ test("Prisma convergence snapshot captures route, W4, W5 and SeatControl in one 
   assert.match(source, /captureSubmit/u);
   assert.match(source, /storyPlayer\.findUnique/u);
   assert.match(source, /STALE_OR_NOT_AUTHORIZED/u);
+  assert.match(source, /mismatchKeys:\s*authorityMismatches/u);
+  assert.match(source, /"decision\.point"/u);
+  assert.match(source, /"working\.revision"/u);
+  assert.match(source, /"control\.fence"/u);
   assert.match(source, /ledgerProjectionJson:\s*true/u);
   assert.match(source, /decodeWorkingLedgerProjectionCacheV1/u);
   assert.doesNotMatch(source, /projectWorkingLedger|readLedgerEvents/u);
