@@ -427,6 +427,7 @@ async function buildFixture(): Promise<{
     projection: postBeatProjection,
     resolution: beat.resolution,
     nowMs: NOW,
+    participantMode: route.participantMode,
   });
   assert.equal(progression.nextState.phase, "SETTLING");
   assert.ok(progression.settlementInput);

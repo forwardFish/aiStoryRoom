@@ -372,7 +372,12 @@ export class PressureChapterOrchestratorService {
     assertProjectionContext(state, result.projection);
     const nextPin = result.projection.nextDecisionPin;
     if (nextPin) {
-      const nextDecision = buildActiveDecision(descriptor, nextPin.decisionPointId, nowMs);
+      const nextDecision = buildActiveDecision(
+        descriptor,
+        nextPin.decisionPointId,
+        nowMs,
+        route.participantMode,
+      );
       assertKernelPin(descriptor, result.projection, nextPin.decisionPointId);
       const next = nextState(state, {
         phase: "ACTIVE",
@@ -843,6 +848,7 @@ export function planChapterOpeningV1(input: Readonly<{
     chapter,
     workingSet.decisionPoint.decisionPointId,
     input.nowMs,
+    route.participantMode,
   );
   const state = withOrchestratorHashV1({
     schemaVersion: "pressure_chapter_orchestrator_state_v1",
@@ -906,6 +912,7 @@ export function planBeatProgressionV1(input: Readonly<{
   projection: Awaited<ReturnType<WorkingProjectionReaderPort["load"]>>;
   resolution: Parameters<typeof validateBeatResolutionV1>[0];
   nowMs: number;
+  participantMode: RunRouteSnapshotV1["participantMode"];
 }>): Readonly<{
   nextState: ChapterOrchestratorStateV1;
   settlementInput: ReturnType<typeof compileSettlementInputV1> | null;
@@ -938,7 +945,12 @@ export function planBeatProgressionV1(input: Readonly<{
     return {
       nextState: nextState(state, {
         phase: "ACTIVE",
-        activeDecision: buildActiveDecision(descriptor, nextPin.decisionPointId, input.nowMs),
+        activeDecision: buildActiveDecision(
+          descriptor,
+          nextPin.decisionPointId,
+          input.nowMs,
+          input.participantMode,
+        ),
       }),
       settlementInput: null,
     };
@@ -959,6 +971,7 @@ function buildActiveDecision(
   descriptor: AuthoredChapterRuntimeV1,
   decisionPointId: string,
   nowMs: number,
+  participantMode: RunRouteSnapshotV1["participantMode"],
 ): ActiveDecisionStateV1 {
   const decision = requireDecision(descriptor, decisionPointId);
   const deadline = decision.execution.deadlinePolicy;
@@ -966,7 +979,12 @@ function buildActiveDecision(
     decisionPointId,
     policyHash: sha256Canonical(decision),
     openedAtMs: nowMs,
-    deadlineAtMs: deadline ? nowMs + deadline.durationMs : null,
+    // Solo play has no absent human seats to default and must not invalidate a
+    // player's decision while they are reading the story. Multiplayer keeps
+    // the authored deadline so missing human seats can still converge.
+    deadlineAtMs: participantMode === "MULTIPLAYER" && deadline
+      ? nowMs + deadline.durationMs
+      : null,
     seats: PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId): ActiveDecisionSeatV1 => {
       const requirement = decision.seatRequirements[seatId];
       return {

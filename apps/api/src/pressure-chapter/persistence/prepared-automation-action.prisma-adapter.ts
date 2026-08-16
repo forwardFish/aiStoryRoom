@@ -475,6 +475,7 @@ implements PreparedAutomationActionSubmissionPortV1 {
           projection: postBeatProjection,
           resolution: beat.resolution,
           nowMs: batch.actions[0]!.command.nowMs,
+          participantMode: route.participantMode,
         });
         if (
           progression.nextState.orchestratorHash

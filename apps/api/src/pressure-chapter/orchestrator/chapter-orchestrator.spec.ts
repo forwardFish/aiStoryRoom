@@ -393,8 +393,9 @@ test("orchestrator runs N1-N7 with content-authored 1/4/7/dynamic point counts a
     const chapterId = state.currentChapterId;
     const active = state.activeDecision!;
     if (chapterId === "N2" && processed[chapterId] === 0) {
-      assert.ok(active.deadlineAtMs !== null);
-      state = await service.advanceDeadline(routeSnapshot, active.deadlineAtMs!);
+      assert.equal(active.deadlineAtMs, null, "Solo decisions remain open while the player reads");
+      const command = await humanAction(env, routeSnapshot, state, processed[chapterId]);
+      state = await service.submitAction({ ...command, nowMs: nowMs += 1 });
     } else if (chapterId === "N3" && processed[chapterId] === 0) {
       state = await service.applyAiFailure(routeSnapshot, ACTOR, nowMs += 1);
     } else {
@@ -418,7 +419,7 @@ test("orchestrator runs N1-N7 with content-authored 1/4/7/dynamic point counts a
     assert.equal(settlement.settlementInput.baseWorldSequence, index);
     assert.equal(settlement.settlementInput.chapterId, CHAPTER_IDS_V1[index]);
   }
-  assert.ok(env.settlement.inputs[1]!.settlementInput.sealedDecisionActionIds.some((id) => id.startsWith("default_")));
+  assert.equal(env.settlement.inputs[1]!.settlementInput.sealedDecisionActionIds.some((id) => id.startsWith("default_")), false);
   assert.ok(env.settlement.inputs[2]!.settlementInput.sealedDecisionActionIds.some((id) => id.startsWith("default_")));
 });
 
@@ -731,7 +732,7 @@ test("expired actions are rejected and FAIL_CLOSED deadlines never invent a defa
   const { descriptorHash: _oldHash, ...body } = descriptor;
   descriptor.descriptorHash = sha256Canonical(body);
   env.content.descriptors.set("N1", descriptor);
-  const routeSnapshot = route();
+  const routeSnapshot = route("MULTIPLAYER");
   const service = env.create();
   const state = await service.start({
     routeSnapshot,
@@ -799,6 +800,7 @@ test("committed settlement authority skips the duplicate N1 state, content and p
     projection: beat.projection,
     resolution: beat.resolution,
     nowMs: 1,
+    participantMode: routeSnapshot.participantMode,
   });
   assert.ok(progression.settlementInput);
   assert.equal((await env.states.compareAndSwap({
@@ -982,7 +984,7 @@ function emptyIntent(): WorkingActionIntentV1 {
   };
 }
 
-function route(): RunRouteSnapshotV1 {
+function route(participantMode: RunRouteSnapshotV1["participantMode"] = "SOLO"): RunRouteSnapshotV1 {
   return withRunRouteHash({
     schemaVersion: "pressure_run_route_snapshot_v1",
     runId: "run-orchestrator-v1",
@@ -999,9 +1001,11 @@ function route(): RunRouteSnapshotV1 {
     narrativeProfileVersion: "openovel-pressure-v1",
     featureSetVersion: "pressure-feature-v1",
     resultContractRegistryVersion: "pressure-result-registry-v1",
-    participantMode: "SOLO",
+    participantMode,
     seatIds: [...PRESSURE_CHAPTER_SEAT_IDS_V1],
-    humanSeatIdsAtStart: [ACTOR],
+    humanSeatIdsAtStart: participantMode === "SOLO"
+      ? [ACTOR]
+      : [ACTOR, "jiangnan_merchant"],
     controlTopologyVersion: "pressure-control-v1",
     initialRoleControlSnapshotHash: digest("control"),
   });

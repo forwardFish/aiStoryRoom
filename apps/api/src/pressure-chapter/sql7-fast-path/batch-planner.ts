@@ -231,6 +231,7 @@ export async function planPressureSql7PreparedAutomationActionBatchV1(
     projection: postBeatProjection,
     resolution: beat.resolution,
     nowMs: input.nowMs,
+    participantMode: input.snapshot.routeSnapshot.participantMode,
   });
   const downstream = planBeatAuthorityDownstreamV1({
     projection: postBeatProjection,
