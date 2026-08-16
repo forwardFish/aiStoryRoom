@@ -51,7 +51,9 @@ function fixture() {
       async findMany(input: any) {
         return [{
           id: `action-${input.where.seatId}`,
-          payloadJson: { actionEcho: "先发堰区疏散令。" },
+          decisionPointId: "N1.weir_crisis",
+          actionType: "EVACUATE_WEIRS",
+          payloadJson: { optionCode: "EVACUATE_WEIRS", customText: null },
         }];
       },
     },
@@ -78,7 +80,18 @@ function fixture() {
       };
     },
   });
-  const production = createPrismaPressureChapterSummaryProductionV2({ prisma, generator });
+  const production = createPrismaPressureChapterSummaryProductionV2({
+    prisma,
+    generator,
+    actionPresentation: {
+      read(input) {
+        assert.equal(input.chapterId, "N1");
+        assert.equal(input.decisionPointId, "N1.weir_crisis");
+        assert.equal(input.actionType, "EVACUATE_WEIRS");
+        return { label: "先发堰区疏散令" };
+      },
+    },
+  });
   const scope = {
     runId: "run-1",
     routeHash: "f".repeat(64),
@@ -101,6 +114,8 @@ test("current N2 projection is blocked by the latest unconfirmed N1 summary and 
   const persisted = [...state.storyEvent.records.values()][0];
   assert.equal(persisted.audienceType, "PRIVATE");
   assert.deepEqual(persisted.audienceRoleIdsJson, ["zhejiang_governor"]);
+  assert.deepEqual(first?.playerActions, ["你选择了“先发堰区疏散令”。"]);
+  assert.doesNotMatch(JSON.stringify(first), /EVACUATE_WEIRS/u);
 });
 
 test("confirmation is viewer-scoped, idempotent and reveals the already authoritative next chapter", async () => {

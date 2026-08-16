@@ -35,6 +35,14 @@ export interface PressureChapterSummaryProductionV2 {
   coordinator: PressureChapterSummaryProductionCoordinatorV2;
 }
 
+export interface PressureChapterSummaryActionPresentationPortV1 {
+  read(input: Readonly<{
+    chapterId: string;
+    decisionPointId: string;
+    actionType: string;
+  }>): Readonly<{ label: string }>;
+}
+
 type PrismaLike = {
   storyEvent: {
     findUnique(input: unknown): Promise<{ payloadJson: unknown } | null>;
@@ -54,12 +62,14 @@ type PrismaLike = {
 export function createPrismaPressureChapterSummaryProductionV2(input: Readonly<{
   prisma: PrismaLike;
   generator: PressureOneCallStoryGeneratorV1;
+  actionPresentation: PressureChapterSummaryActionPresentationPortV1;
   now?: () => Date;
 }>): PressureChapterSummaryProductionV2 {
   const store = new PrismaPressureChapterSummaryStoryEventStoreV2(input.prisma, input.now);
   const coordinator = new PressureChapterSummaryProductionCoordinatorV2({
     prisma: input.prisma,
     generator: input.generator,
+    actionPresentation: input.actionPresentation,
     store,
   });
   return {
@@ -152,6 +162,7 @@ export class PressureChapterSummaryProductionCoordinatorV2 {
   constructor(private readonly dependencies: Readonly<{
     prisma: PrismaLike;
     generator: PressureOneCallStoryGeneratorV1;
+    actionPresentation: PressureChapterSummaryActionPresentationPortV1;
     store: PrismaPressureChapterSummaryStoryEventStoreV2;
   }>) {}
 
@@ -243,7 +254,13 @@ export class PressureChapterSummaryProductionCoordinatorV2 {
       },
       orderBy: [{ actionOrdinal: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     }) ?? [];
-    const summaryAuthority = buildSummaryAuthority(identity, runtime, settlement, actions);
+    const summaryAuthority = buildSummaryAuthority(
+      identity,
+      runtime,
+      settlement,
+      actions,
+      this.dependencies.actionPresentation,
+    );
     return { summaryAuthority, storyPack: buildSummaryStoryPack(identity, summaryAuthority) };
   }
 }
@@ -285,6 +302,7 @@ function buildSummaryAuthority(
   runtime: Record<string, unknown> | null,
   settlement: Record<string, unknown>,
   actions: unknown[],
+  actionPresentation: PressureChapterSummaryActionPresentationPortV1,
 ): PressureChapterSummaryAuthorityV1 {
   const sources = [settlement.evaluationJson, settlement.worldDeltaJson, settlement.commitManifestJson];
   const resultText = firstDeepText(sources, ["summary", "closingNarrative", "narrative", "resultText"])
@@ -293,8 +311,7 @@ function buildSummaryAuthority(
     const action = recordOrNull(item) ?? {};
     return {
       actionId: String(action.id ?? `action-${index + 1}`),
-      text: firstDeepText([action.payloadJson, action], ["summary", "actionEcho", "customText", "label", "actionType"])
-        ?? "已提交一项正式行动。",
+      text: playerFacingActionText(identity.chapterId, action, index, actionPresentation),
     };
   });
   const completed = firstDeepList(sources, ["completedObjectives", "completed", "achievedObjectives"]);
@@ -316,6 +333,41 @@ function buildSummaryAuthority(
     nextChapterHookFallback: firstDeepText(sources, ["nextChapterHook", "transition", "nextHook"])
       ?? (nextChapterId ? `确认本章总结后，继续进入${nextChapterId}。` : "本局已进入最终收束。"),
   };
+}
+
+function playerFacingActionText(
+  chapterId: string,
+  action: Record<string, unknown>,
+  index: number,
+  actionPresentation: PressureChapterSummaryActionPresentationPortV1,
+): string {
+  const authoredText = firstDeepText(
+    [action.payloadJson, action],
+    ["actionEcho", "customText", "summary"],
+  );
+  if (authoredText) return authoredText;
+
+  const decisionPointId = optionalNonEmpty(action.decisionPointId);
+  const actionType = optionalNonEmpty(action.actionType);
+  if (decisionPointId && actionType) {
+    try {
+      const label = actionPresentation.read({ chapterId, decisionPointId, actionType }).label.trim();
+      if (label) return `你选择了“${label}”。`;
+    } catch (error) {
+      console.warn(JSON.stringify({
+        event: "PRESSURE_CHAPTER_SUMMARY_ACTION_PRESENTATION_FALLBACK",
+        chapterId,
+        decisionPointId,
+        actionType,
+        reason: error instanceof Error ? error.message : "UNKNOWN",
+      }));
+    }
+  }
+  return `你提交了本章第${index + 1}项正式决定。`;
+}
+
+function optionalNonEmpty(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function buildSummaryStoryPack(

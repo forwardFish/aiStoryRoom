@@ -524,6 +524,15 @@ export async function createPressureChapterProductRootV1(input: {
   const chapterSummaryProduction = createPrismaPressureChapterSummaryProductionV2({
     prisma: input.prisma as never,
     generator: oneCallStoryGenerator,
+    actionPresentation: {
+      read: ({ chapterId, decisionPointId, actionType }) => actionPresentations.read({
+        contentPackageVersion: release.route.contentPackageVersion,
+        contentPackageHash: release.route.contentPackageSha256,
+        chapterId: chapterId as never,
+        decisionPointId,
+        actionType,
+      }),
+    },
   });
   const gameProjection = new PressureChapterGameProjectionService(
     routes,
