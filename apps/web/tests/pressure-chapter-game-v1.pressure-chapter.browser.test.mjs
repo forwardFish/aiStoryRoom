@@ -337,6 +337,51 @@ test("pending Narrative uses only the lightweight update endpoint and becomes pl
   assert.equal(result.v2CurrentTurn.status, "OPEN");
 });
 
+test("stale Pressure decision reloads the latest projection instead of showing a generic failure", async () => {
+  const initial = projection({ runId: "run-pressure-stale-decision" });
+  const latest = projection({
+    runId: initial.runId,
+    optionCode: "LATEST_AUTHORIZED_OPTION",
+  });
+  const initialView = pressureProjectionToMainGameViewV1(initial);
+  const latestView = pressureProjectionToMainGameViewV1(latest);
+  let refreshes = 0;
+  const storage = {
+    savedRunId: initial.runId,
+    async restoreOrCreate() { return initialView; },
+    async submitDecision() {
+      throw Object.assign(new Error("This decision has changed."), {
+        status: 409,
+        code: "PRESSURE_HTTP_STALE_DECISION",
+      });
+    },
+    async getRun() {
+      refreshes += 1;
+      return latestView;
+    },
+  };
+  const dom = new JSDOM('<!doctype html><main id="app"></main>', {
+    url: `http://game.test/game?debug=1&runId=${initial.runId}`,
+  });
+  const app = createStoryApp({
+    root: dom.window.document.querySelector("#app"),
+    window: dom.window,
+    storage,
+  });
+
+  await app.boot();
+  await app.submitDecision();
+
+  assert.equal(refreshes, 1);
+  assert.equal(
+    app.getState().view.pressureProjection.decision.options[0].code,
+    "LATEST_AUTHORIZED_OPTION",
+  );
+  assert.match(app.getState().notice, /已为你刷新到最新版本/u);
+  assert.equal(app.getState().error, "");
+  dom.window.close();
+});
+
 test("completed Pressure run uses the existing result route without mounting a parallel page", async () => {
   const runId = "run-pressure-complete";
   const dom = new JSDOM('<!doctype html><main id="app"></main>', { url: `http://game.test/game?runId=${runId}` });

@@ -538,6 +538,47 @@ test("SQL7 infrastructure errors and Prisma unique conflicts have stable public 
   );
 });
 
+test("safe stale decision mismatches are recoverable conflicts without leaking authority details", async () => {
+  let caught: unknown;
+  try {
+    await pressureHttpBoundary(async () => {
+      throw Object.assign(new Error("private authority detail"), {
+        code: "PRESSURE_DECISION_AUTOMATION_PORT_RESULT_INVALID",
+        details: {
+          path: "submit.authority",
+          detail: "STALE_OR_NOT_AUTHORIZED",
+          mismatchKeys: ["decision.completion", "working.revision"],
+        },
+      });
+    });
+  } catch (error) {
+    caught = error;
+  }
+
+  assert.ok(caught instanceof PressureChapterHttpException);
+  assert.equal(caught.code, PRESSURE_CHAPTER_HTTP_ERROR_CODES.STALE_DECISION);
+  assert.equal(caught.getStatus(), 409);
+  const response = caught.getResponse();
+  assert.doesNotMatch(JSON.stringify(response), /decision\.completion|working\.revision|private authority/u);
+});
+
+test("control authority mismatches remain non-recoverable", async () => {
+  await expectHttpCode(
+    () => pressureHttpBoundary(async () => {
+      throw Object.assign(new Error("private control detail"), {
+        code: "PRESSURE_DECISION_AUTOMATION_PORT_RESULT_INVALID",
+        details: {
+          path: "submit.authority",
+          detail: "STALE_OR_NOT_AUTHORIZED",
+          mismatchKeys: ["control.fence"],
+        },
+      });
+    }),
+    PRESSURE_CHAPTER_HTTP_ERROR_CODES.DEPENDENCY_FAILURE,
+    500,
+  );
+});
+
 test("changed public input conflicts and client authority or intent fields fail closed", async () => {
   const harness = createHarness();
   const first = decisionCommand(harness.stored.snapshot.routeHash);

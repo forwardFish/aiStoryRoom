@@ -1540,7 +1540,10 @@ function errorMessage(error) {
 }
 
 function isVersionConflict(error) {
-  return Boolean(error && error.code === "VERSION_CONFLICT");
+  return Boolean(error && (
+    error.code === "VERSION_CONFLICT"
+    || error.code === "PRESSURE_HTTP_STALE_DECISION"
+  ));
 }
 
 function array(value) {

@@ -8,6 +8,7 @@ export const PRESSURE_CHAPTER_HTTP_ERROR_CODES = Object.freeze({
   ROUTE_MISMATCH: "PRESSURE_HTTP_ROUTE_MISMATCH",
   RESULT_NOT_READY: "PRESSURE_HTTP_RESULT_NOT_READY",
   COMMAND_REJECTED: "PRESSURE_HTTP_COMMAND_REJECTED",
+  STALE_DECISION: "PRESSURE_HTTP_STALE_DECISION",
   IDEMPOTENCY_CONFLICT: "PRESSURE_HTTP_IDEMPOTENCY_CONFLICT",
   LEGACY_SLOT_ENDPOINT_REJECTED: "PRESSURE_HTTP_LEGACY_SLOT_ENDPOINT_REJECTED",
   DEPENDENCY_FAILURE: "PRESSURE_HTTP_DEPENDENCY_FAILURE",
@@ -112,6 +113,13 @@ export async function pressureHttpBoundary<T>(
 function mapPressureDependencyError(error: unknown): PressureChapterHttpException {
   const code = readCode(error);
   const path = readPath(error);
+  if (isRecoverableStaleDecision(error)) {
+    return new PressureChapterHttpException(
+      PRESSURE_CHAPTER_HTTP_ERROR_CODES.STALE_DECISION,
+      HttpStatus.CONFLICT,
+      "pressureChapter",
+    );
+  }
   if (
     code === "RUN_ROUTE_NOT_FOUND" ||
     code === "PRESSURE_GAME_ROUTE_NOT_FOUND" ||
@@ -260,7 +268,33 @@ function publicMessage(code: PressureChapterHttpErrorCodeV1): string {
       return "The stored run route does not match this operation.";
     case PRESSURE_CHAPTER_HTTP_ERROR_CODES.COMMAND_REJECTED:
       return "The Pressure chapter command was rejected.";
+    case PRESSURE_CHAPTER_HTTP_ERROR_CODES.STALE_DECISION:
+      return "This decision has changed. The latest state must be loaded.";
     default:
       return "The Pressure chapter request could not be completed.";
   }
+}
+
+const RECOVERABLE_STALE_DECISION_KEYS = new Set([
+  "chapter.phase",
+  "chapter.runtime",
+  "decision.point",
+  "decision.requirement",
+  "decision.completion",
+  "working.revision",
+  "runtime.state",
+]);
+
+function isRecoverableStaleDecision(error: unknown): boolean {
+  if (!error || typeof error !== "object" || !("details" in error)) return false;
+  const details = (error as { details?: unknown }).details;
+  if (!details || typeof details !== "object" || Array.isArray(details)) return false;
+  const record = details as Record<string, unknown>;
+  if (record.detail !== "STALE_OR_NOT_AUTHORIZED") return false;
+  const mismatchKeys = record.mismatchKeys;
+  return Array.isArray(mismatchKeys)
+    && mismatchKeys.length > 0
+    && mismatchKeys.every((key) => (
+      typeof key === "string" && RECOVERABLE_STALE_DECISION_KEYS.has(key)
+    ));
 }
