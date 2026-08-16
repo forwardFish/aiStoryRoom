@@ -1227,12 +1227,9 @@ function renderDecisionComposer({ view, state, prompt, decision, options, select
       <div class="actions"><span>Once confirmed, this enters the causal record and cannot be withdrawn.</span><button id="submitDecision" type="button" ${state.busy || options.length === 0 ? "disabled" : ""}><i aria-hidden="true">✦</i><b>${state.busy ? "Resolving…" : "Submit Decision"}</b><i aria-hidden="true">✦</i></button></div>
     </section>`;
   }
-  const pressureQuestion = view.pressureProjection
-    ? String(decision.title || "你现在必须先决定什么？").trim()
-    : "你要如何应对？";
   return `<section class="decision-zone decision-composer ${storyDecision ? "story-decision" : ""} ${openingDecision ? "opening-decision" : ""}" data-testid="decision-zone" aria-label="提交决策">
     ${hasNarrative ? `<button id="reviewDecisionNarrativeBtn" class="decision-review-narrative" type="button">返回查看剧情</button>` : ""}
-    <div class="decision-zone-head"><span class="decision-kicker">今日主线决策&nbsp; ${progress.completed + 1} / ${progress.required}</span><h2>${esc(pressureQuestion)}</h2>${view.pressureProjection ? "" : `<span>当前事件：${esc(decision.title)}&nbsp; ?</span>`}</div>
+    ${view.pressureProjection ? "" : `<div class="decision-zone-head"><span class="decision-kicker">今日主线决策&nbsp; ${progress.completed + 1} / ${progress.required}</span><h2>你要如何应对？</h2><span>当前事件：${esc(decision.title)}&nbsp; ?</span></div>`}
     <div class="options" role="radiogroup" aria-label="决策选项">${options.map((option) => renderOptionV12(option, option.key === selected)).join("")}
       <label class="option-card decision-custom-option custom key-D"><input type="radio" name="decision" value="CUSTOM" ${selected === "CUSTOM" ? "checked" : ""}/><span class="option-key">${esc(customLabel)}</span><span class="option-copy"><b>自定义决策</b><span>你可以拟定自己的策略，系统会先校验身份、资源、时代与当前阶段。</span></span><small class="custom-label-text">${esc(customLabel)}. 自定义决策</small></label>
     </div>
