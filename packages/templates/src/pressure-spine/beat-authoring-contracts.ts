@@ -65,6 +65,11 @@ export interface PressureChapterBeatAuthoringBeatV1 {
   closesChapter: boolean;
 }
 
+/** Narrow immutable view consumed by BeatSubmitPolicyV1. */
+export type PressureChapterBeatClosureAuthorityV1 = Readonly<
+  Pick<PressureChapterBeatAuthoringBeatV1, "beatId" | "closesChapter">
+>;
+
 export interface PressureChapterBeatBindingsV1 {
   schemaVersion: "pressure_chapter_beat_bindings_v1";
   chapterId: string;
