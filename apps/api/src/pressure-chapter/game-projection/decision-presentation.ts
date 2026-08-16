@@ -335,6 +335,16 @@ function fallbackTurnPresentation(
 ): PressureGameDecisionProjectionV1 {
   const fallback = structuredClone(input.decision);
   const publishedNarrative = String(input.narrative.text ?? "").trim();
+  if (input.narrative.projectionKind !== "GENESIS_NARRATIVE") {
+    // decision.summary is internal pressure guidance for the Provider. It is
+    // never safe player copy when a continuation Narrative is unavailable.
+    fallback.title = "你准备如何应对？";
+    fallback.summary = publishedNarrative || loadSangtianPressureStorySourceV1(
+      input.chapter.chapterId,
+      input.viewer.seatId,
+    ).currentScene.postBeatFrame.text;
+    return fallback;
+  }
   if (publishedNarrative) {
     fallback.summary = publishedNarrative;
   }

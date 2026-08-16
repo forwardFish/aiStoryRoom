@@ -87,6 +87,7 @@ test("unknown AI action rejects the whole candidate and keeps the authored fallb
   const result = await service.present(input);
   assert.deepEqual(result, {
     ...input.decision,
+    title: "你准备如何应对？",
     summary: input.narrative.text,
   });
 });
@@ -130,6 +131,24 @@ test("pending Narrative uses the authored scene frame so the next story does not
   assert.equal(calls, 1);
   assert.notEqual(result.summary, input.decision.summary);
   assert.equal(result.title, "现在必须先解决哪一项？");
+});
+
+test("pending Narrative fallback never exposes internal decision purpose as player copy", async () => {
+  const input = continuationFixture();
+  input.narrative.status = "PENDING";
+  input.narrative.text = null;
+  input.narrative.contentHash = null;
+  input.narrative.renderMode = null;
+  input.decision.title = "INTERNAL DECISION PURPOSE";
+  input.decision.summary = "为继续执行或更正命令留下具名责任，禁止用含混措辞把代价推回现场。";
+
+  const result = await new PressureTurnPresentationServiceV1(null).present(input);
+
+  assert.equal(result.title, "你准备如何应对？");
+  assert.ok(result.summary.trim().length > 30);
+  assert.notEqual(result.summary, input.decision.summary);
+  assert.doesNotMatch(result.summary, /禁止用含混措辞|INTERNAL DECISION PURPOSE/u);
+  assert.deepEqual(result.options, input.decision.options);
 });
 
 test("frozen Genesis uses the authored first scene without calling the Provider", async () => {
@@ -198,11 +217,13 @@ test("unknown fact refs and non-empty claims reject the whole generated turn", a
   });
   assert.deepEqual(await service.present(input), {
     ...input.decision,
+    title: "你准备如何应对？",
     summary: input.narrative.text,
   });
   mode = "CLAIM";
   assert.deepEqual(await service.present(input), {
     ...input.decision,
+    title: "你准备如何应对？",
     summary: input.narrative.text,
   });
 });
