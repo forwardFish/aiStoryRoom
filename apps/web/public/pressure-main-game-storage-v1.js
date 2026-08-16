@@ -288,7 +288,7 @@ function decisionNarrativeText(projection) {
     || projection.narrative?.status === "FALLBACK_PUBLISHED";
   const narrative = String(projection.narrative?.text || "").trim();
   if (!published) return "";
-  return [...narrative].length >= 30 ? narrative : [...summary].length >= 30 ? summary : "";
+  return [...summary].length >= 30 ? summary : [...narrative].length >= 30 ? narrative : "";
 }
 
 function pressureManeuverPanel(projection) {

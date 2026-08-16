@@ -229,6 +229,7 @@ test("an advanced Pressure run resumes the current Beat without replaying Genesi
     sourceId: `${input.runId}:beat:2`,
     text: "第二批回执已经送到案前。此前发出的命令有的接上执行链，有的仍被压在驿路上，胡宗宪必须先处理眼前的冲突。",
   };
+  input.decision.summary = "驿卒掀帘进来时，雨水正顺着斗笠往下淌。两封回执一前一后压上长案，送令的人却对不上同一条驿路。胡宗宪抬眼看向幕僚，门外又响起催问：已经落在人身上的命令，究竟还认不认原路？";
   const dom = new JSDOM('<!doctype html><main id="app"></main>', {
     url: `http://game.test/game?runId=${input.runId}`, pretendToBeVisual: true,
   });
@@ -245,7 +246,8 @@ test("an advanced Pressure run resumes the current Beat without replaying Genesi
 
   assert.equal(root.querySelector('[data-testid="role-opening"]'), null);
   assert.equal(root.querySelector("#beginStoryBtn"), null);
-  assert.match(root.querySelector('[data-testid="decision-narrative"]')?.textContent ?? "", /第二批回执已经送到案前/u);
+  assert.match(root.querySelector('[data-testid="decision-narrative"]')?.textContent ?? "", /驿卒掀帘进来时/u);
+  assert.doesNotMatch(root.querySelector('[data-testid="decision-narrative"]')?.textContent ?? "", /第二批回执已经送到案前/u);
   assert.ok(root.querySelector("#beginDecisionBtn"));
   dom.window.close();
 });

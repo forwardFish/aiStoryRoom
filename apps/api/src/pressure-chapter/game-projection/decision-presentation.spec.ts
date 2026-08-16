@@ -84,7 +84,22 @@ test("unknown AI action rejects the whole candidate and keeps the authored fallb
       });
     },
   });
-  assert.deepEqual(await service.present(input), input.decision);
+  const result = await service.present(input);
+  assert.deepEqual(result, {
+    ...input.decision,
+    summary: input.narrative.text,
+  });
+});
+
+test("Provider absence keeps the published narrative as the safe story fallback", async () => {
+  const input = continuationFixture();
+  const service = new PressureTurnPresentationServiceV1(null);
+
+  const result = await service.present(input);
+
+  assert.equal(result.summary, input.narrative.text);
+  assert.notEqual(result.summary, input.decision.summary);
+  assert.deepEqual(result.options, input.decision.options);
 });
 
 test("pending Narrative uses the authored scene frame so the next story does not wait for a worker", async () => {
@@ -181,9 +196,15 @@ test("unknown fact refs and non-empty claims reject the whole generated turn", a
         : { claims: [{ kind: "FACT", refId: "invented", statement: "虚构事实" }] });
     },
   });
-  assert.deepEqual(await service.present(input), input.decision);
+  assert.deepEqual(await service.present(input), {
+    ...input.decision,
+    summary: input.narrative.text,
+  });
   mode = "CLAIM";
-  assert.deepEqual(await service.present(input), input.decision);
+  assert.deepEqual(await service.present(input), {
+    ...input.decision,
+    summary: input.narrative.text,
+  });
 });
 
 function fixture(): PressureTurnPresentationInputV1 {

@@ -123,7 +123,7 @@ export class PressureTurnPresentationServiceV1 {
   async present(
     input: Readonly<PressureTurnPresentationInputV1>,
   ): Promise<PressureGameDecisionProjectionV1> {
-    const fallback = structuredClone(input.decision);
+    const fallback = fallbackTurnPresentation(input);
     if (input.narrative.projectionKind === "GENESIS_NARRATIVE") {
       const storySource = loadSangtianPressureStorySourceV1(
         input.chapter.chapterId,
@@ -197,6 +197,17 @@ export class PressureTurnPresentationServiceV1 {
       return structuredClone(fallback);
     }
   }
+}
+
+function fallbackTurnPresentation(
+  input: Readonly<PressureTurnPresentationInputV1>,
+): PressureGameDecisionProjectionV1 {
+  const fallback = structuredClone(input.decision);
+  const publishedNarrative = String(input.narrative.text ?? "").trim();
+  if (publishedNarrative) {
+    fallback.summary = publishedNarrative;
+  }
+  return fallback;
 }
 
 export function compilePressureTurnPresentationContextV1(
