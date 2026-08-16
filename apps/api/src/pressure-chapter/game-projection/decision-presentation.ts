@@ -1,4 +1,5 @@
 import { sha256Canonical } from "@ai-story/shared";
+import { performance } from "node:perf_hooks";
 import {
   loadSangtianPressureStorySourceV1,
 } from "@ai-story/templates";
@@ -105,6 +106,27 @@ export interface PressureTurnPresentationInputV1 {
 const ENGINEERING_COPY = /(actionType|decisionPointId|WorkingDelta|stateAfter|Catalog|Pressure\s*Spine|系统字段|规则结算)/iu;
 const FALSE_GUARANTEE = /(一定成功|必然成功|彻底解决|全部解决|保证成功|直接获胜|已经完成全部)/u;
 
+type PressureTurnPresentationTimingStatusV1 =
+  | "GENESIS_BYPASS"
+  | "FALLBACK_NO_PROVIDER"
+  | "FALLBACK_NO_OPTIONS"
+  | "CACHE_HIT"
+  | "CACHE_REJECTED_FALLBACK"
+  | "PROVIDER_SUCCESS"
+  | "PROVIDER_FALLBACK"
+  | "PRESENTATION_FAILURE";
+
+type PressureTurnPresentationStageTimingsV1 = {
+  fallbackBuildMs: number;
+  genesisStorySourceMs: number;
+  contextCompileMs: number;
+  cacheWaitMs: number;
+  providerMs: number;
+  validationMs: number;
+  optionMappingMs: number;
+  resultCloneMs: number;
+};
+
 /**
  * Read-only, fail-open presentation enrichment. Authority and action identity
  * never enter the Provider output: invalid output returns the original
@@ -123,70 +145,145 @@ export class PressureTurnPresentationServiceV1 {
   async present(
     input: Readonly<PressureTurnPresentationInputV1>,
   ): Promise<PressureGameDecisionProjectionV1> {
-    const fallback = fallbackTurnPresentation(input);
-    if (input.narrative.projectionKind === "GENESIS_NARRATIVE") {
-      const storySource = loadSangtianPressureStorySourceV1(
-        input.chapter.chapterId,
-        input.viewer.seatId,
-      );
-      return {
-        ...fallback,
-        summary: storySource.currentScene.text,
-      };
-    }
-    if (
-      !this.provider
-      || input.decision.options.length === 0
-    ) return fallback;
-    const context = compilePressureTurnPresentationContextV1(input);
-    const cached = this.cache.get(context.contextHash);
-    if (cached) {
-      try {
-        return structuredClone(await cached);
-      } catch {
-        this.cache.delete(context.contextHash);
+    const startedAt = performance.now();
+    const timings = emptyTurnPresentationStageTimings();
+    let status: PressureTurnPresentationTimingStatusV1 = "PRESENTATION_FAILURE";
+    let contextHash: string | null = null;
+    try {
+      const fallbackStartedAt = performance.now();
+      const fallback = fallbackTurnPresentation(input);
+      timings.fallbackBuildMs = elapsedTurnPresentationMs(fallbackStartedAt);
+      if (input.narrative.projectionKind === "GENESIS_NARRATIVE") {
+        const storySourceStartedAt = performance.now();
+        const storySource = loadSangtianPressureStorySourceV1(
+          input.chapter.chapterId,
+          input.viewer.seatId,
+        );
+        timings.genesisStorySourceMs = elapsedTurnPresentationMs(
+          storySourceStartedAt,
+        );
+        status = "GENESIS_BYPASS";
+        return {
+          ...fallback,
+          summary: storySource.currentScene.text,
+        };
+      }
+      if (!this.provider) {
+        status = "FALLBACK_NO_PROVIDER";
         return fallback;
       }
-    }
-    const pending = this.generate(context, fallback);
-    this.cache.set(context.contextHash, pending);
-    try {
-      return structuredClone(await pending);
-    } catch {
-      this.cache.delete(context.contextHash);
-      return fallback;
+      if (input.decision.options.length === 0) {
+        status = "FALLBACK_NO_OPTIONS";
+        return fallback;
+      }
+      const contextStartedAt = performance.now();
+      const context = compilePressureTurnPresentationContextV1(input);
+      timings.contextCompileMs = elapsedTurnPresentationMs(contextStartedAt);
+      contextHash = context.contextHash;
+      const cached = this.cache.get(context.contextHash);
+      if (cached) {
+        const cacheStartedAt = performance.now();
+        try {
+          const result = structuredClone(await cached);
+          timings.resultCloneMs = elapsedTurnPresentationMs(cacheStartedAt);
+          status = "CACHE_HIT";
+          return result;
+        } catch {
+          this.cache.delete(context.contextHash);
+          status = "CACHE_REJECTED_FALLBACK";
+          return fallback;
+        } finally {
+          timings.cacheWaitMs = elapsedTurnPresentationMs(cacheStartedAt);
+        }
+      }
+      const generationOutcome: {
+        status: "PROVIDER_SUCCESS" | "PROVIDER_FALLBACK";
+      } = { status: "PROVIDER_FALLBACK" };
+      const pending = this.generate(
+        context,
+        fallback,
+        timings,
+        generationOutcome,
+      );
+      this.cache.set(context.contextHash, pending);
+      try {
+        const generated = await pending;
+        const cloneStartedAt = performance.now();
+        const result = structuredClone(generated);
+        timings.resultCloneMs = elapsedTurnPresentationMs(cloneStartedAt);
+        status = generationOutcome.status;
+        return result;
+      } catch {
+        this.cache.delete(context.contextHash);
+        status = "PROVIDER_FALLBACK";
+        return fallback;
+      }
+    } finally {
+      logPressureTurnPresentationTimingV1({
+        chapterId: input.chapter.chapterId,
+        chapterRuntimeId: input.chapter.chapterRuntimeId,
+        decisionPointId: input.decision.decisionPointId,
+        viewerSeatId: input.viewer.seatId,
+        contextHash,
+        status,
+        totalMs: elapsedTurnPresentationMs(startedAt),
+        timings,
+      });
     }
   }
 
   private async generate(
     context: PressureTurnPresentationContextV1,
     fallback: PressureGameDecisionProjectionV1,
+    timings: PressureTurnPresentationStageTimingsV1,
+    outcome: { status: "PROVIDER_SUCCESS" | "PROVIDER_FALLBACK" },
   ): Promise<PressureGameDecisionProjectionV1> {
     try {
-      const raw = await this.provider!.renderTurnPresentation(
-        structuredClone(context),
-      );
-      const candidate = validatePressureTurnPresentationCandidateV1(
-        raw,
-        context,
-      );
-      const generatedByAction = new Map(
-        candidate.options.map((option) => [option.actionType, option]),
-      );
-      return {
-        ...structuredClone(fallback),
-        title: candidate.question,
-        summary: candidate.sceneText,
-        options: fallback.options.map((option) => {
-          const generated = generatedByAction.get(option.actionType)!;
-          return {
-            ...option,
-            label: generated.label,
-            description: generated.description,
-          };
-        }),
-      };
+      const providerStartedAt = performance.now();
+      let raw: unknown;
+      try {
+        raw = await this.provider!.renderTurnPresentation(
+          structuredClone(context),
+        );
+      } finally {
+        timings.providerMs = elapsedTurnPresentationMs(providerStartedAt);
+      }
+      const validationStartedAt = performance.now();
+      let candidate: PressureTurnPresentationCandidateV1;
+      try {
+        candidate = validatePressureTurnPresentationCandidateV1(
+          raw,
+          context,
+        );
+      } finally {
+        timings.validationMs = elapsedTurnPresentationMs(validationStartedAt);
+      }
+      const mappingStartedAt = performance.now();
+      let result: PressureGameDecisionProjectionV1;
+      try {
+        const generatedByAction = new Map(
+          candidate.options.map((option) => [option.actionType, option]),
+        );
+        result = {
+          ...structuredClone(fallback),
+          title: candidate.question,
+          summary: candidate.sceneText,
+          options: fallback.options.map((option) => {
+            const generated = generatedByAction.get(option.actionType)!;
+            return {
+              ...option,
+              label: generated.label,
+              description: generated.description,
+            };
+          }),
+        };
+      } finally {
+        timings.optionMappingMs = elapsedTurnPresentationMs(mappingStartedAt);
+      }
+      outcome.status = "PROVIDER_SUCCESS";
+      return result;
     } catch (error) {
+      outcome.status = "PROVIDER_FALLBACK";
       console.warn(JSON.stringify({
         event: "PRESSURE_TURN_PRESENTATION_FALLBACK",
         contextHash: context.contextHash,
@@ -197,6 +294,40 @@ export class PressureTurnPresentationServiceV1 {
       return structuredClone(fallback);
     }
   }
+}
+
+function emptyTurnPresentationStageTimings(): PressureTurnPresentationStageTimingsV1 {
+  return {
+    fallbackBuildMs: 0,
+    genesisStorySourceMs: 0,
+    contextCompileMs: 0,
+    cacheWaitMs: 0,
+    providerMs: 0,
+    validationMs: 0,
+    optionMappingMs: 0,
+    resultCloneMs: 0,
+  };
+}
+
+function logPressureTurnPresentationTimingV1(input: Readonly<{
+  chapterId: string;
+  chapterRuntimeId: string;
+  decisionPointId: string;
+  viewerSeatId: string;
+  contextHash: string | null;
+  status: PressureTurnPresentationTimingStatusV1;
+  totalMs: number;
+  timings: PressureTurnPresentationStageTimingsV1;
+}>): void {
+  try {
+    console.error("Pressure turn presentation timing", JSON.stringify(input));
+  } catch {
+    // Observability must not change the presentation response.
+  }
+}
+
+function elapsedTurnPresentationMs(startedAt: number): number {
+  return Math.max(0, performance.now() - startedAt);
 }
 
 function fallbackTurnPresentation(

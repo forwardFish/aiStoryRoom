@@ -1,3 +1,4 @@
+import { performance } from "node:perf_hooks";
 import {
   PRESSURE_CHAPTER_SEAT_IDS_V1,
   TRACK_IDS_V1,
@@ -57,6 +58,21 @@ const WORKBENCH_CAPABILITY_KEYS = Object.freeze([
   "canUseToken",
   "canPlan",
 ] as const);
+
+type PressureGameProjectionStageTimingsV1 = {
+  viewerReadMs: number;
+  chapterResolveMs: number;
+  worldReadMs: number;
+  narrativeReadMs: number;
+  feedReadMs: number;
+  capabilitiesReadMs: number;
+  sourceValidationAndSanitizationMs: number;
+  turnPresentationMs: number;
+  postPresentationSanitizationMs: number;
+  chapterSummaryReadMs: number;
+  chapterSummarySanitizationMs: number;
+  responseAssemblyMs: number;
+};
 
 export class PressureChapterGameProjectionService {
   constructor(
@@ -212,6 +228,9 @@ export class PressureChapterGameProjectionService {
     routeSnapshot: ReadPressureChapterGameProjectionFromAuthorityV1["routeSnapshot"],
     seeded: ReadPressureChapterGameProjectionFromAuthorityV1 | null,
   ): Promise<PressureChapterGameProjectionV1> {
+    const projectionStartedAt = performance.now();
+    const timings = emptyProjectionStageTimings();
+    let status: "SUCCESS" | "FAILURE" = "FAILURE";
     string(query.runId, "query.runId");
     string(query.subjectId, "query.subjectId");
     const limit = query.feedLimit ?? 10;
@@ -224,43 +243,54 @@ export class PressureChapterGameProjectionService {
     // Resolve and validate the audience authority before asking for a chapter
     // decision. Decision requirement/options are seat-scoped and must never be
     // materialized from a run-only read.
-    const viewerPromise = this.viewers.readViewer({
-      runId: query.runId,
-      subjectId: query.subjectId,
-    });
+    const viewerPromise = measureProjectionStage(timings, "viewerReadMs", () => (
+      this.viewers.readViewer({
+        runId: query.runId,
+        subjectId: query.subjectId,
+      })
+    ));
     const routeHash = routeSnapshot.routeHash;
     const seededChapter = seeded
-      ? this.chapters.projectCurrent!({
-          runId: query.runId,
-          routeHash,
-          viewerSeatId: seeded.viewerSeatId,
-          state: seeded.chapter,
-          projection: seeded.workingProjection,
-          chapter: seeded.chapterDescriptor,
-        })
+      ? measureProjectionStageSync(timings, "chapterResolveMs", () => (
+          this.chapters.projectCurrent!({
+            runId: query.runId,
+            routeHash,
+            viewerSeatId: seeded.viewerSeatId,
+            state: seeded.chapter,
+            projection: seeded.workingProjection,
+            chapter: seeded.chapterDescriptor,
+          })
+        ))
       : null;
     const seededReads = seeded && seededChapter
       ? Promise.all([
           viewerPromise,
-          this.worlds.readWorld(query.runId),
-          this.narratives.readCurrent({
-            runId: query.runId,
-            routeHash,
-            viewerSeatId: seeded.viewerSeatId,
-            chapterRuntimeId: seededChapter.chapter.chapterRuntimeId,
-          }),
-          this.feed.list({
-            roomId: seeded.roomId,
-            runId: query.runId,
-            viewerSeatId: seeded.viewerSeatId,
-            cursor: query.feedCursor ?? null,
-            limit,
-          }),
+          measureProjectionStage(timings, "worldReadMs", () => (
+            this.worlds.readWorld(query.runId)
+          )),
+          measureProjectionStage(timings, "narrativeReadMs", () => (
+            this.narratives.readCurrent({
+              runId: query.runId,
+              routeHash,
+              viewerSeatId: seeded.viewerSeatId,
+              chapterRuntimeId: seededChapter.chapter.chapterRuntimeId,
+            })
+          )),
+          measureProjectionStage(timings, "feedReadMs", () => (
+            this.feed.list({
+              roomId: seeded.roomId,
+              runId: query.runId,
+              viewerSeatId: seeded.viewerSeatId,
+              cursor: query.feedCursor ?? null,
+              limit,
+            })
+          )),
         ] as const)
       : null;
-    const seededResults = seededReads ? await seededReads : null;
-    const viewer = seededResults ? seededResults[0] : await viewerPromise;
-    if (!viewer) failPressureGameProjection(ERROR.VIEWER_NOT_FOUND, query.subjectId);
+    try {
+      const seededResults = seededReads ? await seededReads : null;
+      const viewer = seededResults ? seededResults[0] : await viewerPromise;
+      if (!viewer) failPressureGameProjection(ERROR.VIEWER_NOT_FOUND, query.subjectId);
     same(query.runId, viewer.runId, "viewer.runId");
     same(query.subjectId, viewer.subjectId, "viewer.subjectId");
     same(routeSnapshot.routeHash, viewer.routeHash, "viewer.routeHash");
@@ -268,50 +298,60 @@ export class PressureChapterGameProjectionService {
     validateSituation(viewer.situation);
     if (seeded) same(seeded.roomId, viewer.roomId, "seeded.roomId");
 
-    const [chapter, world] = seededResults
-      ? [seededChapter, seededResults[1]] as const
-      : await Promise.all([
-          this.chapters.readCurrent({
+      const [chapter, world] = seededResults
+        ? [seededChapter, seededResults[1]] as const
+        : await Promise.all([
+          measureProjectionStage(timings, "chapterResolveMs", () => (
+            this.chapters.readCurrent({
+              runId: query.runId,
+              routeHash,
+              viewerSeatId: viewer.viewer.seatId,
+            })
+          )),
+          measureProjectionStage(timings, "worldReadMs", () => (
+            this.worlds.readWorld(query.runId)
+          )),
+          ]);
+      if (!chapter) failPressureGameProjection(ERROR.CHAPTER_NOT_FOUND, query.runId);
+      if (!world) failPressureGameProjection(ERROR.WORLD_NOT_FOUND, query.runId);
+
+      const narrativeSource = seededResults
+        ? seededResults[2]
+        : await measureProjectionStage(timings, "narrativeReadMs", () => (
+          this.narratives.readCurrent({
             runId: query.runId,
             routeHash,
             viewerSeatId: viewer.viewer.seatId,
-          }),
-          this.worlds.readWorld(query.runId),
-        ]);
-    if (!chapter) failPressureGameProjection(ERROR.CHAPTER_NOT_FOUND, query.runId);
-    if (!world) failPressureGameProjection(ERROR.WORLD_NOT_FOUND, query.runId);
-
-    const narrativeSource = seededResults
-      ? seededResults[2]
-      : await this.narratives.readCurrent({
-          runId: query.runId,
-          routeHash,
-          viewerSeatId: viewer.viewer.seatId,
-          chapterRuntimeId: chapter.chapter.chapterRuntimeId,
-        });
-    if (!narrativeSource) {
-      failPressureGameProjection(ERROR.NARRATIVE_NOT_FOUND, chapter.chapter.chapterRuntimeId);
-    }
-    const rawCapabilities = seeded
-      ? null
-      : await this.capabilities.readCapabilities({
-          runId: query.runId,
-          routeHash,
-          subjectId: query.subjectId,
-          viewerSeatId: viewer.viewer.seatId,
-          chapterRuntimeId: chapter.chapter.chapterRuntimeId,
-          decisionPointId: chapter.decision?.decisionPointId ?? null,
-        });
-    const rawFeedPage = seededResults
-        ? seededResults[3]
-        : await this.feed.list({
-            roomId: viewer.roomId,
+            chapterRuntimeId: chapter.chapter.chapterRuntimeId,
+          })
+          ));
+      if (!narrativeSource) {
+        failPressureGameProjection(ERROR.NARRATIVE_NOT_FOUND, chapter.chapter.chapterRuntimeId);
+      }
+      const rawCapabilities = seeded
+        ? null
+        : await measureProjectionStage(timings, "capabilitiesReadMs", () => (
+          this.capabilities.readCapabilities({
             runId: query.runId,
+            routeHash,
+            subjectId: query.subjectId,
             viewerSeatId: viewer.viewer.seatId,
-            cursor: query.feedCursor ?? null,
-            limit,
-          });
-    return this.projectResolvedSources({
+            chapterRuntimeId: chapter.chapter.chapterRuntimeId,
+            decisionPointId: chapter.decision?.decisionPointId ?? null,
+          })
+          ));
+      const rawFeedPage = seededResults
+        ? seededResults[3]
+        : await measureProjectionStage(timings, "feedReadMs", () => (
+            this.feed.list({
+              roomId: viewer.roomId,
+              runId: query.runId,
+              viewerSeatId: viewer.viewer.seatId,
+              cursor: query.feedCursor ?? null,
+              limit,
+            })
+            ));
+      const result = await this.projectResolvedSources({
       query,
       routeSnapshot,
       viewer,
@@ -326,7 +366,20 @@ export class PressureChapterGameProjectionService {
             chapter.decision,
           )
         : null,
-    });
+        timings,
+      });
+      status = "SUCCESS";
+      return result;
+    } finally {
+      logPressureGameProjectionBreakdownV1({
+        runId: query.runId,
+        subjectId: query.subjectId,
+        mode: seeded ? "COMMITTED_AUTHORITY" : "FULL_READ",
+        status,
+        totalMs: elapsedProjectionMs(projectionStartedAt),
+        timings,
+      });
+    }
   }
 
   private async projectResolvedSources(input: Readonly<{
@@ -339,7 +392,10 @@ export class PressureChapterGameProjectionService {
     feedPage: AEmotionFeedPagePortV1;
     capabilities: PressureGameCapabilitiesV1 | null;
     committedAllowedActionTypes: readonly string[] | null;
+    timings?: PressureGameProjectionStageTimingsV1;
   }>): Promise<PressureChapterGameProjectionV1> {
+    const timings = input.timings ?? emptyProjectionStageTimings();
+    const sanitizationStartedAt = performance.now();
     const { query, routeSnapshot, viewer, chapter, world, narrativeSource } = input;
     const routeHash = routeSnapshot.routeHash;
     same(query.runId, viewer.runId, "viewer.runId");
@@ -375,17 +431,27 @@ export class PressureChapterGameProjectionService {
       chapter.decision,
       chapter.chapter.workingRevision,
     );
-    const decision = fallbackDecision && this.turnPresentations
-      ? await this.turnPresentations.present({
-          chapter: structuredClone(chapter.chapter),
-          viewer: structuredClone(viewer.viewer),
-          situation: structuredClone(viewer.situation),
-          metrics: structuredClone(metrics),
-          resources: structuredClone(resources),
-          narrative: structuredClone(narrative),
-          decision: structuredClone(fallbackDecision),
-        })
-      : fallbackDecision;
+    timings.sourceValidationAndSanitizationMs = elapsedProjectionMs(
+      sanitizationStartedAt,
+    );
+    const turnPresentationStartedAt = performance.now();
+    let decision: PressureGameDecisionProjectionV1 | null;
+    try {
+      decision = fallbackDecision && this.turnPresentations
+        ? await this.turnPresentations.present({
+            chapter: structuredClone(chapter.chapter),
+            viewer: structuredClone(viewer.viewer),
+            situation: structuredClone(viewer.situation),
+            metrics: structuredClone(metrics),
+            resources: structuredClone(resources),
+            narrative: structuredClone(narrative),
+            decision: structuredClone(fallbackDecision),
+          })
+        : fallbackDecision;
+    } finally {
+      timings.turnPresentationMs = elapsedProjectionMs(turnPresentationStartedAt);
+    }
+    const postPresentationSanitizationStartedAt = performance.now();
     const resolvedCapabilities = sanitizeCapabilities(
       input.capabilities ?? capabilitiesFromCommittedAuthority(
         viewer.viewer.control,
@@ -407,18 +473,28 @@ export class PressureChapterGameProjectionService {
       runId: query.runId,
       viewerSeatId: viewer.viewer.seatId,
     });
+    timings.postPresentationSanitizationMs = elapsedProjectionMs(
+      postPresentationSanitizationStartedAt,
+    );
     const chapterSummarySource = this.chapterSummaries
-      ? await this.chapterSummaries.readCurrent({
-          runId: query.runId,
-          routeHash,
-          chapterRuntimeId: chapter.chapter.chapterRuntimeId,
-          viewerSeatId: viewer.viewer.seatId,
-        })
+      ? await measureProjectionStage(timings, "chapterSummaryReadMs", () => (
+          this.chapterSummaries!.readCurrent({
+            runId: query.runId,
+            routeHash,
+            chapterRuntimeId: chapter.chapter.chapterRuntimeId,
+            viewerSeatId: viewer.viewer.seatId,
+          })
+        ))
       : null;
+    const chapterSummarySanitizationStartedAt = performance.now();
     const chapterSummary = sanitizeChapterSummary(chapterSummarySource, {
       runId: query.runId, routeHash, chapterRuntimeId: chapter.chapter.chapterRuntimeId,
       viewerSeatId: viewer.viewer.seatId, chapterId: chapter.chapter.chapterId,
     });
+    timings.chapterSummarySanitizationMs = elapsedProjectionMs(
+      chapterSummarySanitizationStartedAt,
+    );
+    const assemblyStartedAt = performance.now();
     const base = {
       schemaVersion: PRESSURE_CHAPTER_GAME_PROJECTION_SCHEMA_V1,
       projectionVersion: chapter.projectionVersion,
@@ -443,8 +519,78 @@ export class PressureChapterGameProjectionService {
       chapterSummary,
       feedPage,
     };
-    return { ...base, projectionHash: sha256Canonical(base) };
+    const result = { ...base, projectionHash: sha256Canonical(base) };
+    timings.responseAssemblyMs = elapsedProjectionMs(assemblyStartedAt);
+    return result;
   }
+}
+
+function emptyProjectionStageTimings(): PressureGameProjectionStageTimingsV1 {
+  return {
+    viewerReadMs: 0,
+    chapterResolveMs: 0,
+    worldReadMs: 0,
+    narrativeReadMs: 0,
+    feedReadMs: 0,
+    capabilitiesReadMs: 0,
+    sourceValidationAndSanitizationMs: 0,
+    turnPresentationMs: 0,
+    postPresentationSanitizationMs: 0,
+    chapterSummaryReadMs: 0,
+    chapterSummarySanitizationMs: 0,
+    responseAssemblyMs: 0,
+  };
+}
+
+async function measureProjectionStage<
+  T,
+  K extends keyof PressureGameProjectionStageTimingsV1,
+>(
+  timings: PressureGameProjectionStageTimingsV1,
+  key: K,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const startedAt = performance.now();
+  try {
+    return await operation();
+  } finally {
+    timings[key] = elapsedProjectionMs(startedAt);
+  }
+}
+
+function measureProjectionStageSync<
+  T,
+  K extends keyof PressureGameProjectionStageTimingsV1,
+>(
+  timings: PressureGameProjectionStageTimingsV1,
+  key: K,
+  operation: () => T,
+): T {
+  const startedAt = performance.now();
+  try {
+    return operation();
+  } finally {
+    timings[key] = elapsedProjectionMs(startedAt);
+  }
+}
+
+function logPressureGameProjectionBreakdownV1(input: Readonly<{
+  runId: string;
+  subjectId: string;
+  mode: "COMMITTED_AUTHORITY" | "FULL_READ";
+  status: "SUCCESS" | "FAILURE";
+  totalMs: number;
+  timings: PressureGameProjectionStageTimingsV1;
+}>): void {
+  try {
+    console.error("Pressure game projection breakdown", JSON.stringify(input));
+  } catch {
+    // Observability must not change the projection response.
+  }
+}
+
+function elapsedProjectionMs(startedAt: number): number {
+  return Math.max(0, performance.now() - startedAt);
 }
 
 function sanitizeChapterSummary(
