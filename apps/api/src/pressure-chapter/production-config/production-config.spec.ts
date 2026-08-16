@@ -127,10 +127,12 @@ test("narrative provider is explicit and deterministic fallback is visible", asy
     model: null,
   });
 
+  let providerRequest: RequestInit | undefined;
   const external = createPressureNarrativeProviderFromEnvV1({
     DEEPSEEK_API_KEY: "secret-provider-key",
     DEEPSEEK_MODEL: "deepseek-test",
-  }, async () => {
+  }, async (_url, init) => {
+    providerRequest = init;
     return new Response(JSON.stringify({
       choices: [{ message: { content: JSON.stringify({
         sceneText: "A safe line.",
@@ -142,9 +144,19 @@ test("narrative provider is explicit and deterministic fallback is visible", asy
     }), { status: 200, headers: { "content-type": "application/json" } });
   });
   assert.equal(external.provider, null);
-  assert.equal(external.readiness.mode, "DETERMINISTIC_FALLBACK_ONLY");
+  assert.equal(external.readiness.mode, "EXTERNAL_PROVIDER");
+  assert.equal(external.readiness.externalProviderConfigured, true);
   assert.equal(external.readiness.degraded, false);
+  assert.equal(external.readiness.provider, "deepseek");
+  assert.equal(external.readiness.model, "deepseek-test");
   assert.ok(external.turnPresentationProvider);
   assert.ok(external.oneCallStoryProvider);
   assert.doesNotMatch(JSON.stringify(external.readiness), /secret-provider-key/);
+
+  await external.oneCallStoryProvider!.renderOneCallStory({ mode: "CHAPTER_SUMMARY" });
+  const requestBody = JSON.parse(String(providerRequest?.body));
+  const instruction = requestBody.messages[0].content as string;
+  assert.match(instruction, /3至6个自然段/u);
+  assert.match(instruction, /不得使用Markdown/u);
+  assert.match(instruction, /全大写下划线连接的内部代码/u);
 });

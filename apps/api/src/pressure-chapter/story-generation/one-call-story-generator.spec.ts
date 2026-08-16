@@ -46,7 +46,16 @@ test("last Beat uses exactly one Provider call for narrative and structured summ
         actualResults: authority.actualResults.map((item) => ({ resultRef: item.resultRef, text: item.text })),
         completedObjectives: authority.completedObjectives.map((item) => ({ objectiveRef: item.objectiveRef, text: item.text })),
         incompleteObjectives: authority.incompleteObjectives.map((item) => ({ objectiveRef: item.objectiveRef, text: item.text })),
-        metricChanges: authority.metricChanges.map((item) => ({ metricRef: item.metricRef, label: item.label, before: item.before, delta: item.delta, after: item.after })),
+        metricChanges: authority.metricChanges.map((item) => ({
+          metricRef: item.metricRef,
+          label: item.label,
+          before: item.before,
+          delta: item.delta,
+          after: item.after,
+          displayBefore: item.displayBefore,
+          displayDelta: item.displayDelta,
+          displayAfter: item.displayAfter,
+        })),
         remainingPressures: authority.remainingPressures.map((item) => ({ pressureRef: item.pressureRef, text: item.text })),
         nextChapterHook: "第一道奏疏必须解释九堰之夜留下的责任链。",
       };
@@ -60,6 +69,10 @@ test("last Beat uses exactly one Provider call for narrative and structured summ
 });
 
 test("Provider failure or invalid authority data falls back completely without another call", async () => {
+  const warnings: string[] = [];
+  const originalWarn = console.warn;
+  console.warn = (message?: unknown) => warnings.push(String(message));
+  try {
   for (const mode of ["THROW", "MUTATE"] as const) {
     let calls = 0;
     const service = new PressureOneCallStoryGeneratorV1({
@@ -82,7 +95,15 @@ test("Provider failure or invalid authority data falls back completely without a
     assert.equal(result.mode, "CHAPTER_SUMMARY");
     assert.equal(result.renderMode, "DETERMINISTIC_FALLBACK");
     assert.equal(result.metricChanges[0]!.delta, 2);
+    assert.match(result.closingNarrative, /你下令先撤低洼处百姓/u);
+    assert.doesNotMatch(JSON.stringify(result), /EVACUATE_WEIRS/u);
   }
+  } finally {
+    console.warn = originalWarn;
+  }
+  assert.equal(warnings.length, 2);
+  assert.ok(warnings.every((message) => message.includes("PRESSURE_ONE_CALL_STORY_FALLBACK")));
+  assert.ok(warnings.every((message) => !message.includes("offline") || message.includes('"reason":"offline"')));
 });
 
 function pack(): PressureViewerStoryPackV1 {

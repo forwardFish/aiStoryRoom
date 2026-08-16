@@ -82,11 +82,11 @@ export function createPressureNarrativeProviderFromEnvV1(
     oneCallStoryProvider: provider,
     readiness: {
       ready: true,
-      mode: "DETERMINISTIC_FALLBACK_ONLY",
-      externalProviderConfigured: false,
+      mode: "EXTERNAL_PROVIDER",
+      externalProviderConfigured: true,
       degraded: false,
-      provider: "deterministic-fallback",
-      model: null,
+      provider: "deepseek",
+      model,
     },
   };
 }
@@ -254,7 +254,7 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, Pres
           {
             role: "system",
             content: context.mode === "CHAPTER_SUMMARY"
-              ? "一次输出章末文学收束与结构化总结。只能转述给定权威字段；引用集合和数值必须原样返回，不得裁定、打分或创造因果。只返回JSON。"
+              ? buildPressureChapterSummarySystemInstructionV1()
               : "一次输出连续文学剧情、具体问题与全部合法选项表达。不得新增行动、事实、效果或结果。只返回JSON。",
           },
           { role: "user", content: JSON.stringify(context) },
@@ -275,6 +275,18 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, Pres
     }
   }
 
+}
+
+export function buildPressureChapterSummarySystemInstructionV1(): string {
+  return [
+    "你是历史小说的章末叙事者，同时负责把同一批权威事实整理成玩家可读的结构化总结。只返回一个JSON对象，不得使用Markdown。",
+    "closingNarrative必须是300至900个汉字、3至6个自然段的小说式收束。要有人物动作、现场感、对话或无声反应，并让本章真实结果自然落地；最后用尚未解决的压力引出下一章。不要写成系统报告、工作清单或规则说明。",
+    "可以补充不改变结算的天气、声音、表情、走动和陈设等文学细节；不得新增人物决定、灾情结果、胜负、数值、证据、因果或已完成事项。",
+    "必须完整返回这些字段且不得增加字段：closingNarrative、playerActions、actualResults、completedObjectives、incompleteObjectives、metricChanges、remainingPressures、nextChapterHook。即使某个数组为空也必须返回空数组。",
+    "playerActions、actualResults、completedObjectives、incompleteObjectives、remainingPressures中的引用字段必须逐项原样复制输入中的引用，数量和集合完全一致，只改写text为自然中文。",
+    "metricChanges中的metricRef、label、before、delta、after、displayBefore、displayDelta、displayAfter必须逐项原样复制；不得改动、补算、合并、遗漏或增加字段。",
+    "玩家可见文字不得出现actionType、factId、metricId、哈希、fence、Provider、Prompt、Reviewer或形如全大写下划线连接的内部代码。",
+  ].join("\n");
 }
 
 export function deepSeekNarrativeEndpoint(value?: string): string {

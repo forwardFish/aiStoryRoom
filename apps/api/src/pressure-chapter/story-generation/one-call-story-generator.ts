@@ -24,8 +24,9 @@ export class PressureOneCallStoryGeneratorV1 {
     this.cache.set(key, pending);
     try {
       return structuredClone(await pending);
-    } catch {
+    } catch (error) {
       this.cache.delete(key);
+      logFallback(input, context, error, "GENERATOR");
       return fallback(input);
     }
   }
@@ -34,13 +35,18 @@ export class PressureOneCallStoryGeneratorV1 {
     input: Readonly<GeneratePressureOneCallStoryInputV1>,
     context: Readonly<Record<string, unknown>>,
   ): Promise<PressureOneCallStoryOutputV1> {
-    if (!this.provider) return fallback(input);
+    if (!this.provider) {
+      logFallback(input, context, new Error("PROVIDER_NOT_CONFIGURED"), "PROVIDER");
+      return fallback(input);
+    }
+    const startedAt = performance.now();
     try {
       const raw = await this.provider.renderOneCallStory(structuredClone(context));
       return input.mode === "TURN"
         ? validateTurn(raw, input)
         : validateSummary(raw, requiredSummary(input), input.storyPack.identity.chapterId);
-    } catch {
+    } catch (error) {
+      logFallback(input, context, error, "PROVIDER_OR_VALIDATION", performance.now() - startedAt);
       return fallback(input);
     }
   }
@@ -132,12 +138,22 @@ function validateSummary(
   const metrics = new Map(authority.metricChanges.map((item) => [item.metricRef, item]));
   const seen = new Set<string>();
   const metricChanges = raw.metricChanges.map((item, index) => {
-    const candidate = exact(item, ["metricRef", "label", "before", "delta", "after"], `summary.metricChanges[${index}]`);
+    const candidate = exact(item, [
+      "metricRef", "label", "before", "delta", "after",
+      "displayBefore", "displayDelta", "displayAfter",
+    ], `summary.metricChanges[${index}]`);
     const metricRef = text(candidate.metricRef, `summary.metricChanges[${index}].metricRef`, 1, 160);
     const expected = metrics.get(metricRef);
     if (!expected || seen.has(metricRef)) throw new Error("PRESSURE_ONE_CALL_SUMMARY_METRIC_BINDING");
     if (candidate.before !== expected.before || candidate.delta !== expected.delta || candidate.after !== expected.after) {
       throw new Error("PRESSURE_ONE_CALL_SUMMARY_METRIC_MUTATION");
+    }
+    if (
+      candidate.displayBefore !== expected.displayBefore
+      || candidate.displayDelta !== expected.displayDelta
+      || candidate.displayAfter !== expected.displayAfter
+    ) {
+      throw new Error("PRESSURE_ONE_CALL_SUMMARY_METRIC_DISPLAY_MUTATION");
     }
     seen.add(metricRef);
     return {
@@ -189,7 +205,7 @@ function fallback(input: Readonly<GeneratePressureOneCallStoryInputV1>): Pressur
     mode: "CHAPTER_SUMMARY" as const,
     chapterId: authority.chapterId,
     title: authority.title,
-    closingNarrative: authority.closingNarrativeFallback,
+    closingNarrative: readableSummaryFallback(authority),
     playerActions: authority.playerActions.map((item) => item.text),
     actualResults: authority.actualResults.map((item) => item.text),
     completedObjectives: authority.completedObjectives.map((item) => item.text),
@@ -200,6 +216,41 @@ function fallback(input: Readonly<GeneratePressureOneCallStoryInputV1>): Pressur
     sourceCommitHash: authority.sourceCommitHash,
     renderMode: "DETERMINISTIC_FALLBACK" as const,
   });
+}
+
+function readableSummaryFallback(authority: PressureChapterSummaryAuthorityV1): string {
+  if ([...authority.closingNarrativeFallback].length >= 80) {
+    return authority.closingNarrativeFallback;
+  }
+  const actions = authority.playerActions.map((item) => item.text).join("；");
+  const results = authority.actualResults.map((item) => item.text).join("；");
+  const pressures = authority.remainingPressures.map((item) => item.text).join("；");
+  return [
+    `${authority.title}的最后一道决定已经落定。${actions || "你在本章作出的决定已经进入权威结算。"}`,
+    results || authority.closingNarrativeFallback,
+    pressures
+      ? `事情并未就此结束：${pressures}。这些尚未解决的压力，将随你一同进入下一章。`
+      : "本章的得失已经封存，接下来的局势将从这些真实结果继续展开。",
+  ].join("\n\n");
+}
+
+function logFallback(
+  input: Readonly<GeneratePressureOneCallStoryInputV1>,
+  context: Readonly<Record<string, unknown>>,
+  error: unknown,
+  stage: "GENERATOR" | "PROVIDER" | "PROVIDER_OR_VALIDATION",
+  elapsedMs = 0,
+): void {
+  console.warn(JSON.stringify({
+    event: "PRESSURE_ONE_CALL_STORY_FALLBACK",
+    mode: input.mode,
+    chapterId: input.storyPack.identity.chapterId,
+    beatId: input.storyPack.identity.beatId,
+    contextHash: sha256Canonical(context),
+    stage,
+    elapsedMs: Math.round(elapsedMs),
+    reason: error instanceof Error ? error.message : "UNKNOWN",
+  }));
 }
 
 function validateRefTextArray(
