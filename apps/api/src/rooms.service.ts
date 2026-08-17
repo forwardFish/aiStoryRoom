@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, HttpException, HttpStatus, Inject, Injectable, NotFoundException, Optional } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from "@nestjs/common";
 import { PrismaService } from "./prisma.service";
 import { StoryService } from "./story.service";
 import { StoryTaskOutboxService } from "./story-task-outbox.service";
@@ -49,6 +49,13 @@ import {
 import type { PressurePromiseProductFacadeV1 } from "./pressure-chapter/product";
 import { RoomListProjectionScheduler, roomListProjectionConcurrencyForPool, uniqueRoomRowsForProjection } from "./rooms-list-projection";
 import { pressureDatabasePoolOptionsV1 } from "./pressure-chapter/production-config";
+import type { RoomLobbyChangeReasonV1 } from "./room-lobby-realtime/room-lobby-change.contract";
+import {
+  NoopRoomLobbyChangePublisherV1,
+  ROOM_LOBBY_CHANGE_PUBLISHER_V1,
+  publishRoomLobbyChangeAfterCommitV1,
+  type RoomLobbyChangePublisherPortV1,
+} from "./room-lobby-realtime/room-lobby-change.publisher";
 
 const SOLO_IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const IDEMPOTENCY_REPLAY_ATTEMPTS = 300;
@@ -243,6 +250,7 @@ function pressurePromiseHttpError(error: unknown): unknown {
 
 @Injectable()
 export class RoomsService {
+  private readonly logger = new Logger(RoomsService.name);
   private readonly listProjectionScheduler = new RoomListProjectionScheduler(
     roomListProjectionConcurrencyForPool(
       pressureDatabasePoolOptionsV1(process.env, "api").connectionLimit,
@@ -269,6 +277,8 @@ export class RoomsService {
     @Optional() @Inject(PRESSURE_CHAPTER_PRODUCT_TOKENS.HTTP_CONTROLLER_METHODS) private readonly pressureHttp?: PressureRoomsEntryHttpDelegateV1,
     @Optional() @Inject(PRESSURE_CHAPTER_PRODUCT_TOKENS.SEAT_TRANSPORT) private readonly pressureSeatTransport?: PressureSeatTransportFacadeV1,
     @Optional() @Inject(PRESSURE_CHAPTER_PRODUCT_TOKENS.PROMISES) private readonly pressurePromises?: PressurePromiseProductFacadeV1,
+    @Optional() @Inject(ROOM_LOBBY_CHANGE_PUBLISHER_V1)
+    private readonly roomLobbyChangePublisher: RoomLobbyChangePublisherPortV1 = new NoopRoomLobbyChangePublisherV1(),
   ) {}
 
   async list(worldId?: string, user?: AuthenticatedUser) {
@@ -383,6 +393,9 @@ export class RoomsService {
         visibility: input.visibility,
         idempotencyKey: input.idempotencyKey,
       });
+      if (created.status === "CREATED") {
+        this.notifyRoomLobbyChange(created.shell.room.runId, "ROOM_CREATED");
+      }
       return this.get(user, created.shell.room.runId);
     }
     const world = findGameDefinition(worldId);
@@ -472,6 +485,9 @@ export class RoomsService {
       throw error;
     }
     if (runCharge?.kind === "reserved") runCharge.charge = await this.creditConsumption.commitCharge(runCharge.charge.id);
+    if (!isInternalSoloCreate) {
+      this.notifyRoomLobbyChange(createdId!, "ROOM_CREATED");
+    }
     return withBilling(await this.get(user, createdId!), runCharge);
   }
 
@@ -774,7 +790,10 @@ export class RoomsService {
     if (!room || room.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
     if (this.isPressureRoom(room)) {
       const pressureEntry = this.requirePressureRoomsEntry();
-      await pressureEntry.join({ runId: room.id, userId: user.id, idempotencyKey });
+      const joined = await pressureEntry.join({ runId: room.id, userId: user.id, idempotencyKey });
+      if (joined.status === "UPDATED") {
+        this.notifyRoomLobbyChange(room.id, "MEMBER_JOINED");
+      }
       return this.get(user, room.id);
     }
     if (room.status !== "waiting_players") throw new ConflictException({ code: "ROOM_NOT_JOINABLE", message: "Room has already started" });
@@ -785,7 +804,10 @@ export class RoomsService {
     const current = await this.prisma.storyPlayer.count({ where: { runId: room.id, playerType: "human" } });
     const alreadyJoined = await this.prisma.storyPlayer.findUnique({ where: { runId_userId: { runId: room.id, userId: user.id } } });
     if (!alreadyJoined && current >= room.maxPlayers) throw new ConflictException({ code: "ROOM_FULL", message: "Room is full" });
-    await this.story.joinRun(user.openid, room.id);
+    const joined = await this.story.joinRun(user.openid, room.id);
+    if (joined.activeHumanCountIncremented) {
+      this.notifyRoomLobbyChange(room.id, "MEMBER_JOINED");
+    }
     return this.get(user, room.id);
   }
 
@@ -808,7 +830,10 @@ export class RoomsService {
       const pressureEntry = this.requirePressureRoomsEntry();
       const selected = room.roles.find((role) => role.id === roleId || role.roleKey === roleId);
       if (!selected) throw new NotFoundException({ code: "ROLE_NOT_FOUND", message: "Role not found" });
-      await pressureEntry.selectRole({ runId: roomId, userId: user.id, roleKey: selected.roleKey, idempotencyKey });
+      const changed = await pressureEntry.selectRole({ runId: roomId, userId: user.id, roleKey: selected.roleKey, idempotencyKey });
+      if (changed.status === "UPDATED") {
+        this.notifyRoomLobbyChange(roomId, "ROLE_CHANGED");
+      }
       return this.get(user, roomId);
     }
     const waitingRoom = await this.requireWaitingMember(user, roomId);
@@ -817,6 +842,12 @@ export class RoomsService {
     if (selected.roleKey === findGameDefinition(waitingRoom.templateKey)?.worldActor?.actorKey) {
       throw new ForbiddenException({ code: "SYSTEM_ROLE_NOT_CLAIMABLE", message: "The world actor is not a player role" });
     }
+    const currentPlayer = waitingRoom.players.find((player) => player.userId === user.id);
+    const roleChanged = currentPlayer?.roleId !== roleId;
+    const readyCleared = Boolean(
+      currentPlayer?.userId
+      && roomState(waitingRoom.stateJson).room?.readyUserIds.includes(currentPlayer.userId),
+    );
     await this.prisma.$transaction(async (tx) => {
       const player = await tx.storyPlayer.findUnique({ where: { runId_userId: { runId: roomId, userId: user.id } } });
       if (!player) throw new ForbiddenException({ code: "ROOM_MEMBERSHIP_REQUIRED", message: "Join room before selecting a role" });
@@ -826,6 +857,12 @@ export class RoomsService {
       await tx.storyPlayer.update({ where: { runId_userId: { runId: roomId, userId: user.id } }, data: { roleId, lastActiveAt: new Date() } });
     });
     await this.clearReady(roomId, user.id);
+    if (roleChanged || readyCleared) {
+      this.notifyRoomLobbyChange(
+        roomId,
+        roleChanged ? "ROLE_CHANGED" : "READY_CHANGED",
+      );
+    }
     return this.get(user, roomId);
   }
 
@@ -836,9 +873,13 @@ export class RoomsService {
       const host = room.players.find((player) => player.userId === user.id);
       if (!host?.roleId) throw new BadRequestException({ code: "ROLE_REQUIRED", message: "Select a role before locking it" });
       const state = roomState(room.stateJson);
+      const changed = state.room?.hostRoleLocked !== true;
       state.room = { ...(state.room || { worldId: room.templateKey, readyUserIds: [], minPlayers: 3, createdAt: new Date().toISOString() }), hostRoleLocked: true };
       const updated = await this.prisma.storyRun.updateMany({ where: { id: roomId, version: room.version }, data: { stateJson: state as any, version: { increment: 1 } } });
-      if (updated.count === 1) return this.get(user, roomId);
+      if (updated.count === 1) {
+        if (changed) this.notifyRoomLobbyChange(roomId, "START_STATE_CHANGED");
+        return this.get(user, roomId);
+      }
     }
     throw new ConflictException({ code: "ROOM_STATE_CONFLICT", message: "Room state changed; refresh and lock the host role again" });
   }
@@ -847,7 +888,10 @@ export class RoomsService {
     const room = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { id: true, mode: true, engineVersion: true } });
     if (!room || room.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
     if (this.isPressureRoom(room)) {
-      await this.requirePressureRoomsEntry().ready({ runId: roomId, userId: user.id, ready: isReady, idempotencyKey });
+      const changed = await this.requirePressureRoomsEntry().ready({ runId: roomId, userId: user.id, ready: isReady, idempotencyKey });
+      if (changed.status === "UPDATED") {
+        this.notifyRoomLobbyChange(roomId, "READY_CHANGED");
+      }
       return this.get(user, roomId);
     }
     // `ready` is a genuine multi-user write.  Read-modify-write on its JSON
@@ -859,10 +903,14 @@ export class RoomsService {
       if (!player?.roleId) throw new BadRequestException({ code: "ROLE_REQUIRED", message: "Select a role before marking ready" });
       const state = roomState(room.stateJson);
       const ready = new Set(state.room?.readyUserIds || []);
+      const changed = ready.has(user.id) !== isReady;
       if (isReady) ready.add(user.id); else ready.delete(user.id);
       state.room = { ...(state.room || { worldId: room.templateKey, hostRoleLocked: false, minPlayers: 3, createdAt: new Date().toISOString() }), readyUserIds: [...ready] };
       const updated = await this.prisma.storyRun.updateMany({ where: { id: roomId, version: room.version }, data: { stateJson: state as any, version: { increment: 1 } } });
-      if (updated.count === 1) return this.get(user, roomId);
+      if (updated.count === 1) {
+        if (changed) this.notifyRoomLobbyChange(roomId, "READY_CHANGED");
+        return this.get(user, roomId);
+      }
     }
     throw new ConflictException({ code: "ROOM_STATE_CONFLICT", message: "Room state changed; refresh and try again" });
   }
@@ -874,7 +922,10 @@ export class RoomsService {
     const engine = await this.prisma.storyRun.findUnique({ where: { id: roomId }, select: { engineVersion: true } });
     if (engine?.engineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion) {
       const pressureEntry = this.requirePressureRoomsEntry();
-      await pressureEntry.start({ runId: roomId, userId: user.id });
+      const started = await pressureEntry.start({ runId: roomId, userId: user.id });
+      if (started.status === "STARTED") {
+        this.notifyRoomLobbyChange(roomId, "GAME_STARTED");
+      }
       return this.get(user, roomId);
     }
     if (engine?.engineVersion === OPENOVEL_ENGINE_VERSION) {
@@ -885,6 +936,7 @@ export class RoomsService {
     const room = await this.requireWaitingMember(user, roomId);
     if (room.engineVersion === CONTINUOUS_ENGINE_VERSION) {
       const started = await this.actionWindows.start(user, roomId);
+      this.notifyRoomLobbyChange(roomId, "GAME_STARTED");
       return { ...started, gameProjection: await this.memberProjections.game(user, roomId) };
     }
     if (room.ownerUserId !== user.id) throw new ForbiddenException({ code: "HOST_REQUIRED", message: "Only the host can start the game" });
@@ -895,6 +947,7 @@ export class RoomsService {
     if (!state.room?.hostRoleLocked) throw new BadRequestException({ code: "HOST_ROLE_NOT_LOCKED", message: "Host must lock a role first" });
     if (humans.length < minimum || humans.some((player) => !player.roleId || !player.userId || !ready.has(player.userId))) throw new BadRequestException({ code: "ROOM_NOT_READY", message: "All minimum players must select a role and be ready" });
     await this.prisma.storyRun.update({ where: { id: roomId }, data: { status: "playing", version: { increment: 1 } } });
+    this.notifyRoomLobbyChange(roomId, "GAME_STARTED");
     return this.get(user, roomId);
   }
 
@@ -928,7 +981,10 @@ export class RoomsService {
         lastExtendedIdempotencyKey: idempotencyKey
       };
       const updated = await this.prisma.storyRun.updateMany({ where: { id: roomId, version: room.version }, data: { stateJson: state as any, version: { increment: 1 } } });
-      if (updated.count === 1) return this.get(user, roomId);
+      if (updated.count === 1) {
+        this.notifyRoomLobbyChange(roomId, "WAITING_EXTENDED");
+        return this.get(user, roomId);
+      }
     }
     throw new ConflictException({ code: "ROOM_STATE_CONFLICT", message: "Room state changed; refresh and try again" });
   }
@@ -951,7 +1007,10 @@ export class RoomsService {
       throw new ConflictException({ code: "MULTIPLAYER_NOW_READY", message: "Enough players are ready to start Multiplayer" });
     }
     const solo = await this.createSolo(user, { worldId: room.templateKey, idempotencyKey, resumeExisting: true });
-    await this.prisma.storyRun.updateMany({ where: { id: roomId, status: "waiting_players" }, data: { status: "closed", version: { increment: 1 } } });
+    const closed = await this.prisma.storyRun.updateMany({ where: { id: roomId, status: "waiting_players" }, data: { status: "closed", version: { increment: 1 } } });
+    if (closed.count === 1) {
+      this.notifyRoomLobbyChange(roomId, "ROOM_CLOSED");
+    }
     return solo;
   }
 
@@ -960,6 +1019,7 @@ export class RoomsService {
     const room = await this.requireWaitingMember(user, roomId);
     if (room.ownerUserId !== user.id) throw new ForbiddenException({ code: "HOST_REQUIRED", message: "Only the host can close a waiting room" });
     await this.prisma.storyRun.update({ where: { id: roomId }, data: { status: "closed", version: { increment: 1 } } });
+    this.notifyRoomLobbyChange(roomId, "ROOM_CLOSED");
     return this.get(user, roomId);
   }
 
@@ -1182,7 +1242,10 @@ export class RoomsService {
     const room = await this.prisma.storyRun.findUnique({ where: { id: roomId }, include: { owner: true, players: { include: { user: true, role: true }, orderBy: { joinedAt: "asc" } }, roles: { orderBy: { createdAt: "asc" } } } });
     if (!room || room.mode !== "room") throw new NotFoundException({ code: "ROOM_NOT_FOUND", message: "Room not found" });
     if (this.isPressureRoom(room)) {
-      await this.requirePressureRoomsEntry().leave({ runId: roomId, userId: user.id, idempotencyKey: input.idempotencyKey });
+      const changed = await this.requirePressureRoomsEntry().leave({ runId: roomId, userId: user.id, idempotencyKey: input.idempotencyKey });
+      if (changed.status === "UPDATED") {
+        this.notifyRoomLobbyChange(roomId, "MEMBER_LEFT");
+      }
       return this.get(user, roomId);
     }
     throw new ConflictException({ code: "ROOM_LEAVE_UNSUPPORTED", message: "Leave is only supported for Pressure rooms" });
@@ -1459,6 +1522,23 @@ export class RoomsService {
     if (room.status !== "playing" && room.status !== "resolving" && room.status !== "chapter_generated") throw new ConflictException({ code: "ROOM_NOT_STARTED", message: "The host has not started this room" });
     if (!room.players.some((player) => player.userId === user.id)) throw new ForbiddenException({ code: "ROOM_MEMBERSHIP_REQUIRED", message: "Join the room first" });
     return room;
+  }
+
+  private notifyRoomLobbyChange(
+    roomId: string,
+    reason: RoomLobbyChangeReasonV1,
+  ): void {
+    void publishRoomLobbyChangeAfterCommitV1(
+      this.roomLobbyChangePublisher,
+      { roomId, reason },
+      {
+        onFailure: (failure) => {
+          this.logger.warn(
+            `${failure.code}:${failure.kind}:room=${failure.roomId}:reason=${failure.reason}`,
+          );
+        },
+      },
+    );
   }
 
   private async clearReady(roomId: string, userId: string) {

@@ -102,6 +102,41 @@ const definitions = {
     help: "Configured Prisma connection limit for this process role.",
     kind: "gauge",
     labelNames: ["process_role"]
+  },
+  room_lobby_realtime_connected: {
+    help: "Whether the process-local Supabase RoomLobby Realtime subscription is connected.",
+    kind: "gauge",
+    labelNames: ["transport"]
+  },
+  room_lobby_realtime_publish_total: {
+    help: "RoomLobby invalidation publish attempts made through the cross-instance transport.",
+    kind: "counter",
+    labelNames: ["transport"]
+  },
+  room_lobby_realtime_publish_failure_total: {
+    help: "RoomLobby cross-instance invalidation publish failures by bounded reason.",
+    kind: "counter",
+    labelNames: ["transport", "failure"]
+  },
+  room_lobby_realtime_reconnect_total: {
+    help: "RoomLobby Realtime reconnect schedules for this API process.",
+    kind: "counter",
+    labelNames: ["transport"]
+  },
+  room_lobby_realtime_inbound_rejected_total: {
+    help: "Inbound RoomLobby Realtime messages rejected before local WebSocket forwarding.",
+    kind: "counter",
+    labelNames: ["reason"]
+  },
+  room_lobby_realtime_forward_failure_total: {
+    help: "Failures while forwarding a validated RoomLobby invalidation to a local destination.",
+    kind: "counter",
+    labelNames: ["transport"]
+  },
+  room_lobby_socket_invalidations_sent_total: {
+    help: "Validated RoomLobby invalidations delivered to process-local WebSocket subscribers.",
+    kind: "counter",
+    labelNames: ["source"]
   }
 } as const satisfies Record<string, MetricDefinition>;
 
