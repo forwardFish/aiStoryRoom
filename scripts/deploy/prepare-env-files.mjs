@@ -8,7 +8,6 @@ if (!new Set(["test", "prd"]).has(target)) {
   console.error("Usage: node scripts/deploy/prepare-env-files.mjs <test|prd> [--structure-only]");
   process.exit(2);
 }
-
 const root = process.cwd();
 const sourcePath = resolve(root, `.env.${target}`);
 const source = await readFile(sourcePath, "utf8");
@@ -23,6 +22,10 @@ const required = [
   "PAYMENT_RETURN_ORIGIN",
   "REFERRAL_BASE_URL",
   "CORS_ALLOWED_ORIGINS",
+  "ROOM_LOBBY_SOCKET_ENABLED",
+  "ROOM_LOBBY_SOCKET_PATH",
+  "ROOM_LOBBY_SOCKET_ALLOWED_ORIGINS",
+  "ROOM_LOBBY_SOCKET_PROXY_CONNECT_TIMEOUT_MS",
   "AUTH_TOKEN_SECRET",
   "AUTH_COOKIE_SECURE",
   "GOOGLE_AUTH_ENABLED",
@@ -55,6 +58,8 @@ if (parsed.get("EMAIL_PROVIDER") === "resend") {
     if (!parsed.has(key) || (!structureOnly && isUnfilled(parsed.get(key)))) errors.push(`${key} is required when Resend is enabled`);
   }
 }
+
+validateRoomLobbySocketConfiguration({ parsed, target, structureOnly, errors });
 
 if (target === "test") {
   if (!new Set(["development", "test"]).has(parsed.get("NODE_ENV"))) errors.push("TEST NODE_ENV must be development or test");
@@ -93,7 +98,7 @@ if (checkOnly) {
 
 const vercelKeys = ["MANY_WORLDS_API_ORIGIN", "PUBLIC_GOOGLE_WEB_CLIENT_ID"];
 const notRailway = new Set([
-  ...vercelKeys,
+  "PUBLIC_GOOGLE_WEB_CLIENT_ID",
   "MINIPROGRAM_API_BASE_URL",
   "PUBLIC_API_URL",
   "RESTORE_DATABASE_URL",
@@ -117,6 +122,94 @@ console.log(JSON.stringify({
     vercel: { path: vercelPath, keys: vercelEntries.length }
   }
 }, null, 2));
+
+function validateRoomLobbySocketConfiguration({ parsed, target, structureOnly, errors }) {
+  const enabledValue = String(parsed.get("ROOM_LOBBY_SOCKET_ENABLED") || "").trim().toLowerCase();
+  if (!new Set(["true", "false"]).has(enabledValue)) {
+    errors.push("ROOM_LOBBY_SOCKET_ENABLED must be true or false");
+  }
+
+  const proxyTimeout = Number(parsed.get("ROOM_LOBBY_SOCKET_PROXY_CONNECT_TIMEOUT_MS"));
+  if (!Number.isSafeInteger(proxyTimeout) || proxyTimeout < 250 || proxyTimeout > 10_000) {
+    errors.push("ROOM_LOBBY_SOCKET_PROXY_CONNECT_TIMEOUT_MS must be an integer from 250 to 10000");
+  }
+
+  const approvedPath = "/api/v4/room-lobby/socket";
+  if (parsed.get("ROOM_LOBBY_SOCKET_PATH") !== approvedPath) {
+    errors.push(`ROOM_LOBBY_SOCKET_PATH must be ${approvedPath}`);
+  }
+
+  const corsOrigins = validateOriginList(
+    parsed.get("CORS_ALLOWED_ORIGINS"),
+    "CORS_ALLOWED_ORIGINS",
+    { target, structureOnly, errors }
+  );
+  const socketOrigins = validateOriginList(
+    parsed.get("ROOM_LOBBY_SOCKET_ALLOWED_ORIGINS"),
+    "ROOM_LOBBY_SOCKET_ALLOWED_ORIGINS",
+    { target, structureOnly, errors }
+  );
+
+  if (target === "prd" && (corsOrigins.includes("*") || socketOrigins.includes("*"))) {
+    errors.push("PRODUCTION Origin allowlists must not contain *");
+  }
+  if (enabledValue === "true" && socketOrigins.filter((origin) => origin !== "*").length === 0) {
+    errors.push("ROOM_LOBBY_SOCKET_ALLOWED_ORIGINS is required when RoomLobby Socket is enabled");
+  }
+  if (!corsOrigins.includes("*")) {
+    const cors = new Set(corsOrigins);
+    for (const origin of socketOrigins) {
+      if (origin !== "*" && !cors.has(origin)) {
+        errors.push("every ROOM_LOBBY_SOCKET_ALLOWED_ORIGINS value must also appear in CORS_ALLOWED_ORIGINS");
+        break;
+      }
+    }
+  }
+
+  const apiOrigin = String(parsed.get("MANY_WORLDS_API_ORIGIN") || "").trim();
+  if (!(structureOnly && isTemplateValue(apiOrigin))) {
+    const normalized = validateOrigin(apiOrigin, "MANY_WORLDS_API_ORIGIN", { allowWildcard: false, errors });
+    if (target === "prd" && normalized && normalized !== "*" && !normalized.startsWith("https://")) {
+      errors.push("PRODUCTION MANY_WORLDS_API_ORIGIN must use https");
+    }
+  }
+}
+
+function validateOriginList(value, name, { structureOnly, errors }) {
+  const entries = String(value || "").split(",").map((entry) => entry.trim()).filter(Boolean);
+  return entries.map((entry) => {
+    if (structureOnly && isTemplateValue(entry)) return entry;
+    return validateOrigin(entry, name, { allowWildcard: true, errors }) || entry;
+  });
+}
+
+function validateOrigin(value, name, { allowWildcard, errors }) {
+  if (value === "*" && allowWildcard) return value;
+  let parsedOrigin;
+  try {
+    parsedOrigin = new URL(value);
+  } catch {
+    errors.push(`${name} contains an invalid Origin`);
+    return null;
+  }
+  if (
+    !new Set(["http:", "https:"]).has(parsedOrigin.protocol)
+    || parsedOrigin.username
+    || parsedOrigin.password
+    || parsedOrigin.pathname !== "/"
+    || parsedOrigin.search
+    || parsedOrigin.hash
+    || parsedOrigin.origin === "null"
+  ) {
+    errors.push(`${name} must contain only exact http/https Origins without credentials, path, query, or fragment`);
+    return null;
+  }
+  return parsedOrigin.origin;
+}
+
+function isTemplateValue(value) {
+  return /^<[^>]+>$/.test(String(value || "").trim());
+}
 
 function parseDotEnv(text) {
   const values = new Map();
