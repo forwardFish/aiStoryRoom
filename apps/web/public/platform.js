@@ -13,6 +13,9 @@ const BRAND_NAME = "Our Many Worlds";
 const BRAND_TAGLINE = "Real players. Living worlds.";
 let activeRoom = null;
 let roomRefreshTimer = null;
+let roomLobbyLiveClient = null;
+let sharedRoomHydrationPromise = null;
+let sharedRoomHydrationQueuedRoomId = null;
 let lobbyCountdownTimer = null;
 let roomsView = { activeTab: "open", openRooms: [], myRooms: [] };
 let currentAccount = null;
@@ -119,6 +122,8 @@ function renderStandardPage(content) {
   if (path !== "/auth" && path !== "/rooms") root.querySelector(".page-frame")?.classList.add("visual-tight");
 }
 function appShell(content) {
+  roomLobbyLiveClient?.destroy();
+  roomLobbyLiveClient = null;
   if (roomRefreshTimer) { clearInterval(roomRefreshTimer); roomRefreshTimer = null; }
   if (lobbyCountdownTimer) { clearInterval(lobbyCountdownTimer); lobbyCountdownTimer = null; }
   if (roomDialogRecoveryTimer) { clearInterval(roomDialogRecoveryTimer); roomDialogRecoveryTimer = null; }
@@ -134,8 +139,24 @@ function appShell(content) {
   }
   const roomMatch = path.match(/^\/rooms\/([^/]+)$/);
   if (roomMatch && !roomMatch[1].startsWith("fixture-") && sessionToken()) {
-    void hydrateSharedRoom(roomMatch[1]);
-    roomRefreshTimer = setInterval(() => { if (location.pathname === path) void hydrateSharedRoom(roomMatch[1]); }, 5000);
+    const liveClientFactory = globalThis.MANY_WORLDS_ROOM_LOBBY_LIVE?.createRoomLobbyLiveClient;
+    if (typeof liveClientFactory === "function") {
+      try {
+        roomLobbyLiveClient = liveClientFactory({
+          roomId: roomMatch[1],
+          refresh: () => hydrateSharedRoom(roomMatch[1]),
+        });
+        roomLobbyLiveClient.start();
+      } catch {
+        roomLobbyLiveClient = null;
+      }
+    }
+    if (!roomLobbyLiveClient) {
+      void hydrateSharedRoom(roomMatch[1]);
+      roomRefreshTimer = setInterval(() => {
+        if (location.pathname === path) void hydrateSharedRoom(roomMatch[1]);
+      }, 30_000);
+    }
   }
 }
 function renderLobbyCountdown(room) {
@@ -1467,8 +1488,27 @@ function openCreateRoomDialog(restoredDraft = null) {
   })();
 }
 async function hydrateSharedRoom(roomId) {
+  sharedRoomHydrationQueuedRoomId = roomId;
+  if (sharedRoomHydrationPromise) return sharedRoomHydrationPromise;
+  sharedRoomHydrationPromise = drainSharedRoomHydrationQueue().finally(() => {
+    sharedRoomHydrationPromise = null;
+  });
+  return sharedRoomHydrationPromise;
+}
+
+async function drainSharedRoomHydrationQueue() {
+  while (sharedRoomHydrationQueuedRoomId) {
+    const roomId = sharedRoomHydrationQueuedRoomId;
+    sharedRoomHydrationQueuedRoomId = null;
+    await performSharedRoomHydration(roomId);
+  }
+}
+
+async function performSharedRoomHydration(roomId) {
   try {
     const room = await request(`/api/v4/rooms/${encodeURIComponent(roomId)}`);
+    const currentPath = location.pathname.replace(/\/$/, "") || "/";
+    if (currentPath !== `/rooms/${roomId}`) return;
     activeRoom = room;
     if (room.status === "playing") {
       location.assign(`/game?runId=${encodeURIComponent(room.id)}`);
