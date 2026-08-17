@@ -37,3 +37,26 @@ test("operational metrics expose rolling room p95, pool capacity, and timeout co
   assert.match(rendered, /prisma_pool_connection_limit\{process_role="api"\} 5/);
   assert.match(rendered, /prisma_pool_timeout_total\{code="P2024",operation="list"\} 1/);
 });
+
+test("RoomLobby Realtime metrics use bounded labels and correct Prometheus kinds", () => {
+  operationalMetrics.resetForTests();
+  operationalMetrics.set("room_lobby_realtime_connected", { transport: "supabase" }, 1);
+  operationalMetrics.increment("room_lobby_realtime_publish_total", { transport: "supabase" });
+  operationalMetrics.increment("room_lobby_realtime_publish_failure_total", { transport: "supabase", failure: "timed_out" });
+  operationalMetrics.increment("room_lobby_realtime_reconnect_total", { transport: "supabase" });
+  operationalMetrics.increment("room_lobby_realtime_inbound_rejected_total", { reason: "contract_invalid" });
+  operationalMetrics.increment("room_lobby_realtime_forward_failure_total", { transport: "websocket" });
+  operationalMetrics.increment("room_lobby_socket_invalidations_sent_total", { source: "remote" }, 2);
+
+  const rendered = operationalMetrics.renderPrometheus();
+  assert.match(rendered, /# TYPE room_lobby_realtime_connected gauge/);
+  assert.match(rendered, /room_lobby_realtime_connected\{transport="supabase"\} 1/);
+  assert.match(rendered, /# TYPE room_lobby_realtime_publish_total counter/);
+  assert.match(rendered, /room_lobby_realtime_publish_total\{transport="supabase"\} 1/);
+  assert.match(rendered, /room_lobby_realtime_publish_failure_total\{transport="supabase",failure="timed_out"\} 1/);
+  assert.match(rendered, /room_lobby_realtime_reconnect_total\{transport="supabase"\} 1/);
+  assert.match(rendered, /room_lobby_realtime_inbound_rejected_total\{reason="contract_invalid"\} 1/);
+  assert.match(rendered, /room_lobby_realtime_forward_failure_total\{transport="websocket"\} 1/);
+  assert.match(rendered, /room_lobby_socket_invalidations_sent_total\{source="remote"\} 2/);
+  assert.doesNotMatch(rendered, /room[_-]?id=|user[_-]?id=|event[_-]?id=|email=|service[_-]?role/i);
+});

@@ -32,17 +32,50 @@ import { OpenNovelManeuverService } from "./openovel-adapter/openovel-maneuver.s
 import { installFourManeuverRuntime } from "./mvp-four-maneuver-runtime";
 import { installFourManeuverResolution } from "./mvp-four-maneuver-resolution";
 import { PressureChapterModule } from "./pressure-chapter/pressure-chapter.module";
+import { RoomLobbyWebSocketGateway } from "./room-lobby-realtime/room-lobby-websocket.gateway";
+import { RoomLobbyRealtimeModule } from "./room-lobby-realtime/room-lobby-realtime.module";
+import { SupabaseRoomLobbyRealtimeService } from "./room-lobby-realtime/supabase-room-lobby-realtime.service";
+import {
+  ROOM_LOBBY_CHANGE_PUBLISHER_V1,
+  SupabaseRoomLobbyChangePublisherV1,
+} from "./room-lobby-realtime/room-lobby-change.publisher";
 
 installFourManeuverRuntime();
 installFourManeuverResolution();
 
+const ROOM_LOBBY_REALTIME_GATEWAY_BINDING_V1 = Symbol(
+  "ROOM_LOBBY_REALTIME_GATEWAY_BINDING_V1",
+);
+
 @Module({
-  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule, PressureChapterModule.forRoot()],
+  imports: [PrismaModule, AuthModule, CreditsModule, ReferralsModule, BillingModule, ContinuousStrategyModule, StoryAccessModule, ContinuousStoryV2Module, SoloStoryEngineModule, ResultSharingModule, PressureChapterModule.forRoot(), RoomLobbyRealtimeModule],
   controllers: [MvpCatalogController, StoryController, RoomsController, WorldsController, StoryTaskOutboxController, MetricsController, OpenNovelAdapterController, OpenNovelMirrorController, OpenNovelSharedController, OpenNovelManeuverController],
   providers: [
     StoryService,
     StoryTaskOutboxService,
     RoomsService,
+    RoomLobbyWebSocketGateway,
+    SupabaseRoomLobbyChangePublisherV1,
+    {
+      provide: ROOM_LOBBY_CHANGE_PUBLISHER_V1,
+      useExisting: SupabaseRoomLobbyChangePublisherV1,
+    },
+    {
+      provide: ROOM_LOBBY_REALTIME_GATEWAY_BINDING_V1,
+      inject: [
+        SupabaseRoomLobbyRealtimeService,
+        RoomLobbyWebSocketGateway,
+      ],
+      useFactory: (
+        realtime: SupabaseRoomLobbyRealtimeService,
+        gateway: RoomLobbyWebSocketGateway,
+      ) => {
+        const unregister = realtime.registerLocalForwarder(
+          (event) => gateway.forwardInvalidation(event),
+        );
+        return Object.freeze({ onModuleDestroy: unregister });
+      },
+    },
     PresenceHeartbeatRateLimitGuard,
     {
       provide: OpenNovelAdapterService,

@@ -59,3 +59,22 @@ test("local and Vercel routes keep canonical marketing pages, app pages and lega
   assert.match(proxy, /for await \(const chunk of upstream\.body\)/);
   assert.doesNotMatch(proxy, /await upstream\.arrayBuffer\(\)[\s\S]*text\/event-stream/);
 });
+
+
+test("RoomLobby Upgrade handling is feature-gated and restricted to the approved path", async () => {
+  const server = await readFile(new URL("../src/server.mjs", import.meta.url), "utf8");
+
+  assert.match(server, /ROOM_LOBBY_SOCKET_PATH = "\/api\/v4\/room-lobby\/socket"/);
+  assert.match(server, /ROOM_LOBBY_SOCKET_ENABLED/);
+  assert.match(server, /ROOM_LOBBY_SOCKET_ALLOWED_ORIGINS/);
+  assert.match(server, /ROOM_LOBBY_SOCKET_PROXY_CONNECT_TIMEOUT_MS/);
+  assert.match(server, /if \(socketConfig\.enabled\) \{/);
+  assert.match(server, /webServer\.on\("upgrade"/);
+  assert.match(server, /url\.pathname !== config\.path/);
+  assert.match(server, /url\.search \|\| url\.hash/);
+  assert.match(server, /cookie: header\(req, "cookie"\)/);
+  assert.match(server, /origin,/);
+  assert.match(server, /"sec-websocket-key"/);
+  assert.match(server, /rejectUpgrade\(socket, 502\)/);
+  assert.match(server, /proxyApiRequest\(req, res, url, apiPortValue\)/);
+});
