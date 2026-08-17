@@ -147,6 +147,29 @@ export class PressureChapterRuntimeFacade {
     );
   }
 
+  async reconcileAcceptedMultiplayerAction(input: Readonly<{
+    routeSnapshot: RunRouteSnapshotV1;
+    actionId: string;
+    nowMs: number;
+  }>): Promise<ChapterOrchestratorStateV1> {
+    const route = validateRunRouteSnapshotV1(input.routeSnapshot);
+    const reconcile = this.ports.chapters.reconcileAcceptedMultiplayerAction;
+    if (!reconcile) {
+      return failPressureChapterRuntime(
+        ERROR.DEPENDENCY_RESULT_INVALID,
+        "chapters.reconcileAcceptedMultiplayerAction",
+      );
+    }
+    return assertChapterState(
+      await reconcile.call(this.ports.chapters, {
+        routeSnapshot: route,
+        actionId: input.actionId,
+        nowMs: input.nowMs,
+      }),
+      route,
+    );
+  }
+
   async advanceDeadline(
     routeSnapshot: RunRouteSnapshotV1,
     nowMs: number,

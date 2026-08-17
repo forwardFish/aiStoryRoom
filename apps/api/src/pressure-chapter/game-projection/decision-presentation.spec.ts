@@ -168,6 +168,55 @@ test("frozen Genesis uses the authored first scene without calling the Provider"
   assert.deepEqual(result.options, input.decision.options);
 });
 
+test("multiplayer continuation over Genesis authority calls Provider with the accepted previous action", async () => {
+  const input = fixture();
+  input.decision.decisionPointId = "N1.dispatch_route";
+  input.previousPlayerAction = {
+    decisionPointId: "N1.weir_crisis",
+    actionType: "EVACUATE_WEIRS",
+    displayText: "先发堰区疏散令",
+  };
+  input.currentBeatStory = {
+    beatId: "N1.B02",
+    title: "第一道令出门",
+    storyPurpose: "呈现命令离案后的第一批现场压力，再逼出新的处理重点。",
+    authorialMaterials: [{
+      materialRef: "publicMainline.afterPrepareCommon",
+      title: "第一批回令",
+      text: "第一轮命令发出后，泥水和回报一同涌进衙门。",
+      stopCondition: "停在玩家尚未回应的具体压力上。",
+      requiredFactRefs: [],
+      supportedByAuthority: true,
+    }],
+  };
+  let calls = 0;
+  const service = new PressureTurnPresentationServiceV1({
+    async renderTurnPresentation(context) {
+      calls += 1;
+      assert.equal(context.currentScene.phase, "CONTINUATION");
+      assert.equal(context.currentScene.title, "第一道令出门");
+      assert.match(context.currentScene.text, /泥水和回报/u);
+      assert.equal(context.previousPlayerAction?.displayText, "先发堰区疏散令");
+      assert.equal(context.authorialGuidance?.authority, "AUTHORIAL_GUIDANCE_ONLY");
+      assert.ok(context.authorityDraft.currentAuthorityState.some(
+        (fact) => fact.factId === "player.previousAction" && fact.text === "先发堰区疏散令",
+      ));
+      return candidate(context, {
+        sceneText: literaryScene("疏散令已经由差役带出总督府"),
+        question: "第一批回执迟迟未齐，你准备如何调整送令路线？",
+        options: context.legalActionContracts.map((action) => ({
+          actionType: action.actionType,
+          label: action.fallbackLabel,
+          description: action.intendedAction,
+        })),
+      });
+    },
+  });
+  const result = await service.present(input);
+  assert.equal(calls, 1);
+  assert.match(result.summary, /疏散令已经由差役带出总督府/u);
+});
+
 test("compiled context is hash-bound and contains only the three visible Catalog actions", () => {
   const context = compilePressureTurnPresentationContextV1(fixture());
   const { contextHash, ...body } = context;
@@ -190,7 +239,10 @@ test("compiled context is hash-bound and contains only the three visible Catalog
   assert.equal(context.previousNarrative.authority, "CONTINUITY_ONLY");
   assert.equal(context.factBoundary.previousNarrativeIsNotAuthority, true);
   assert.equal(context.factBoundary.legalActionsAreNotCompletedResults, true);
-  assert.deepEqual(context.factBoundary.durableStateSources, ["TURN_AUTHORITY_DRAFT"]);
+  assert.deepEqual(
+    context.factBoundary.durableStateSources,
+    ["TURN_AUTHORITY_DRAFT", "VIEWER_ACCEPTED_ACTION"],
+  );
   assert.equal(
     context.authorityDraft.authorityHash,
     sha256Canonical((({ authorityHash: _authorityHash, ...draft }) => draft)(context.authorityDraft)),

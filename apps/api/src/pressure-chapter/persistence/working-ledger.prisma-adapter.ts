@@ -1003,6 +1003,7 @@ async function persistBeat(
         orchestrationPackageSha256: true,
         runtimeContractVersion: true,
         runtimeContractSha256: true,
+        humanSeatIdsAtStartJson: true,
       },
     });
   if (!route || route.routeHash !== event.payload.routeHash) {

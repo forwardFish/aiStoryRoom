@@ -65,7 +65,12 @@ export function parseAccess(
   principal: PressureChapterHttpPrincipalV1,
 ): PressureChapterHttpAccessV1 {
   const access = record(value, "access");
-  exact(access, ["schemaVersion", "roomId", "runId", "subjectId", "viewerId"], "access");
+  exact(
+    access,
+    ["schemaVersion", "roomId", "runId", "subjectId", "viewerId", "participantMode"],
+    "access",
+    false,
+  );
   if (
     access.schemaVersion !== "pressure_chapter_http_access_v1" ||
     access.roomId !== roomId ||
@@ -75,6 +80,13 @@ export function parseAccess(
     failPressureChapterHttp(ERROR.ACCESS_DENIED, "access");
   }
   requiredString(access.runId, "access.runId");
+  if (
+    access.participantMode !== undefined
+    && access.participantMode !== "SOLO"
+    && access.participantMode !== "MULTIPLAYER"
+  ) {
+    failPressureChapterHttp(ERROR.INPUT_INVALID, "access.participantMode");
+  }
   return structuredClone(value);
 }
 

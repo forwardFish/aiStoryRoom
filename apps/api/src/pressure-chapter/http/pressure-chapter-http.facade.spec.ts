@@ -71,6 +71,49 @@ test("GET game and result authorize first, honor frozen route and perform zero c
   assert.equal(harness.resultReads, 1);
 });
 
+test("Multiplayer ACTIVE GET is viewer-scoped and never enters the chapter convergence writer", async () => {
+  const harness = createHarness({ multiplayer: true, multiplayerPhase: "ACTIVE" });
+  const game = await harness.facade.getGame(harness.principal, ROOM_ID);
+  assert.equal(game.chapter.phase, "ACTIVE");
+  assert.equal(harness.multiplayerConvergenceCalls, 0);
+  assert.equal(harness.gameReads, 1);
+});
+
+test("Multiplayer GET invokes durable recovery only for a non-active chapter phase", async () => {
+  const harness = createHarness({ multiplayer: true, multiplayerPhase: "RESOLVING_BEAT" });
+  await harness.facade.getGame(harness.principal, ROOM_ID);
+  assert.equal(harness.multiplayerConvergenceCalls, 1);
+  assert.equal(harness.gameReads, 2);
+});
+
+test("Multiplayer intermediate submit persists one seat without convergence; final Beat enters one chapter gate", async () => {
+  const intermediate = createHarness({
+    multiplayer: true,
+    multiplayerSeatStatus: "AWAITING_DECISION",
+  });
+  await intermediate.facade.submitDecision(
+    intermediate.principal,
+    ROOM_ID,
+    decisionCommand(intermediate.stored.snapshot.routeHash),
+  );
+  assert.equal(intermediate.multiplayerProgressionCalls, 1);
+  assert.equal(intermediate.multiplayerConvergenceCalls, 0);
+  assert.equal(intermediate.actionWrites, 0);
+
+  const finalBeat = createHarness({
+    multiplayer: true,
+    multiplayerSeatStatus: "CHAPTER_READY_FOR_CONVERGENCE",
+  });
+  await finalBeat.facade.submitDecision(
+    finalBeat.principal,
+    ROOM_ID,
+    decisionCommand(finalBeat.stored.snapshot.routeHash),
+  );
+  assert.equal(finalBeat.multiplayerProgressionCalls, 1);
+  assert.equal(finalBeat.multiplayerConvergenceCalls, 1);
+  assert.equal(finalBeat.actionWrites, 0);
+});
+
 test("GET game alone uses the dedicated mode-bound reader and preserves pagination", async () => {
   const explicit = createHarness({ dedicatedGameRead: true });
   await explicit.facade.getGame(explicit.principal, ROOM_ID, {
@@ -820,9 +863,12 @@ function createHarness(options: {
   selectedGameReadError?: unknown;
   gameReadMode?: PressureGameReadModeV1;
   gameReadObserver?: PressureGameReadRuntimeObserverPortV1;
+  multiplayer?: boolean;
+  multiplayerPhase?: "ACTIVE" | "RESOLVING_BEAT" | "SETTLING";
+  multiplayerSeatStatus?: "AWAITING_DECISION" | "CHAPTER_READY_FOR_CONVERGENCE";
 } = {}) {
   const calls: string[] = [];
-  const stored = storedRoute();
+  const stored = storedRoute(options.multiplayer ? "MULTIPLAYER" : "SOLO");
   let actionWrites = 0;
   let chatWrites = 0;
   let replayWrites = 0;
@@ -831,6 +877,8 @@ function createHarness(options: {
   let seededGameReads = 0;
   let resultReads = 0;
   let sql7Submits = 0;
+  let multiplayerProgressionCalls = 0;
+  let multiplayerConvergenceCalls = 0;
   const selectedGameReadQueries: Parameters<PressureChapterHttpGamePort["read"]>[0][] = [];
   const actionCommands: SubmitOrchestratedActionCommandV1[] = [];
   const compilerInputs: Parameters<PressureChapterHttpDecisionCompilerPort["compile"]>[0][] = [];
@@ -850,6 +898,7 @@ function createHarness(options: {
         runId: RUN_ID,
         subjectId: USER_ID,
         viewerId: USER_ID,
+        ...(options.multiplayer ? { participantMode: "MULTIPLAYER" as const } : {}),
       };
     },
   };
@@ -887,6 +936,14 @@ function createHarness(options: {
         schemaVersion: "pressure_chapter_game_projection_v1",
         runId: RUN_ID,
         roomId: ROOM_ID,
+        chapter: {
+          chapterRuntimeId: "chapter-runtime-n1",
+          chapterId: "N1",
+          chapterNumber: 1,
+          title: "九堰将决",
+          phase: options.multiplayerPhase ?? "ACTIVE",
+          workingRevision: 0,
+        },
       } as unknown as PressureChapterGameProjectionV1;
     },
     async readFromCommittedAuthority() {
@@ -1089,6 +1146,31 @@ function createHarness(options: {
     selectedGameRead,
     options.gameReadMode,
     options.gameReadObserver,
+    options.multiplayer ? {
+      async read() { throw new Error("read is not used by HTTP submit"); },
+      async submit() {
+        multiplayerProgressionCalls += 1;
+        return {
+          schemaVersion: "pressure_multiplayer_seat_progression_result_v1",
+          submissionStatus: "ACCEPTED",
+          cursor: {
+            status: options.multiplayerSeatStatus ?? "AWAITING_DECISION",
+          },
+          accepted: {},
+        } as never;
+      },
+    } : null,
+    options.multiplayer ? {
+      async convergeIfReady() {
+        multiplayerConvergenceCalls += 1;
+        return {
+          schemaVersion: "pressure_multiplayer_chapter_convergence_result_v1",
+          status: "CONVERGED",
+          waitingSeatIds: [],
+          chapter: null,
+        } as never;
+      },
+    } : null,
   );
   return {
     facade,
@@ -1110,17 +1192,21 @@ function createHarness(options: {
     get seededGameReads() { return seededGameReads; },
     get resultReads() { return resultReads; },
     get sql7Submits() { return sql7Submits; },
+    get multiplayerProgressionCalls() { return multiplayerProgressionCalls; },
+    get multiplayerConvergenceCalls() { return multiplayerConvergenceCalls; },
   };
 }
 
-function storedRoute(): StoredRunRouteRecordV1 {
+function storedRoute(participantMode: "SOLO" | "MULTIPLAYER" = "SOLO"): StoredRunRouteRecordV1 {
   const topologyBase = {
     schemaVersion: "pressure_initial_role_control_topology_v1" as const,
     controlTopologyVersion: "six-seat-control-v1",
-    participantMode: "SOLO" as const,
+    participantMode,
     seatControls: PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId, index) => ({
       seatId,
-      mode: index === 0 ? "HUMAN_ACTIVE" as const : "AI_ACTIVE" as const,
+      mode: index === 0 || (participantMode === "MULTIPLAYER" && index === 1)
+        ? "HUMAN_ACTIVE" as const
+        : "AI_ACTIVE" as const,
     })),
   };
   const controlTopology = {
@@ -1143,9 +1229,12 @@ function storedRoute(): StoredRunRouteRecordV1 {
     narrativeProfileVersion: "openovel-pressure-v1",
     featureSetVersion: "pressure-features-v1",
     resultContractRegistryVersion: "result-registry-v1",
-    participantMode: "SOLO",
+    participantMode,
     seatIds: [...PRESSURE_CHAPTER_SEAT_IDS_V1],
-    humanSeatIdsAtStart: [SEAT_ID],
+    humanSeatIdsAtStart: PRESSURE_CHAPTER_SEAT_IDS_V1.filter((seatId) => (
+      seatId === SEAT_ID
+      || (participantMode === "MULTIPLAYER" && seatId === PRESSURE_CHAPTER_SEAT_IDS_V1[1])
+    )),
     controlTopologyVersion: controlTopology.controlTopologyVersion,
     initialRoleControlSnapshotHash: controlTopology.topologyHash,
   });

@@ -1,11 +1,16 @@
 import {
+  PRESSURE_CHAPTER_SEAT_IDS_V1,
   chapterSequence,
   sha256Canonical,
+  validateRunRouteSnapshotV1,
   validateWorldStateV1,
   type SeatIdV1,
   type WorldStateV1,
 } from "@ai-story/shared";
-import { loadSangtianPressureChapterPackageV1 } from "@ai-story/templates";
+import {
+  loadSangtianPressureChapterBeatAuthoringV1,
+  loadSangtianPressureChapterPackageV1,
+} from "@ai-story/templates";
 import type {
   PressureGameChapterReaderPort,
   PressureGameChapterSourceV1,
@@ -15,6 +20,7 @@ import type {
 import type {
   AuthoredChapterContentPort,
   AuthoredChapterRuntimeV1,
+  ActiveDecisionStateV1,
   ChapterOrchestratorStatePort,
   ChapterOrchestratorStateV1,
   WorkingProjectionReaderPort,
@@ -27,6 +33,9 @@ import {
 } from "../run-router";
 import { SangtianPressureGameContentMapperV1 } from "./content.adapters";
 import { failPressureChapterIntegration } from "./errors";
+import { planMultiplayerSeatBeatCursorV1 } from "../multiplayer-seat-beat/plan";
+import { readAcceptedMultiplayerSeatActionsV1 } from "../multiplayer-seat-progression/accepted-actions";
+import { compileMultiplayerSeatBeatStoryContextV1 } from "../multiplayer-seat-progression/story-context";
 import { SANGTIAN_INITIAL_PLAYER_METRICS_V1 } from "../initial-player-state/sangtian-initial-player-state";
 
 /**
@@ -90,15 +99,152 @@ implements PressureGameChapterReaderPort {
       }),
     ]);
     return {
-      chapter: this.projectCurrent({
+      chapter: stored.snapshot.participantMode === "MULTIPLAYER"
+        ? this.projectMultiplayerCurrent({
+            runId: input.runId,
+            routeHash: input.routeHash,
+            viewerSeatId: input.viewerSeatId,
+            routeSnapshot: stored.snapshot,
+            state,
+            projection,
+            chapter,
+          })
+        : this.projectCurrent({
         runId: input.runId,
         routeHash: input.routeHash,
         viewerSeatId: input.viewerSeatId,
         state,
         projection,
         chapter,
-      }),
+          }),
       projection,
+    };
+  }
+
+  projectMultiplayerCurrent(input: Readonly<{
+    runId: string;
+    routeHash: string;
+    viewerSeatId: SeatIdV1;
+    routeSnapshot: ReturnType<typeof validateRunRouteSnapshotV1>;
+    state: ChapterOrchestratorStateV1;
+    projection: WorkingLedgerProjectionV1;
+    chapter: AuthoredChapterRuntimeV1;
+  }>): PressureGameChapterSourceV1 {
+    const state = validateOrchestratorStateV1(input.state);
+    const projection = input.projection;
+    const chapter = input.chapter;
+    if (
+      input.routeSnapshot.participantMode !== "MULTIPLAYER"
+      || state.runId !== input.runId
+      || state.routeHash !== input.routeHash
+      || projection.key.runId !== input.runId
+      || projection.key.chapterRuntimeId !== state.chapterRuntimeId
+      || projection.routeHash !== input.routeHash
+      || projection.chapterId !== state.currentChapterId
+      || projection.chapterDefinitionHash !== sha256Canonical(chapter.definition)
+      || state.descriptorHash !== chapter.descriptorHash
+    ) {
+      invalid("gameChapter.multiplayerAuthority", "CHAPTER_OR_WORKING_MISMATCH");
+    }
+    if (state.phase !== "ACTIVE") {
+      return this.projectCurrent({
+        runId: input.runId,
+        routeHash: input.routeHash,
+        viewerSeatId: input.viewerSeatId,
+        state,
+        projection,
+        chapter,
+      });
+    }
+    const authoring = loadSangtianPressureChapterBeatAuthoringV1(state.currentChapterId);
+    const accepted = readAcceptedMultiplayerSeatActionsV1({
+      routeSnapshot: input.routeSnapshot,
+      chapterRuntimeId: state.chapterRuntimeId,
+      chapterId: state.currentChapterId,
+      seatId: input.viewerSeatId,
+      package: authoring,
+      projection,
+    });
+    const cursor = planMultiplayerSeatBeatCursorV1({
+      participantMode: input.routeSnapshot.participantMode,
+      chapterRuntimeId: state.chapterRuntimeId,
+      seatId: input.viewerSeatId,
+      package: authoring,
+      acceptedActions: accepted.actions,
+    });
+    const activeDecision = cursor.status === "AWAITING_DECISION"
+      ? projectionOnlyActiveDecisionV1(chapter, cursor.decisionPointId!)
+      : null;
+    const previousActionRef = accepted.actions.at(-1) ?? null;
+    const previousAccepted = previousActionRef
+      ? projection.acceptedActions.get(previousActionRef.actionId) ?? null
+      : null;
+    const previousDecision = previousAccepted
+      ? this.mapper.decisionForSeat({
+          chapter,
+          activeDecision: projectionOnlyActiveDecisionV1(
+            chapter,
+            previousAccepted.action.decisionPointId,
+          ),
+          viewerSeatId: input.viewerSeatId,
+          workingRevision: projection.state.revision,
+        })
+      : null;
+    const previousOption = previousAccepted
+      ? previousDecision?.options.find(
+          (option) => option.actionType === previousAccepted.action.actionType,
+        ) ?? null
+      : null;
+    const customText = previousAccepted
+      && typeof previousAccepted.action.payload.customText === "string"
+      ? previousAccepted.action.payload.customText.trim()
+      : "";
+    const availableFactRefs = new Set([
+      ...(projection.knowledgeBySeat.get(input.viewerSeatId) ?? []),
+      ...(previousAccepted?.intent.evidenceRefs ?? []),
+      ...(previousAccepted?.intent.knowledgeGrants
+        .filter((grant) => grant.seatId === input.viewerSeatId)
+        .flatMap((grant) => grant.factRefs) ?? []),
+    ]);
+    return {
+      runId: input.runId,
+      routeHash: input.routeHash,
+      viewerSeatId: input.viewerSeatId,
+      projectionVersion: pairVersion(state.revision, projection.headSequence),
+      chapter: {
+        chapterRuntimeId: state.chapterRuntimeId,
+        chapterId: state.currentChapterId,
+        chapterNumber: chapterSequence(state.currentChapterId),
+        title: this.mapper.chapterTitle(state.currentChapterId),
+        phase: state.phase,
+        workingRevision: projection.state.revision,
+      },
+      decision: this.mapper.decisionForSeat({
+        chapter,
+        activeDecision,
+        viewerSeatId: input.viewerSeatId,
+        workingRevision: projection.state.revision,
+      }),
+      viewerBeatContext: {
+        beatId: cursor.status === "AWAITING_DECISION" ? cursor.beatId : null,
+        story: cursor.status === "AWAITING_DECISION"
+          ? compileMultiplayerSeatBeatStoryContextV1({
+              chapterId: state.currentChapterId,
+              beatId: cursor.beatId!,
+              viewerSeatId: input.viewerSeatId,
+              availableFactRefs: [...availableFactRefs],
+            })
+          : null,
+        previousPlayerAction: previousAccepted
+          ? {
+              decisionPointId: previousAccepted.action.decisionPointId,
+              actionType: previousAccepted.action.actionType,
+              displayText: customText
+                || previousOption?.label
+                || previousAccepted.action.actionType,
+            }
+          : null,
+      },
     };
   }
 
@@ -151,6 +297,33 @@ implements PressureGameChapterReaderPort {
       }),
     };
   }
+}
+
+function projectionOnlyActiveDecisionV1(
+  chapter: AuthoredChapterRuntimeV1,
+  decisionPointId: string,
+): ActiveDecisionStateV1 {
+  const decision = chapter.decisions.find(
+    (candidate) => candidate.decisionPointId === decisionPointId,
+  );
+  if (!decision) invalid("gameChapter.multiplayerDecision", "NOT_AUTHORED");
+  return {
+    decisionPointId,
+    policyHash: sha256Canonical(decision),
+    openedAtMs: 0,
+    deadlineAtMs: null,
+    seats: PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => {
+      const requirement = decision.seatRequirements[seatId];
+      return {
+        seatId,
+        requirement,
+        completion: requirement === "REQUIRED" ? "PENDING" : "NOT_REQUIRED",
+        actionIds: [],
+        actionCount: 0,
+        defaultCode: null,
+      };
+    }),
+  };
 }
 
 /**

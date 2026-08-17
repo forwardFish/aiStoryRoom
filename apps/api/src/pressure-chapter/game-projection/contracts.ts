@@ -237,6 +237,28 @@ export interface PressureGameChapterSourceV1 {
   projectionVersion: number;
   chapter: PressureGameChapterProjectionV1;
   decision: PressureGameDecisionProjectionV1 | null;
+  /** Internal viewer-only continuity input; never returned by `/game`. */
+  viewerBeatContext?: {
+    beatId: string | null;
+    story: {
+      beatId: string;
+      title: string;
+      storyPurpose: string;
+      authorialMaterials: Array<{
+        materialRef: string;
+        title: string;
+        text: string;
+        stopCondition: string | null;
+        requiredFactRefs: string[];
+        supportedByAuthority: boolean;
+      }>;
+    } | null;
+    previousPlayerAction: {
+      decisionPointId: string;
+      actionType: string;
+      displayText: string;
+    } | null;
+  };
 }
 
 export interface PressureGameViewerSourceV1 {

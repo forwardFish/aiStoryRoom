@@ -225,6 +225,52 @@ export class PressureChapterOrchestratorService {
     return this.maybeResolve(route, command.nowMs, state);
   }
 
+  async reconcileAcceptedMultiplayerAction(input: Readonly<{
+    routeSnapshot: RunRouteSnapshotV1;
+    actionId: string;
+    nowMs: number;
+  }>): Promise<ChapterOrchestratorStateV1> {
+    const route = validateRunRouteSnapshotV1(input.routeSnapshot);
+    if (route.participantMode !== "MULTIPLAYER") {
+      failChapterOrchestrator(ERROR.STALE_ACTION, "MULTIPLAYER_REQUIRED");
+    }
+    assertNow(input.nowMs);
+    let state = await this.requireActive(route);
+    const active = requireActiveDecision(state);
+    const descriptor = await this.loadDescriptor(route, state.currentChapterId, state.descriptorHash);
+    const decision = requireDecision(descriptor, active.decisionPointId);
+    const projection = await this.loadProjection(state);
+    const accepted = projection.acceptedActions.get(input.actionId);
+    if (
+      !accepted
+      || accepted.action.runId !== route.runId
+      || accepted.action.chapterRuntimeId !== state.chapterRuntimeId
+      || accepted.action.chapterId !== state.currentChapterId
+      || accepted.action.decisionPointId !== active.decisionPointId
+      || !decision.execution.allowedActionTypes.includes(accepted.action.actionType)
+    ) failChapterOrchestrator(ERROR.STALE_ACTION, input.actionId);
+    const seat = requireSeat(active, accepted.action.seatId);
+    if (seat.requirement !== "REQUIRED") {
+      failChapterOrchestrator(ERROR.SEAT_NOT_REQUIRED, accepted.action.seatId);
+    }
+    if (seat.actionIds.includes(input.actionId)) {
+      return this.maybeResolve(route, input.nowMs, state);
+    }
+    const budget = decision.execution.perSeatActionBudget[accepted.action.seatId];
+    if (!budget || seat.actionCount >= budget || accepted.action.actionOrdinal > budget) {
+      failChapterOrchestrator(ERROR.ACTION_BUDGET_EXCEEDED, accepted.action.seatId);
+    }
+    state = await this.recordAction(route, {
+      expectedChapterRuntimeId: state.chapterRuntimeId,
+      decisionPointId: active.decisionPointId,
+      seatId: accepted.action.seatId,
+      actionId: accepted.action.actionId,
+      defaultCode: null,
+      actionBudget: budget,
+    });
+    return this.maybeResolve(route, input.nowMs, state);
+  }
+
   async advanceDeadline(
     routeSnapshot: RunRouteSnapshotV1,
     nowMs: number,

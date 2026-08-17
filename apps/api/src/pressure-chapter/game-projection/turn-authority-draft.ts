@@ -41,6 +41,11 @@ export interface CompilePressureTurnAuthorityDraftInputV1 {
   metrics: PressureGameMetricProjectionV1[];
   resources: PressureGameResourceProjectionV1[];
   narrative: PressureGameNarrativeProjectionV1;
+  previousPlayerAction?: Readonly<{
+    decisionPointId: string;
+    actionType: string;
+    displayText: string;
+  }> | null;
 }
 
 /**
@@ -55,6 +60,9 @@ export function compilePressureTurnAuthorityDraftV1(
     fact("situation.goal", input.situation.goal),
     fact("situation.risk", input.situation.risk),
     fact("situation.judgment", input.situation.judgment),
+    ...(input.previousPlayerAction
+      ? [fact("player.previousAction", input.previousPlayerAction.displayText)]
+      : []),
     ...input.metrics.map((metric) => fact(
       `metric.${metric.trackId}`,
       `${metric.label}：${metric.displayValue}`,

@@ -328,7 +328,7 @@ export class PressureChapterGameProjectionService {
       if (!narrativeSource) {
         failPressureGameProjection(ERROR.NARRATIVE_NOT_FOUND, chapter.chapter.chapterRuntimeId);
       }
-      const rawCapabilities = seeded
+      const rawCapabilities = seeded || routeSnapshot.participantMode === "MULTIPLAYER"
         ? null
         : await measureProjectionStage(timings, "capabilitiesReadMs", () => (
           this.capabilities.readCapabilities({
@@ -446,19 +446,42 @@ export class PressureChapterGameProjectionService {
             resources: structuredClone(resources),
             narrative: structuredClone(narrative),
             decision: structuredClone(fallbackDecision),
+            previousPlayerAction: chapter.viewerBeatContext?.previousPlayerAction
+              ? structuredClone(chapter.viewerBeatContext.previousPlayerAction)
+              : null,
+            currentBeatStory: chapter.viewerBeatContext?.story
+              ? {
+                  beatId: chapter.viewerBeatContext.story.beatId,
+                  title: chapter.viewerBeatContext.story.title,
+                  storyPurpose: chapter.viewerBeatContext.story.storyPurpose,
+                  authorialMaterials: structuredClone(
+                    chapter.viewerBeatContext.story.authorialMaterials,
+                  ),
+                }
+              : null,
           })
         : fallbackDecision;
     } finally {
       timings.turnPresentationMs = elapsedProjectionMs(turnPresentationStartedAt);
     }
     const postPresentationSanitizationStartedAt = performance.now();
+    const multiplayerAllowedActionTypes = decision
+      ? [...new Set(decision.options.map((option) => option.actionType))]
+      : [];
     const resolvedCapabilities = sanitizeCapabilities(
-      input.capabilities ?? capabilitiesFromCommittedAuthority(
-        viewer.viewer.control,
-        chapter.chapter.phase,
-        decision,
-        input.committedAllowedActionTypes ?? [],
-      ),
+      routeSnapshot.participantMode === "MULTIPLAYER"
+        ? capabilitiesFromCommittedAuthority(
+            viewer.viewer.control,
+            chapter.chapter.phase,
+            decision,
+            multiplayerAllowedActionTypes,
+          )
+        : input.capabilities ?? capabilitiesFromCommittedAuthority(
+            viewer.viewer.control,
+            chapter.chapter.phase,
+            decision,
+            input.committedAllowedActionTypes ?? [],
+          ),
     );
     assertCapabilitiesMatch(
       resolvedCapabilities,

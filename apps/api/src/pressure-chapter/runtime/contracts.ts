@@ -57,6 +57,11 @@ export interface RuntimeChapterOrchestratorPortV1 {
   submitAction(
     command: SubmitOrchestratedActionCommandV1,
   ): Promise<ChapterOrchestratorStateV1>;
+  reconcileAcceptedMultiplayerAction?(input: Readonly<{
+    routeSnapshot: RunRouteSnapshotV1;
+    actionId: string;
+    nowMs: number;
+  }>): Promise<ChapterOrchestratorStateV1>;
   advanceDeadline(
     routeSnapshot: RunRouteSnapshotV1,
     nowMs: number,

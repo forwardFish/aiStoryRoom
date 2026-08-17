@@ -52,6 +52,8 @@ export interface WorkingLedgerOpenedPayloadV1 {
 
 export interface FormalActionAcceptedPayloadV1 {
   eventType: "FORMAL_ACTION_ACCEPTED";
+  /** Present only for independently progressing Multiplayer human seats. */
+  decisionAuthorityMode?: "MULTIPLAYER_SEAT";
   routeHash: string;
   inputFingerprint: string;
   action: DecisionActionV1;

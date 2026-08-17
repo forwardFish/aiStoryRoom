@@ -17,6 +17,13 @@ import { ChapterSettlementOrchestrator } from "../chapter-settlement";
 import {
   createPressureDecisionAutomationProductionV1,
 } from "../decision-automation";
+import {
+  MultiplayerFormalDecisionActivityServiceV1,
+  MultiplayerSeatProgressionServiceV1,
+} from "../multiplayer-seat-progression";
+import {
+  MultiplayerChapterConvergenceServiceV1,
+} from "../multiplayer-chapter-convergence";
 import { createPressureDeadlineDefaultProductionV1 } from "../deadline-default-production";
 import {
   N7FrozenFinaleInputAssemblerV1,
@@ -313,15 +320,21 @@ export async function createPressureChapterProductRootV1(input: {
   const ledgerRepository = new PrismaWorkingLedgerRepository(
     asPrisma<WorkingLedgerPrismaClient>(input.prisma),
   );
+  const projections = new W5WorkingProjectionReaderAdapterV1(ledgerRepository);
   const interactionAccess = new PrismaPressureInteractionAccessRepository(
     asPrisma<InteractionAccessPrismaClient>(input.prisma),
   );
+  const multiplayerDecisionActivity = new MultiplayerFormalDecisionActivityServiceV1(content);
   const formalInteraction = new FormalPressureInteractionService(
     interactionAccess,
     ledgerRepository,
+    multiplayerDecisionActivity,
   );
   const formalActions = new W5FormalActionSubmissionAdapterV1(formalInteraction);
-  const projections = new W5WorkingProjectionReaderAdapterV1(ledgerRepository);
+  const multiplayerProgression = new MultiplayerSeatProgressionServiceV1(
+    projections,
+    formalInteraction,
+  );
   const onlineProjections = new SelectiveWorkingProjectionReaderV1(
     new WorkingProjectionFastReaderV1(
       asPrisma<WorkingProjectionFastReaderPrismaClientV1>(input.prisma),
@@ -611,6 +624,13 @@ export async function createPressureChapterProductRootV1(input: {
     deadlineDefaults,
     config: options.decisionAutomation,
   });
+  const multiplayerChapterConvergence = new MultiplayerChapterConvergenceServiceV1(
+    orchestratorStates,
+    onlineProjections,
+    seatPersistence.authority,
+    runtime,
+    decisionAutomation.service,
+  );
   const decisionCompiler = new PressureDecisionCommandCompilerV1(
     gameProjection,
     onlineProjections,
@@ -667,12 +687,9 @@ export async function createPressureChapterProductRootV1(input: {
       : "deterministic-fallback" as const,
     model: null,
   };
-  if (narrativeReadiness.mode !== internal.narrativeProviderMode) {
-    failPressureChapterProduct(
-      ERROR.PRODUCTION_PORT_INVALID,
-      "narrativeProviderReadiness.mode",
-    );
-  }
+  // The foreground turn presenter may use DeepSeek while the durable
+  // Narrative worker intentionally publishes deterministic authority-safe
+  // artifacts. These are separate boundaries and their modes need not match.
   const operationalReadiness = new PressureChapterOperationalReadinessV1(
     workerLifecycle,
     narrativeReadiness,
@@ -706,6 +723,8 @@ export async function createPressureChapterProductRootV1(input: {
     gameRead.reader,
     gameReadConfiguration.mode,
     gameReadRuntimeObserver,
+    multiplayerProgression,
+    multiplayerChapterConvergence,
   );
   const roomsGateway = new PressureChapterRoomsGatewayV1(production.bridge);
   return Object.freeze({

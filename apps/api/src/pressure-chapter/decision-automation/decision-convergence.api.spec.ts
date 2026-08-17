@@ -142,7 +142,7 @@ test("production batch port commits one HUMAN plus five AI actions in one submis
   assert.equal(harness.appendedSeatIds.length, 6);
 });
 
-test("committed SETTLING authority uses request-scoped resume without durable rereads", async () => {
+test("committed intermediate Beat returns ACTIVE request-scoped authority without settlement resume", async () => {
   const harness = await Harness.create(1, true);
   const legacy = harness.dependencies.preparedActions.submitPrepared;
   harness.dependencies.preparedActions.submitPreparedBatch = async (batch) => {
@@ -175,7 +175,9 @@ test("committed SETTLING authority uses request-scoped resume without durable re
   });
 
   assert.equal(result.outcome, "BATCH_COMPLETED");
-  assert.equal(harness.fastSettlementResumeCalls, 1);
+  assert.equal(result.chapter?.phase, "ACTIVE");
+  assert.ok(result.committedAuthority);
+  assert.equal(harness.fastSettlementResumeCalls, 0);
   assert.equal(harness.resumeCalls, 0);
 });
 

@@ -50,6 +50,8 @@ export interface PressureChapterHttpAccessV1 {
   runId: string;
   subjectId: string;
   viewerId: string;
+  /** Frozen route mode returned by the same authorization read. */
+  participantMode?: "SOLO" | "MULTIPLAYER";
 }
 
 export interface PressureChapterHttpAccessPort {
@@ -117,7 +119,7 @@ export interface PressureChapterHttpDecisionCompilerPort {
     nowMs: number;
   }): Promise<Readonly<{
     command: SubmitOrchestratedActionCommandV1;
-    snapshot: DecisionSubmitSnapshotV1;
+    snapshot: DecisionSubmitSnapshotV1 | null;
   }>>;
 }
 

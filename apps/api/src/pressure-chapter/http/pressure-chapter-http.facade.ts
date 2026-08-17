@@ -8,6 +8,8 @@ import {
   type PressureChapterSubmitDecisionCommandV1,
 } from "@ai-story/shared";
 import type { PressureDecisionConvergencePortV1 } from "../decision-automation/contracts";
+import type { MultiplayerSeatProgressionPortV1 } from "../multiplayer-seat-progression/contracts";
+import type { MultiplayerChapterConvergencePortV1 } from "../multiplayer-chapter-convergence/contracts";
 import type { PressureSql7FirstSubmitServiceV1 } from "../sql7-fast-path/service";
 import type { PressureGameReadModeV1 } from "../observability/game-read-observation";
 import {
@@ -96,6 +98,8 @@ export class PressureChapterHttpFacade {
     private readonly gameReadMode: PressureGameReadModeV1 = "REPLAY",
     private readonly gameReadObserver: PressureGameReadRuntimeObserverPortV1 =
       new NoopPressureGameReadRuntimeObserverV1(),
+    private readonly multiplayerProgression: MultiplayerSeatProgressionPortV1 | null = null,
+    private readonly multiplayerChapterConvergence: MultiplayerChapterConvergencePortV1 | null = null,
   ) {}
 
   getGame(
@@ -117,11 +121,39 @@ export class PressureChapterHttpFacade {
         const access = this.gameReadMode === "FAST"
           ? await this.resolveAccess(principal, roomId)
           : (await this.resolveContext(principal, roomId, "GAME")).access;
-        return this.gameRead.read({
+        const multiplayer = access.participantMode === "MULTIPLAYER";
+        const reader = multiplayer
+          ? this.game
+          : this.gameRead;
+        const projection = await reader.read({
           runId: access.runId,
           subjectId: access.subjectId,
           ...query,
         });
+        if (
+          multiplayer
+          && this.multiplayerChapterConvergence
+          && projection.chapter.chapterId !== "P0"
+          && ["RESOLVING_BEAT", "SETTLING"].includes(projection.chapter.phase)
+        ) {
+          const stored = assertStoredRunRouteRecord(
+            await this.routes.readStoredRoute(access.runId),
+          );
+          const recovery = await this.multiplayerChapterConvergence.convergeIfReady({
+            routeSnapshot: stored.snapshot,
+            chapterRuntimeId: projection.chapter.chapterRuntimeId,
+            chapterId: projection.chapter.chapterId,
+            nowMs: requiredInteger(this.clock.nowMs(), "clock.nowMs", 0),
+          });
+          if (recovery.status === "CONVERGED") {
+            return reader.read({
+              runId: access.runId,
+              subjectId: access.subjectId,
+              ...query,
+            });
+          }
+        }
+        return projection;
       },
     ));
   }
@@ -275,6 +307,44 @@ export class PressureChapterHttpFacade {
         command,
         nowMs,
       );
+      if (context.stored.snapshot.participantMode === "MULTIPLAYER") {
+        if (!this.multiplayerProgression || !this.multiplayerChapterConvergence) {
+          failPressureChapterHttp(
+            ERROR.DEPENDENCY_FAILURE,
+            "multiplayerSeatFlow",
+          );
+        }
+        failureStage = "HUMAN_SUBMIT";
+        const humanSubmitStartedAt = performance.now();
+        const seatProgression = await this.multiplayerProgression.submit(compiled);
+        httpTimings.humanSubmitMs = elapsed(humanSubmitStartedAt);
+        if (seatProgression.cursor.status === "CHAPTER_READY_FOR_CONVERGENCE") {
+          failureStage = "CONVERGENCE";
+          const convergenceStartedAt = performance.now();
+          await this.multiplayerChapterConvergence.convergeIfReady({
+            routeSnapshot: context.stored.snapshot,
+            chapterRuntimeId: compiled.action.chapterRuntimeId,
+            chapterId: compiled.action.chapterId,
+            nowMs: requiredInteger(this.clock.nowMs(), "clock.nowMs", 0),
+          });
+          httpTimings.convergenceMs = elapsed(convergenceStartedAt);
+        }
+        failureStage = "PAGE_PROJECTION";
+        const projectionStartedAt = performance.now();
+        const projection = await this.game.read({
+          runId: context.access.runId,
+          subjectId: context.access.subjectId,
+        });
+        httpTimings.projectionMs = elapsed(projectionStartedAt);
+        responseStatus = "SUCCESS";
+        responseOutcome = seatProgression.cursor.status;
+        responseStage = "RESPONSE_READY";
+        return {
+          schemaVersion: "pressure_chapter_submit_decision_http_response_v1",
+          idempotencyKey: command.idempotencyKey,
+          projection,
+        };
+      }
       failureStage = "HUMAN_SUBMIT";
       const humanSubmitStartedAt = performance.now();
       if (!this.convergence) {

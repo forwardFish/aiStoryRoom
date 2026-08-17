@@ -31,6 +31,7 @@ export interface PressureChapterHttpProductionAccessRowV1 {
   routeEngineVersion: string;
   routeStrategyVersion: string;
   routeRuntimeProfile: string;
+  routeParticipantMode?: "SOLO" | "MULTIPLAYER";
   membershipRunId: string;
   membershipUserId: string | null;
   membershipPlayerType: string;

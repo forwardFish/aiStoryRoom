@@ -48,6 +48,7 @@ implements PressureChapterHttpAccessPort {
           route."engineVersion" AS "routeEngineVersion",
           route."strategyVersion" AS "routeStrategyVersion",
           route."runtimeProfile" AS "routeRuntimeProfile",
+          route."participantMode" AS "routeParticipantMode",
           membership."runId" AS "membershipRunId",
           membership."userId" AS "membershipUserId",
           membership."playerType" AS "membershipPlayerType",
@@ -88,13 +89,15 @@ implements PressureChapterHttpAccessPort {
     if (!isCanonicalPressureAccessRow(row, input.roomId, input.subjectId)) {
       return null;
     }
-
     return {
       schemaVersion: "pressure_chapter_http_access_v1",
       roomId: row.runId,
       runId: row.runId,
       subjectId: input.subjectId,
       viewerId: input.viewerId,
+      ...(row.routeParticipantMode === "SOLO" || row.routeParticipantMode === "MULTIPLAYER"
+        ? { participantMode: row.routeParticipantMode }
+        : {}),
     };
   }
 }
@@ -114,6 +117,11 @@ function isCanonicalPressureAccessRow(
     && row.routeEngineVersion === PRESSURE_CHAPTER_ROUTE_V1.engineVersion
     && row.routeStrategyVersion === PRESSURE_CHAPTER_ROUTE_V1.strategyVersion
     && row.routeRuntimeProfile === PRESSURE_CHAPTER_ROUTE_V1.runtimeProfile
+    && (
+      row.routeParticipantMode === undefined
+      || row.routeParticipantMode === "SOLO"
+      || row.routeParticipantMode === "MULTIPLAYER"
+    )
     && row.membershipRunId === row.runId
     && row.membershipUserId === subjectId
     && row.membershipPlayerType === HUMAN_PLAYER_TYPE

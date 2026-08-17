@@ -13,8 +13,11 @@ import {
 } from "@ai-story/shared";
 import {
   loadPublishedSangtianActionReleaseV1,
+  loadSangtianPressureChapterBeatAuthoringV1,
   type PublishedSangtianActionReleaseV1,
 } from "@ai-story/templates";
+import { planMultiplayerSeatBeatCursorV1 } from "../multiplayer-seat-beat/plan";
+import { readAcceptedMultiplayerSeatActionsV1 } from "../multiplayer-seat-progression/accepted-actions";
 import type {
   PressureChapterGameProjectionV1,
   PressureGameCapabilitiesV1,
@@ -176,12 +179,23 @@ implements PressureChapterHttpDecisionCompilerPort {
     nowMs: number;
   }>): Promise<Readonly<{
     command: SubmitOrchestratedActionCommandV1;
-    snapshot: DecisionSubmitSnapshotV1;
+    snapshot: DecisionSubmitSnapshotV1 | null;
   }>> {
     const access = validateAccess(input.access);
     const storedRoute = assertStoredRunRouteRecord(input.storedRoute);
     const route = validateRunRouteSnapshotV1(storedRoute.snapshot);
     const publicCommand = validatePublicCommand(input.command);
+    if (route.participantMode === "MULTIPLAYER") {
+      return {
+        command: await this.compileInternal({
+          access,
+          storedRoute,
+          command: publicCommand,
+          nowMs: input.nowMs,
+        }, null),
+        snapshot: null,
+      };
+    }
     if (
       !this.submitSnapshots?.captureSubmit
       || !this.aiPolicyArtifactHash
@@ -267,6 +281,57 @@ implements PressureChapterHttpDecisionCompilerPort {
     ) {
       mismatch("decision.route", "STORED_ROUTE_BINDING_MISMATCH");
     }
+    const multiplayerProjection = route.participantMode === "MULTIPLAYER"
+      ? await this.working.load({
+          runId: route.runId,
+          chapterRuntimeId: publicCommand.chapterRuntimeId,
+        })
+      : null;
+    const multiplayerPrior = multiplayerProjection?.actionsByIdempotencyKey.get(
+      publicCommand.idempotencyKey,
+    );
+    if (multiplayerPrior) {
+      const viewer = this.authority
+        ? await this.authority.viewer.readViewer({
+            runId: route.runId,
+            subjectId: access.subjectId,
+          })
+        : null;
+      if (
+        !viewer
+        || viewer.runId !== publicCommand.runId
+        || viewer.roomId !== access.roomId
+        || viewer.routeHash !== publicCommand.routeHash
+        || viewer.subjectId !== access.subjectId
+        || viewer.viewer.seatId !== publicCommand.seatId
+        || viewer.viewer.control.controlEpoch !== publicCommand.controlEpoch
+        || viewer.viewer.control.submissionFenceToken !== publicCommand.submissionFenceToken
+        || multiplayerPrior.action.runId !== route.runId
+        || multiplayerPrior.action.chapterRuntimeId !== publicCommand.chapterRuntimeId
+        || multiplayerPrior.action.chapterId !== publicCommand.chapterId
+        || multiplayerPrior.action.decisionPointId !== publicCommand.decisionPointId
+        || multiplayerPrior.action.seatId !== publicCommand.seatId
+        || multiplayerPrior.action.controlEpoch !== publicCommand.controlEpoch
+        || multiplayerPrior.action.expectedWorkingRevision !== publicCommand.expectedWorkingRevision
+        || multiplayerPrior.action.idempotencyKey !== publicCommand.idempotencyKey
+        || !matchesPriorPublicCommandV1(multiplayerPrior.action.payload, publicCommand)
+      ) {
+        mismatch("decision.idempotencyKey", "REUSED_WITH_DIFFERENT_COMMAND");
+      }
+      return compileCommand({
+        routeHash: route.routeHash,
+        access,
+        publicCommand,
+        command: {
+          routeSnapshot: route,
+          subjectId: access.subjectId,
+          action: structuredClone(multiplayerPrior.action),
+          intent: structuredClone(multiplayerPrior.intent),
+          inputFingerprint: multiplayerPrior.inputFingerprint,
+          nowMs: input.nowMs,
+        },
+      });
+    }
     const authority = !submitSnapshot && this.authority
       ? await this.readDecisionAuthority(route, access, publicCommand)
       : null;
@@ -278,17 +343,31 @@ implements PressureChapterHttpDecisionCompilerPort {
         });
     const projection = submitSnapshot?.authority.projection
       ?? authority?.projection
+      ?? multiplayerProjection
       ?? await this.working.load({
       runId: route.runId,
       chapterRuntimeId: publicCommand.chapterRuntimeId,
     });
+    const multiplayerDecisionPointId = route.participantMode === "MULTIPLAYER"
+      ? multiplayerDecisionPointForSeatV1({
+          route,
+          projection,
+          chapterRuntimeId: publicCommand.chapterRuntimeId,
+          chapterId: publicCommand.chapterId,
+          seatId: publicCommand.seatId,
+        })
+      : null;
     if (
       projection.key.runId !== route.runId
       || projection.key.chapterRuntimeId !== publicCommand.chapterRuntimeId
       || projection.routeHash !== route.routeHash
       || projection.chapterId !== publicCommand.chapterId
       || projection.state.revision !== publicCommand.expectedWorkingRevision
-      || projection.nextDecisionPin?.decisionPointId !== publicCommand.decisionPointId
+      || (
+        route.participantMode === "MULTIPLAYER"
+          ? multiplayerDecisionPointId !== publicCommand.decisionPointId
+          : projection.nextDecisionPin?.decisionPointId !== publicCommand.decisionPointId
+      )
     ) {
       mismatch("decision.workingProjection", "STALE_OR_WRONG_DECISION");
     }
@@ -480,7 +559,17 @@ implements PressureChapterHttpDecisionCompilerPort {
       || projection.routeHash !== command.routeHash
       || projection.chapterId !== command.chapterId
       || projection.state.revision !== command.expectedWorkingRevision
-      || projection.nextDecisionPin?.decisionPointId !== command.decisionPointId
+      || (
+        route.participantMode === "MULTIPLAYER"
+          ? multiplayerDecisionPointForSeatV1({
+              route,
+              projection,
+              chapterRuntimeId: command.chapterRuntimeId,
+              chapterId: command.chapterId,
+              seatId: command.seatId,
+            }) !== command.decisionPointId
+          : projection.nextDecisionPin?.decisionPointId !== command.decisionPointId
+      )
       || viewer.runId !== command.runId
       || viewer.roomId !== access.roomId
       || viewer.routeHash !== command.routeHash
@@ -493,6 +582,9 @@ implements PressureChapterHttpDecisionCompilerPort {
       || chapter.decision.decisionPointId !== command.decisionPointId
       || chapter.decision.expectedWorkingRevision !== command.expectedWorkingRevision
     ) mismatch("decision.authority", "STALE_OR_NOT_AUTHORIZED");
+    if (route.participantMode === "MULTIPLAYER") {
+      return { decision: chapter.decision, projection };
+    }
     const capabilities = await this.authority!.capabilities.readCapabilities({
       runId: command.runId,
       routeHash: command.routeHash,
@@ -504,6 +596,49 @@ implements PressureChapterHttpDecisionCompilerPort {
     if (!capabilities.canSubmitDecision) mismatch("decision.capabilities", "NOT_ALLOWED");
     return { decision: chapter.decision, projection };
   }
+}
+
+function multiplayerDecisionPointForSeatV1(input: Readonly<{
+  route: ReturnType<typeof validateRunRouteSnapshotV1>;
+  projection: Awaited<ReturnType<WorkingProjectionReaderPort["load"]>>;
+  chapterRuntimeId: string;
+  chapterId: PressureChapterSubmitDecisionCommandV1["chapterId"];
+  seatId: SeatIdV1;
+}>): string | null {
+  if (input.chapterId === "P0") {
+    mismatch("decision.chapterId", "P0_HAS_NO_FORMAL_DECISION");
+  }
+  const authoring = loadSangtianPressureChapterBeatAuthoringV1(input.chapterId);
+  const accepted = readAcceptedMultiplayerSeatActionsV1({
+    routeSnapshot: input.route,
+    chapterRuntimeId: input.chapterRuntimeId,
+    chapterId: input.chapterId,
+    seatId: input.seatId,
+    package: authoring,
+    projection: input.projection,
+  });
+  const plan = planMultiplayerSeatBeatCursorV1({
+    participantMode: input.route.participantMode,
+    chapterRuntimeId: input.chapterRuntimeId,
+    seatId: input.seatId,
+    package: authoring,
+    acceptedActions: accepted.actions,
+  });
+  return plan.status === "AWAITING_DECISION" ? plan.decisionPointId : null;
+}
+
+function matchesPriorPublicCommandV1(
+  payload: CanonicalJsonObject,
+  command: PressureChapterSubmitDecisionCommandV1,
+): boolean {
+  if (payload.interactionKind === "A_EMOTION_INVESTIGATION") {
+    return payload.investigationCode === command.optionCode
+      && payload.responseToEventId === command.sourceEventId
+      && command.customText === null;
+  }
+  return (payload.optionCode ?? null) === command.optionCode
+    && (payload.customText ?? null) === command.customText
+    && command.sourceEventId === null;
 }
 
 interface DecisionCompilationViewV1 {
@@ -711,6 +846,9 @@ function validateAccess(value: PressureChapterHttpAccessV1): PressureChapterHttp
     || !value.runId.trim()
     || !value.subjectId.trim()
     || !value.viewerId.trim()
+    || (value.participantMode !== undefined
+      && value.participantMode !== "SOLO"
+      && value.participantMode !== "MULTIPLAYER")
   ) {
     mismatch("decision.access", "INVALID_AUTHORIZED_ACCESS");
   }

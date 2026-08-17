@@ -1,8 +1,6 @@
 import { sha256Canonical } from "@ai-story/shared";
 import { performance } from "node:perf_hooks";
-import {
-  loadSangtianPressureStorySourceV1,
-} from "@ai-story/templates";
+import { loadSangtianPressureStorySourceV1 } from "@ai-story/templates";
 import { PRESSURE_TURN_OUTPUT_REQUIREMENTS_V1 } from "../production-config/pressure-prompt-layers";
 import type {
   PressureGameChapterProjectionV1,
@@ -46,6 +44,26 @@ export interface PressureTurnPresentationContextV1 {
     "projectionKind" | "sourceId" | "sourceCommitHash" | "text"
   > & Readonly<{ authority: "CONTINUITY_ONLY" }>;
   pressureGuidance: string;
+  previousPlayerAction: Readonly<{
+    decisionPointId: string;
+    actionType: string;
+    displayText: string;
+    authority: "WORKING_LEDGER_ACCEPTED_ACTION";
+  }> | null;
+  authorialGuidance: Readonly<{
+    beatId: string;
+    title: string;
+    storyPurpose: string;
+    materials: readonly {
+      materialRef: string;
+      title: string;
+      text: string;
+      stopCondition: string | null;
+      requiredFactRefs: readonly string[];
+      supportedByAuthority: boolean;
+    }[];
+    authority: "AUTHORIAL_GUIDANCE_ONLY";
+  }> | null;
   decisionPointId: string;
   legalActionContracts: Array<{
     actionType: string;
@@ -57,7 +75,8 @@ export interface PressureTurnPresentationContextV1 {
     identityAndCharacterRulesAreNotEvents: true;
     previousNarrativeIsNotAuthority: true;
     legalActionsAreNotCompletedResults: true;
-    durableStateSources: readonly ["TURN_AUTHORITY_DRAFT"];
+    authorialGuidanceIsNotAuthority: true;
+    durableStateSources: readonly ["TURN_AUTHORITY_DRAFT", "VIEWER_ACCEPTED_ACTION"];
     forbiddenInferences: readonly string[];
   }>;
   continuityExcerpt: string;
@@ -101,6 +120,24 @@ export interface PressureTurnPresentationInputV1 {
   resources: PressureGameResourceProjectionV1[];
   narrative: PressureGameNarrativeProjectionV1;
   decision: PressureGameDecisionProjectionV1;
+  previousPlayerAction?: Readonly<{
+    decisionPointId: string;
+    actionType: string;
+    displayText: string;
+  }> | null;
+  currentBeatStory?: Readonly<{
+    beatId: string;
+    title: string;
+    storyPurpose: string;
+    authorialMaterials: readonly {
+      materialRef: string;
+      title: string;
+      text: string;
+      stopCondition: string | null;
+      requiredFactRefs: readonly string[];
+      supportedByAuthority: boolean;
+    }[];
+  }> | null;
 }
 
 const ENGINEERING_COPY = /(actionType|decisionPointId|WorkingDelta|stateAfter|Catalog|Pressure\s*Spine|系统字段|规则结算)/iu;
@@ -153,7 +190,7 @@ export class PressureTurnPresentationServiceV1 {
       const fallbackStartedAt = performance.now();
       const fallback = fallbackTurnPresentation(input);
       timings.fallbackBuildMs = elapsedTurnPresentationMs(fallbackStartedAt);
-      if (input.narrative.projectionKind === "GENESIS_NARRATIVE") {
+      if (isOpeningDecisionV1(input)) {
         const storySourceStartedAt = performance.now();
         const storySource = loadSangtianPressureStorySourceV1(
           input.chapter.chapterId,
@@ -335,14 +372,20 @@ function fallbackTurnPresentation(
 ): PressureGameDecisionProjectionV1 {
   const fallback = structuredClone(input.decision);
   const publishedNarrative = String(input.narrative.text ?? "").trim();
-  if (input.narrative.projectionKind !== "GENESIS_NARRATIVE") {
+  if (!isOpeningDecisionV1(input)) {
     // decision.summary is internal pressure guidance for the Provider. It is
     // never safe player copy when a continuation Narrative is unavailable.
     fallback.title = "你准备如何应对？";
-    fallback.summary = publishedNarrative || loadSangtianPressureStorySourceV1(
+    const storySource = loadSangtianPressureStorySourceV1(
       input.chapter.chapterId,
       input.viewer.seatId,
-    ).currentScene.postBeatFrame.text;
+    );
+    const beatFallback = input.currentBeatStory
+      ? compileBeatSceneGuidanceV1(input.currentBeatStory).text
+      : storySource.currentScene.postBeatFrame.text;
+    fallback.summary = input.narrative.projectionKind === "GENESIS_NARRATIVE"
+      ? beatFallback
+      : publishedNarrative || beatFallback;
     return fallback;
   }
   if (publishedNarrative) {
@@ -361,8 +404,18 @@ export function compilePressureTurnPresentationContextV1(
     input.chapter.chapterId,
     input.viewer.seatId,
   );
-  const continuityText = input.narrative.text?.trim()
-    || storySource.currentScene.postBeatFrame.text.trim();
+  const openingDecision = isOpeningDecisionV1(input);
+  const continuationScene = input.currentBeatStory
+    ? compileBeatSceneGuidanceV1(input.currentBeatStory)
+    : {
+        title: storySource.currentScene.postBeatFrame.title,
+        text: storySource.currentScene.postBeatFrame.text,
+      };
+  const continuityText = openingDecision
+    ? input.narrative.text?.trim() || storySource.currentScene.text.trim()
+    : input.narrative.projectionKind !== "GENESIS_NARRATIVE"
+      ? input.narrative.text?.trim() || continuationScene.text.trim()
+      : continuationScene.text.trim();
   if (!continuityText) {
     throw new Error("PRESSURE_DECISION_PRESENTATION_CONTINUITY_REQUIRED");
   }
@@ -387,7 +440,7 @@ export function compilePressureTurnPresentationContextV1(
     },
     dialogueExamples: structuredClone(storySource.characterRules.dialogueSeeds),
     worldAndStyle: structuredClone(storySource.worldAndStyle),
-    currentScene: input.narrative.projectionKind === "GENESIS_NARRATIVE"
+    currentScene: openingDecision
       ? {
           phase: "OPENING" as const,
           title: storySource.currentScene.title,
@@ -395,8 +448,8 @@ export function compilePressureTurnPresentationContextV1(
         }
       : {
           phase: "CONTINUATION" as const,
-          title: storySource.currentScene.postBeatFrame.title,
-          text: storySource.currentScene.postBeatFrame.text,
+          title: continuationScene.title,
+          text: continuationScene.text,
         },
     situation: structuredClone(input.situation),
     metrics: structuredClone(input.metrics),
@@ -410,6 +463,21 @@ export function compilePressureTurnPresentationContextV1(
       authority: "CONTINUITY_ONLY" as const,
     },
     pressureGuidance: input.decision.summary,
+    previousPlayerAction: input.previousPlayerAction
+      ? {
+          ...structuredClone(input.previousPlayerAction),
+          authority: "WORKING_LEDGER_ACCEPTED_ACTION" as const,
+        }
+      : null,
+    authorialGuidance: input.currentBeatStory
+      ? {
+          beatId: input.currentBeatStory.beatId,
+          title: input.currentBeatStory.title,
+          storyPurpose: input.currentBeatStory.storyPurpose,
+          materials: structuredClone(input.currentBeatStory.authorialMaterials),
+          authority: "AUTHORIAL_GUIDANCE_ONLY" as const,
+        }
+      : null,
     decisionPointId: input.decision.decisionPointId,
     legalActionContracts: input.decision.options.map((option) => ({
       actionType: option.actionType,
@@ -421,7 +489,8 @@ export function compilePressureTurnPresentationContextV1(
       identityAndCharacterRulesAreNotEvents: true as const,
       previousNarrativeIsNotAuthority: true as const,
       legalActionsAreNotCompletedResults: true as const,
-      durableStateSources: ["TURN_AUTHORITY_DRAFT"] as const,
+      authorialGuidanceIsNotAuthority: true as const,
+      durableStateSources: ["TURN_AUTHORITY_DRAFT", "VIEWER_ACCEPTED_ACTION"] as const,
       forbiddenInferences: [
         "身份背景中的长期压力不等于当前现场已经发生对应事件。",
         "合法行动方向不等于执行该行动所需人物、物件或证据已经出现在现场。",
@@ -431,7 +500,7 @@ export function compilePressureTurnPresentationContextV1(
     },
     continuityExcerpt,
     outputExample: {
-      sceneText: input.narrative.projectionKind === "GENESIS_NARRATIVE"
+      sceneText: openingDecision
         ? storySource.currentScene.text
         : continuityExcerpt,
       question: "由现场最后一个压力自然逼出的具体问题？",
@@ -444,6 +513,12 @@ export function compilePressureTurnPresentationContextV1(
     outputRequirements: PRESSURE_TURN_OUTPUT_REQUIREMENTS_V1,
     instruction: [
       "一次完成当前玩家可见的连续中文文学剧情，以及紧接着的决策表达。",
+      ...(input.previousPlayerAction
+        ? [`首先自然表现玩家上一行动“${input.previousPlayerAction.displayText}”已经发生，再承接当前权威状态。`]
+        : []),
+      ...(input.currentBeatStory
+        ? ["使用本轮作者材料塑造场景和人物冲突；supportedByAuthority=false的材料只能作为未决压力或备选冲突，不得写成已经发生的结果。"]
+        : []),
       "先写完整场景，再由场景末尾的具体压力自然逼出问题。",
       "逐一改写已有合法行动，不新增行动，不替玩家执行行动，不宣告行动结果。",
       "临时文学细节只服务本轮阅读，不得升级成claims或下一轮权威状态。",
@@ -453,6 +528,32 @@ export function compilePressureTurnPresentationContextV1(
     ...base,
     contextHash: sha256Canonical(base),
   };
+}
+
+function compileBeatSceneGuidanceV1(
+  story: NonNullable<PressureTurnPresentationInputV1["currentBeatStory"]>,
+): { title: string; text: string } {
+  const parts = [
+    story.storyPurpose,
+    ...story.authorialMaterials
+      .filter((material) => material.supportedByAuthority)
+      .map((material) => material.text),
+  ].map((item) => item.trim()).filter(Boolean);
+  const text = parts.join("\n\n");
+  return {
+    title: story.title,
+    text: [...text].slice(0, 6_000).join("") || story.storyPurpose,
+  };
+}
+
+function isOpeningDecisionV1(
+  input: Readonly<Pick<
+    PressureTurnPresentationInputV1,
+    "narrative" | "previousPlayerAction"
+  >>,
+): boolean {
+  return input.narrative.projectionKind === "GENESIS_NARRATIVE"
+    && !input.previousPlayerAction;
 }
 
 function explicitRealTradeoff(

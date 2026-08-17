@@ -135,12 +135,14 @@ export function appendFormalActionEventsToWorkingLedgerProjection(
       failWorkingLedger(ERROR.CONTEXT_MISMATCH, "incremental-action-route");
     }
     const action = validateDecisionActionV1(event.payload.action);
+    const multiplayerSeatDecision = event.payload.decisionAuthorityMode === "MULTIPLAYER_SEAT";
     if (
       action.runId !== event.runId
       || action.chapterRuntimeId !== event.chapterRuntimeId
       || action.chapterId !== event.chapterId
       || action.expectedWorkingRevision !== projection.state.revision
-      || projection.nextDecisionPin?.decisionPointId !== action.decisionPointId
+      || (!multiplayerSeatDecision
+        && projection.nextDecisionPin?.decisionPointId !== action.decisionPointId)
     ) failWorkingLedger(ERROR.CONTEXT_MISMATCH, `incremental-action:${action.actionId}`);
     if (
       !event.payload.audienceSeatIds.includes(action.seatId)
@@ -357,6 +359,7 @@ export function projectWorkingLedger(
         failWorkingLedger(ERROR.CONTEXT_MISMATCH, "action-route");
       }
       const action = validateDecisionActionV1(event.payload.action);
+      const multiplayerSeatDecision = event.payload.decisionAuthorityMode === "MULTIPLAYER_SEAT";
       if (
         action.runId !== event.runId
         || action.chapterRuntimeId !== event.chapterRuntimeId
@@ -367,7 +370,8 @@ export function projectWorkingLedger(
       if (action.expectedWorkingRevision !== state.revision) {
         failWorkingLedger(ERROR.REVISION_MISMATCH, action.actionId);
       }
-      if (nextDecisionPin?.decisionPointId !== action.decisionPointId) {
+      if (!multiplayerSeatDecision
+        && nextDecisionPin?.decisionPointId !== action.decisionPointId) {
         failWorkingLedger(ERROR.CONTEXT_MISMATCH, `action-decision:${action.actionId}`);
       }
       if (

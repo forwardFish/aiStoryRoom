@@ -7,6 +7,7 @@ import type {
 import type {
   WorkingActionIntentV1,
   WorkingLedgerEventV1,
+  WorkingLedgerProjectionV1,
 } from "../working-ledger/contracts";
 
 export interface PressureInteractionAccessV1 {
@@ -63,6 +64,19 @@ export interface SubmitFormalInteractionCommandV1 {
 export interface SubmitFormalInteractionResultV1 {
   status: "ACCEPTED" | "REPLAYED";
   event: WorkingLedgerEventV1;
+}
+
+/**
+ * Optional decision-activity override. Multiplayer uses it to authorize only
+ * the current viewer seat's derived Beat cursor; Solo delegates to the
+ * existing shared Working decision pin.
+ */
+export interface PressureFormalDecisionActivityPortV1 {
+  resolve(input: Readonly<{
+    command: SubmitFormalInteractionCommandV1;
+    projection: WorkingLedgerProjectionV1;
+    access: PressureInteractionAccessV1;
+  }>): Promise<"DELEGATE" | "ACTIVE" | "INACTIVE">;
 }
 
 export type ChatVisibilityV1 = "PUBLIC" | "PARTICIPANTS" | "PRIVATE";

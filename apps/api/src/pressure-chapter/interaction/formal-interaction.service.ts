@@ -22,6 +22,7 @@ import {
 import type {
   PressureInteractionAccessPort,
   PressureInteractionAccessV1,
+  PressureFormalDecisionActivityPortV1,
   SubmitFormalInteractionCommandV1,
   SubmitFormalInteractionResultV1,
 } from "./contracts";
@@ -46,6 +47,7 @@ export class FormalPressureInteractionService {
   constructor(
     private readonly accessPort: PressureInteractionAccessPort,
     private readonly ledgerPort: WorkingLedgerPort,
+    private readonly decisionActivity: PressureFormalDecisionActivityPortV1 | null = null,
   ) {}
 
   async submit(
@@ -89,11 +91,17 @@ export class FormalPressureInteractionService {
       assertReplayAccess(command, access);
       return { status: "REPLAYED", event: replay };
     }
-    assertAccess(command, projection, access);
+    const decisionActivity = this.decisionActivity
+      ? await this.decisionActivity.resolve({ command, projection, access })
+      : "DELEGATE";
+    assertAccess(command, projection, access, decisionActivity);
     assertIntentAccess(command.action.seatId, intent, projection, access);
     const audienceSeatIds = computeAudience(action.seatId, intent);
     const payload: FormalActionAcceptedPayloadV1 = {
       eventType: "FORMAL_ACTION_ACCEPTED",
+      ...(decisionActivity === "ACTIVE"
+        ? { decisionAuthorityMode: "MULTIPLAYER_SEAT" as const }
+        : {}),
       routeHash: route.routeHash,
       inputFingerprint: command.inputFingerprint,
       action,
@@ -159,6 +167,7 @@ function assertAccess(
   command: SubmitFormalInteractionCommandV1,
   projection: WorkingLedgerProjectionV1,
   access: PressureInteractionAccessV1,
+  decisionActivity: "DELEGATE" | "ACTIVE" | "INACTIVE",
 ): void {
   const { action, routeSnapshot } = command;
   if (
@@ -178,11 +187,16 @@ function assertAccess(
     || access.workingStateHash !== projection.stateHash
     || action.expectedWorkingRevision !== projection.state.revision
   ) failInteraction(ERROR.CONTEXT_MISMATCH, "working-state");
+  const sharedDecisionActive = access.activeDecisionPointId === action.decisionPointId
+    && projection.nextDecisionPin?.decisionPointId === action.decisionPointId;
   if (
-    access.activeDecisionPointId !== action.decisionPointId
-    || projection.nextDecisionPin?.decisionPointId !== action.decisionPointId
+    decisionActivity === "INACTIVE"
+    || (decisionActivity === "DELEGATE" && !sharedDecisionActive)
   ) failInteraction(ERROR.DECISION_NOT_ACTIVE, action.decisionPointId);
-  if (!access.allowedActionTypes.includes(action.actionType)) {
+  if (
+    decisionActivity !== "ACTIVE"
+    && !access.allowedActionTypes.includes(action.actionType)
+  ) {
     failInteraction(ERROR.ACTION_TYPE_FORBIDDEN, action.actionType);
   }
 }

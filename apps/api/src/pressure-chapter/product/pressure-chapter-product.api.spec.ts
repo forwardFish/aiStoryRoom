@@ -193,6 +193,32 @@ test("zero-external ProductRoot composes without DB access or pre-init workers",
   await root.workerLifecycle.onModuleDestroy();
 });
 
+test("foreground DeepSeek readiness may coexist with a deterministic authority Narrative worker", async () => {
+  const prisma = {
+    $transaction: async () => { throw new Error("composition must not access the database"); },
+    $queryRaw: async () => { throw new Error("composition must not execute the snapshot query"); },
+  } as unknown as PrismaService;
+  const root = await createPressureChapterProductRootV1({
+    prisma,
+    environment: {},
+    turnPresentationProvider: {
+      async renderTurnPresentation() { return {}; },
+    },
+    narrativeProviderReadiness: {
+      ready: true,
+      mode: "EXTERNAL_PROVIDER",
+      externalProviderConfigured: true,
+      degraded: false,
+      provider: "deepseek",
+      model: "deepseek-v4-pro",
+    },
+    options: productRootGameReadTestOptions(),
+  });
+  assert.equal(root.diagnostics.narrativeProviderMode, "DETERMINISTIC_FALLBACK_ONLY");
+  assert.equal(root.operationalReadiness.readiness().narrative.mode, "EXTERNAL_PROVIDER");
+  await root.workerLifecycle.onModuleDestroy();
+});
+
 test("ProductRoot binds exact FAST configuration without DB work", async () => {
   let databaseCalls = 0;
   const prisma = {
