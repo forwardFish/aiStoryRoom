@@ -125,6 +125,7 @@ import {
 } from "../product-adapters";
 import {
   resolvePressureGameReadConfigurationV1,
+  resolvePressurePostCommitProjectionModeV1,
   type PressureNarrativeProviderReadinessV1,
 } from "../production-config";
 import {
@@ -158,7 +159,11 @@ import {
 import { PressureChapterRunRouterService } from "../run-router";
 import { composePressureChapterRuntimeV1 } from "../runtime/composition";
 import { SeatControlAudienceProjector, SeatControlService } from "../seat-control";
-import { PressureSeatTransportFacadeV1 } from "../seat-transport";
+import {
+  PressureSeatTransportFacadeV1,
+  PrismaPressureNarrativeDeliveryReaderV1,
+  type PressureNarrativeDeliveryPrismaClientV1,
+} from "../seat-transport";
 import {
   createPressureSeatControlPersistenceAdaptersV1,
   PrismaPressureGameViewerReaderV1,
@@ -236,6 +241,7 @@ export interface PressureChapterProductRootV1 {
     narrativeWorkerAutoStarted: false;
     narrativeProviderMode: "EXTERNAL_PROVIDER" | "DETERMINISTIC_FALLBACK_ONLY";
     gameReadMode: "REPLAY" | "SHADOW" | "FAST";
+    postCommitProjectionMode: "REPLAY" | "SHADOW" | "FAST";
   }>;
 }
 
@@ -255,6 +261,9 @@ export async function createPressureChapterProductRootV1(input: {
   chapterSummaryReader?: PressureGameChapterSummaryReaderPort | null;
 }): Promise<PressureChapterProductRootV1> {
   const gameReadConfiguration = resolvePressureGameReadConfigurationV1(
+    input.environment ?? process.env,
+  );
+  const postCommitProjectionMode = resolvePressurePostCommitProjectionModeV1(
     input.environment ?? process.env,
   );
   const options = normalizeOptions(input.options);
@@ -506,6 +515,9 @@ export async function createPressureChapterProductRootV1(input: {
     ),
     seatControl,
     aEmotion.feed,
+    new PrismaPressureNarrativeDeliveryReaderV1(
+      asPrisma<PressureNarrativeDeliveryPrismaClientV1>(input.prisma),
+    ),
   );
   const actionPresentations = new SangtianReleaseActionPresentationCatalogAdapterV1(
     release,
@@ -601,6 +613,7 @@ export async function createPressureChapterProductRootV1(input: {
     clock: httpProduction.clock,
     deadlineDefaults,
     config: options.decisionAutomation,
+    submitPageSnapshots: gameReadSnapshot,
   });
   const decisionCompiler = new PressureDecisionCommandCompilerV1(
     gameProjection,
@@ -696,6 +709,7 @@ export async function createPressureChapterProductRootV1(input: {
     gameRead.reader,
     gameReadConfiguration.mode,
     gameReadRuntimeObserver,
+    postCommitProjectionMode,
   );
   const roomsGateway = new PressureChapterRoomsGatewayV1(production.bridge);
   return Object.freeze({
@@ -725,6 +739,7 @@ export async function createPressureChapterProductRootV1(input: {
       narrativeWorkerAutoStarted: false as const,
       narrativeProviderMode: internal.narrativeProviderMode,
       gameReadMode: gameReadConfiguration.mode,
+      postCommitProjectionMode,
     }),
   });
 }

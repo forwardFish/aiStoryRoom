@@ -135,6 +135,7 @@ export interface PressureGameNarrativeProjectionV1 {
   text: string | null;
   contentHash: string | null;
   renderMode: "PROVIDER" | "AUTHORED_FALLBACK" | null;
+  identityHash?: string | null;
 }
 
 
@@ -337,6 +338,10 @@ export interface ProjectPressureChapterGameProjectionFromSourcesV1
   worldSource: PressureGameWorldSourceV1;
   narrativeSource: PressureGameNarrativeSourceV1;
   feedPage: AEmotionFeedPagePortV1;
+  /** M3 sets this after resolving the safe Catalog presentation in memory. */
+  presentationAlreadyResolved?: true;
+  /** Defined (including null) means no chapter-summary reader may run. */
+  resolvedChapterSummary?: PressureGameChapterSummarySourceV1 | null;
 }
 
 export type PressureGameRouteReaderPort = StoredRunRouteReaderPort;

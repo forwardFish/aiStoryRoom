@@ -22,6 +22,7 @@ import type {
 import type { PressureNarrativeErrorCode } from "@apps/openovel-runtime/pressure-narrative/errors";
 import { projectWorkingLedger } from "../working-ledger/working-ledger";
 import type { WorkingLedgerEventV1 } from "../working-ledger/contracts";
+import type { PressureNarrativePublishedEventV1 } from "../seat-transport/contracts";
 import { validateAtomicChapterCommitRecordV1 } from "../chapter-settlement";
 import {
   PRESSURE_PERSISTENCE_ERROR_CODES as ERROR,
@@ -268,6 +269,28 @@ interface ProjectionTransaction {
       data: Record<string, unknown>;
     }): Promise<{ count: number }>;
   };
+  storyEventCursor: {
+    findUnique(input: Record<string, unknown>): Promise<{ runId: string; nextSequence: number } | null>;
+    create(input: { data: Record<string, unknown> }): Promise<{ runId: string; nextSequence: number }>;
+    update(input: { where: Record<string, unknown>; data: Record<string, unknown> }): Promise<{ nextSequence: number }>;
+  };
+  storyEvent: {
+    findMany(input: Record<string, unknown>): Promise<Array<{
+      runId: string;
+      type: string;
+      payloadJson: unknown;
+      dedupeKey: string | null;
+    }>>;
+    findUnique(input: Record<string, unknown>): Promise<{ id: string } | null>;
+    create(input: { data: Record<string, unknown> }): Promise<unknown>;
+  };
+  pressureRunRouteSnapshot: {
+    findUnique(input: Record<string, unknown>): Promise<{
+      runId: string;
+      routeHash: string;
+      contentPackageSha256: string;
+    } | null>;
+  };
 }
 
 export type NarrativeProjectionPrismaClient =
@@ -459,6 +482,7 @@ implements NarrativeProjectionStatePortV1, NarrativeArtifactPublisherPortV1 {
         throw invalid("Published NarrativeArtifact was not durably staged");
       }
       const meta = decodeProjectionMeta(row);
+      if (row.status === request.status) return;
       const updated = await tx.pressureNarrativeProjection.updateMany({
         where: { id: row.id, leaseVersion: request.fence },
         data: {
@@ -476,6 +500,7 @@ implements NarrativeProjectionStatePortV1, NarrativeArtifactPublisherPortV1 {
         },
       });
       assertProjectionFence(updated.count, request.projectionId, request.fence);
+      await persistNarrativePublishedEventV1(tx, row, meta, artifact);
     });
   }
 
@@ -520,6 +545,7 @@ interface AuthorityReadTransaction {
   pressureRunRouteSnapshot: { findUnique(input: Record<string, unknown>): Promise<{
     runId: string;
     contentPackageSha256: string;
+    routeHash?: string;
   } | null> };
   pressureChapterSettlement: { findFirst(input: Record<string, unknown>): Promise<{
     runId: string;
@@ -614,7 +640,7 @@ async function readNarrativeAuthority(
 
 async function readCommittedBeatAuthority(
   tx: AuthorityReadTransaction,
-  job: OpenNovelNarrativeProjectionJobV1,
+  job: Pick<OpenNovelNarrativeProjectionJobV1, "runId" | "sourceId">,
 ): Promise<unknown | null> {
   const [rows, route] = await Promise.all([
     tx.storyEvent.findMany({
@@ -686,6 +712,154 @@ async function readCommittedBeatAuthority(
     resolutionHash: beat.resolutionHash,
     contentPackageSha256: route.contentPackageSha256,
   };
+}
+
+async function persistNarrativePublishedEventV1(
+  tx: ProjectionTransaction,
+  row: ProjectionRow,
+  meta: ProjectionMetaV1,
+  artifact: OpenNovelNarrativeArtifactV1,
+): Promise<void> {
+  if (
+    row.sourceAuthority !== "CHAPTER_WORKING"
+    || artifact.projectionKind === "FINALE_NARRATIVE"
+    || artifact.audience.kind !== "SEAT"
+    || !artifact.audience.seatId
+  ) return;
+  const dedupeKey = `pressure-narrative-published:${artifact.contentHash}:${artifact.audience.seatId}`;
+  if (await tx.storyEvent.findUnique({ where: { dedupeKey }, select: { id: true } })) return;
+  const [rawAuthority, route] = await Promise.all([
+    readCommittedBeatDeliveryIdentityV1(tx, artifact.runId, artifact.sourceId),
+    tx.pressureRunRouteSnapshot.findUnique({
+      where: { runId: artifact.runId },
+      select: { runId: true, routeHash: true, contentPackageSha256: true },
+    }),
+  ]);
+  const authority = rawAuthority as null | {
+    runId: string;
+    chapterRuntimeId: string;
+    decisionPointId: string;
+    committedWorkingRevision: number;
+  };
+  if (
+    !authority
+    || !route?.routeHash
+    || authority.runId !== artifact.runId
+    || !Number.isSafeInteger(authority.committedWorkingRevision)
+  ) throw invalid("Published Narrative identity authority is unavailable");
+  const deliverySequence = await allocateNarrativeStorySequenceV1(tx, artifact.runId);
+  const pendingIdentity = {
+    schemaVersion: "pressure_post_commit_narrative_identity_v1" as const,
+    runId: artifact.runId,
+    routeHash: route.routeHash,
+    viewerSeatId: artifact.audience.seatId,
+    chapterRuntimeId: authority.chapterRuntimeId,
+    decisionPointId: authority.decisionPointId,
+    workingRevision: authority.committedWorkingRevision,
+    jobId: meta.jobId,
+    projectionKind: artifact.projectionKind,
+    sourceAuthority: row.sourceAuthority,
+    sourceId: artifact.sourceId,
+    sourceCommitHash: artifact.sourceCommitHash,
+    sourceContentHash: artifact.sourceContentHash,
+    narrativeProfileVersion: artifact.narrativeProfileVersion,
+    outboxDedupeKey: [
+      artifact.projectionKind,
+      artifact.runId,
+      row.audienceKey,
+      artifact.sourceCommitHash,
+    ].join(":"),
+    audienceKey: row.audienceKey,
+    status: "PENDING" as const,
+  };
+  const identityHash = sha256Canonical(pendingIdentity);
+  const narrative = {
+    status: artifact.status,
+    projectionKind: artifact.projectionKind,
+    sourceAuthority: row.sourceAuthority as "CHAPTER_WORKING",
+    sourceId: artifact.sourceId,
+    sourceCommitHash: artifact.sourceCommitHash,
+    text: artifact.text,
+    contentHash: artifact.contentHash,
+    renderMode: artifact.renderMode,
+    identityHash,
+  };
+  const identityBody = {
+    schemaVersion: "pressure_narrative_published_event_v1" as const,
+    runId: artifact.runId,
+    routeHash: route.routeHash,
+    viewerSeatId: artifact.audience.seatId,
+    chapterRuntimeId: authority.chapterRuntimeId,
+    decisionPointId: authority.decisionPointId,
+    workingRevision: authority.committedWorkingRevision,
+    sourceId: artifact.sourceId,
+    projectionKind: artifact.projectionKind as PressureNarrativePublishedEventV1["projectionKind"],
+    status: artifact.status,
+    deliverySequence,
+    narrative,
+  };
+  const payload: PressureNarrativePublishedEventV1 = {
+    ...identityBody,
+    identityHash,
+  };
+  await tx.storyEvent.create({
+    data: {
+      id: `pressure-narrative:${payload.identityHash}`,
+      runId: artifact.runId,
+      day: 0,
+      type: "PRESSURE_NARRATIVE_PUBLISHED_EVENT",
+      messageType: "system",
+      roleKey: artifact.audience.seatId,
+      visibility: "player_visible",
+      payloadJson: json(payload),
+      sequence: deliverySequence,
+      dedupeKey,
+      audienceType: "SEAT",
+      audienceRoleIdsJson: json([artifact.audience.seatId]),
+    },
+  });
+}
+
+async function readCommittedBeatDeliveryIdentityV1(
+  tx: Pick<ProjectionTransaction, "storyEvent">,
+  runId: string,
+  sourceId: string,
+): Promise<{
+  runId: string;
+  chapterRuntimeId: string;
+  decisionPointId: string;
+  committedWorkingRevision: number;
+} | null> {
+  const rows = await tx.storyEvent.findMany({
+    where: { runId, type: "PRESSURE_WORKING_LEDGER_EVENT" },
+    orderBy: { createdAt: "asc" },
+    select: { runId: true, type: true, payloadJson: true, dedupeKey: true },
+  });
+  const events = rows.map((row) => decodeWorkingLedgerStoryEvent(row, runId));
+  const target = events.find((event) => (
+    event.payload.eventType === "BEAT_APPLIED"
+    && event.payload.beatResolution.resolutionHash === sourceId
+  ));
+  if (!target || target.payload.eventType !== "BEAT_APPLIED") return null;
+  return {
+    runId: target.runId,
+    chapterRuntimeId: target.chapterRuntimeId,
+    decisionPointId: target.payload.beatResolution.decisionPointId,
+    committedWorkingRevision: target.payload.beatResolution.committedWorkingRevision,
+  };
+}
+
+async function allocateNarrativeStorySequenceV1(
+  tx: ProjectionTransaction,
+  runId: string,
+): Promise<number> {
+  const existing = await tx.storyEventCursor.findUnique({ where: { runId } });
+  if (!existing) await tx.storyEventCursor.create({ data: { runId, nextSequence: 1 } });
+  const cursor = await tx.storyEventCursor.update({
+    where: { runId },
+    data: { nextSequence: { increment: 1 }, version: { increment: 1 } },
+  });
+  return cursor.nextSequence - 1;
 }
 
 function decodeWorkingLedgerStoryEvent(

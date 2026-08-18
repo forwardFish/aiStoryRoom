@@ -573,6 +573,9 @@ export class PressureChapterOrchestratorService {
         chapter: next,
         workingProjection: projection,
         chapterDescriptor: descriptor,
+        frozenWorldState: input.committedBundle
+          ? structuredClone(input.committedBundle.frozenWorldState)
+          : null,
       });
       return next;
     }

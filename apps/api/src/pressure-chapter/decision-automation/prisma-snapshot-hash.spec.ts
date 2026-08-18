@@ -16,7 +16,7 @@ test("submit snapshot hash binds authority identity without canonicalizing proje
     },
   } as unknown as DecisionSubmitSnapshotV1["authority"];
   const input: Omit<DecisionSubmitSnapshotV1, "submitSnapshotHash"> = {
-    schemaVersion: "pressure_decision_submit_snapshot_v1",
+    schemaVersion: "pressure_submit_page_authority_snapshot_v1",
     authority,
     viewer: {
       roomId: "room-1",
@@ -25,6 +25,7 @@ test("submit snapshot hash binds authority identity without canonicalizing proje
       seatId: "zhejiang_governor",
       humanControllerId: "subject-1",
     },
+    page: { snapshotHash: sha256Canonical("page-1") } as DecisionSubmitSnapshotV1["page"],
   };
 
   const result = withDecisionSubmitSnapshotHashV1(input);
@@ -34,6 +35,7 @@ test("submit snapshot hash binds authority identity without canonicalizing proje
     schemaVersion: input.schemaVersion,
     authoritySnapshotHash: HASH,
     viewer: input.viewer,
+    pageSnapshotHash: input.page.snapshotHash,
   }));
 });
 
@@ -42,7 +44,7 @@ test("submit snapshot hash changes when viewer authorization changes", () => {
     snapshotHash: HASH,
   } as DecisionSubmitSnapshotV1["authority"];
   const base: Omit<DecisionSubmitSnapshotV1, "submitSnapshotHash"> = {
-    schemaVersion: "pressure_decision_submit_snapshot_v1",
+    schemaVersion: "pressure_submit_page_authority_snapshot_v1",
     authority,
     viewer: {
       roomId: "room-1",
@@ -51,6 +53,7 @@ test("submit snapshot hash changes when viewer authorization changes", () => {
       seatId: "zhejiang_governor",
       humanControllerId: "subject-1",
     },
+    page: { snapshotHash: sha256Canonical("page-2") } as DecisionSubmitSnapshotV1["page"],
   };
 
   const first = withDecisionSubmitSnapshotHashV1(base);

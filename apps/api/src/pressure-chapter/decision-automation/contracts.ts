@@ -27,6 +27,9 @@ import type { AuthorityDownstreamManifestV1 } from "../projection-plan/authority
 import type { OpenNovelNarrativeProjectionJobV1, SealedChapterSettlementInputV1 } from "@ai-story/shared";
 import type { BeatResolutionV1 } from "@ai-story/shared";
 import type { WorkingLedgerEventV1 } from "../working-ledger/contracts";
+import type { GameReadSnapshotV1 } from "../game-projection/game-read-snapshot";
+import type { PostCommitProjectionAuthorityV1 } from "../post-commit-page-authority";
+import type { WorldStateV1 } from "@ai-story/shared";
 
 export interface DecisionAutomationTaskV1 {
   schemaVersion: "pressure_decision_automation_task_v1";
@@ -116,13 +119,17 @@ export interface DecisionSubmitViewerBindingV1 {
   humanControllerId: string;
 }
 
-/** One authenticated HTTP submit bound to one exact authority snapshot. */
-export interface DecisionSubmitSnapshotV1 {
-  schemaVersion: "pressure_decision_submit_snapshot_v1";
+/** One authenticated submit bound to decision and full viewer page authority. */
+export interface SubmitPageAuthoritySnapshotV1 {
+  schemaVersion: "pressure_submit_page_authority_snapshot_v1";
   authority: DecisionConvergenceAuthoritySnapshotV1;
   viewer: DecisionSubmitViewerBindingV1;
+  page: GameReadSnapshotV1;
   submitSnapshotHash: string;
 }
+
+/** Compatibility name retained for the existing HTTP/compiler seam. */
+export type DecisionSubmitSnapshotV1 = SubmitPageAuthoritySnapshotV1;
 
 /** Exact accepted MA input/output pair sealed for one MC commit. */
 export interface ResolvedBeatSubmitAuthorityV1 {
@@ -504,7 +511,9 @@ export interface DecisionConvergenceResultV1 {
     chapter: ChapterOrchestratorStateV1;
     workingProjection: WorkingLedgerProjectionV1;
     chapterDescriptor: AuthoredChapterRuntimeV1;
+    frozenWorldState: WorldStateV1 | null;
   } | null;
+  postCommitAuthority: PostCommitProjectionAuthorityV1 | null;
   metrics: DecisionConvergenceDiagnosticsV1;
 }
 

@@ -31,6 +31,9 @@ export class PressureMainGameStorageV1 {
     this.runId = runId;
     this.savedRunId = runId;
     this.projection = assertProjection(initialProjection, runId);
+    this.narrativeOverlay = null;
+    this.narrativeCursor = null;
+    this.narrativeDeliverySequence = 0;
     this.fetchImpl = fetchImpl;
     this.createIdempotencyKey = createIdempotencyKey || defaultIdempotencyKey;
   }
@@ -40,7 +43,7 @@ export class PressureMainGameStorageV1 {
   }
 
   async getRun() {
-    this.projection = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
+    this.acceptProjection(await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`));
     return this.toView(this.projection);
   }
 
@@ -96,7 +99,7 @@ export class PressureMainGameStorageV1 {
     ) {
       throw new Error("决定响应与本次提交不一致。");
     }
-    this.projection = assertProjection(payload.projection, this.runId);
+    this.acceptProjection(assertProjection(payload.projection, this.runId));
     return this.toView(this.projection);
   }
 
@@ -131,7 +134,7 @@ export class PressureMainGameStorageV1 {
     if (payload?.schemaVersion !== "pressure_chapter_summary_confirmation_response_v2" || payload?.idempotencyKey !== idempotencyKey) {
       throw new Error("章末确认响应与本次请求不一致。");
     }
-    this.projection = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
+    this.acceptProjection(await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`));
     return this.toView(this.projection);
   }
 
@@ -140,7 +143,86 @@ export class PressureMainGameStorageV1 {
   }
 
   toView(projection) {
-    return pressureProjectionToMainGameViewV1(projection);
+    return pressureProjectionToMainGameViewV1(this.projectNarrativeOverlay(projection));
+  }
+
+  acceptProjection(projection) {
+    this.projection = assertProjection(projection, this.runId);
+    if (
+      this.narrativeOverlay
+      && (
+        this.narrativeOverlay.chapterRuntimeId !== this.projection.chapter.chapterRuntimeId
+        || this.narrativeOverlay.workingRevision !== this.projection.chapter.workingRevision
+        || this.projection.narrative.status === "PUBLISHED"
+        || this.projection.narrative.status === "FALLBACK_PUBLISHED"
+      )
+    ) this.narrativeOverlay = null;
+  }
+
+  acceptNarrativeEvent(value) {
+    const event = assertNarrativeEvent(value, this.projection);
+    if (event.deliverySequence <= this.narrativeDeliverySequence) return null;
+    this.narrativeDeliverySequence = event.deliverySequence;
+    this.narrativeCursor = event.cursor || this.narrativeCursor;
+    this.narrativeOverlay = {
+      chapterRuntimeId: this.projection.chapter.chapterRuntimeId,
+      workingRevision: this.projection.chapter.workingRevision,
+      sourceId: event.sourceId,
+      projectionKind: event.projectionKind,
+      narrative: structuredClone(event.narrative),
+    };
+    return this.toView(this.projection);
+  }
+
+  connectNarrativeStream(onUpdate, {
+    EventSourceImpl = globalThis.EventSource,
+    schedule = globalThis.setTimeout?.bind(globalThis),
+  } = {}) {
+    if (typeof EventSourceImpl !== "function" || typeof onUpdate !== "function") return () => {};
+    let source = null;
+    let closed = false;
+    let reconnectTimer = null;
+    const connect = () => {
+      if (closed) return;
+      const cursor = this.narrativeCursor
+        ? `?afterCursor=${encodeURIComponent(this.narrativeCursor)}`
+        : "";
+      source = new EventSourceImpl(
+        `/api/v4/rooms/${encodeURIComponent(this.runId)}/pressure-seat-transport/events${cursor}`,
+        { withCredentials: true },
+      );
+      source.addEventListener("narrative", (message) => {
+        try {
+          const payload = JSON.parse(message.data);
+          if (!payload.cursor && message.lastEventId) payload.cursor = message.lastEventId;
+          const view = this.acceptNarrativeEvent(payload);
+          if (view) onUpdate(view);
+        } catch {}
+      });
+      source.onerror = () => {
+        source?.close?.();
+        source = null;
+        if (!closed && typeof schedule === "function") reconnectTimer = schedule(connect, 1_000);
+      };
+    };
+    connect();
+    return () => {
+      closed = true;
+      source?.close?.();
+      if (reconnectTimer !== null && globalThis.clearTimeout) globalThis.clearTimeout(reconnectTimer);
+    };
+  }
+
+  projectNarrativeOverlay(projection) {
+    const overlay = this.narrativeOverlay;
+    if (
+      !overlay
+      || overlay.chapterRuntimeId !== projection.chapter.chapterRuntimeId
+      || overlay.workingRevision !== projection.chapter.workingRevision
+      || overlay.sourceId !== projection.narrative.sourceId
+      || overlay.projectionKind !== projection.narrative.projectionKind
+    ) return projection;
+    return { ...projection, narrative: structuredClone(overlay.narrative) };
   }
 
   async request(path) {
@@ -257,7 +339,35 @@ function decisionNarrativeText(projection) {
   if (projection.narrative?.projectionKind === "GENESIS_NARRATIVE") return summary;
   const published = projection.narrative?.status === "PUBLISHED"
     || projection.narrative?.status === "FALLBACK_PUBLISHED";
-  return published && [...summary].length >= 30 ? summary : "";
+  const text = String(projection.narrative?.text || summary).trim();
+  return published && [...text].length >= 30 ? text : "";
+}
+
+function assertNarrativeEvent(value, projection) {
+  const expectedIdentityHash = projection.narrative?.identityHash || null;
+  if (
+    !value
+    || value.schemaVersion !== "pressure_narrative_published_event_v1"
+    || value.runId !== projection.runId
+    || value.routeHash !== projection.route.routeHash
+    || value.viewerSeatId !== projection.viewer.seatId
+    || (expectedIdentityHash
+      ? value.identityHash !== expectedIdentityHash
+      : value.chapterRuntimeId !== projection.chapter.chapterRuntimeId
+        || value.workingRevision !== projection.chapter.workingRevision)
+    || value.sourceId !== projection.narrative.sourceId
+    || value.projectionKind !== projection.narrative.projectionKind
+    || !Number.isSafeInteger(value.deliverySequence)
+    || value.deliverySequence < 1
+    || typeof value.identityHash !== "string"
+    || !/^[a-f0-9]{64}$/.test(value.identityHash)
+    || !value.narrative
+    || value.narrative.sourceId !== value.sourceId
+    || value.narrative.projectionKind !== value.projectionKind
+    || value.narrative.status !== value.status
+    || (value.status !== "PUBLISHED" && value.status !== "FALLBACK_PUBLISHED")
+  ) throw new Error("Narrative event authority mismatch");
+  return value;
 }
 
 function pressureManeuverPanel(projection) {

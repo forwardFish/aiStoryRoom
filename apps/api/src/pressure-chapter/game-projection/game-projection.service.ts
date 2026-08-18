@@ -282,7 +282,10 @@ export class PressureChapterGameProjectionService {
   }
 
   private async projectResolvedSources(input: Readonly<{
-    query: ReadPressureChapterGameProjectionQueryV1;
+    query: ReadPressureChapterGameProjectionQueryV1 & Readonly<{
+      presentationAlreadyResolved?: true;
+      resolvedChapterSummary?: import("./contracts").PressureGameChapterSummarySourceV1 | null;
+    }>;
     routeSnapshot: ReadPressureChapterGameProjectionFromAuthorityV1["routeSnapshot"];
     viewer: NonNullable<Awaited<ReturnType<PressureGameViewerReaderPort["readViewer"]>>>;
     chapter: NonNullable<Awaited<ReturnType<PressureGameChapterReaderPort["readCurrent"]>>>;
@@ -327,7 +330,9 @@ export class PressureChapterGameProjectionService {
       chapter.decision,
       chapter.chapter.workingRevision,
     );
-    const decision = fallbackDecision && this.turnPresentations
+    const decision = input.query.presentationAlreadyResolved
+      ? fallbackDecision
+      : fallbackDecision && this.turnPresentations
       ? await this.turnPresentations.present({
           chapter: structuredClone(chapter.chapter),
           viewer: structuredClone(viewer.viewer),
@@ -359,7 +364,9 @@ export class PressureChapterGameProjectionService {
       runId: query.runId,
       viewerSeatId: viewer.viewer.seatId,
     });
-    const chapterSummarySource = this.chapterSummaries
+    const chapterSummarySource = input.query.resolvedChapterSummary !== undefined
+      ? input.query.resolvedChapterSummary
+      : this.chapterSummaries
       ? await this.chapterSummaries.readCurrent({
           runId: query.runId,
           routeHash,
@@ -755,6 +762,9 @@ function sanitizeNarrative(
   } else if (source.text !== null || source.contentHash !== null || source.renderMode !== null) {
     failPressureGameProjection(ERROR.VIEWER_DATA_UNSAFE, "narrative", "UNPUBLISHED_CONTENT_PRESENT");
   }
+  if (source.identityHash !== undefined && source.identityHash !== null && !isSha256(source.identityHash)) {
+    failPressureGameProjection(ERROR.INVALID_SOURCE, "narrative.identityHash", "SHA256");
+  }
   return {
     status,
     projectionKind,
@@ -764,6 +774,7 @@ function sanitizeNarrative(
     text: source.text,
     contentHash: source.contentHash,
     renderMode: source.renderMode,
+    identityHash: source.identityHash ?? null,
   };
 }
 

@@ -347,6 +347,15 @@ export function createStoryApp({
     state.customText = "";
   }
 
+  /** Narrative-only view replacement; preserves draft, busy and stream state. */
+  function acceptNarrativeUpdate(view) {
+    if (!view || !state.view) return;
+    const previousKey = decisionNarrativeKey(state.view);
+    state.view = view;
+    if (decisionNarrativeKey(view) !== previousKey) state.revealedDecisionNarrativeKey = null;
+    render();
+  }
+
   async function resolveRoomRound() {
     const roomSession = roomSessionForView(state.view);
     if (!roomSession?.room?.isHost || !roomSession.allSubmitted || state.busy || typeof storage.resolveRoomRound !== "function") return;
@@ -698,6 +707,7 @@ export function createStoryApp({
     closePlayAgain,
     confirmPlayAgain,
     render,
+    acceptNarrativeUpdate,
     getState: () => state
   };
 }

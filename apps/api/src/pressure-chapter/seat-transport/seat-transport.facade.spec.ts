@@ -231,6 +231,10 @@ test("SSE resumes from its transport cursor and drains every monotonic page befo
       nextAfterSequence: index === 0 ? 2 : 4,
       hasMore: index === 0,
       currentServerSequence: 4,
+      narrativeAfterSequence: 0,
+      narrativeNextAfterSequence: 0,
+      narrativeCurrentServerSequence: 0,
+      narrativeHasMore: false,
     },
   }));
   const queries: Array<{ cursor?: string | null }> = [];

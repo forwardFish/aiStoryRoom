@@ -59,6 +59,7 @@ import type {
   PressureGameNarrativeSourceV1,
   PressureGameViewerSourceV1,
   PressureGameWorldSourceV1,
+  PressureGameChapterSummarySourceV1,
   ProjectPressureChapterGameProjectionFromSourcesV1,
 } from "./contracts";
 
@@ -236,6 +237,7 @@ export interface GameReadSnapshotV1 {
     feed: GameReadFeedAuthorityV1;
     capabilityInputs: GameReadCapabilityAuthorityInputsV1;
   }>;
+  resolvedChapterSummary: PressureGameChapterSummarySourceV1 | null;
   capturedAtMs: number;
   snapshotHash: string;
 }
@@ -423,6 +425,7 @@ export function decodeGameReadSnapshotV1(
     request,
     sources,
     authority,
+    resolvedChapterSummary: null,
     capturedAtMs,
   };
   const snapshot: GameReadSnapshotV1 = {

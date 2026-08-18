@@ -97,8 +97,8 @@ test("GET game alone uses the dedicated mode-bound reader and preserves paginati
     ROOM_ID,
     decisionCommand(explicit.stored.snapshot.routeHash),
   );
-  assert.equal(explicit.selectedGameReads, 1);
-  assert.equal(explicit.gameReads, 1, "POST projection remains on the legacy game port");
+  assert.equal(explicit.selectedGameReads, 2);
+  assert.equal(explicit.gameReads, 0, "POST REPLAY uses the dedicated aggregate reader");
 
   const defaults = createHarness({ dedicatedGameRead: true });
   await defaults.facade.getGame(defaults.principal, ROOM_ID);
@@ -391,7 +391,7 @@ test("HTTP compiler snapshot is reused by convergence without a second authority
   assert.doesNotMatch(harness.calls.join(","), /decision-compile,/u);
 });
 
-test("committed authority projection skips the full post-submit game read", async () => {
+test("post-submit REPLAY performs the configured full authority read", async () => {
   const harness = createHarness({
     convergence: true,
     sharedSnapshot: true,
@@ -402,10 +402,9 @@ test("committed authority projection skips the full post-submit game read", asyn
     ROOM_ID,
     decisionCommand(harness.stored.snapshot.routeHash),
   );
-  assert.equal(harness.gameReads, 0);
-  assert.equal(harness.seededGameReads, 1);
-  assert.doesNotMatch(harness.calls.join(","), /game-read(?:,|$)/u);
-  assert.match(harness.calls.join(","), /game-read-committed/u);
+  assert.equal(harness.gameReads, 1);
+  assert.equal(harness.seededGameReads, 0);
+  assert.match(harness.calls.join(","), /game-read/u);
 });
 
 test("FAST post-submit projection uses the configured aggregate reader", async () => {

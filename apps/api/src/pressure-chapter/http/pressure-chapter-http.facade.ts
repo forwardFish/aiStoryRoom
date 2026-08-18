@@ -15,6 +15,15 @@ import {
   type PressureGameReadRuntimeObserverPortV1,
 } from "../observability/game-read-runtime-observer";
 import { logPressureDecisionTimingV1 } from "../observability/decision-timing-log";
+import {
+  reportPressurePostCommitProjectionDiffV1,
+  reportPressurePostCommitProjectionErrorV1,
+} from "../observability/post-commit-projection-diff";
+import type { PressurePostCommitProjectionModeV1 } from "../production-config";
+import {
+  compilePostCommitPageAuthorityReceiptV1,
+  compilePostCommitResolvedSourcesV1,
+} from "../post-commit-page-authority";
 import { computePressureChatRequestFingerprint } from "../interaction/chat.service";
 import {
   canonicalizeWorkingActionIntentV1,
@@ -91,6 +100,7 @@ export class PressureChapterHttpFacade {
     private readonly gameReadMode: PressureGameReadModeV1 = "REPLAY",
     private readonly gameReadObserver: PressureGameReadRuntimeObserverPortV1 =
       new NoopPressureGameReadRuntimeObserverV1(),
+    private readonly postCommitProjectionMode: PressurePostCommitProjectionModeV1 = "REPLAY",
   ) {}
 
   getGame(
@@ -258,34 +268,62 @@ export class PressureChapterHttpFacade {
         : null;
       httpTimings.convergenceMs = elapsed(convergenceStartedAt);
       const projectionStartedAt = performance.now();
-      const projection = this.gameReadMode !== "REPLAY"
-        ? await this.gameRead.read({
-            runId: context.access.runId,
-            subjectId: context.access.subjectId,
-          })
-        : convergence?.committedAuthority
-          && compilation.snapshot
-          && this.game.readFromCommittedAuthority
-          ? await this.game.readFromCommittedAuthority({
-            runId: context.access.runId,
-            subjectId: context.access.subjectId,
-            roomId: compilation.snapshot.viewer.roomId,
-            routeSnapshot: structuredClone(
-              compilation.snapshot.authority.routeSnapshot,
-            ),
-            viewerSeatId: compilation.snapshot.viewer.seatId,
-            chapter: structuredClone(convergence.committedAuthority.chapter),
-            workingProjection: structuredClone(
-              convergence.committedAuthority.workingProjection,
-            ),
-            chapterDescriptor: structuredClone(
-              convergence.committedAuthority.chapterDescriptor,
-            ),
-            })
-          : await this.game.read({
-            runId: context.access.runId,
-            subjectId: context.access.subjectId,
+      const replayQuery = {
+        runId: context.access.runId,
+        subjectId: context.access.subjectId,
+      };
+      let projection: Awaited<ReturnType<PressureChapterHttpGamePort["read"]>>;
+      if (this.postCommitProjectionMode === "REPLAY") {
+        projection = await this.gameRead.read(replayQuery);
+      } else if (
+        convergence?.postCommitAuthority
+        && compilation.snapshot
+        && this.game.projectFromResolvedSources
+      ) {
+        try {
+          const receipt = compilePostCommitPageAuthorityReceiptV1({
+            batchId: convergence.batchId,
+            before: compilation.snapshot,
+            committed: convergence.postCommitAuthority,
+          });
+          const candidate = await this.game.projectFromResolvedSources(
+            compilePostCommitResolvedSourcesV1({
+              before: compilation.snapshot,
+              committed: receipt,
+            }),
+          );
+          if (this.postCommitProjectionMode === "FAST") {
+            projection = candidate;
+            void this.gameRead.read(replayQuery).then((replay) => {
+              reportPressurePostCommitProjectionDiffV1({
+                mode: "FAST",
+                runId: context.access.runId,
+                replay,
+                candidate,
+              });
+            }).catch(() => {
+              reportPressurePostCommitProjectionErrorV1("FAST", context.access.runId);
             });
+          } else {
+            const replay = await this.gameRead.read(replayQuery);
+            projection = replay;
+            reportPressurePostCommitProjectionDiffV1({
+              mode: "SHADOW",
+              runId: context.access.runId,
+              replay,
+              candidate,
+            });
+          }
+        } catch {
+          reportPressurePostCommitProjectionErrorV1(
+            this.postCommitProjectionMode,
+            context.access.runId,
+          );
+          projection = await this.gameRead.read(replayQuery);
+        }
+      } else {
+        projection = await this.gameRead.read(replayQuery);
+      }
       const projectionMs = elapsed(projectionStartedAt);
       httpTimings.projectionMs = projectionMs;
       if (this.convergence && convergence) {

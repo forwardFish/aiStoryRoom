@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpException, Inject, Logger, Param, Post, Query, Res, Sse, UseGuards, type MessageEvent } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpCode, HttpException, Inject, Logger, Param, Post, Query, Res, Sse, UseGuards, type MessageEvent } from "@nestjs/common";
 import type { Observable } from "rxjs";
 import { AuthGuard } from "./auth/auth.guard";
 import { CurrentUser, type AuthenticatedUser } from "./auth/current-user.decorator";
@@ -30,7 +30,10 @@ export class RoomsController {
   @Post(":roomId/play-solo") playSolo(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: { idempotencyKey?: string; expectedLobbyDeadlineAt?: string; confirmReadyPlayersChanged?: boolean }) { return this.rooms.playSoloFromWaitingRoom(user, roomId, body); }
   @Get(":roomId/game") game(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Query("feedCursor") feedCursor?: string, @Query("feedLimit") feedLimit?: string) { return this.rooms.game(user, roomId, feedCursor, feedLimit); }
   @Get(":roomId/pressure-seat-transport") pressureSeatSnapshot(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Query("cursor") cursor?: string, @Query("feedLimit") feedLimit?: string) { return this.rooms.pressureSeatSnapshot(user, roomId, cursor, feedLimit); }
-  @Sse(":roomId/pressure-seat-transport/events") pressureSeatEvents(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Query("afterCursor") afterCursor?: string): Observable<MessageEvent> { return this.rooms.pressureSeatEventStream(user, roomId, afterCursor); }
+  @Sse(":roomId/pressure-seat-transport/events") pressureSeatEvents(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Query("afterCursor") afterCursor?: string, @Headers("last-event-id") lastEventId?: string): Observable<MessageEvent> {
+    if (afterCursor && lastEventId && afterCursor !== lastEventId) throw new HttpException("PRESSURE_SEAT_CURSOR_MISMATCH", 400);
+    return this.rooms.pressureSeatEventStream(user, roomId, afterCursor || lastEventId);
+  }
   @Post(":roomId/pressure-seat-transport/heartbeat") @UseGuards(PresenceHeartbeatRateLimitGuard) pressureSeatHeartbeat(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: Omit<PressureSeatHeartbeatCommandV1, "runId" | "subjectId">) { return this.rooms.pressureSeatHeartbeat(user, roomId, body); }
   @Post(":roomId/pressure-seat-transport/handoff") pressureSeatHandoff(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: Omit<PressureSeatHandoffCommandV1, "runId" | "subjectId">) { return this.rooms.pressureSeatHandoff(user, roomId, body); }
   @Post(":roomId/pressure-seat-transport/reclaim") pressureSeatReclaim(@CurrentUser() user: AuthenticatedUser, @Param("roomId") roomId: string, @Body() body: Omit<PressureSeatReclaimCommandV1, "runId" | "subjectId">) { return this.rooms.pressureSeatReclaim(user, roomId, body); }

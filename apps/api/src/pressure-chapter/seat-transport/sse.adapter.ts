@@ -56,13 +56,32 @@ export async function* streamPressureSeatTransportV1(
     const currentPosition = decodePressureSeatTransportCursorV1(snapshot.cursor);
     if (
       lastPosition
-      && currentPosition.lastDeliveredSequence < lastPosition.lastDeliveredSequence
+      && (
+        currentPosition.lastDeliveredSequence < lastPosition.lastDeliveredSequence
+        || currentPosition.narrativeDeliverySequence
+          < lastPosition.narrativeDeliverySequence
+      )
     ) {
       return failPressureSeatTransport(ERROR.CURSOR_INVALID, "SEQUENCE_ROLLBACK");
     }
     const hasAuthoritativeChange = !lastPosition
       || currentPosition.lastDeliveredSequence > lastPosition.lastDeliveredSequence
+      || currentPosition.narrativeDeliverySequence
+        > lastPosition.narrativeDeliverySequence
       || currentPosition.authorityHash !== lastPosition.authorityHash;
+    for (const narrative of snapshot.narrativeEvents) {
+      if (
+        lastPosition
+        && narrative.deliverySequence <= lastPosition.narrativeDeliverySequence
+      ) continue;
+      if (!narrative.cursor) {
+        return failPressureSeatTransport(ERROR.CURSOR_INVALID, "NARRATIVE_CURSOR_MISSING");
+      }
+      lastCursor = narrative.cursor;
+      lastPosition = decodePressureSeatTransportCursorV1(narrative.cursor);
+      lastHeartbeatAt = now();
+      yield { id: narrative.cursor, event: "narrative", data: narrative };
+    }
     if (hasAuthoritativeChange) {
       lastCursor = snapshot.cursor;
       lastPosition = currentPosition;

@@ -66,6 +66,11 @@ export async function bootGamePage({
     });
     const app = createStoryApp({ root, window: win, storage });
     await app.boot();
+    const stopNarrativeStream = storage.connectNarrativeStream?.(
+      (view) => app.acceptNarrativeUpdate?.(view),
+      { EventSourceImpl: win?.EventSource, schedule: win?.setTimeout?.bind(win) },
+    );
+    if (typeof stopNarrativeStream === "function") app.stopNarrativeStream = stopNarrativeStream;
     return app;
   }
 

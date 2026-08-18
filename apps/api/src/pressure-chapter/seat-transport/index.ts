@@ -3,3 +3,4 @@ export * from "./cursor";
 export * from "./errors";
 export * from "./seat-transport.facade";
 export * from "./sse.adapter";
+export * from "./narrative-delivery.prisma-adapter";

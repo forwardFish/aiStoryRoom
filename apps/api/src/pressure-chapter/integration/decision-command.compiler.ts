@@ -537,7 +537,7 @@ function validateSubmitSnapshot(
   aiPolicyArtifactHash: string,
 ): DecisionSubmitSnapshotV1 {
   if (
-    raw.schemaVersion !== "pressure_decision_submit_snapshot_v1"
+    raw.schemaVersion !== "pressure_submit_page_authority_snapshot_v1"
     || !isSha256(raw.submitSnapshotHash)
     || raw.viewer.roomId !== access.roomId
     || raw.viewer.runId !== access.runId
@@ -551,6 +551,11 @@ function validateSubmitSnapshot(
     || raw.authority.chapter.currentChapterId !== command.chapterId
     || raw.authority.chapter.activeDecision?.decisionPointId !== command.decisionPointId
     || raw.authority.projection.state.revision !== command.expectedWorkingRevision
+    || raw.page.request.roomId !== access.roomId
+    || raw.page.request.runId !== command.runId
+    || raw.page.request.subjectId !== access.subjectId
+    || raw.page.sources.viewerSeatId !== command.seatId
+    || raw.page.sources.routeSnapshot.routeHash !== command.routeHash
   ) mismatch("decision.submitSnapshot", "INVALID_BINDING");
   const expectedAuthority = withDecisionConvergenceSnapshotHashV1({
     schemaVersion: raw.authority.schemaVersion,
@@ -565,6 +570,7 @@ function validateSubmitSnapshot(
     schemaVersion: raw.schemaVersion,
     authority: expectedAuthority,
     viewer: raw.viewer,
+    page: raw.page,
   });
   if (
     expectedAuthority.snapshotHash !== raw.authority.snapshotHash

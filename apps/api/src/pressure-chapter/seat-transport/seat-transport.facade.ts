@@ -8,6 +8,7 @@ import type {
   PressureSeatTransportControlPortV1,
   PressureSeatTransportFeedPortV1,
   PressureSeatTransportMembershipPortV1,
+  PressureSeatTransportNarrativePortV1,
   PressureSeatTransportRoutePortV1,
   PressureSeatTransportSnapshotV1,
   PressureSeatTransportViewPortV1,
@@ -34,6 +35,7 @@ export class PressureSeatTransportFacadeV1 {
     private readonly views: PressureSeatTransportViewPortV1,
     private readonly controls: PressureSeatTransportControlPortV1,
     private readonly feed: PressureSeatTransportFeedPortV1,
+    private readonly narrative: PressureSeatTransportNarrativePortV1 | null = null,
   ) {}
 
   async readSnapshot(
@@ -69,16 +71,34 @@ export class PressureSeatTransportFacadeV1 {
     ) {
       return failPressureSeatTransport(ERROR.VIEWER_SCOPE_MISMATCH);
     }
-    const afterSequence = requestedCursor
-      ? decodePressureSeatTransportCursorV1(requestedCursor).lastDeliveredSequence
-      : 0;
-    const deliveryPage = await this.feed.listAfterSequence({
-      roomId: membership.roomId,
-      runId: query.runId,
-      viewerSeatId: membership.seatId,
-      afterSequence,
-      limit: normalizeFeedLimit(query.feedLimit),
-    });
+    const decodedCursor = requestedCursor
+      ? decodePressureSeatTransportCursorV1(requestedCursor)
+      : null;
+    const afterSequence = decodedCursor?.lastDeliveredSequence ?? 0;
+    const narrativeAfterSequence = decodedCursor?.narrativeDeliverySequence ?? 0;
+    const limit = normalizeFeedLimit(query.feedLimit);
+    const [deliveryPage, narrativePage] = await Promise.all([
+      this.feed.listAfterSequence({
+        roomId: membership.roomId,
+        runId: query.runId,
+        viewerSeatId: membership.seatId,
+        afterSequence,
+        limit,
+      }),
+      this.narrative
+        ? this.narrative.listAfterSequence({
+            runId: query.runId,
+            viewerSeatId: membership.seatId,
+            afterSequence: narrativeAfterSequence,
+            limit,
+          })
+        : Promise.resolve({
+            events: [],
+            nextAfterSequence: narrativeAfterSequence,
+            currentServerSequence: narrativeAfterSequence,
+            hasMore: false,
+          }),
+    ]);
     if (
       deliveryPage.schemaVersion !== "a_emotion_monotonic_delivery_page_v1"
       || deliveryPage.roomId !== membership.roomId
@@ -109,7 +129,19 @@ export class PressureSeatTransportFacadeV1 {
       viewerSeatId: membership.seatId,
       authorityHash: seatView.sourceAuthorityHash,
       lastDeliveredSequence: deliveryPage.nextAfterSequence,
+      narrativeDeliverySequence: narrativePage.nextAfterSequence,
     });
+    const narrativeEvents = narrativePage.events.map((event) => ({
+      ...structuredClone(event),
+      cursor: encodePressureSeatTransportCursorV1({
+        runId: query.runId,
+        routeHash: route.snapshot.routeHash,
+        viewerSeatId: membership.seatId,
+        authorityHash: seatView.sourceAuthorityHash,
+        lastDeliveredSequence: deliveryPage.nextAfterSequence,
+        narrativeDeliverySequence: event.deliverySequence,
+      }),
+    }));
     const base = {
       schemaVersion: PRESSURE_SEAT_TRANSPORT_SNAPSHOT_SCHEMA_V1,
       runId: query.runId,
@@ -117,11 +149,16 @@ export class PressureSeatTransportFacadeV1 {
       viewerSeatId: membership.seatId,
       seatView,
       feedPage,
+      narrativeEvents,
       delivery: {
         afterSequence,
         nextAfterSequence: deliveryPage.nextAfterSequence,
         hasMore: deliveryPage.hasMore,
         currentServerSequence: deliveryPage.currentServerSequence,
+        narrativeAfterSequence,
+        narrativeNextAfterSequence: narrativePage.nextAfterSequence,
+        narrativeCurrentServerSequence: narrativePage.currentServerSequence,
+        narrativeHasMore: narrativePage.hasMore,
       },
       cursor,
     };

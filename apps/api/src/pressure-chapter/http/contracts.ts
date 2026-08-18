@@ -7,6 +7,7 @@ import type {
 } from "@ai-story/shared";
 import type {
   PressureChapterGameProjectionV1,
+  ProjectPressureChapterGameProjectionFromSourcesV1,
   ReadPressureChapterGameProjectionFromAuthorityV1,
 } from "../game-projection";
 import type {
@@ -78,6 +79,9 @@ export interface PressureChapterHttpGamePort {
   }): Promise<PressureChapterGameProjectionV1>;
   readFromCommittedAuthority?(
     input: ReadPressureChapterGameProjectionFromAuthorityV1,
+  ): Promise<PressureChapterGameProjectionV1>;
+  projectFromResolvedSources?(
+    input: ProjectPressureChapterGameProjectionFromSourcesV1,
   ): Promise<PressureChapterGameProjectionV1>;
 }
 

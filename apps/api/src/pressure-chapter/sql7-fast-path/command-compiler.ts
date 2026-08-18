@@ -29,7 +29,7 @@ implements PressureSql7CommandCompilerPortV1 {
       capturedAtMs: input.snapshot.capturedAtMs,
     });
     const snapshot = withDecisionSubmitSnapshotHashV1({
-      schemaVersion: "pressure_decision_submit_snapshot_v1",
+      schemaVersion: "pressure_submit_page_authority_snapshot_v1",
       authority,
       viewer: {
         roomId: input.roomId,
@@ -38,6 +38,18 @@ implements PressureSql7CommandCompilerPortV1 {
         seatId: input.command.seatId,
         humanControllerId: input.principal.subjectId,
       },
+      page: {
+        request: {
+          roomId: input.roomId,
+          runId: input.snapshot.request.runId,
+          subjectId: input.principal.subjectId,
+        },
+        sources: {
+          viewerSeatId: input.command.seatId,
+          routeSnapshot: input.snapshot.routeSnapshot,
+        },
+        snapshotHash: input.snapshot.snapshotHash,
+      } as unknown as import("../game-projection/game-read-snapshot").GameReadSnapshotV1,
     });
     return this.compiler.compileFromCapturedSnapshot({
       access: {

@@ -174,11 +174,19 @@ export class PrismaGameReadSnapshotReaderV1 {
   ) {}
 
   async capture(inputValue: Readonly<CaptureGameReadSnapshotV1>): Promise<GameReadSnapshotV1> {
+    return this.captureWithClient(this.prisma, inputValue);
+  }
+
+  /** Reuses the exact aggregate reader on a caller-owned Prisma transaction. */
+  async captureWithClient(
+    prisma: GameReadSnapshotPrismaClientV1,
+    inputValue: Readonly<CaptureGameReadSnapshotV1>,
+  ): Promise<GameReadSnapshotV1> {
     const input = validateCaptureInput(inputValue);
     const request = toSnapshotRequest(input);
     let rows: GameReadSnapshotSqlRowV1[];
     try {
-      rows = await this.prisma.$queryRaw<GameReadSnapshotSqlRowV1[]>(Prisma.sql`
+      rows = await prisma.$queryRaw<GameReadSnapshotSqlRowV1[]>(Prisma.sql`
       WITH request_input AS (
         SELECT
           ${input.roomId}::text AS room_id,

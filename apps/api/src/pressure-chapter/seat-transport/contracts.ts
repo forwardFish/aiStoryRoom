@@ -1,6 +1,7 @@
 import type { SeatIdV1 } from "@ai-story/shared";
 import type {
   AEmotionFeedPagePortV1,
+  PressureGameNarrativeProjectionV1,
 } from "../game-projection/contracts";
 import type { AEmotionFeedServiceV1 } from "../a-emotion/feed.service";
 import type {
@@ -57,6 +58,37 @@ export type PressureSeatTransportFeedPortV1 = Pick<
   "listAfterSequence"
 >;
 
+export interface PressureNarrativePublishedEventV1 {
+  schemaVersion: "pressure_narrative_published_event_v1";
+  runId: string;
+  routeHash: string;
+  viewerSeatId: SeatIdV1;
+  chapterRuntimeId: string;
+  decisionPointId: string;
+  workingRevision: number;
+  sourceId: string;
+  projectionKind: PressureGameNarrativeProjectionV1["projectionKind"];
+  status: "PUBLISHED" | "FALLBACK_PUBLISHED";
+  deliverySequence: number;
+  identityHash: string;
+  narrative: PressureGameNarrativeProjectionV1;
+  cursor?: string;
+}
+
+export interface PressureSeatTransportNarrativePortV1 {
+  listAfterSequence(input: Readonly<{
+    runId: string;
+    viewerSeatId: SeatIdV1;
+    afterSequence: number;
+    limit: number;
+  }>): Promise<Readonly<{
+    events: PressureNarrativePublishedEventV1[];
+    nextAfterSequence: number;
+    currentServerSequence: number;
+    hasMore: boolean;
+  }>>;
+}
+
 export interface PressureSeatTransportSnapshotV1 {
   schemaVersion: typeof PRESSURE_SEAT_TRANSPORT_SNAPSHOT_SCHEMA_V1;
   runId: string;
@@ -64,11 +96,16 @@ export interface PressureSeatTransportSnapshotV1 {
   viewerSeatId: SeatIdV1;
   seatView: SeatPrivateViewV1;
   feedPage: AEmotionFeedPagePortV1;
+  narrativeEvents: PressureNarrativePublishedEventV1[];
   delivery: {
     afterSequence: number;
     nextAfterSequence: number;
     hasMore: boolean;
     currentServerSequence: number;
+    narrativeAfterSequence: number;
+    narrativeNextAfterSequence: number;
+    narrativeCurrentServerSequence: number;
+    narrativeHasMore: boolean;
   };
   cursor: string;
   snapshotHash: string;
@@ -128,9 +165,10 @@ export interface PressureSeatAuthorityMutationResultV1 {
 
 export interface PressureSeatTransportSseEventV1 {
   id: string | null;
-  event: "snapshot" | "heartbeat";
+  event: "snapshot" | "heartbeat" | "narrative";
   data:
     | PressureSeatTransportSnapshotV1
+    | PressureNarrativePublishedEventV1
     | {
         schemaVersion: "pressure_seat_transport_sse_heartbeat_v1";
         runId: string;

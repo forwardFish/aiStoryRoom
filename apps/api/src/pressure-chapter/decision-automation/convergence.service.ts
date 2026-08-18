@@ -540,6 +540,16 @@ export class PressureDecisionConvergenceServiceV1 {
         )).length
       : 0;
     if (result.status === "REPLAYED") {
+      const replayAuthority = result.projection
+        ? {
+            chapter: structuredClone(result.orchestratorState),
+            workingProjection: structuredClone(result.projection),
+            chapterDescriptor: structuredClone(batch.chapterDescriptor),
+            frozenWorldState: null,
+            narrativeJobs: structuredClone(batch.beatPlan.narrativeJobs),
+            aEmotionEmissions: structuredClone(batch.beatPlan.aEmotionEmissions),
+          }
+        : null;
       return this.finish(
         command,
         metrics,
@@ -547,6 +557,8 @@ export class PressureDecisionConvergenceServiceV1 {
         expectedActionIds,
         result.orchestratorState,
         endToEndStartedAt,
+        null,
+        replayAuthority,
       );
     }
 
@@ -604,6 +616,16 @@ export class PressureDecisionConvergenceServiceV1 {
           chapter: structuredClone(resumed),
           workingProjection: structuredClone(finalProjection),
           chapterDescriptor: structuredClone(finalDescriptor),
+          frozenWorldState: resumedResult.committedAuthority?.frozenWorldState
+            ? structuredClone(resumedResult.committedAuthority.frozenWorldState)
+            : null,
+        }
+      : null;
+    const postCommitAuthority = committedAuthority
+      ? {
+          ...structuredClone(committedAuthority),
+          narrativeJobs: structuredClone(batch.beatPlan.narrativeJobs),
+          aEmotionEmissions: structuredClone(batch.beatPlan.aEmotionEmissions),
         }
       : null;
     return this.finish(
@@ -614,6 +636,7 @@ export class PressureDecisionConvergenceServiceV1 {
       resumed,
       endToEndStartedAt,
       committedAuthority,
+      postCommitAuthority,
     );
   }
 
@@ -691,6 +714,7 @@ export class PressureDecisionConvergenceServiceV1 {
     chapter: ChapterOrchestratorStateV1 | null,
     endToEndStartedAt: number,
     committedAuthority: DecisionConvergenceResultV1["committedAuthority"] = null,
+    postCommitAuthority: DecisionConvergenceResultV1["postCommitAuthority"] = null,
   ): Promise<DecisionConvergenceResultV1> {
     metrics.outcome = outcome;
     metrics.timings.endToEndMs = elapsed(endToEndStartedAt);
@@ -702,6 +726,9 @@ export class PressureDecisionConvergenceServiceV1 {
       chapter: chapter ? structuredClone(chapter) : null,
       committedAuthority: committedAuthority
         ? structuredClone(committedAuthority)
+        : null,
+      postCommitAuthority: postCommitAuthority
+        ? structuredClone(postCommitAuthority)
         : null,
       metrics: structuredClone(metrics),
     };

@@ -26,6 +26,11 @@ import type {
   DecisionSubmitSnapshotV1,
 } from "./contracts";
 import { withDecisionConvergenceSnapshotHashV1 } from "./convergence.service";
+import type {
+  CaptureGameReadSnapshotV1,
+  GameReadSnapshotPrismaClientV1,
+} from "../persistence/game-read-snapshot.prisma-adapter";
+import type { GameReadSnapshotV1 } from "../game-projection/game-read-snapshot";
 
 interface SnapshotRouteRowV1 {
   runId: string;
@@ -70,6 +75,7 @@ interface SnapshotOrchestratorEventRowV1 {
 }
 
 interface DecisionConvergenceSnapshotTransactionV1 {
+  $queryRaw<TResult = unknown>(query: Prisma.Sql): Promise<TResult>;
   pressureRunRouteSnapshot: {
     findUnique(input: Record<string, unknown>): Promise<SnapshotRouteRowV1 | null>;
   };
@@ -86,6 +92,13 @@ interface DecisionConvergenceSnapshotTransactionV1 {
   storyPlayer: {
     findUnique(input: Record<string, unknown>): Promise<SnapshotViewerRowV1 | null>;
   };
+}
+
+export interface DecisionSubmitPageSnapshotReaderPortV1 {
+  captureWithClient(
+    prisma: GameReadSnapshotPrismaClientV1,
+    input: Readonly<CaptureGameReadSnapshotV1>,
+  ): Promise<GameReadSnapshotV1>;
 }
 
 type CaptureInputV1 = Parameters<DecisionConvergenceSnapshotReaderPortV1["capture"]>[0];
@@ -129,6 +142,7 @@ export class PrismaDecisionConvergenceSnapshotReaderV1
 implements DecisionConvergenceSnapshotReaderPortV1 {
   constructor(
     private readonly prisma: DecisionConvergenceSnapshotPrismaClientV1,
+    private readonly submitPageSnapshots: DecisionSubmitPageSnapshotReaderPortV1 | null = null,
   ) {}
 
   async capture(input: CaptureInputV1): Promise<DecisionConvergenceAuthoritySnapshotV1 | null> {
@@ -148,6 +162,7 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
       || !Number.isSafeInteger(input.expectedControlEpoch)
       || input.expectedControlEpoch < 0
       || !isSha256(input.expectedSubmissionFenceToken)
+      || !this.submitPageSnapshots
     ) invalid("submit.command", "INVALID_INPUT", input.runId);
     const result = await this.captureInternal(input, input);
     return result as DecisionSubmitSnapshotV1 | null;
@@ -225,7 +240,7 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
         || chapter.routeHash !== input.expectedRouteHash
       ) invalid("snapshot.route", "ROUTE_BINDING_MISMATCH", input.runId);
 
-      const [runtime, seatRow, viewerRow] = await Promise.all([
+      const [runtime, seatRow, viewerRow, page] = await Promise.all([
         tx.pressureChapterRuntime.findUnique({
           where: { id: chapter.chapterRuntimeId },
           select: {
@@ -260,6 +275,16 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
                 status: true,
                 role: { select: { roleKey: true } },
               },
+            })
+          : Promise.resolve(null),
+        submit
+          ? this.submitPageSnapshots!.captureWithClient(tx, {
+              roomId: submit.roomId,
+              runId: submit.runId,
+              subjectId: submit.subjectId,
+              feedCursor: null,
+              feedLimit: 10,
+              capturedAtMs: input.capturedAtMs,
             })
           : Promise.resolve(null),
       ]);
@@ -297,6 +322,7 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
       const seat = seatAuthority.seatControls.find((item) => item.seatId === submit.seatId);
       if (
         !viewerRow
+        || !page
         || viewerRow.runId !== submit.runId
         || viewerRow.userId !== submit.subjectId
         || viewerRow.playerType !== "human"
@@ -316,8 +342,10 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
         || seat.submissionFenceToken !== submit.expectedSubmissionFenceToken
       ) invalid("submit.authority", "STALE_OR_NOT_AUTHORIZED", input.runId);
 
+      assertSubmitPageAuthorityBindingV1(page, authority, submit);
+
       return withDecisionSubmitSnapshotHashV1({
-        schemaVersion: "pressure_decision_submit_snapshot_v1",
+        schemaVersion: "pressure_submit_page_authority_snapshot_v1",
         authority,
         viewer: {
           roomId: submit.roomId,
@@ -326,6 +354,7 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
           seatId: submit.seatId as SeatIdV1,
           humanControllerId: submit.subjectId,
         },
+        page,
       });
     });
   }
@@ -375,16 +404,54 @@ export function withDecisionSubmitSnapshotHashV1(
       schemaVersion: body.schemaVersion,
       authoritySnapshotHash: body.authority.snapshotHash,
       viewer: body.viewer,
+      pageSnapshotHash: body.page.snapshotHash,
     }),
   };
 }
 
 export function createPrismaDecisionConvergenceSnapshotReaderV1(
   prisma: unknown,
+  submitPageSnapshots: DecisionSubmitPageSnapshotReaderPortV1 | null = null,
 ): PrismaDecisionConvergenceSnapshotReaderV1 {
   return new PrismaDecisionConvergenceSnapshotReaderV1(
     prisma as DecisionConvergenceSnapshotPrismaClientV1,
+    submitPageSnapshots,
   );
+}
+
+function assertSubmitPageAuthorityBindingV1(
+  page: GameReadSnapshotV1,
+  authority: DecisionConvergenceAuthoritySnapshotV1,
+  submit: CaptureSubmitInputV1,
+): void {
+  const sources = page.sources;
+  if (
+    "chapterSource" in sources
+    || page.request.roomId !== submit.roomId
+    || page.request.runId !== submit.runId
+    || page.request.subjectId !== submit.subjectId
+    || page.request.feedCursor !== null
+    || sources.roomId !== submit.roomId
+    || sources.runId !== submit.runId
+    || sources.subjectId !== submit.subjectId
+    || sources.viewerSeatId !== submit.seatId
+    || sources.routeSnapshot.routeHash !== authority.routeSnapshot.routeHash
+    || page.capturedAtMs !== authority.capturedAtMs
+    || page.authority.viewer.controlEpoch !== submit.expectedControlEpoch
+    || page.authority.viewer.submissionFenceToken !== submit.expectedSubmissionFenceToken
+    || page.authority.viewer.seatId !== submit.seatId
+  ) invalid("submit.page", "PAGE_AUTHORITY_BINDING_MISMATCH", submit.runId);
+  if ("chapterSource" in sources) return;
+  if (
+    sources.chapter.chapterRuntimeId !== submit.chapterRuntimeId
+    || sources.chapter.activeDecision?.decisionPointId !== submit.decisionPointId
+    || sources.chapter.orchestratorHash !== authority.chapter.orchestratorHash
+    || sources.workingProjection.key.chapterRuntimeId !== submit.chapterRuntimeId
+    || sources.workingProjection.state.revision !== submit.expectedWorkingRevision
+    || sources.workingProjection.stateHash !== authority.projection.stateHash
+    || sources.workingProjection.headHash !== authority.projection.headHash
+    || sources.chapterDescriptor.descriptorHash !== authority.chapter.descriptorHash
+  ) invalid("submit.page", "PAGE_SOURCE_BINDING_MISMATCH", submit.runId);
 }
 
 function invalid(path: string, detail: string, runId: string): never {

@@ -25,6 +25,7 @@ import {
 } from "./prisma-scanner";
 import {
   createPrismaDecisionConvergenceSnapshotReaderV1,
+  type DecisionSubmitPageSnapshotReaderPortV1,
 } from "./prisma-snapshot";
 import { PressureDecisionAutomationWorkerLaneV1 } from "./worker-lane";
 
@@ -48,6 +49,7 @@ extends Omit<
   seats?: DecisionAutomationSeatAuthorityReaderPortV1;
   config?: Partial<DecisionAutomationConfigV1>;
   aiPolicyOptions?: Readonly<{ releaseRoot?: string }>;
+  submitPageSnapshots?: DecisionSubmitPageSnapshotReaderPortV1;
 }
 
 export interface PressureDecisionAutomationProductionBundleV1 {
@@ -70,7 +72,10 @@ export function createPressureDecisionAutomationProductionV1(
   input: PressureDecisionAutomationProductionInputV1,
 ): PressureDecisionAutomationProductionBundleV1 {
   const scanner = createPrismaActivePressureDecisionScannerV1(input.prisma);
-  const snapshots = createPrismaDecisionConvergenceSnapshotReaderV1(input.prisma);
+  const snapshots = createPrismaDecisionConvergenceSnapshotReaderV1(
+    input.prisma,
+    input.submitPageSnapshots ?? null,
+  );
   const policy = new PublishedSangtianAiDecisionPolicyAdapterV1(
     input.aiPolicyOptions,
   );
