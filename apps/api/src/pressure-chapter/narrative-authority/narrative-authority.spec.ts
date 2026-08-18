@@ -170,7 +170,7 @@ test("NA-05 committed Beat is deterministic under relation arrival order and use
   };
   const action = source.facts.find((item) => item.factId === "action.action-a");
   assert.ok(action);
-  assert.match(action.text, /组织堰区疏散/u);
+  assert.match(action.text, /先发堰区疏散令/u);
   assert.deepEqual(action.authorizedSeatIds, ["zhejiang_governor"]);
 
   const publicJob = boundJob(compiler, beatJob(raw, PUBLIC), raw);

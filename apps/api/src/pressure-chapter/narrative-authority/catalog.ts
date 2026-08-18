@@ -17,8 +17,8 @@ export const SANGTIAN_NARRATIVE_AUTHORITY_TARGET_V1 = Object.freeze({
   runtimeProfile: "SANGTIAN_CONTINUOUS_CHAPTER_V1",
   sourceCommitSha: "5badb6fa62a823de7019ce6a046efffbd74268d8",
   contentPackageVersion: "1.0.2",
-  contentPackageSha256: "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
-  orchestrationPackageSha256: "f7b80c66660cbda16d568afd9997400e648cdb8cad6bf9093a16d2bcdd7b09a4",
+  contentPackageSha256: "9e195a3443853c928b44c0f9d58568427c23946cb601c65adf866fa8e9e738d4",
+  orchestrationPackageSha256: "f2aedf4e9ee8dda6e48fdfd0133300a375bd0fe9e9a0d6422dffd90a85a05d8e",
   narrativeProfileVersion: "openovel-pressure-1.0.0",
 } as const);
 
