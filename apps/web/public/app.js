@@ -3,6 +3,7 @@ import { renderTransitionScreen } from "./transition-screen.js";
 import { navigateToFreshSoloRun, renderPlayAgainDialog } from "./solo-run-lifecycle.js?v=20260806-play-again-v3";
 import { bindManeuverInputs, buildManeuverCommand, clearManeuverDraft, emptyManeuverDrafts, prepareManeuverDraft, renderFourManeuverPanel, renderLeverageHand, validateManeuverCommand } from "./maneuver-four-ui.js?v=20260809-remaining-count-v1";
 import { renderPressureChapterSummary, shouldShowPressureChapterSummary } from "./pressure-chapter-summary-ui.js?v=20260815-n1-multibeat-v1";
+import { createPressureSituationFeedStateV1, hasPressureSituationFeedV1, renderPressureRightRailV1 } from "./pressure-situation-feed-v1.js?v=20260818-v1";
 
 const DAY_DECISIONS = 2;
 const FINAL_DAY = 7;
@@ -49,7 +50,8 @@ export function createStoryApp({
     resultScroll: { top: 0, follow: true },
     openingScroll: { top: 0, follow: true },
     panelScroll: { left: 0, right: 0 },
-    openingStream: null
+    openingStream: null,
+    pressureSituationFeed: createPressureSituationFeedStateV1()
   };
 
   let resultTimer = null;
@@ -585,8 +587,8 @@ export function createStoryApp({
           ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "chapter_summary" ? renderPressureChapterSummary(view, state) : decisionNarrativePending ? renderDecisionNarrative(view, { showContinue: true }) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
           ${mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" && !decisionNarrativePending ? renderDecisionZone(view, state) : ""}
         </main>
-        <aside class="causal-right" aria-label="${isEnglish(view) ? "Maneuver board" : "主动谋划中枢"}">
-          ${renderManeuverPanel(view, state)}
+        <aside class="causal-right" aria-label="${hasPressureSituationFeedV1(view) ? "局势动向与谋划中枢" : isEnglish(view) ? "Maneuver board" : "主动谋划中枢"}">
+          ${hasPressureSituationFeedV1(view) ? renderPressureRightRailV1({ view, uiState: state.pressureSituationFeed, maneuverHtml: renderManeuverPanel(view, state) }) : renderManeuverPanel(view, state)}
           ${roomSessionForView(view) ? renderRoomPartyPanel(view, state) : ""}
           ${state.debugBuild ? renderBuildDiagnostics(view) : ""}
         </aside>
@@ -643,6 +645,24 @@ export function createStoryApp({
     });
     root.querySelector("#submitDecision")?.addEventListener("click", submitDecision);
     root.querySelector("#maneuverSubmit")?.addEventListener("click", submitManeuver);
+    root.querySelectorAll("[data-pressure-right-tab]").forEach((button) => button.addEventListener("click", () => {
+      state.pressureSituationFeed.activeTab = button.dataset.pressureRightTab === "maneuver" ? "maneuver" : "feed";
+      render();
+    }));
+    root.querySelector("[data-pressure-feed-filter]")?.addEventListener("change", (event) => {
+      state.pressureSituationFeed.filter = event.target.value || "ALL";
+      state.pressureSituationFeed.selectedEventId = null;
+      render();
+    });
+    root.querySelector("[data-pressure-feed-expand]")?.addEventListener("click", () => {
+      state.pressureSituationFeed.expanded = !state.pressureSituationFeed.expanded;
+      render();
+    });
+    root.querySelectorAll("[data-pressure-feed-event]").forEach((button) => button.addEventListener("click", () => {
+      const eventId = button.dataset.pressureFeedEvent || null;
+      state.pressureSituationFeed.selectedEventId = state.pressureSituationFeed.selectedEventId === eventId ? null : eventId;
+      render();
+    }));
     root.querySelector("[data-room-resolve]")?.addEventListener("click", resolveRoomRound);
     root.querySelector("#criticalRespondBtn")?.addEventListener("click", () => startCriticalResponse(root.querySelector("#criticalRespondBtn")?.dataset.eventId));
     root.querySelector("#criticalDeferBtn")?.addEventListener("click", () => deferCriticalEvent(root.querySelector("#criticalDeferBtn")?.dataset.eventId));

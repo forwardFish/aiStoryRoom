@@ -163,10 +163,59 @@ test("Pressure /game dispatches into the approved app.js main-game shell", async
   assert.match(root.textContent, /我的资源/);
   assert.equal(root.querySelector('[data-resource-id="silver"]')?.textContent, "银两42 万两");
   assert.equal(root.querySelector('[data-resource-id="grain"]')?.textContent, "粮草23 万石");
+  assert.match(root.textContent, /局势动向/);
+  root.querySelector('[data-pressure-right-tab="maneuver"]')?.click();
   assert.match(root.textContent, /主动谋划/);
   assert.match(root.textContent, /剩余谋划/);
   assert.doesNotMatch(root.textContent, /Seat control|Hand off to AI|DEFAULT_PASS|submissionFenceToken/);
   assert.equal(root.querySelector('[data-testid="pressure-chapter-game-v1"]'), null);
+  dom.window.close();
+});
+
+test("Pressure /game renders viewer-scoped situation Feed and preserves the existing maneuver center behind a tab", async () => {
+  const input = projection({ runId: "run-pressure-feed-rail" });
+  input.feedPage.items = [
+    pressureFeedItem("feed-related", "RELATED", "原始船队出现异常", true),
+    pressureFeedItem("feed-public", "PUBLIC", "巡抚正式承诺提交原册", true),
+    pressureFeedItem("feed-suspicious", "SUSPICIOUS", "有人正在接触你的幕僚", true),
+    pressureFeedItem("feed-fourth", "PUBLIC", "第四条动态", false),
+  ];
+  input.feedPage.unreadCount = 3;
+  input.feedPage.serverSequence = 4;
+  const dom = new JSDOM('<!doctype html><main id="app"></main>', {
+    url: `http://game.test/game?runId=${input.runId}`,
+    pretendToBeVisual: true,
+  });
+  dom.window.__STORY_STREAM_DELAY_MULTIPLIER__ = 0;
+  const root = dom.window.document.querySelector("#app");
+
+  await bootGamePage({
+    root,
+    window: dom.window,
+    fetchImpl: async () => new Response(JSON.stringify(input), { status: 200, headers: { "content-type": "application/json" } }),
+    loadPressureMainGameStorage: async () => ({ PressureMainGameStorageV1 }),
+    loadSolo: async () => ({ createStoryApp }),
+  });
+
+  assert.ok(root.querySelector('[data-testid="pressure-right-rail"]'));
+  assert.ok(root.querySelector('[data-testid="pressure-situation-feed"]'));
+  assert.match(root.querySelector(".causal-right")?.textContent || "", /局势动向/);
+  assert.match(root.querySelector(".causal-right")?.textContent || "", /3 条未读/);
+  assert.equal(root.querySelectorAll("[data-pressure-feed-event]").length, 3);
+  assert.doesNotMatch(root.querySelector(".causal-right")?.textContent || "", /第四条动态/);
+
+  root.querySelector('[data-pressure-feed-event="feed-related"]')?.click();
+  assert.match(root.querySelector('[data-testid="pressure-feed-detail"]')?.textContent || "", /只显示当前席位可以知道的内容/);
+  assert.doesNotMatch(root.querySelector(".causal-right")?.textContent || "", /fact\.private|seat\.private/);
+
+  root.querySelector('[data-pressure-right-tab="maneuver"]')?.click();
+  assert.ok(root.querySelector('[data-testid="maneuver-panel"]'));
+  assert.equal(root.querySelector('[data-testid="pressure-situation-feed"]'), null);
+
+  root.querySelector('[data-pressure-right-tab="feed"]')?.click();
+  root.querySelector("[data-pressure-feed-expand]")?.click();
+  assert.equal(root.querySelectorAll("[data-pressure-feed-event]").length, 4);
+  assert.match(root.querySelector(".causal-right")?.textContent || "", /第四条动态/);
   dom.window.close();
 });
 
@@ -400,3 +449,33 @@ test("completed Pressure run uses the existing result route without mounting a p
   assert.equal(navigated, `/game/result?runId=${runId}`);
   dom.window.close();
 });
+
+function pressureFeedItem(eventId, category, title, isUnread) {
+  return {
+    schemaVersion: "a_emotion_viewer_projection_v1",
+    eventId,
+    projectionVersion: 1,
+    roomId: "run-pressure-feed-rail",
+    runId: "run-pressure-feed-rail",
+    viewerSeatId: "zhejiang_governor",
+    category,
+    disclosure: category === "SUSPICIOUS" ? "SUSPECTED" : "CONFIRMED",
+    severity: "MINOR",
+    title,
+    safeSummary: "只显示当前席位可以知道的内容",
+    statusLabel: category === "PUBLIC" ? "尚未验证" : "来源可信",
+    visibleImpacts: [{ effectCode: "VISIBLE", label: "当前影响", value: "需要关注" }],
+    knownFactRefs: ["fact.private"],
+    visibleSourceSeatId: "seat.private",
+    responseOptions: [],
+    recommendedPresentation: "FEED_ONLY",
+    centerCard: null,
+    keyModal: null,
+    eventSequence: 1,
+    occurredAt: new Date().toISOString(),
+    projectionHash: "f".repeat(64),
+    isUnread,
+    isAcknowledged: false,
+    isResolved: false,
+  };
+}
