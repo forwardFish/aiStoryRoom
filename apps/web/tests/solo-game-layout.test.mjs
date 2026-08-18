@@ -48,3 +48,10 @@ test("Pressure decision cards hide redundant titles and enlarge the actionable d
     /\.causal-shell\[data-pressure-chapter="true"\] \.decision-composer \.option-copy > span \{[^}]*font-size: 16px;[^}]*line-height: 1\.55;/,
   );
 });
+
+test("Pressure chapter ending uses a readable literary summary surface", () => {
+  assert.match(
+    styles,
+    /\.chapter-summary-literary-copy \{[^}]*font-size:18px;[^}]*line-height:2\.05;/,
+  );
+});

@@ -2,7 +2,7 @@ import { ApiStoryStorage, StoryApiError, defaultApiBase } from "./api-story-stor
 import { renderTransitionScreen } from "./transition-screen.js";
 import { navigateToFreshSoloRun, renderPlayAgainDialog } from "./solo-run-lifecycle.js?v=20260806-play-again-v3";
 import { bindManeuverInputs, buildManeuverCommand, clearManeuverDraft, emptyManeuverDrafts, prepareManeuverDraft, renderFourManeuverPanel, renderLeverageHand, validateManeuverCommand } from "./maneuver-four-ui.js?v=20260809-remaining-count-v1";
-import { renderPressureChapterSummary, shouldShowPressureChapterSummary } from "./pressure-chapter-summary-ui.js?v=20260815-n1-multibeat-v1";
+import { renderPressureChapterSummary, shouldShowPressureChapterSummary } from "./pressure-chapter-summary-ui.js?v=20260818-literary-summary-v1";
 import { createPressureSituationFeedStateV1, hasPressureSituationFeedV1, renderPressureRightRailV1 } from "./pressure-situation-feed-v1.js?v=20260818-v1";
 
 const DAY_DECISIONS = 2;

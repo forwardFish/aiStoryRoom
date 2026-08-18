@@ -1620,6 +1620,7 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .chapter-summary-metric { display:grid; grid-template-columns:1fr auto auto; gap:.65rem; align-items:center; padding:.65rem .75rem; border:1px solid rgba(120,100,180,.18); border-radius:.75rem; }
 .chapter-summary-metric em { font-style:normal; font-weight:700; }
 .chapter-summary-hook { margin-top:1.25rem; padding-top:1rem; border-top:1px solid rgba(120,100,180,.18); }
+.chapter-summary-literary-copy { font-size:18px; line-height:2.05; }
 
 /* Pressure right rail: the existing Feed projection and maneuver workbench share one approved surface. */
 .pressure-right-rail { display:flex; flex:1; min-height:0; flex-direction:column; overflow:hidden; border:1px solid #e2e5f5; border-radius:12px; background:rgba(255,255,255,.96); box-shadow:0 5px 18px rgba(77,67,170,.045); }
