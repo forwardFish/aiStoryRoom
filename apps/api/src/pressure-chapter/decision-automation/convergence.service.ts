@@ -19,11 +19,9 @@ import {
 import type {
   ChapterOrchestratorStateV1,
   CommittedSettlementResumeAuthorityV1,
+  SubmitOrchestratedActionCommandV1,
 } from "../orchestrator/contracts";
-import {
-  planBeatProgressionV1,
-  planRecordedActionsV1,
-} from "../orchestrator/chapter-orchestrator.service";
+import { planBeatProgressionV1 } from "../orchestrator/chapter-orchestrator.service";
 import type {
   SeatAuthorityRecordV1,
   SeatControlSnapshotV1,
@@ -32,23 +30,32 @@ import {
   appendBeatEventToWorkingLedgerProjection,
   workingStateHash,
 } from "../working-ledger/working-ledger";
-import type { WorkingLedgerProjectionV1 } from "../working-ledger/contracts";
+import type {
+  AcceptedFormalActionV1,
+  WorkingLedgerProjectionV1,
+} from "../working-ledger/contracts";
 import {
   SangtianAuthoritativeBeatCompilerV1,
   planSynchronizedDecisionBeatV1,
 } from "../integration/working-ledger.adapters";
-import { planBeatAuthorityDownstreamV1 } from "../projection-plan/authority-downstream";
+import {
+  buildAuthorityDownstreamManifestV1,
+  downstreamDedupeKeysV1,
+  planBeatAuthorityDownstreamV1,
+} from "../projection-plan/authority-downstream";
 import {
   DECISION_AUTOMATION_ERROR_CODES as ERROR,
   DecisionAutomationError,
   failDecisionAutomation,
 } from "./errors";
-import { buildAiDecisionPolicyInputV1 } from "./service";
 import type {
   AiDecisionAutomationPayloadV1,
-  AppendPreparedAutomationActionCommandV1,
   AiDecisionPolicyInputV1,
   AiDecisionPolicySelectionV1,
+  AppendPreparedAutomationActionCommandV1,
+  DecisionAutomationCompilationResultV1,
+  PreparedNpcDecisionResolutionV1,
+  ResolvedBeatSubmitAuthorityV1,
   DecisionAutomationConfigV1,
   DecisionConvergenceDependenciesV1,
   DecisionAutomationDrainResultV1,
@@ -65,6 +72,10 @@ import type {
 import {
   canonicalizePreparedAutomationActionsV1,
   createPreparedAutomationActionBatchV1,
+  createPreparedMcBatchAuthorityV1,
+  planMcRecordedActionsV1,
+  validatePreparedNpcDecisionResolutionV1,
+  validateResolvedBeatSubmitAuthorityV1,
   planPreparedActionLedgerV1,
 } from "./prepared-action-batch";
 
@@ -256,28 +267,17 @@ export class PressureDecisionConvergenceServiceV1 {
       );
     }
 
-    const preparedHuman = command.humanAction
-      ? prepareDecisionHumanActionV1(snapshot, classified.humans, command.humanAction)
-      : null;
-    const unresolvedHumans = classified.humans.filter((item) => (
-      item.seat.seatId !== preparedHuman?.command.action.seatId
-    ));
-    if (unresolvedHumans.length > 0) {
-      // Frozen product rule: ordinary AI work never runs ahead of a required human.
-      return this.finish(command, metrics, "WAITING_FOR_HUMANS", [], chapter, endToEndStartedAt);
+    const human = resolveMcHumanSubmissionV1(snapshot, classified.humans, command);
+    if (!human) {
+      return this.finish(
+        command,
+        metrics,
+        classified.humans.length > 0 ? "WAITING_FOR_HUMANS" : "NO_PENDING_AI",
+        [],
+        chapter,
+        endToEndStartedAt,
+      );
     }
-
-    if (classified.ai.length === 0 && !preparedHuman) {
-      const allRequiredComplete = active.seats
-        .filter((seat) => seat.requirement === "REQUIRED")
-        .every((seat) => seat.completion !== "PENDING");
-      if (!allRequiredComplete) {
-        return this.finish(command, metrics, "NO_PENDING_AI", [], chapter, endToEndStartedAt);
-      }
-      const resumed = await this.resumeOnce(snapshot, metrics, command.nowMs);
-      return this.finish(command, metrics, "NO_PENDING_AI", [], resumed.state, endToEndStartedAt);
-    }
-
     const descriptor = validateAuthoredChapterRuntimeV1(await this.ports.content.load({
       routeSnapshot: route,
       chapterId: chapter.currentChapterId,
@@ -301,265 +301,220 @@ export class PressureDecisionConvergenceServiceV1 {
       mismatch(ERROR.CONTENT_MISMATCH, "content.allowedActionTypes", "EMPTY");
     }
 
+    const beatSubmit = this.ports.beatSubmitAuthority.resolve({
+      routeSnapshot: route,
+      chapter,
+      projection: snapshot.projection,
+      seatAuthority: snapshot.seatAuthority,
+      viewerSeatId: human.viewerSeatId,
+    });
+    assertMcBeatSubmitPlanV1(beatSubmit, human.viewerSeatId);
+
     const compileStartedAt = performance.now();
-    const actionIds: string[] = [];
-    const prepared: AppendPreparedAutomationActionCommandV1[] = preparedHuman
-      ? [preparedHuman]
-      : [];
-    for (const item of classified.ai) {
-      if (decision.seatRequirements[item.seat.seatId] !== "REQUIRED") {
-        mismatch(ERROR.CONTENT_MISMATCH, "content.seatRequirement", item.seat.seatId);
+    const prepared: AppendPreparedAutomationActionCommandV1[] = [human.prepared];
+    const npcDecisions: PreparedNpcDecisionResolutionV1[] = [];
+    if (beatSubmit.plan.mode === "CHAPTER_COUNCIL_COMMIT") {
+      const compileNpcDecision = this.ports.compiler.compileNpcDecision;
+      if (!compileNpcDecision) {
+        mismatch(ERROR.INVALID_CONFIGURATION, "compiler.compileNpcDecision", "REQUIRED");
       }
-      const policyInput = buildAiDecisionPolicyInputV1({
-        runId: route.runId,
-        routeHash: route.routeHash,
-        runSeed: route.runSeed,
-        contentPackageVersion: route.contentPackageVersion,
-        contentPackageSha256: route.contentPackageSha256,
-        chapterRuntimeId: chapter.chapterRuntimeId,
-        chapterId: chapter.currentChapterId,
-        decisionPointId: active.decisionPointId,
-        seatId: item.seat.seatId,
-        eligibleActionTypes,
-      });
-      let selection: AiDecisionPolicySelectionV1;
-      let compiled: ReturnType<DecisionConvergenceDependenciesV1["compiler"]["compile"]>;
-      try {
-        metrics.policyCallCount += 1;
-        selection = validateAiDecisionPolicySelectionV1(
-          await this.ports.policy.select(policyInput),
-          policyInput,
-          route.contentPackageVersion,
-          route.contentPackageSha256,
-          this.ports.policy.artifactSha256,
+      for (const seatId of beatSubmit.plan.npcResolutionSeatIds) {
+        const item = classified.ai.find((candidate) => candidate.seat.seatId === seatId);
+        if (!item || decision.seatRequirements[seatId] !== "REQUIRED") {
+          mismatch(ERROR.AUTHORITY_MISMATCH, "beatSubmit.npcResolutionSeatIds", seatId);
+        }
+        const preparedResolution = validatePreparedNpcDecisionResolutionV1(
+          this.ports.npcCouncilPolicy.resolve({
+            routeSnapshot: route,
+            chapter,
+            projection: snapshot.projection,
+            seatAuthority: {
+              seatId,
+              mode: "AI_ACTIVE",
+              activeControllerId: item.authority.activeControllerId,
+              controlEpoch: item.authority.controlEpoch,
+              submissionFenceToken: item.authority.submissionFenceToken,
+              authorityStateHash: snapshot.seatAuthority.stateHash,
+              requiresResolution: true,
+            },
+            eligibleActionTypes,
+          }),
         );
-        metrics.compileCount += 1;
-        compiled = this.ports.compiler.compile({
+        assertNpcPolicyAuthorityV1(
+          preparedResolution,
+          item.authority,
+          snapshot,
+          this.ports.npcCouncilPolicy.artifactSha256,
+          this.ports.npcCouncilPolicy.identityPolicyArtifactSha256,
+        );
+        metrics.policyCallCount += 1;
+        npcDecisions.push(preparedResolution);
+        const compiled = compileNpcDecision.call(this.ports.compiler, {
           routeSnapshot: route,
           chapter,
           projection: snapshot.projection,
           seatAuthority: {
-            seatId: item.authority.seatId,
+            seatId,
             activeControllerId: item.authority.activeControllerId,
             controlEpoch: item.authority.controlEpoch,
             submissionFenceToken: item.authority.submissionFenceToken,
           },
-          selection,
+          prepared: preparedResolution,
           nowMs: command.nowMs,
         });
-      } catch (error) {
-        metrics.timings.compileAllMs = elapsed(compileStartedAt);
-        // Deterministic policy/compiler execution has no transient Provider
-        // failure mode. Any exception is an integrity failure and must stop
-        // before the first W5 write; it must never be hidden by a default.
-        if (error instanceof DecisionAutomationError) throw error;
-        const code = readErrorCode(error);
-        const policyFailure = /POLICY|AI_DECISION|CONTENT_PACKAGE|CONTENT_BINDING/i.test(code);
-        mismatch(
-          policyFailure ? ERROR.POLICY_INVALID : ERROR.COMPILER_INVALID,
-          policyFailure ? "policy.select" : "compiler.compile",
-          code,
-        );
+        metrics.compileCount += 1;
+        const preparedAction = compiled.kind === "ALREADY_ACCEPTED"
+          ? prepareAcceptedNpcReplayV1(
+              snapshot,
+              item.authority,
+              preparedResolution,
+              compiled,
+              command.nowMs,
+            )
+          : prepareCompiledNpcActionV1(
+              snapshot,
+              item.authority,
+              preparedResolution,
+              compiled.command,
+            );
+        prepared.push(preparedAction);
       }
-      if (compiled.kind === "ALREADY_ACCEPTED") {
-        actionIds.push(compiled.actionId);
-        metrics.replayCount += 1;
-        continue;
-      }
-      assertCompiledAiDecisionCommandV1(snapshot, item.authority, selection, compiled.command);
-      prepared.push({
-        command: compiled.command,
-        authority: {
-          actorKind: "AI",
-          snapshotHash: snapshot.snapshotHash,
-          expectedOrchestratorRevision: chapter.revision,
-          expectedOrchestratorHash: chapter.orchestratorHash,
-          expectedDescriptorHash: chapter.descriptorHash,
-          expectedDecisionPolicyHash: active.policyHash,
-          expectedWorkingRevision: snapshot.projection.state.revision,
-          expectedWorkingStateHash: snapshot.projection.stateHash,
-          expectedLedgerHeadHash: snapshot.projection.headHash,
-          expectedSeatAuthorityStateHash: snapshot.seatAuthority.stateHash,
-          expectedControllerId: item.authority.activeControllerId,
-          expectedControlEpoch: item.authority.controlEpoch,
-          expectedSubmissionFenceToken: item.authority.submissionFenceToken,
-          expectedAiPolicyHash: selection.policyHash,
-        },
-      });
+    } else if (
+      beatSubmit.plan.npcResolutionSeatIds.length !== 0
+      || beatSubmit.plan.invokeSettlement
+    ) {
+      mismatch(ERROR.AUTHORITY_MISMATCH, "beatSubmit.plan", "INTERMEDIATE_AUTHORITY_INVALID");
     }
     metrics.timings.compileAllMs = elapsed(compileStartedAt);
 
-    // Every pending seat may already have been durably accepted while the
-    // cached projection still lags (for example after an interrupted resume).
-    // Do not manufacture an empty write batch: let the idempotent runtime
-    // recovery reconcile the accepted actions and continue from W4.
-    if (prepared.length === 0) {
-      const resumed = await this.resumeOnce(snapshot, metrics, command.nowMs);
-      return this.finish(
-        command,
-        metrics,
-        "BATCH_COMPLETED",
-        canonicalStrings(actionIds),
-        resumed.state,
-        endToEndStartedAt,
-      );
+    if (!this.ports.preparedActions.submitPreparedBatch) {
+      mismatch(ERROR.INVALID_CONFIGURATION, "preparedActions.submitPreparedBatch", "PRODUCTION_REQUIRED");
     }
-
-    let complete = true;
-    let batchConflict = false;
-    let committedBatchState: ChapterOrchestratorStateV1 | null = null;
-    let committedBatchProjection: WorkingLedgerProjectionV1 | null = null;
-    let committedSettlementAuthority: CommittedSettlementResumeAuthorityV1 | null = null;
-    const appendStartedAt = performance.now();
-    if (this.ports.preparedActions.submitPreparedBatch) {
-      // The human command is assembled before AI commands, but the ledger
-      // chain and persisted batch must both follow frozen route seat order.
-      const canonicalPrepared = canonicalizePreparedAutomationActionsV1(
-        route,
-        prepared,
-      );
-      const recordedState = planRecordedActionsV1(
-        chapter,
-        canonicalPrepared.map((item) => ({
-          seatId: item.command.action.seatId,
-          actionId: item.command.action.actionId,
-          defaultCode: null,
-          actionBudget: decision.execution.perSeatActionBudget[item.command.action.seatId]!,
-        })),
-        true,
-      );
-      const actionPlan = planPreparedActionLedgerV1({
-        projection: snapshot.projection,
-        actions: canonicalPrepared,
-      });
-      const allActionIds = [...new Set(
-        recordedState.activeDecision?.seats.flatMap((seat) => seat.actionIds) ?? [],
-      )].sort(compareCanonicalText);
-      const beat = planSynchronizedDecisionBeatV1({
-        routeSnapshot: route,
-        chapterDefinition: descriptor.definition,
-        chapterRuntimeId: chapter.chapterRuntimeId,
-        actionIds: allActionIds,
-        resolverVersion: "pressure_orchestrated_beat_v1",
-        projection: actionPlan.projection,
-        decisionPolicy: new SangtianAuthoritativeBeatCompilerV1(),
-      });
-      if (beat.status !== "PLANNED") {
-        mismatch(ERROR.AUTHORITY_MISMATCH, "beatPlan", "UNEXPECTED_REPLAY");
-      }
-      const postBeatProjection = appendBeatEventToWorkingLedgerProjection(
-        actionPlan.projection,
-        beat.event,
-      );
-      const progression = planBeatProgressionV1({
-        state: recordedState,
-        descriptor,
-        projection: postBeatProjection,
-        resolution: beat.resolution,
-        nowMs: command.nowMs,
-      });
-      const downstream = planBeatAuthorityDownstreamV1({
-        projection: postBeatProjection,
-        beatEvent: beat.event,
-        contentPackageSha256: route.contentPackageSha256,
-        committedAt: new Date(command.nowMs).toISOString(),
-        humanSeatIds: route.humanSeatIdsAtStart,
-      });
-      const batch = createPreparedAutomationActionBatchV1({
-        batchId: metrics.batchId,
-        snapshotHash: snapshot.snapshotHash,
-        routeSnapshot: snapshot.routeSnapshot,
-        chapterRuntimeId: chapter.chapterRuntimeId,
-        chapterId: chapter.currentChapterId,
-        decisionPointId: active.decisionPointId,
-        expectedOrchestratorRevision: chapter.revision,
-        expectedOrchestratorHash: chapter.orchestratorHash,
-        expectedWorkingRevision: snapshot.projection.state.revision,
-        expectedWorkingStateHash: snapshot.projection.stateHash,
-        expectedLedgerHeadHash: snapshot.projection.headHash,
-        expectedSeatAuthorityStateHash: snapshot.seatAuthority.stateHash,
-        actions: canonicalPrepared,
-        chapterDescriptor: descriptor,
-        nextOrchestratorState: recordedState,
-        beatPlan: {
-          event: beat.event,
-          resolution: beat.resolution,
-          postBeatOrchestratorState: progression.nextState,
-          settlementInput: progression.settlementInput,
-          narrativeJobs: downstream.narrativeJobs,
-          aEmotionEmissions: downstream.aEmotionEmissions,
-          downstreamManifest: downstream.manifest,
-        },
-      });
-      metrics.appendTxCount = 1;
-      const result = await this.ports.preparedActions.submitPreparedBatch(batch);
-      if (
-        result.batchId !== batch.batchId
-        || !isSha256(result.ledgerHeadHash)
-        || result.orchestratorState.orchestratorHash
-          !== batch.beatPlan.postBeatOrchestratorState.orchestratorHash
-        || result.actionIds.some((actionId) => !prepared.some((item) => item.command.action.actionId === actionId))
-      ) mismatch(ERROR.PORT_RESULT_INVALID, "preparedBatch.result", "INVALID_BINDING");
-      actionIds.push(...result.actionIds);
-      committedBatchState = structuredClone(result.orchestratorState);
-      committedBatchProjection = result.projection
-        ? structuredClone(result.projection)
-        : null;
-      if (
-        result.status !== "CONFLICT"
-        && result.orchestratorState.phase === "SETTLING"
-        && result.projection
-        && batch.beatPlan.settlementInput
-      ) {
-        committedSettlementAuthority = {
-          state: structuredClone(result.orchestratorState),
-          chapterDescriptor: structuredClone(descriptor),
-          workingProjection: structuredClone(result.projection),
-          settlementInput: structuredClone(batch.beatPlan.settlementInput),
+    const mcAuthority = createPreparedMcBatchAuthorityV1({
+      beatSubmit,
+      npcDecisions,
+    });
+    const canonicalPrepared = canonicalizePreparedAutomationActionsV1(route, prepared);
+    const recordedState = planMcRecordedActionsV1({
+      state: chapter,
+      actions: canonicalPrepared.map((item) => ({
+        seatId: item.command.action.seatId,
+        actionId: item.command.action.actionId,
+        defaultCode: null,
+        actionBudget: decision.execution.perSeatActionBudget[item.command.action.seatId]!,
+      })),
+      mcAuthority,
+    });
+    const newPrepared = canonicalPrepared.filter((item) => (
+      !findExactAcceptedPreparedActionV1(snapshot.projection, item)
+    ));
+    const actionPlan = newPrepared.length > 0
+      ? planPreparedActionLedgerV1({
+          projection: snapshot.projection,
+          actions: newPrepared,
+        })
+      : {
+          payloads: [],
+          events: [],
+          projection: cloneWorkingProjectionV1(snapshot.projection),
         };
-      }
-      metrics.replayCount += result.replayedActionIds.length;
-      if (result.status === "CONFLICT") {
-        complete = false;
-        batchConflict = true;
-        if (result.conflictReason === "HEAD_CONFLICT") metrics.headConflictCount += 1;
-      }
-    } else {
-      // Compatibility fallback for isolated legacy test doubles only. The
-      // production Prisma adapter implements submitPreparedBatch.
-      let expectedHead = snapshot.projection.headHash;
-      for (const item of prepared) {
-        const callStartedAt = performance.now();
-        metrics.appendTxCount += 1;
-        item.authority.expectedLedgerHeadHash = expectedHead;
-        const result = await this.ports.preparedActions.submitPrepared(item);
-        metrics.timings.ledgerAppendEachMs.push(elapsed(callStartedAt));
-        if (result.actionId !== item.command.action.actionId || !isSha256(result.ledgerHeadHash)) {
-          mismatch(ERROR.PORT_RESULT_INVALID, "preparedAppend.result", "INVALID_BINDING");
-        }
-        if (result.status === "APPENDED") {
-          actionIds.push(result.actionId);
-          expectedHead = result.ledgerHeadHash;
-          continue;
-        }
-        if (result.status === "REPLAYED") {
-          actionIds.push(result.actionId);
-          metrics.replayCount += 1;
-          expectedHead = result.ledgerHeadHash;
-          continue;
-        }
-        complete = false;
-        if (result.status === "HEAD_CONFLICT") {
-          metrics.headConflictCount += 1;
-        } else {
-          countStale(metrics, result.staleReason);
-        }
-        break;
-      }
+    const allActionIds = [...new Set(
+      recordedState.activeDecision?.seats.flatMap((seat) => seat.actionIds) ?? [],
+    )].sort(compareCanonicalText);
+    const beat = planSynchronizedDecisionBeatV1({
+      routeSnapshot: route,
+      chapterDefinition: descriptor.definition,
+      chapterRuntimeId: chapter.chapterRuntimeId,
+      actionIds: allActionIds,
+      resolverVersion: "pressure_orchestrated_beat_v1",
+      projection: actionPlan.projection,
+      decisionPolicy: new SangtianAuthoritativeBeatCompilerV1(),
+    });
+    if (beat.status !== "PLANNED") {
+      mismatch(ERROR.AUTHORITY_MISMATCH, "beatPlan", "UNEXPECTED_REPLAY");
     }
-    metrics.timings.ledgerAppendTotalMs = elapsed(appendStartedAt);
+    const postBeatProjection = appendBeatEventToWorkingLedgerProjection(
+      actionPlan.projection,
+      beat.event,
+    );
+    const progression = planBeatProgressionV1({
+      state: recordedState,
+      descriptor,
+      projection: postBeatProjection,
+      resolution: beat.resolution,
+      nowMs: command.nowMs,
+    });
+    assertMcProgressionV1(beatSubmit, progression);
+    const plannedDownstream = planBeatAuthorityDownstreamV1({
+      projection: postBeatProjection,
+      beatEvent: beat.event,
+      contentPackageSha256: route.contentPackageSha256,
+      committedAt: new Date(command.nowMs).toISOString(),
+      humanSeatIds: route.humanSeatIdsAtStart,
+    });
+    const downstream = beatSubmit.plan.mode === "INTERMEDIATE_ACTION_ONLY"
+      ? {
+          narrativeJobs: plannedDownstream.narrativeJobs,
+          aEmotionEmissions: [],
+          manifest: buildAuthorityDownstreamManifestV1({
+            authorityKind: "BEAT",
+            sourceId: beat.resolution.resolutionHash,
+            sourceCommitHash: beat.resolution.resolutionHash,
+            dedupeKeys: downstreamDedupeKeysV1({
+              narrativeJobs: plannedDownstream.narrativeJobs,
+              aEmotionEmissions: [],
+            }),
+          }),
+        }
+      : plannedDownstream;
+    const batch = createPreparedAutomationActionBatchV1({
+      batchId: metrics.batchId,
+      snapshotHash: snapshot.snapshotHash,
+      routeSnapshot: route,
+      chapterRuntimeId: chapter.chapterRuntimeId,
+      chapterId: chapter.currentChapterId,
+      decisionPointId: active.decisionPointId,
+      expectedOrchestratorRevision: chapter.revision,
+      expectedOrchestratorHash: chapter.orchestratorHash,
+      expectedWorkingRevision: snapshot.projection.state.revision,
+      expectedWorkingStateHash: snapshot.projection.stateHash,
+      expectedLedgerHeadHash: snapshot.projection.headHash,
+      expectedSeatAuthorityStateHash: snapshot.seatAuthority.stateHash,
+      actions: canonicalPrepared,
+      chapterDescriptor: descriptor,
+      nextOrchestratorState: recordedState,
+      mcAuthority,
+      beatPlan: {
+        event: beat.event,
+        resolution: beat.resolution,
+        postBeatOrchestratorState: progression.nextState,
+        settlementInput: progression.settlementInput,
+        narrativeJobs: downstream.narrativeJobs,
+        aEmotionEmissions: downstream.aEmotionEmissions,
+        downstreamManifest: downstream.manifest,
+      },
+    });
 
-    if (batchConflict) {
+    const appendStartedAt = performance.now();
+    metrics.appendTxCount = 1;
+    const result = await this.ports.preparedActions.submitPreparedBatch(batch);
+    metrics.timings.ledgerAppendTotalMs = elapsed(appendStartedAt);
+    const expectedActionIds = canonicalStrings(
+      canonicalPrepared.map((item) => item.command.action.actionId),
+    );
+    if (
+      result.batchId !== batch.batchId
+      || !isSha256(result.ledgerHeadHash)
+    ) mismatch(ERROR.PORT_RESULT_INVALID, "preparedBatch.result", "INVALID_ENVELOPE");
+    if (result.status === "CONFLICT") {
+      // Conflict payload fields are diagnostic only and are never consumed as
+      // committed authority.  Bind the envelope and reason, then discard every
+      // candidate action/projection so no partial success can escape.
+      if (result.conflictReason === null) {
+        mismatch(ERROR.PORT_RESULT_INVALID, "preparedBatch.conflict", "REASON_REQUIRED");
+      }
+      if (result.conflictReason === "HEAD_CONFLICT") metrics.headConflictCount += 1;
+      else countStale(metrics, result.conflictReason);
       return this.finish(
         command,
         metrics,
@@ -569,18 +524,60 @@ export class PressureDecisionConvergenceServiceV1 {
         endToEndStartedAt,
       );
     }
+    if (
+      result.conflictReason !== null
+      || sha256Canonical(canonicalStrings(result.actionIds))
+        !== sha256Canonical(expectedActionIds)
+      || result.orchestratorState.orchestratorHash
+        !== batch.beatPlan.postBeatOrchestratorState.orchestratorHash
+    ) mismatch(ERROR.PORT_RESULT_INVALID, "preparedBatch.result", "INVALID_BINDING");
+    metrics.replayCount += result.replayedActionIds.length;
+    const replayed = new Set(result.replayedActionIds);
+    metrics.npcWriteCount = result.status === "COMMITTED"
+      ? canonicalPrepared.filter((item) => (
+          item.authority.actorKind === "AI"
+          && !replayed.has(item.command.action.actionId)
+        )).length
+      : 0;
+    if (result.status === "REPLAYED") {
+      return this.finish(
+        command,
+        metrics,
+        "BATCH_COMPLETED",
+        expectedActionIds,
+        result.orchestratorState,
+        endToEndStartedAt,
+      );
+    }
 
-    const resumedResult = committedBatchState?.phase === "ACTIVE"
-      ? { state: committedBatchState, committedAuthority: null }
-      : await this.resumeOnce(
-          snapshot,
-          metrics,
-          command.nowMs,
-          committedSettlementAuthority,
-        );
+    let resumedResult: {
+      state: ChapterOrchestratorStateV1;
+      committedAuthority: DecisionConvergenceResultV1["committedAuthority"];
+    };
+    if (result.orchestratorState.phase === "ACTIVE") {
+      resumedResult = { state: result.orchestratorState, committedAuthority: null };
+    } else {
+      if (
+        result.orchestratorState.phase !== "SETTLING"
+        || !result.projection
+        || !batch.beatPlan.settlementInput
+      ) mismatch(ERROR.PORT_RESULT_INVALID, "preparedBatch.settlement", "COMMITTED_AUTHORITY_REQUIRED");
+      resumedResult = await this.resumeOnce(
+        snapshot,
+        metrics,
+        command.nowMs,
+        {
+          state: structuredClone(result.orchestratorState),
+          chapterDescriptor: structuredClone(descriptor),
+          workingProjection: structuredClone(result.projection),
+          settlementInput: structuredClone(batch.beatPlan.settlementInput),
+        },
+      );
+    }
+
     const resumed = resumedResult.state;
     let finalProjection = resumedResult.committedAuthority?.workingProjection
-      ?? committedBatchProjection;
+      ?? result.projection;
     const finalDescriptor = resumedResult.committedAuthority?.chapterDescriptor
       ?? (resumed.currentChapterId === descriptor.chapterId
       ? descriptor
@@ -609,16 +606,11 @@ export class PressureDecisionConvergenceServiceV1 {
           chapterDescriptor: structuredClone(finalDescriptor),
         }
       : null;
-    const outcome: DecisionAutomationOutcomeKindV1 = complete
-      ? "BATCH_COMPLETED"
-      : actionIds.length > 0
-        ? "BATCH_PARTIAL"
-        : "STALE_SKIPPED";
     return this.finish(
       command,
       metrics,
-      outcome,
-      canonicalStrings(actionIds),
+      "BATCH_COMPLETED",
+      expectedActionIds,
       resumed,
       endToEndStartedAt,
       committedAuthority,
@@ -664,11 +656,15 @@ export class PressureDecisionConvergenceServiceV1 {
       metrics.timings,
       () => { metrics.w4ConflictCount += 1; },
       async () => {
-        const resumed = committedSettlementAuthority
-          && this.ports.runtime.resumeFromCommittedSettlementAuthority
-          ? await this.ports.runtime.resumeFromCommittedSettlementAuthority(
+        const useFastSettlementResume = Boolean(
+          committedSettlementAuthority
+          && this.ports.runtime.resumeFromCommittedSettlementAuthority,
+        );
+        if (useFastSettlementResume) metrics.fastSettlementResumeCalls += 1;
+        const resumed = useFastSettlementResume
+          ? await this.ports.runtime.resumeFromCommittedSettlementAuthority!(
               snapshot.routeSnapshot,
-              committedSettlementAuthority,
+              committedSettlementAuthority!,
               nowMs,
             )
           : await this.ports.runtime.resume(snapshot.routeSnapshot, nowMs);
@@ -723,6 +719,368 @@ export class PressureDecisionConvergenceServiceV1 {
     });
     return result;
   }
+}
+
+
+type PendingHumanSeatV1 = Readonly<{
+  seat: NonNullable<ChapterOrchestratorStateV1["activeDecision"]>["seats"][number];
+  authority: SeatAuthorityRecordV1;
+}>;
+
+function resolveMcHumanSubmissionV1(
+  snapshot: DecisionConvergenceAuthoritySnapshotV1,
+  pendingHumans: ReadonlyArray<PendingHumanSeatV1>,
+  command: DecisionConvergenceCommandV1,
+): Readonly<{
+  viewerSeatId: SeatIdV1;
+  prepared: AppendPreparedAutomationActionCommandV1;
+}> | null {
+  const active = snapshot.chapter.activeDecision;
+  if (!active) return null;
+  if (command.humanAction) {
+    const raw = structuredClone(command.humanAction);
+    const action = validateDecisionActionV1(raw.action);
+    const authority = requireHumanAuthorityV1(snapshot, action.seatId, raw.subjectId);
+    const prepared = prepareDecisionHumanActionV1(snapshot, pendingHumans, raw);
+    if (prepared) return { viewerSeatId: action.seatId, prepared };
+    const accepted = requireExactAcceptedCommandV1(snapshot.projection, raw);
+    return {
+      viewerSeatId: action.seatId,
+      prepared: preparedAcceptedActionV1(snapshot, authority, accepted, command.nowMs, "HUMAN"),
+    };
+  }
+
+  const recovered: Array<{
+    authority: SeatAuthorityRecordV1;
+    accepted: AcceptedFormalActionV1;
+  }> = [];
+  for (const rawSeatId of snapshot.routeSnapshot.seatIds) {
+    const seatId = rawSeatId as SeatIdV1;
+    const authority = snapshot.seatAuthority.seatControls.find(
+      (candidate) => candidate.seatId === seatId,
+    );
+    if (!authority || authority.mode !== "HUMAN_ACTIVE") continue;
+    const accepted = [...snapshot.projection.acceptedActions.values()]
+      .filter((candidate) => (
+        candidate.action.seatId === seatId
+        && candidate.action.runId === snapshot.routeSnapshot.runId
+        && candidate.action.chapterRuntimeId === snapshot.chapter.chapterRuntimeId
+        && candidate.action.chapterId === snapshot.chapter.currentChapterId
+        && candidate.action.decisionPointId === active.decisionPointId
+        && candidate.action.controlEpoch === authority.controlEpoch
+      ))
+      .sort((left, right) => compareCanonicalText(
+        left.action.actionId,
+        right.action.actionId,
+      ));
+    if (accepted.length > 1) {
+      mismatch(ERROR.AUTHORITY_MISMATCH, "recovery.humanAction", `MULTIPLE:${seatId}`);
+    }
+    if (accepted.length === 1) recovered.push({ authority, accepted: accepted[0]! });
+  }
+  if (recovered.length > 1) {
+    mismatch(ERROR.AUTHORITY_MISMATCH, "recovery.humanAction", "MULTIPLE_HUMAN_SEATS");
+  }
+  const recoveredHuman = recovered[0];
+  if (!recoveredHuman) return null;
+  const activeSeat = active.seats.find(
+    (candidate) => candidate.seatId === recoveredHuman.authority.seatId,
+  );
+  if (!activeSeat || activeSeat.requirement !== "REQUIRED") {
+    mismatch(ERROR.AUTHORITY_MISMATCH, "recovery.humanSeat", recoveredHuman.authority.seatId);
+  }
+  return {
+    viewerSeatId: recoveredHuman.authority.seatId,
+    prepared: preparedAcceptedActionV1(
+      snapshot,
+      recoveredHuman.authority,
+      recoveredHuman.accepted,
+      command.nowMs,
+      "HUMAN",
+    ),
+  };
+}
+
+function requireHumanAuthorityV1(
+  snapshot: DecisionConvergenceAuthoritySnapshotV1,
+  seatId: SeatIdV1,
+  controllerId: string,
+): SeatAuthorityRecordV1 {
+  const activeSeat = snapshot.chapter.activeDecision?.seats.find(
+    (candidate) => candidate.seatId === seatId,
+  );
+  const authority = snapshot.seatAuthority.seatControls.find(
+    (candidate) => candidate.seatId === seatId,
+  );
+  if (
+    !activeSeat
+    || activeSeat.requirement !== "REQUIRED"
+    || !authority
+    || authority.mode !== "HUMAN_ACTIVE"
+    || authority.activeControllerId !== controllerId
+    || authority.controlEpoch < 1
+    || !isSha256(authority.submissionFenceToken)
+  ) mismatch(ERROR.AUTHORITY_MISMATCH, "humanAction.authority", seatId);
+  return authority;
+}
+
+function requireExactAcceptedCommandV1(
+  projection: WorkingLedgerProjectionV1,
+  command: NonNullable<DecisionConvergenceCommandV1["humanAction"]>,
+) {
+  const action = validateDecisionActionV1(command.action);
+  const byAction = projection.acceptedActions.get(action.actionId);
+  const byKey = projection.actionsByIdempotencyKey.get(action.idempotencyKey);
+  if (!byAction || !byKey || byAction.eventHash !== byKey.eventHash) {
+    mismatch(ERROR.AUTHORITY_MISMATCH, "humanAction.replay", "ACCEPTED_ACTION_REQUIRED");
+  }
+  if (
+    byAction.action.sealedHash !== action.sealedHash
+    || byAction.inputFingerprint !== command.inputFingerprint
+    || sha256Canonical(byAction.action) !== sha256Canonical(action)
+    || sha256Canonical(byAction.intent) !== sha256Canonical(command.intent)
+  ) mismatch(ERROR.AUTHORITY_MISMATCH, "humanAction.replay", "IDEMPOTENCY_MISMATCH");
+  return structuredClone(byAction);
+}
+
+function preparedAcceptedActionV1(
+  snapshot: DecisionConvergenceAuthoritySnapshotV1,
+  authority: SeatAuthorityRecordV1,
+  accepted: WorkingLedgerProjectionV1["acceptedActions"] extends Map<string, infer V>
+    ? V
+    : never,
+  nowMs: number,
+  actorKind: "HUMAN" | "AI",
+  preparedNpc: PreparedNpcDecisionResolutionV1 | null = null,
+): AppendPreparedAutomationActionCommandV1 {
+  const active = snapshot.chapter.activeDecision;
+  if (!active || accepted.action.decisionPointId !== active.decisionPointId) {
+    mismatch(ERROR.AUTHORITY_MISMATCH, "acceptedAction.decision", "MISMATCH");
+  }
+  if (
+    accepted.action.seatId !== authority.seatId
+    || accepted.action.controlEpoch !== authority.controlEpoch
+    || accepted.action.expectedWorkingRevision !== snapshot.projection.state.revision
+    || (actorKind === "HUMAN" && authority.mode !== "HUMAN_ACTIVE")
+    || (actorKind === "AI" && (
+      authority.mode !== "AI_ACTIVE"
+      || authority.activeControllerId !== authority.designatedAiControllerId
+      || !preparedNpc
+    ))
+  ) mismatch(ERROR.AUTHORITY_MISMATCH, "acceptedAction.authority", "MISMATCH");
+  const command = {
+    routeSnapshot: structuredClone(snapshot.routeSnapshot),
+    subjectId: authority.activeControllerId,
+    action: structuredClone(accepted.action),
+    intent: structuredClone(accepted.intent),
+    inputFingerprint: accepted.inputFingerprint,
+    nowMs,
+  };
+  if (actorKind === "AI") {
+    assertNpcCommandBindingV1(preparedNpc!, command);
+  }
+  return {
+    command,
+    authority: {
+      actorKind,
+      snapshotHash: snapshot.snapshotHash,
+      expectedOrchestratorRevision: snapshot.chapter.revision,
+      expectedOrchestratorHash: snapshot.chapter.orchestratorHash,
+      expectedDescriptorHash: snapshot.chapter.descriptorHash,
+      expectedDecisionPolicyHash: active.policyHash,
+      expectedWorkingRevision: snapshot.projection.state.revision,
+      expectedWorkingStateHash: snapshot.projection.stateHash,
+      expectedLedgerHeadHash: snapshot.projection.headHash,
+      expectedSeatAuthorityStateHash: snapshot.seatAuthority.stateHash,
+      expectedControllerId: authority.activeControllerId,
+      expectedControlEpoch: authority.controlEpoch,
+      expectedSubmissionFenceToken: authority.submissionFenceToken,
+      expectedAiPolicyHash: preparedNpc?.resolution.policyHash ?? null,
+      expectedNpcResolutionHash: preparedNpc?.resolution.resolutionHash ?? null,
+    },
+  };
+}
+
+function prepareAcceptedNpcReplayV1(
+  snapshot: DecisionConvergenceAuthoritySnapshotV1,
+  authority: SeatAuthorityRecordV1,
+  prepared: PreparedNpcDecisionResolutionV1,
+  compiled: Extract<DecisionAutomationCompilationResultV1, { kind: "ALREADY_ACCEPTED" }>,
+  nowMs: number,
+): AppendPreparedAutomationActionCommandV1 {
+  const byAction = snapshot.projection.acceptedActions.get(compiled.actionId);
+  const byKey = snapshot.projection.actionsByIdempotencyKey.get(compiled.idempotencyKey);
+  if (
+    !byAction
+    || !byKey
+    || byAction.eventHash !== byKey.eventHash
+    || byAction.inputFingerprint !== compiled.inputFingerprint
+  ) mismatch(ERROR.COMPILER_INVALID, "compiler.npcReplay", "ACCEPTED_ACTION_REQUIRED");
+  return preparedAcceptedActionV1(
+    snapshot,
+    authority,
+    byAction,
+    nowMs,
+    "AI",
+    prepared,
+  );
+}
+
+
+function assertNpcPolicyAuthorityV1(
+  prepared: PreparedNpcDecisionResolutionV1,
+  authority: SeatAuthorityRecordV1,
+  snapshot: DecisionConvergenceAuthoritySnapshotV1,
+  expectedPolicyArtifactSha256: string,
+  expectedIdentityPolicyArtifactSha256: string,
+): void {
+  if (
+    !isSha256(expectedPolicyArtifactSha256)
+    || !isSha256(expectedIdentityPolicyArtifactSha256)
+    || prepared.seatId !== authority.seatId
+    || prepared.input.runId !== snapshot.routeSnapshot.runId
+    || prepared.input.routeHash !== snapshot.routeSnapshot.routeHash
+    || prepared.input.chapterRuntimeId !== snapshot.chapter.chapterRuntimeId
+    || prepared.input.chapterId !== snapshot.chapter.currentChapterId
+    || prepared.input.decisionPointId
+      !== snapshot.chapter.activeDecision?.decisionPointId
+    || prepared.input.controllerAuthority.mode !== "AI_ACTIVE"
+    || prepared.input.controllerAuthority.activeControllerId
+      !== authority.activeControllerId
+    || prepared.input.controllerAuthority.controlEpoch !== authority.controlEpoch
+    || prepared.input.controllerAuthority.authorityStateHash
+      !== snapshot.seatAuthority.stateHash
+    || prepared.input.controllerAuthority.requiresResolution !== true
+    || prepared.resolution.policyHash !== expectedPolicyArtifactSha256
+    || prepared.resolution.identityPolicyArtifactSha256
+      !== expectedIdentityPolicyArtifactSha256
+  ) mismatch(ERROR.POLICY_INVALID, "npcCouncil.resolution", "PUBLISHED_AUTHORITY_MISMATCH");
+}
+
+function prepareCompiledNpcActionV1(
+  snapshot: DecisionConvergenceAuthoritySnapshotV1,
+  authority: SeatAuthorityRecordV1,
+  prepared: PreparedNpcDecisionResolutionV1,
+  command: AppendPreparedAutomationActionCommandV1["command"],
+): AppendPreparedAutomationActionCommandV1 {
+  assertNpcCommandBindingV1(prepared, command);
+  if (
+    authority.mode !== "AI_ACTIVE"
+    || authority.activeControllerId !== authority.designatedAiControllerId
+    || command.subjectId !== authority.activeControllerId
+    || command.action.controlEpoch !== authority.controlEpoch
+    || command.action.expectedWorkingRevision !== snapshot.projection.state.revision
+    || command.action.seatId !== authority.seatId
+  ) mismatch(ERROR.COMPILER_INVALID, "compiler.npcCommand", "AUTHORITY_BINDING_MISMATCH");
+  const active = snapshot.chapter.activeDecision!;
+  return {
+    command: structuredClone(command),
+    authority: {
+      actorKind: "AI",
+      snapshotHash: snapshot.snapshotHash,
+      expectedOrchestratorRevision: snapshot.chapter.revision,
+      expectedOrchestratorHash: snapshot.chapter.orchestratorHash,
+      expectedDescriptorHash: snapshot.chapter.descriptorHash,
+      expectedDecisionPolicyHash: active.policyHash,
+      expectedWorkingRevision: snapshot.projection.state.revision,
+      expectedWorkingStateHash: snapshot.projection.stateHash,
+      expectedLedgerHeadHash: snapshot.projection.headHash,
+      expectedSeatAuthorityStateHash: snapshot.seatAuthority.stateHash,
+      expectedControllerId: authority.activeControllerId,
+      expectedControlEpoch: authority.controlEpoch,
+      expectedSubmissionFenceToken: authority.submissionFenceToken,
+      expectedAiPolicyHash: prepared.resolution.policyHash,
+      expectedNpcResolutionHash: prepared.resolution.resolutionHash,
+    },
+  };
+}
+
+function assertNpcCommandBindingV1(
+  prepared: PreparedNpcDecisionResolutionV1,
+  command: AppendPreparedAutomationActionCommandV1["command"],
+): void {
+  const payload = command.action.payload as Record<string, unknown>;
+  if (
+    command.action.seatId !== prepared.seatId
+    || command.action.actionType !== prepared.resolution.actionType
+    || payload.source !== "IDENTITY_NPC_DECISION_POLICY"
+    || payload.policyRef !== prepared.resolution.policyRef
+    || payload.policyVersion !== prepared.resolution.policyVersion
+    || payload.policyHash !== prepared.resolution.policyHash
+    || payload.identityPolicyRef !== prepared.resolution.identityPolicyRef
+    || payload.identityPolicyVersion !== prepared.resolution.identityPolicyVersion
+    || payload.identityPolicyHash !== prepared.resolution.identityPolicyHash
+    || payload.identityPolicyArtifactSha256
+      !== prepared.resolution.identityPolicyArtifactSha256
+    || payload.inputHash !== prepared.input.inputHash
+    || payload.resolutionHash !== prepared.resolution.resolutionHash
+    || payload.providerCallCount !== 0
+  ) mismatch(ERROR.COMPILER_INVALID, "compiler.npcCommand", "FINAL_MB_BINDING_MISMATCH");
+}
+
+function findExactAcceptedPreparedActionV1(
+  projection: WorkingLedgerProjectionV1,
+  item: AppendPreparedAutomationActionCommandV1,
+): boolean {
+  const action = validateDecisionActionV1(item.command.action);
+  const byAction = projection.acceptedActions.get(action.actionId);
+  const byKey = projection.actionsByIdempotencyKey.get(action.idempotencyKey);
+  if (!byAction && !byKey) return false;
+  if (
+    !byAction
+    || !byKey
+    || byAction.eventHash !== byKey.eventHash
+    || byAction.action.sealedHash !== action.sealedHash
+    || byAction.inputFingerprint !== item.command.inputFingerprint
+    || sha256Canonical(byAction.action) !== sha256Canonical(action)
+    || sha256Canonical(byAction.intent) !== sha256Canonical(item.command.intent)
+  ) mismatch(ERROR.AUTHORITY_MISMATCH, "preparedAction.replay", "IDEMPOTENCY_MISMATCH");
+  return true;
+}
+
+function assertMcBeatSubmitPlanV1(
+  raw: ResolvedBeatSubmitAuthorityV1,
+  viewerSeatId: SeatIdV1,
+): void {
+  const authority = validateResolvedBeatSubmitAuthorityV1(raw);
+  const plan = authority.plan;
+  if (
+    plan.viewerSeatId !== viewerSeatId
+    || plan.humanSubmissionSeatIds.length !== 1
+    || plan.humanSubmissionSeatIds[0] !== viewerSeatId
+    || new Set(plan.npcResolutionSeatIds).size !== plan.npcResolutionSeatIds.length
+    || plan.npcResolutionSeatIds.includes(viewerSeatId)
+  ) mismatch(ERROR.AUTHORITY_MISMATCH, "beatSubmit.plan", "PARTICIPANT_BINDING_MISMATCH");
+  if (plan.mode === "INTERMEDIATE_ACTION_ONLY") {
+    if (
+      plan.npcResolutionSeatIds.length !== 0
+      || plan.invokeSettlement
+      || authority.input.beat.closesChapter
+    ) mismatch(ERROR.AUTHORITY_MISMATCH, "beatSubmit.plan", "INTERMEDIATE_BINDING_MISMATCH");
+    return;
+  }
+  if (
+    plan.mode !== "CHAPTER_COUNCIL_COMMIT"
+    || !plan.invokeSettlement
+    || !authority.input.beat.closesChapter
+  ) mismatch(ERROR.AUTHORITY_MISMATCH, "beatSubmit.plan", "FINAL_BINDING_MISMATCH");
+}
+
+function assertMcProgressionV1(
+  beatSubmit: ResolvedBeatSubmitAuthorityV1,
+  progression: ReturnType<typeof planBeatProgressionV1>,
+): void {
+  if (beatSubmit.plan.mode === "INTERMEDIATE_ACTION_ONLY") {
+    if (
+      progression.settlementInput !== null
+      || progression.nextState.phase !== "ACTIVE"
+    ) mismatch(ERROR.AUTHORITY_MISMATCH, "beatProgression", "INTERMEDIATE_SETTLEMENT_FORBIDDEN");
+    return;
+  }
+  if (
+    progression.settlementInput === null
+    || progression.nextState.phase !== "SETTLING"
+  ) mismatch(ERROR.AUTHORITY_MISMATCH, "beatProgression", "FINAL_SETTLEMENT_REQUIRED");
 }
 
 function projectionMatchesChapter(
@@ -808,6 +1166,7 @@ function createMetrics(command: DecisionConvergenceCommandV1): DecisionConvergen
     snapshotReadCount: 0,
     policyCallCount: 0,
     compileCount: 0,
+    npcWriteCount: 0,
     appendTxCount: 0,
     replayCount: 0,
     headConflictCount: 0,
@@ -818,6 +1177,7 @@ function createMetrics(command: DecisionConvergenceCommandV1): DecisionConvergen
     staleFenceCount: 0,
     stalePolicyCount: 0,
     resumeCount: 0,
+    fastSettlementResumeCalls: 0,
     providerCallCount: 0,
     timings,
   };
@@ -1005,6 +1365,12 @@ export function prepareDecisionHumanActionV1(
       expectedAiPolicyHash: null,
     },
   };
+}
+
+function cloneWorkingProjectionV1(
+  projection: WorkingLedgerProjectionV1,
+): WorkingLedgerProjectionV1 {
+  return structuredClone(projection);
 }
 
 function validateSeatSnapshot(

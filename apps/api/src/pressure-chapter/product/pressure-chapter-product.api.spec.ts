@@ -190,6 +190,20 @@ test("zero-external ProductRoot composes without DB access or pre-init workers",
   assert.equal(root.diagnostics.narrativeWorkerAutoStarted, false);
   assert.equal(typeof root.progress.worker.tick, "function");
   assert.equal(typeof root.decisionAutomation.workerLane.tick, "function");
+  const httpWriterBinding = root.httpFacade as unknown as {
+    convergence: unknown;
+    sql7: unknown;
+  };
+  assert.equal(
+    httpWriterBinding.convergence,
+    root.decisionAutomation.service,
+    "the public action endpoint must use the production MC convergence service",
+  );
+  assert.equal(
+    httpWriterBinding.sql7,
+    undefined,
+    "the historical first-N1 SQL7 writer must not bypass MC production convergence",
+  );
   await root.workerLifecycle.onModuleDestroy();
 });
 

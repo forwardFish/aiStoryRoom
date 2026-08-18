@@ -14,6 +14,10 @@ import type {
 import { PressureAiDecisionCommandCompilerV1 } from "./compiler";
 import { PressureDecisionConvergenceServiceV1 } from "./convergence.service";
 import { PublishedSangtianAiDecisionPolicyAdapterV1 } from "./content-policy.adapter";
+import {
+  AcceptedBeatSubmitAuthorityAdapterV1,
+  AcceptedNpcCouncilDecisionPolicyAdapterV1,
+} from "./mc-authority.adapters";
 import { StructuredDecisionConvergenceDiagnosticsV1 } from "./diagnostics";
 import {
   createPrismaActivePressureDecisionScannerV1,
@@ -27,7 +31,14 @@ import { PressureDecisionAutomationWorkerLaneV1 } from "./worker-lane";
 export interface PressureDecisionAutomationProductionInputV1
 extends Omit<
   DecisionConvergenceDependenciesV1,
-  "scanner" | "snapshots" | "compiler" | "policy" | "preparedActions" | "diagnostics"
+  | "scanner"
+  | "snapshots"
+  | "compiler"
+  | "policy"
+  | "beatSubmitAuthority"
+  | "npcCouncilPolicy"
+  | "preparedActions"
+  | "diagnostics"
 > {
   prisma: unknown;
   /** Deprecated discovery/read seams accepted for source compatibility only. */
@@ -43,6 +54,8 @@ export interface PressureDecisionAutomationProductionBundleV1 {
   scanner: PrismaActivePressureDecisionScannerV1;
   snapshots: DecisionConvergenceSnapshotReaderPortV1;
   policy: PublishedSangtianAiDecisionPolicyAdapterV1;
+  beatSubmitAuthority: AcceptedBeatSubmitAuthorityAdapterV1;
+  npcCouncilPolicy: AcceptedNpcCouncilDecisionPolicyAdapterV1;
   compiler: PressureAiDecisionCommandCompilerV1;
   service: PressureDecisionConvergenceServiceV1;
   workerLane: PressureDecisionAutomationWorkerLaneV1;
@@ -61,6 +74,10 @@ export function createPressureDecisionAutomationProductionV1(
   const policy = new PublishedSangtianAiDecisionPolicyAdapterV1(
     input.aiPolicyOptions,
   );
+  const beatSubmitAuthority = new AcceptedBeatSubmitAuthorityAdapterV1();
+  const npcCouncilPolicy = new AcceptedNpcCouncilDecisionPolicyAdapterV1(
+    input.aiPolicyOptions,
+  );
   const compiler = new PressureAiDecisionCommandCompilerV1(
     new SangtianServerDecisionWorkingIntentCompilerV1(),
   );
@@ -73,6 +90,8 @@ export function createPressureDecisionAutomationProductionV1(
     snapshots,
     content: input.content,
     policy,
+    beatSubmitAuthority,
+    npcCouncilPolicy,
     compiler,
     preparedActions,
     runtime: input.runtime,
@@ -84,6 +103,8 @@ export function createPressureDecisionAutomationProductionV1(
     scanner,
     snapshots,
     policy,
+    beatSubmitAuthority,
+    npcCouncilPolicy,
     compiler,
     service,
     workerLane: new PressureDecisionAutomationWorkerLaneV1(service),

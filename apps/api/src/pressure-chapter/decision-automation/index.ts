@@ -10,3 +10,4 @@ export * from "./worker-lane";
 export * from "./factory";
 export * from "./read-adapters";
 export * from "./content-policy.adapter";
+export * from "./mc-authority.adapters";

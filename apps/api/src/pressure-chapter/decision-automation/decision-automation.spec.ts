@@ -404,8 +404,8 @@ test("published policy adapter forwards selection and preserves the release-owne
   const { selectionHash, ...body } = selection;
 
   assert.equal(selectionHash, sha256Canonical(body));
-  assert.notEqual(selection.actionType, "DEFAULT_PASS");
   assert.ok(input.eligibleActionTypes.includes(selection.actionType));
+  assert.equal(selection.schemaVersion, "sangtian_ai_decision_policy_selection_v1");
   assert.equal(selection.policyHash, adapter.artifactSha256);
 });
 
@@ -479,7 +479,16 @@ test("production factory owns the verified policy and exposes the exact worker l
   assert.ok(bundle.workerLane instanceof PressureDecisionAutomationWorkerLaneV1);
   assert.deepEqual(
     Object.keys(bundle).sort(),
-    ["compiler", "policy", "scanner", "service", "workerLane"].sort(),
+    [
+      "beatSubmitAuthority",
+      "compiler",
+      "npcCouncilPolicy",
+      "policy",
+      "scanner",
+      "service",
+      "snapshots",
+      "workerLane",
+    ].sort(),
   );
 });
 

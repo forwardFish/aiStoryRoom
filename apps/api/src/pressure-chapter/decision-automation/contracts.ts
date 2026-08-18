@@ -5,6 +5,14 @@ import type {
   SeatIdV1,
 } from "@ai-story/shared";
 import type {
+  SangtianNpcDecisionPolicyInputV1,
+  SangtianNpcDecisionResolutionV1,
+} from "@ai-story/templates";
+import type {
+  BeatSubmitPlanV1,
+  BeatSubmitPolicyInputV1,
+} from "../beat-submit-policy";
+import type {
   AuthoredChapterRuntimeV1,
   ChapterOrchestratorStateV1,
   CommittedSettlementResumeAuthorityV1,
@@ -116,6 +124,53 @@ export interface DecisionSubmitSnapshotV1 {
   submitSnapshotHash: string;
 }
 
+/** Exact accepted MA input/output pair sealed for one MC commit. */
+export interface ResolvedBeatSubmitAuthorityV1 {
+  schemaVersion: "pressure_resolved_beat_submit_authority_v1";
+  input: BeatSubmitPolicyInputV1;
+  plan: BeatSubmitPlanV1;
+  authorityHash: string;
+}
+
+/** Exact final MB input/output pair for one MA-planned NPC seat. */
+export interface PreparedNpcDecisionResolutionV1 {
+  schemaVersion: "pressure_prepared_npc_decision_resolution_v1";
+  seatId: SeatIdV1;
+  input: SangtianNpcDecisionPolicyInputV1;
+  resolution: SangtianNpcDecisionResolutionV1;
+  bindingHash: string;
+}
+
+export interface BeatSubmitAuthorityPortV1 {
+  resolve(input: Readonly<{
+    routeSnapshot: RunRouteSnapshotV1;
+    chapter: ChapterOrchestratorStateV1;
+    projection: WorkingLedgerProjectionV1;
+    seatAuthority: SeatControlSnapshotV1;
+    viewerSeatId: SeatIdV1;
+  }>): ResolvedBeatSubmitAuthorityV1;
+}
+
+export interface NpcCouncilDecisionPolicyPortV1 {
+  readonly artifactSha256: string;
+  readonly identityPolicyArtifactSha256: string;
+  resolve(input: Readonly<{
+    routeSnapshot: RunRouteSnapshotV1;
+    chapter: ChapterOrchestratorStateV1;
+    projection: WorkingLedgerProjectionV1;
+    seatAuthority: {
+      seatId: SeatIdV1;
+      mode: "AI_ACTIVE";
+      activeControllerId: string;
+      controlEpoch: number;
+      submissionFenceToken: string;
+      authorityStateHash: string;
+      requiresResolution: true;
+    };
+    eligibleActionTypes: readonly string[];
+  }>): PreparedNpcDecisionResolutionV1;
+}
+
 export interface DecisionConvergenceSnapshotReaderPortV1 {
   capture(input: Readonly<{
     runId: string;
@@ -212,6 +267,19 @@ export interface DecisionAutomationCommandCompilerPortV1 {
     selection: AiDecisionPolicySelectionV1;
     nowMs: number;
   }>): DecisionAutomationCompilationResultV1;
+  compileNpcDecision?(input: Readonly<{
+    routeSnapshot: RunRouteSnapshotV1;
+    chapter: ChapterOrchestratorStateV1;
+    projection: WorkingLedgerProjectionV1;
+    seatAuthority: {
+      seatId: SeatIdV1;
+      activeControllerId: string;
+      controlEpoch: number;
+      submissionFenceToken: string;
+    };
+    prepared: PreparedNpcDecisionResolutionV1;
+    nowMs: number;
+  }>): DecisionAutomationCompilationResultV1;
 }
 
 export type PreparedAutomationActionStaleReasonV1 =
@@ -245,11 +313,20 @@ export interface PreparedAutomationActionAuthorityV1 {
   expectedControlEpoch: number;
   expectedSubmissionFenceToken: string;
   expectedAiPolicyHash: string | null;
+  /** Final MB resolution hash for MC NPC actions; null/absent outside MC. */
+  expectedNpcResolutionHash?: string | null;
 }
 
 export interface AppendPreparedAutomationActionCommandV1 {
   command: SubmitOrchestratedActionCommandV1;
   authority: PreparedAutomationActionAuthorityV1;
+}
+
+export interface PreparedMcBatchAuthorityV1 {
+  schemaVersion: "pressure_prepared_mc_batch_authority_v1";
+  beatSubmit: ResolvedBeatSubmitAuthorityV1;
+  npcDecisions: PreparedNpcDecisionResolutionV1[];
+  authorityHash: string;
 }
 
 /**
@@ -274,6 +351,8 @@ export interface PreparedAutomationActionBatchV1 {
   expectedSeatAuthorityStateHash: string;
   frozenSeatOrder: SeatIdV1[];
   actions: AppendPreparedAutomationActionCommandV1[];
+  /** Required for production MC convergence; absent only on historical fixtures. */
+  mcAuthority?: PreparedMcBatchAuthorityV1;
   chapterDescriptor: AuthoredChapterRuntimeV1;
   nextOrchestratorState: ChapterOrchestratorStateV1;
   beatPlan: {
@@ -399,6 +478,7 @@ export interface DecisionConvergenceDiagnosticsV1 {
   snapshotReadCount: number;
   policyCallCount: number;
   compileCount: number;
+  npcWriteCount: number;
   appendTxCount: number;
   replayCount: number;
   headConflictCount: number;
@@ -409,6 +489,7 @@ export interface DecisionConvergenceDiagnosticsV1 {
   staleFenceCount: number;
   stalePolicyCount: number;
   resumeCount: number;
+  fastSettlementResumeCalls: number;
   providerCallCount: 0;
   timings: DecisionConvergenceStageTimingsV1;
 }
@@ -462,6 +543,8 @@ export interface DecisionConvergenceDependenciesV1 {
   snapshots: DecisionConvergenceSnapshotReaderPortV1;
   content: DecisionAutomationContentPortV1;
   policy: PublishedContentOwnedAiDecisionPolicyPortV1;
+  beatSubmitAuthority: BeatSubmitAuthorityPortV1;
+  npcCouncilPolicy: NpcCouncilDecisionPolicyPortV1;
   compiler: DecisionAutomationCommandCompilerPortV1;
   preparedActions: PreparedAutomationActionSubmissionPortV1;
   runtime: Pick<
@@ -505,4 +588,18 @@ export interface AiDecisionAutomationPayloadV1 extends CanonicalJsonObject {
   policyVersion: string;
   policyHash: string;
   selectionHash: string;
+}
+
+export interface NpcDecisionAutomationPayloadV1 extends CanonicalJsonObject {
+  source: "IDENTITY_NPC_DECISION_POLICY";
+  policyRef: string;
+  policyVersion: string;
+  policyHash: string;
+  identityPolicyRef: string;
+  identityPolicyVersion: string;
+  identityPolicyHash: string;
+  identityPolicyArtifactSha256: string;
+  inputHash: string;
+  resolutionHash: string;
+  providerCallCount: 0;
 }

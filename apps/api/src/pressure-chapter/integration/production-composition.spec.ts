@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 import {
   PRESSURE_CHAPTER_GAME_COMMAND_SCHEMA_V1,
@@ -100,6 +102,23 @@ async function storedRoute(): Promise<ApiStoredRunRouteRecordV1> {
     runSeed: "integration-seed",
   })).route;
 }
+
+
+test("ProductRoot wires every Beat to the production convergence batch writer and disables the parallel SQL7 writer", () => {
+  const source = readFileSync(
+    resolve(__dirname, "../product/product-root.ts"),
+    "utf8",
+  );
+  assert.match(source, /createPressureDecisionAutomationProductionV1\(/u);
+  assert.match(source, /decision:\s*decisionAutomation\.workerLane/u);
+  assert.match(
+    source,
+    /decisionAutomation\.service,\s*\/\/ Every Beat uses the single production convergence writer\.[\s\S]*?undefined,\s*gameRead\.reader/u,
+  );
+  assert.doesNotMatch(source, /from "\.\.\/sql7-fast-path"/u);
+  assert.doesNotMatch(source, /new PressureSql7FirstSubmitServiceV1\(/u);
+  assert.doesNotMatch(source, /new PrismaPressureSql7CommitRepositoryV1\(/u);
+});
 
 test("accepted content composes P0 and all N1-N7 dynamic authored runtimes", async () => {
   const stored = await storedRoute();

@@ -2,12 +2,21 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   PRESSURE_CHAPTER_ROUTE_V1,
+  PRESSURE_CHAPTER_SEAT_IDS_V1,
   sha256Canonical,
   withRunRouteHash,
   type SeatIdV1,
 } from "@ai-story/shared";
-import { createPreparedAutomationActionBatchV1 } from "./prepared-action-batch";
+import {
+  createPreparedAutomationActionBatchV1,
+  createPreparedMcBatchAuthorityV1,
+} from "./prepared-action-batch";
 import type { AppendPreparedAutomationActionCommandV1 } from "./contracts";
+import {
+  BeatSubmitPolicyV1,
+  computeBeatSubmitPolicyInputHashV1,
+  type BeatSubmitPolicyInputV1,
+} from "../beat-submit-policy";
 import { PrismaPreparedAutomationActionSubmissionV1 } from "../persistence/prepared-automation-action.prisma-adapter";
 
 const route = withRunRouteHash({
@@ -50,7 +59,7 @@ function action(seatId: SeatIdV1, hash: string): AppendPreparedAutomationActionC
         runId: route.runId,
         chapterRuntimeId: "runtime-1",
         chapterId: "N1",
-        decisionPointId: "decision-1",
+        decisionPointId: "N1.weir_crisis",
         seatId,
       } as never,
       intent: { visibility: "PUBLIC" } as never,
@@ -76,6 +85,44 @@ function action(seatId: SeatIdV1, hash: string): AppendPreparedAutomationActionC
   };
 }
 
+function intermediateMcAuthority(snapshotHash: string) {
+  const controllerTopology = PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => ({
+    seatId,
+    mode: seatId === "cabinet_finance"
+      ? "HUMAN_ACTIVE" as const
+      : "AI_ACTIVE" as const,
+    activeControllerId: `controller-${seatId}`,
+    controlEpoch: 1,
+    authorityStateHash: snapshotHash,
+    requiresResolution: true,
+  }));
+  const body: Omit<BeatSubmitPolicyInputV1, "inputHash"> = {
+    schemaVersion: "pressure_beat_submit_policy_input_v1",
+    beat: { beatId: "N1.B01", closesChapter: false },
+    participantMode: "SOLO",
+    viewerSeatId: "cabinet_finance",
+    requiredSeatIds: [...PRESSURE_CHAPTER_SEAT_IDS_V1],
+    controllerTopology,
+  };
+  const input: BeatSubmitPolicyInputV1 = {
+    ...body,
+    inputHash: computeBeatSubmitPolicyInputHashV1(body),
+  };
+  const plan = new BeatSubmitPolicyV1().plan(input);
+  const beatSubmitBody = {
+    schemaVersion: "pressure_resolved_beat_submit_authority_v1" as const,
+    input,
+    plan,
+  };
+  return createPreparedMcBatchAuthorityV1({
+    beatSubmit: {
+      ...beatSubmitBody,
+      authorityHash: sha256Canonical(beatSubmitBody),
+    },
+    npcDecisions: [],
+  });
+}
+
 test("prepared AI batch canonicalizes route seat order and hash", () => {
   const snapshotHash = sha256Canonical("snapshot");
   const input = {
@@ -84,7 +131,7 @@ test("prepared AI batch canonicalizes route seat order and hash", () => {
     routeSnapshot: route,
     chapterRuntimeId: "runtime-1",
     chapterId: "N1" as const,
-    decisionPointId: "decision-1",
+    decisionPointId: "N1.weir_crisis",
     expectedOrchestratorRevision: 3,
     expectedOrchestratorHash: snapshotHash,
     expectedWorkingRevision: 0,
@@ -120,7 +167,7 @@ test("prepared AI batch rejects post-hash command tampering before opening a tra
     routeSnapshot: route,
     chapterRuntimeId: "runtime-1",
     chapterId: "N1",
-    decisionPointId: "decision-1",
+    decisionPointId: "N1.weir_crisis",
     expectedOrchestratorRevision: 3,
     expectedOrchestratorHash: snapshotHash,
     expectedWorkingRevision: 0,
@@ -129,8 +176,33 @@ test("prepared AI batch rejects post-hash command tampering before opening a tra
     expectedSeatAuthorityStateHash: snapshotHash,
     nextOrchestratorState: { orchestratorHash: snapshotHash } as never,
     chapterDescriptor: { descriptorHash: snapshotHash } as never,
-    beatPlan: { postBeatOrchestratorState: { orchestratorHash: snapshotHash } } as never,
-    actions: [action("cabinet_finance", snapshotHash)],
+    mcAuthority: intermediateMcAuthority(snapshotHash),
+    beatPlan: {
+      event: {
+        payload: {
+          eventType: "BEAT_APPLIED",
+          authoredBeatResult: {
+            beatId: "N1.B01",
+            decisionPointId: "N1.weir_crisis",
+          },
+        },
+      },
+      resolution: { decisionPointId: "N1.weir_crisis" },
+      settlementInput: null,
+      postBeatOrchestratorState: {
+        phase: "ACTIVE",
+        orchestratorHash: snapshotHash,
+      },
+    } as never,
+    actions: [{
+      ...action("cabinet_finance", snapshotHash),
+      authority: {
+        ...action("cabinet_finance", snapshotHash).authority,
+        actorKind: "HUMAN",
+        expectedAiPolicyHash: null,
+        expectedNpcResolutionHash: null,
+      },
+    }],
   });
   batch.actions[0]!.command.nowMs += 1;
   let transactionCalls = 0;

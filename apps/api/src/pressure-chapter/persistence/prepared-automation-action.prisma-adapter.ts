@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { loadSangtianPressureChapterBeatAuthoringV1 } from "@ai-story/templates";
 import {
   PRESSURE_CHAPTER_SEAT_IDS_V1,
   chapterSequence,
@@ -22,11 +23,15 @@ import type {
   PreparedAutomationActionBatchResultV1,
   PreparedAutomationActionBatchV1,
   PreparedAutomationActionStaleReasonV1,
+  PreparedMcBatchAuthorityV1,
   PreparedAutomationActionSubmissionPortV1,
 } from "../decision-automation/contracts";
-import { computePreparedAutomationActionBatchHashV1 } from "../decision-automation/prepared-action-batch";
+import {
+  computePreparedAutomationActionBatchHashV1,
+  planMcRecordedActionsV1,
+  validatePreparedMcBatchAuthorityV1,
+} from "../decision-automation/prepared-action-batch";
 import type { ChapterOrchestratorStateV1 } from "../orchestrator/contracts";
-import { planRecordedActionsV1 } from "../orchestrator/chapter-orchestrator.service";
 import { planBeatProgressionV1 } from "../orchestrator/chapter-orchestrator.service";
 import { validateOrchestratorStateV1 } from "../orchestrator/validation";
 import { validateAuthoredChapterRuntimeV1 } from "../orchestrator/validation";
@@ -202,13 +207,18 @@ implements PreparedAutomationActionSubmissionPortV1 {
   ): Promise<PreparedAutomationActionBatchResultV1> {
     const first = batch.actions[0];
     if (!first) throw invalid("Prepared automation batch is empty", batch.batchId);
+    if (!batch.mcAuthority) {
+      throw invalid("Prepared production batch is missing MC authority", batch.batchId);
+    }
     const route = validateRunRouteSnapshotV1(first.command.routeSnapshot);
     const routeSeatIds = route.seatIds.map((seatId, index) =>
       validateSeatIdV1(seatId, `routeSnapshot.seatIds[${index}]`));
+    const mcAuthority = validatePreparedMcBatchAuthorityV1(batch.mcAuthority);
     const { batchHash: suppliedBatchHash, ...batchBody } = structuredClone(batch);
     const expectedBatchHash = computePreparedAutomationActionBatchHashV1(batchBody);
     const selectedSeatOrder = routeSeatIds.filter((seatId) =>
       batch.actions.some((candidate) => candidate.command.action.seatId === seatId));
+    const commitNowMs = first.command.nowMs;
     if (
       batch.schemaVersion !== "pressure_prepared_automation_action_batch_v1"
       || batch.runId !== route.runId
@@ -219,17 +229,23 @@ implements PreparedAutomationActionSubmissionPortV1 {
       || new Set(batch.actions.map((item) => item.command.action.seatId)).size !== batch.actions.length
       || batch.actions.some((item, index) => item.command.action.seatId !== selectedSeatOrder[index])
       || batch.actions.some((item) => (
-        item.command.routeSnapshot.routeHash !== batch.routeHash
+        item.command.nowMs !== commitNowMs
+        || item.command.routeSnapshot.runId !== batch.runId
+        || item.command.routeSnapshot.routeHash !== batch.routeHash
         || item.command.action.runId !== batch.runId
         || item.command.action.chapterRuntimeId !== batch.chapterRuntimeId
         || item.command.action.chapterId !== batch.chapterId
         || item.command.action.decisionPointId !== batch.decisionPointId
         || item.authority.snapshotHash !== batch.snapshotHash
+        || item.authority.expectedOrchestratorRevision !== batch.expectedOrchestratorRevision
+        || item.authority.expectedOrchestratorHash !== batch.expectedOrchestratorHash
         || item.authority.expectedWorkingRevision !== batch.expectedWorkingRevision
         || item.authority.expectedWorkingStateHash !== batch.expectedWorkingStateHash
         || item.authority.expectedLedgerHeadHash !== batch.expectedLedgerHeadHash
+        || item.authority.expectedSeatAuthorityStateHash !== batch.expectedSeatAuthorityStateHash
       ))
     ) throw invalid("Prepared automation batch binding is invalid", batch.batchId);
+    assertStaticMcBatchActionsV1(batch, mcAuthority);
     for (const item of batch.actions) {
       validatePreparedAuthorityFence(item, item.command.action.actionId);
       const action = validateDecisionActionV1(item.command.action);
@@ -273,8 +289,19 @@ implements PreparedAutomationActionSubmissionPortV1 {
             },
           }),
           tx.storyEvent.findUnique({
-            where: { dedupeKey: orchestratorDedupeKey(batch.runId, batch.expectedOrchestratorRevision) },
-            select: { id: true, runId: true, type: true, payloadJson: true, dedupeKey: true },
+            where: {
+              dedupeKey: orchestratorDedupeKey(
+                batch.runId,
+                batch.expectedOrchestratorRevision,
+              ),
+            },
+            select: {
+              id: true,
+              runId: true,
+              type: true,
+              payloadJson: true,
+              dedupeKey: true,
+            },
           }),
         ]);
         if (!runtime || !seatRow || !orchestratorRow) {
@@ -285,44 +312,18 @@ implements PreparedAutomationActionSubmissionPortV1 {
           || runtime.runId !== batch.runId
           || runtime.chapterId !== batch.chapterId
         ) return batchConflict(batch, "ROUTE");
+
         const chapter = validateStoredOrchestratorEvent(
           orchestratorRow,
           batch.runId,
           batch.expectedOrchestratorRevision,
         );
-        const expectedNextOrchestrator = planRecordedActionsV1(
-          chapter,
-          batch.actions.map((item) => ({
-            seatId: item.command.action.seatId,
-            actionId: item.command.action.actionId,
-            defaultCode: null,
-            actionBudget: 1,
-          })),
-          true,
-        );
         const descriptor = validateAuthoredChapterRuntimeV1(batch.chapterDescriptor);
+        const decision = descriptor.decisions.find(
+          (candidate) => candidate.decisionPointId === batch.decisionPointId,
+        );
+        if (!decision) throw invalid("Prepared batch decision descriptor is missing", batch.batchId);
         const decisionState = decodePressureMvpDecisionStateV1(runtime.decisionStateJson);
-        if (
-          chapter.revision !== batch.expectedOrchestratorRevision
-          || chapter.orchestratorHash !== batch.expectedOrchestratorHash
-          || decisionState.orchestratorHash !== batch.expectedOrchestratorHash
-          || decisionState.policyHash !== batch.actions[0]!.authority.expectedDecisionPolicyHash
-          || chapter.chapterRuntimeId !== batch.chapterRuntimeId
-          || chapter.currentChapterId !== batch.chapterId
-          || chapter.activeDecision?.decisionPointId !== batch.decisionPointId
-          || chapter.phase !== "ACTIVE"
-          || descriptor.chapterId !== batch.chapterId
-          || descriptor.descriptorHash !== batch.actions[0]!.authority.expectedDescriptorHash
-          || descriptor.descriptorHash !== chapter.descriptorHash
-          || !["DECISION_POINT_OPEN", "ACTION_DRAFTING"].includes(runtime.state)
-          || expectedNextOrchestrator.orchestratorHash !== batch.nextOrchestratorState.orchestratorHash
-          || sha256Canonical(expectedNextOrchestrator) !== sha256Canonical(batch.nextOrchestratorState)
-        ) return batchConflict(batch, "ORCHESTRATOR_REVISION");
-        const active = chapter.activeDecision;
-        if (active?.deadlineAtMs !== null && active && batch.actions[0]!.command.nowMs >= active.deadlineAtMs) {
-          return batchConflict(batch, "DEADLINE");
-        }
-
         const projection = decodeWorkingLedgerProjectionCacheV1(
           runtime.ledgerProjectionJson,
           {
@@ -336,14 +337,6 @@ implements PreparedAutomationActionSubmissionPortV1 {
           },
         );
         const currentHead = requireHead(projection);
-        if (
-          currentHead !== batch.expectedLedgerHeadHash
-          || runtime.workingRevision !== batch.expectedWorkingRevision
-          || projection.state.revision !== batch.expectedWorkingRevision
-          || runtime.workingStateHash !== batch.expectedWorkingStateHash
-          || projection.stateHash !== batch.expectedWorkingStateHash
-        ) return batchConflict(batch, currentHead === batch.expectedLedgerHeadHash ? "WORKING_REVISION" : "HEAD_CONFLICT", currentHead);
-
         const seatSnapshot = decodeSeatEnvelope(seatRow).snapshot;
         if (
           seatSnapshot.runId !== batch.runId
@@ -351,6 +344,90 @@ implements PreparedAutomationActionSubmissionPortV1 {
           || seatSnapshot.stateHash !== seatRow.stateHash
           || seatSnapshot.stateHash !== batch.expectedSeatAuthorityStateHash
         ) return batchConflict(batch, "SEAT_AUTHORITY", currentHead);
+        const currentAuthorityReason = currentMcSeatAuthorityConflictV1(
+          batch,
+          seatSnapshot,
+        );
+        if (currentAuthorityReason) {
+          return batchConflict(batch, currentAuthorityReason, currentHead);
+        }
+
+        if (isCompleteMcBatchReplayV1({
+          batch,
+          runtime,
+          decisionState,
+          projection,
+        })) {
+          return {
+            status: "REPLAYED",
+            batchId: batch.batchId,
+            actionIds: batch.actions.map((item) => item.command.action.actionId),
+            replayedActionIds: batch.actions.map((item) => item.command.action.actionId),
+            eventHashes: [
+              ...batch.actions.map((item) => {
+                const accepted = projection.acceptedActions.get(
+                  item.command.action.actionId,
+                );
+                if (!accepted) throw invalid(
+                  "Complete MC replay is missing an action event",
+                  item.command.action.actionId,
+                );
+                return accepted.eventHash;
+              }),
+              batch.beatPlan.event.eventHash,
+            ],
+            ledgerHeadHash: batch.beatPlan.event.eventHash,
+            orchestratorState: structuredClone(
+              batch.beatPlan.postBeatOrchestratorState,
+            ),
+            projection: structuredClone(projection),
+            conflictReason: null,
+          };
+        }
+
+        const expectedNextOrchestrator = planMcRecordedActionsV1({
+          state: chapter,
+          actions: batch.actions.map((item) => ({
+            seatId: item.command.action.seatId,
+            actionId: item.command.action.actionId,
+            defaultCode: null,
+            actionBudget:
+              decision.execution.perSeatActionBudget[item.command.action.seatId]!,
+          })),
+          mcAuthority,
+        });
+        if (
+          chapter.revision !== batch.expectedOrchestratorRevision
+          || chapter.orchestratorHash !== batch.expectedOrchestratorHash
+          || decisionState.orchestratorHash !== batch.expectedOrchestratorHash
+          || decisionState.policyHash
+            !== batch.actions[0]!.authority.expectedDecisionPolicyHash
+          || chapter.chapterRuntimeId !== batch.chapterRuntimeId
+          || chapter.currentChapterId !== batch.chapterId
+          || chapter.activeDecision?.decisionPointId !== batch.decisionPointId
+          || chapter.phase !== "ACTIVE"
+          || descriptor.chapterId !== batch.chapterId
+          || descriptor.descriptorHash
+            !== batch.actions[0]!.authority.expectedDescriptorHash
+          || descriptor.descriptorHash !== chapter.descriptorHash
+          || !["DECISION_POINT_OPEN", "ACTION_DRAFTING"].includes(runtime.state)
+          || expectedNextOrchestrator.orchestratorHash
+            !== batch.nextOrchestratorState.orchestratorHash
+          || sha256Canonical(expectedNextOrchestrator)
+            !== sha256Canonical(batch.nextOrchestratorState)
+        ) return batchConflict(batch, "ORCHESTRATOR_REVISION", currentHead);
+        const active = chapter.activeDecision;
+        if (
+          active?.deadlineAtMs !== null
+          && active
+          && commitNowMs >= active.deadlineAtMs
+        ) return batchConflict(batch, "DEADLINE", currentHead);
+        if (
+          runtime.workingRevision !== batch.expectedWorkingRevision
+          || projection.state.revision !== batch.expectedWorkingRevision
+          || runtime.workingStateHash !== batch.expectedWorkingStateHash
+          || projection.stateHash !== batch.expectedWorkingStateHash
+        ) return batchConflict(batch, "WORKING_REVISION", currentHead);
 
         const newCommands: Array<{
           item: AppendPreparedAutomationActionCommandV1;
@@ -358,46 +435,19 @@ implements PreparedAutomationActionSubmissionPortV1 {
           payload: FormalActionAcceptedPayloadV1;
         }> = [];
         const replayedActionIds: string[] = [];
+        let expectedCurrentHead = batch.expectedLedgerHeadHash;
+        let missingActionSeen = false;
         for (const item of batch.actions) {
           const action = validateDecisionActionV1(item.command.action);
-          const seat = active?.seats.find((candidate) => candidate.seatId === action.seatId);
-          const authority = seatSnapshot.seatControls.find((candidate) => candidate.seatId === action.seatId);
-          if (
-            !seat || !authority
-            || seat.requirement !== "REQUIRED"
-            || seat.completion !== "PENDING"
-            || seat.actionCount !== 0
-            || seat.actionIds.length !== 0
-            || action.actionOrdinal !== 1
-            || authority.controlEpoch !== item.authority.expectedControlEpoch
-            || authority.submissionFenceToken !== item.authority.expectedSubmissionFenceToken
-            || authority.activeControllerId !== item.authority.expectedControllerId
-            || item.command.subjectId !== authority.activeControllerId
-            || action.controlEpoch !== item.authority.expectedControlEpoch
-          ) return batchConflict(batch, "SEAT_AUTHORITY", currentHead);
-          if (item.authority.actorKind === "AI") {
-            if (
-              authority.mode !== "AI_ACTIVE"
-              || authority.activeControllerId !== authority.designatedAiControllerId
-              || action.payload.source !== "CONTENT_OWNED_AI_POLICY"
-              || action.payload.policyHash !== item.authority.expectedAiPolicyHash
-              || !isSha256(String(action.payload.selectionHash ?? ""))
-            ) return batchConflict(batch, "AI_POLICY", currentHead);
-          } else if (
-            item.authority.actorKind !== "HUMAN"
-            || authority.mode !== "HUMAN_ACTIVE"
-            || item.authority.expectedAiPolicyHash !== null
-            || action.payload.source === "CONTENT_OWNED_AI_POLICY"
-          ) return batchConflict(batch, "SEAT_CONTROLLER", currentHead);
-
-          const access = buildPreparedAccess(
-            routeSeatIds,
-            runtime,
-            decisionState,
-            seatSnapshot,
-            action.seatId,
-            runtime.workingStateJson,
+          const seat = active?.seats.find(
+            (candidate) => candidate.seatId === action.seatId,
           );
+          const authority = seatSnapshot.seatControls.find(
+            (candidate) => candidate.seatId === action.seatId,
+          );
+          if (!seat || !authority) {
+            return batchConflict(batch, "SEAT_AUTHORITY", currentHead);
+          }
           const command: SubmitFormalInteractionCommandV1 = {
             routeSnapshot: route,
             subjectId: item.command.subjectId,
@@ -406,14 +456,64 @@ implements PreparedAutomationActionSubmissionPortV1 {
             inputFingerprint: item.command.inputFingerprint,
           };
           assertFormalInteractionProjectionBindingsV1(command, projection);
-          const replay = findFormalInteractionReplayFromProjectionV1(command, projection);
+          const replay = findFormalInteractionReplayFromProjectionV1(
+            command,
+            projection,
+          );
           if (replay) {
-            assertFormalInteractionReplayAccessV1(command, access);
+            if (missingActionSeen) {
+              throw invalid(
+                "Prepared MC replay is not a canonical action prefix",
+                action.actionId,
+              );
+            }
+            if (
+              !(
+                seat.completion === "PENDING"
+                && seat.actionCount === 0
+                && seat.actionIds.length === 0
+              )
+              && !(
+                seat.completion === "SEALED_ACTIONS"
+                && seat.actionIds.includes(action.actionId)
+                && seat.actionCount === seat.actionIds.length
+              )
+            ) return batchConflict(batch, "ORCHESTRATOR_REVISION", currentHead);
+            assertFormalInteractionReplayAccessV1(command, buildPreparedAccess(
+              routeSeatIds,
+              runtime,
+              decisionState,
+              seatSnapshot,
+              action.seatId,
+              runtime.workingStateJson,
+            ));
             replayedActionIds.push(action.actionId);
+            expectedCurrentHead = replay.eventHash;
             continue;
           }
+          missingActionSeen = true;
+          if (
+            seat.requirement !== "REQUIRED"
+            || seat.completion !== "PENDING"
+            || seat.actionCount !== 0
+            || seat.actionIds.length !== 0
+            || action.actionOrdinal !== 1
+          ) return batchConflict(batch, "ORCHESTRATOR_REVISION", currentHead);
+          const access = buildPreparedAccess(
+            routeSeatIds,
+            runtime,
+            decisionState,
+            seatSnapshot,
+            action.seatId,
+            runtime.workingStateJson,
+          );
           assertFormalInteractionAccessV1(command, projection, access);
-          assertFormalInteractionIntentAccessV1(action.seatId, command.intent, projection, access);
+          assertFormalInteractionIntentAccessV1(
+            action.seatId,
+            command.intent,
+            projection,
+            access,
+          );
           newCommands.push({
             item,
             command,
@@ -423,35 +523,30 @@ implements PreparedAutomationActionSubmissionPortV1 {
               inputFingerprint: command.inputFingerprint,
               action,
               intent: command.intent,
-              audienceSeatIds: computeFormalInteractionAudienceV1(action.seatId, command.intent),
+              audienceSeatIds: computeFormalInteractionAudienceV1(
+                action.seatId,
+                command.intent,
+              ),
             },
           });
         }
-        if (!newCommands.length) {
-          return {
-            status: "REPLAYED",
-            batchId: batch.batchId,
-            actionIds: batch.actions.map((item) => item.command.action.actionId),
-            replayedActionIds,
-            eventHashes: replayedActionIds.map((actionId) => {
-              const accepted = projection.acceptedActions.get(actionId);
-              return accepted?.eventHash ?? "";
-            }).filter(Boolean),
-            ledgerHeadHash: currentHead,
-            orchestratorState: structuredClone(batch.nextOrchestratorState),
-            projection: structuredClone(projection),
-            conflictReason: null,
-          };
+        if (currentHead !== expectedCurrentHead) {
+          return batchConflict(batch, "HEAD_CONFLICT", currentHead);
         }
+
         const actionPlan = planPreparedActionLedgerV1({
           projection,
           actions: newCommands.map((entry) => entry.item),
         });
         const events = actionPlan.events;
-        if (events.length !== newCommands.length) throw invalid("Prepared batch event count mismatch", batch.batchId);
+        if (events.length !== newCommands.length) {
+          throw invalid("Prepared batch event count mismatch", batch.batchId);
+        }
         const nextProjection = actionPlan.projection;
         const actionIds = [...new Set(
-          expectedNextOrchestrator.activeDecision?.seats.flatMap((seat) => seat.actionIds) ?? [],
+          expectedNextOrchestrator.activeDecision?.seats.flatMap(
+            (seat) => seat.actionIds,
+          ) ?? [],
         )].sort((left, right) => left.localeCompare(right));
         const beat = planSynchronizedDecisionBeatV1({
           routeSnapshot: route,
@@ -465,17 +560,22 @@ implements PreparedAutomationActionSubmissionPortV1 {
         if (
           beat.status !== "PLANNED"
           || beat.event.eventHash !== batch.beatPlan.event.eventHash
-          || beat.resolution.resolutionHash !== batch.beatPlan.resolution.resolutionHash
+          || beat.resolution.resolutionHash
+            !== batch.beatPlan.resolution.resolutionHash
           || sha256Canonical(beat.event) !== sha256Canonical(batch.beatPlan.event)
         ) throw invalid("Prepared batch Beat plan mismatch", batch.batchId);
-        const postBeatProjection = appendBeatEventToWorkingLedgerProjection(nextProjection, beat.event);
+        const postBeatProjection = appendBeatEventToWorkingLedgerProjection(
+          nextProjection,
+          beat.event,
+        );
         const progression = planBeatProgressionV1({
           state: expectedNextOrchestrator,
           descriptor,
           projection: postBeatProjection,
           resolution: beat.resolution,
-          nowMs: batch.actions[0]!.command.nowMs,
+          nowMs: commitNowMs,
         });
+        assertMcPersistenceProgressionV1(batch, progression);
         if (
           progression.nextState.orchestratorHash
             !== batch.beatPlan.postBeatOrchestratorState.orchestratorHash
@@ -488,23 +588,30 @@ implements PreparedAutomationActionSubmissionPortV1 {
           projection: postBeatProjection,
           beatEvent: beat.event,
           contentPackageSha256: route.contentPackageSha256,
-          committedAt: new Date(batch.actions[0]!.command.nowMs).toISOString(),
+          committedAt: new Date(commitNowMs).toISOString(),
           humanSeatIds: route.humanSeatIdsAtStart,
         });
+        const intermediate = mcAuthority.beatSubmit.plan.mode
+          === "INTERMEDIATE_ACTION_ONLY";
+        const plannedAEmotionEmissions = intermediate
+          ? []
+          : plannedDownstream.aEmotionEmissions;
         if (
           sha256Canonical(plannedDownstream.narrativeJobs)
             !== sha256Canonical(batch.beatPlan.narrativeJobs)
-          || sha256Canonical(plannedDownstream.aEmotionEmissions)
+          || sha256Canonical(plannedAEmotionEmissions)
             !== sha256Canonical(batch.beatPlan.aEmotionEmissions)
         ) throw invalid("Prepared batch Beat downstream mismatch", batch.batchId);
-        const lifecycleEmissions = await compileCommittedInvestigationLifecycleEmissionsV1({
-          tx,
-          beatEvent: beat.event,
-          projection: postBeatProjection,
-          committedAt: new Date(batch.actions[0]!.command.nowMs).toISOString(),
-        });
+        const lifecycleEmissions = intermediate
+          ? []
+          : await compileCommittedInvestigationLifecycleEmissionsV1({
+              tx,
+              beatEvent: beat.event,
+              projection: postBeatProjection,
+              committedAt: new Date(commitNowMs).toISOString(),
+            });
         const allEmissions = [
-          ...plannedDownstream.aEmotionEmissions,
+          ...plannedAEmotionEmissions,
           ...lifecycleEmissions,
         ];
         const downstreamManifest = buildAuthorityDownstreamManifestV1({
@@ -516,32 +623,50 @@ implements PreparedAutomationActionSubmissionPortV1 {
             aEmotionEmissions: allEmissions,
           }),
         });
-        const actionRows = newCommands.map((entry, index) => preparedFormalActionRowV1(events[index]!, entry.command.action));
+        if (
+          sha256Canonical(downstreamManifest)
+            !== sha256Canonical(batch.beatPlan.downstreamManifest)
+        ) throw invalid("Prepared batch downstream manifest mismatch", batch.batchId);
+        const actionRows = newCommands.map((entry, index) =>
+          preparedFormalActionRowV1(events[index]!, entry.command.action));
         const eventRows = [
           ...events.map(preparedLedgerEventRowV1),
           preparedLedgerEventRowV1(beat.event),
           preparedOrchestratorEventRowV1(expectedNextOrchestrator),
           preparedOrchestratorEventRowV1(progression.nextState),
         ];
-        if (tx.pressureDecisionAction.createMany && tx.storyEvent.createMany) {
-          const [insertedActions, insertedEvents] = await Promise.all([
-            tx.pressureDecisionAction.createMany({ data: actionRows }),
-            tx.storyEvent.createMany({ data: eventRows }),
-          ]);
-          if (
-            insertedActions.count !== actionRows.length
-            || insertedEvents.count !== eventRows.length
-          ) throw invalid("Prepared batch insert count mismatch", batch.batchId);
+        if (tx.storyEvent.createMany) {
+          const insertedEvents = await tx.storyEvent.createMany({ data: eventRows });
+          if (insertedEvents.count !== eventRows.length) {
+            throw invalid("Prepared batch event insert count mismatch", batch.batchId);
+          }
         } else {
-          for (const row of actionRows) await tx.pressureDecisionAction.create({ data: row });
           for (const row of eventRows) await tx.storyEvent.create({ data: row });
+        }
+        if (actionRows.length > 0) {
+          if (tx.pressureDecisionAction.createMany) {
+            const insertedActions = await tx.pressureDecisionAction.createMany({
+              data: actionRows,
+            });
+            if (insertedActions.count !== actionRows.length) {
+              throw invalid("Prepared batch action insert count mismatch", batch.batchId);
+            }
+          } else {
+            for (const row of actionRows) {
+              await tx.pressureDecisionAction.create({ data: row });
+            }
+          }
         }
         await insertNarrativeProjectionPlanV1(
           tx,
           "PROJECT_BEAT_NARRATIVE",
           plannedDownstream.narrativeJobs,
         );
-        await insertAEmotionAuthorityEmissionsV1(tx, "CHAPTER_WORKING", allEmissions);
+        await insertAEmotionAuthorityEmissionsV1(
+          tx,
+          "CHAPTER_WORKING",
+          allEmissions,
+        );
         const postBeatRequiredSeatIds = progression.nextState.activeDecision?.seats
           .filter((seat) => seat.requirement === "REQUIRED")
           .map((seat) => seat.seatId) ?? [];
@@ -572,7 +697,7 @@ implements PreparedAutomationActionSubmissionPortV1 {
               ? "DECISION_POINT_OPEN"
               : "CHAPTER_SETTLING",
             ...(progression.nextState.phase === "SETTLING"
-              ? { closingAt: new Date(batch.actions[0]!.command.nowMs) }
+              ? { closingAt: new Date(commitNowMs) }
               : {}),
           },
         });
@@ -594,7 +719,6 @@ implements PreparedAutomationActionSubmissionPortV1 {
       return batchConflict(batch, "HEAD_CONFLICT");
     }
   }
-
   async submitPrepared(
     raw: AppendPreparedAutomationActionCommandV1,
   ): Promise<AppendPreparedAutomationActionResultV1> {
@@ -912,6 +1036,210 @@ implements PreparedAutomationActionSubmissionPortV1 {
   }
 }
 
+
+function assertStaticMcBatchActionsV1(
+  batch: PreparedAutomationActionBatchV1,
+  authority: PreparedMcBatchAuthorityV1,
+): void {
+  const plan = authority.beatSubmit.plan;
+  const participants = new Set<SeatIdV1>([
+    ...plan.humanSubmissionSeatIds,
+    ...plan.npcResolutionSeatIds,
+  ]);
+  const actionSeats = batch.actions.map((item) => item.command.action.seatId);
+  const authoredBeat = loadSangtianPressureChapterBeatAuthoringV1(batch.chapterId).beats.find(
+    (candidate) => candidate.beatId === plan.beatId,
+  );
+  if (
+    !authoredBeat
+    || authoredBeat.catalogDecisionPointRef !== batch.decisionPointId
+    || participants.size !== batch.actions.length
+    || new Set(actionSeats).size !== actionSeats.length
+    || actionSeats.some((seatId) => !participants.has(seatId))
+    || batch.beatPlan.event.payload.eventType !== "BEAT_APPLIED"
+    || batch.beatPlan.resolution.decisionPointId !== batch.decisionPointId
+    || batch.beatPlan.event.payload.authoredBeatResult.decisionPointId
+      !== batch.decisionPointId
+    || batch.beatPlan.event.payload.beatResolution.resolutionHash
+      !== batch.beatPlan.resolution.resolutionHash
+  ) throw invalid("Prepared MC batch participant binding is invalid", batch.batchId);
+  const npcBySeat = new Map(
+    authority.npcDecisions.map((item) => [item.seatId, item]),
+  );
+  for (const item of batch.actions) {
+    const action = validateDecisionActionV1(item.command.action);
+    const seatId = action.seatId;
+    if (plan.humanSubmissionSeatIds.includes(seatId)) {
+      if (
+        item.authority.actorKind !== "HUMAN"
+        || item.authority.expectedAiPolicyHash !== null
+        || item.authority.expectedNpcResolutionHash != null
+      ) throw invalid("Prepared MC human action authority is invalid", action.actionId);
+      continue;
+    }
+    const npc = npcBySeat.get(seatId);
+    const payload = action.payload as Record<string, unknown>;
+    if (
+      !npc
+      || item.authority.actorKind !== "AI"
+      || item.authority.expectedAiPolicyHash !== npc.resolution.policyHash
+      || item.authority.expectedNpcResolutionHash
+        !== npc.resolution.resolutionHash
+      || action.actionType !== npc.resolution.actionType
+      || payload.source !== "IDENTITY_NPC_DECISION_POLICY"
+      || payload.policyRef !== npc.resolution.policyRef
+      || payload.policyVersion !== npc.resolution.policyVersion
+      || payload.policyHash !== npc.resolution.policyHash
+      || payload.identityPolicyRef !== npc.resolution.identityPolicyRef
+      || payload.identityPolicyVersion !== npc.resolution.identityPolicyVersion
+      || payload.identityPolicyHash !== npc.resolution.identityPolicyHash
+      || payload.identityPolicyArtifactSha256
+        !== npc.resolution.identityPolicyArtifactSha256
+      || payload.inputHash !== npc.input.inputHash
+      || payload.resolutionHash !== npc.resolution.resolutionHash
+      || payload.providerCallCount !== 0
+    ) throw invalid("Prepared MC NPC action is not bound to final MB", action.actionId);
+  }
+  if (plan.mode === "INTERMEDIATE_ACTION_ONLY") {
+    if (
+      plan.invokeSettlement
+      || plan.npcResolutionSeatIds.length !== 0
+      || authority.npcDecisions.length !== 0
+      || batch.beatPlan.settlementInput !== null
+      || batch.beatPlan.aEmotionEmissions.length !== 0
+      || batch.beatPlan.postBeatOrchestratorState.phase !== "ACTIVE"
+    ) throw invalid("Intermediate MC batch contains council authority", batch.batchId);
+    return;
+  }
+  if (
+    plan.mode !== "CHAPTER_COUNCIL_COMMIT"
+    || !plan.invokeSettlement
+    || batch.beatPlan.settlementInput === null
+    || batch.beatPlan.postBeatOrchestratorState.phase !== "SETTLING"
+  ) throw invalid("Final MC batch is missing settlement authority", batch.batchId);
+}
+
+function currentMcSeatAuthorityConflictV1(
+  batch: PreparedAutomationActionBatchV1,
+  seatSnapshot: SeatControlSnapshotV1,
+): "SEAT_AUTHORITY" | "SEAT_CONTROLLER" | "SEAT_EPOCH" | "SEAT_FENCE" | null {
+  for (const item of batch.actions) {
+    const action = validateDecisionActionV1(item.command.action);
+    const current = seatSnapshot.seatControls.find(
+      (candidate) => candidate.seatId === action.seatId,
+    );
+    if (!current) return "SEAT_AUTHORITY";
+    if (
+      current.controlEpoch !== item.authority.expectedControlEpoch
+      || action.controlEpoch !== item.authority.expectedControlEpoch
+    ) return "SEAT_EPOCH";
+    if (current.submissionFenceToken !== item.authority.expectedSubmissionFenceToken) {
+      return "SEAT_FENCE";
+    }
+    if (
+      current.activeControllerId !== item.authority.expectedControllerId
+      || item.command.subjectId !== current.activeControllerId
+    ) return "SEAT_CONTROLLER";
+    if (item.authority.actorKind === "HUMAN") {
+      if (current.mode !== "HUMAN_ACTIVE") return "SEAT_CONTROLLER";
+    } else if (
+      current.mode !== "AI_ACTIVE"
+      || current.activeControllerId !== current.designatedAiControllerId
+    ) return "SEAT_CONTROLLER";
+  }
+  return null;
+}
+
+function isCompleteMcBatchReplayV1(input: Readonly<{
+  batch: PreparedAutomationActionBatchV1;
+  runtime: PreparedRuntimeRowV1;
+  decisionState: ReturnType<typeof decodePressureMvpDecisionStateV1>;
+  projection: WorkingLedgerProjectionV1;
+}>): boolean {
+  const { batch, runtime, decisionState, projection } = input;
+  const beatEvent = batch.beatPlan.event;
+  if (projection.headHash !== beatEvent.eventHash) return false;
+  if (beatEvent.payload.eventType !== "BEAT_APPLIED") {
+    throw invalid("Complete MC replay Beat event is invalid", batch.batchId);
+  }
+  const postState = batch.beatPlan.postBeatOrchestratorState;
+  const expectedRuntimeState = postState.phase === "ACTIVE"
+    ? "DECISION_POINT_OPEN"
+    : postState.phase === "SETTLING"
+      ? "CHAPTER_SETTLING"
+      : null;
+  if (
+    !expectedRuntimeState
+    || runtime.state !== expectedRuntimeState
+    || projection.stateHash !== beatEvent.payload.stateAfterHash
+    || sha256Canonical(projection.state)
+      !== sha256Canonical(beatEvent.payload.stateAfter)
+    || runtime.workingRevision !== projection.state.revision
+    || runtime.workingRevision !== beatEvent.payload.stateAfter.revision
+    || runtime.workingStateHash !== projection.stateHash
+    || decisionState.workingRevision !== projection.state.revision
+  ) throw invalid("Complete MC replay runtime binding is invalid", batch.batchId);
+  if (postState.phase === "ACTIVE") {
+    if (
+      decisionState.state !== "OPEN"
+      || decisionState.activeDecisionPointId
+        !== postState.activeDecision?.decisionPointId
+      || decisionState.policyHash !== postState.activeDecision?.policyHash
+      || decisionState.orchestratorHash !== postState.orchestratorHash
+      || projection.nextDecisionPin?.decisionPointId
+        !== postState.activeDecision?.decisionPointId
+    ) throw invalid("Complete MC replay active state is invalid", batch.batchId);
+  } else if (
+    decisionState.state !== "NONE"
+    || decisionState.activeDecisionPointId !== null
+    || decisionState.policyHash !== null
+    || decisionState.orchestratorHash !== null
+    || projection.nextDecisionPin !== null
+  ) throw invalid("Complete MC replay settling state is invalid", batch.batchId);
+  for (const item of batch.actions) {
+    const action = validateDecisionActionV1(item.command.action);
+    const replay = findFormalInteractionReplayFromProjectionV1({
+      routeSnapshot: item.command.routeSnapshot,
+      subjectId: item.command.subjectId,
+      action,
+      intent: item.command.intent,
+      inputFingerprint: item.command.inputFingerprint,
+    }, projection);
+    const applied = projection.appliedBeats.get(action.actionId);
+    if (
+      !replay
+      || replay.action.actionId !== action.actionId
+      || !applied
+      || applied.eventHash !== beatEvent.eventHash
+      || applied.resolution.resolutionHash
+        !== batch.beatPlan.resolution.resolutionHash
+      || !applied.actionIds.includes(action.actionId)
+    ) throw invalid("Complete MC replay action binding is invalid", action.actionId);
+  }
+  return true;
+}
+
+function assertMcPersistenceProgressionV1(
+  batch: PreparedAutomationActionBatchV1,
+  progression: ReturnType<typeof planBeatProgressionV1>,
+): void {
+  const plan = batch.mcAuthority?.beatSubmit.plan;
+  if (!plan) throw invalid("Prepared MC progression is missing MA authority", batch.batchId);
+  if (plan.mode === "INTERMEDIATE_ACTION_ONLY") {
+    if (
+      plan.invokeSettlement
+      || progression.settlementInput !== null
+      || progression.nextState.phase !== "ACTIVE"
+    ) throw invalid("Intermediate MC persistence attempted Settlement", batch.batchId);
+    return;
+  }
+  if (
+    !plan.invokeSettlement
+    || progression.settlementInput === null
+    || progression.nextState.phase !== "SETTLING"
+  ) throw invalid("Final MC persistence is missing Settlement authority", batch.batchId);
+}
+
 function validatePreparedAuthorityFence(
   raw: AppendPreparedAutomationActionCommandV1,
   actionId: string,
@@ -931,7 +1259,11 @@ function validatePreparedAuthorityFence(
     hashes.some((value) => !isSha256(value))
     || (authority.actorKind !== "HUMAN" && authority.actorKind !== "AI")
     || (authority.actorKind === "AI" && !isSha256(authority.expectedAiPolicyHash ?? ""))
+    || (authority.actorKind === "AI"
+      && authority.expectedNpcResolutionHash != null
+      && !isSha256(authority.expectedNpcResolutionHash))
     || (authority.actorKind === "HUMAN" && authority.expectedAiPolicyHash !== null)
+    || (authority.actorKind === "HUMAN" && authority.expectedNpcResolutionHash != null)
     || !Number.isSafeInteger(authority.expectedOrchestratorRevision)
     || authority.expectedOrchestratorRevision < 0
     || !Number.isSafeInteger(authority.expectedWorkingRevision)
