@@ -262,7 +262,11 @@ test("registered N1 binds eight causal Beats to eight executable Catalog identit
     ...compiled.chapterSummary.materialRefs.map((item) => item.materialRef),
   ]);
   assert.equal(npcs.every((ref) => referenced.has(ref)), true);
-  assert.equal(seats.every((ref) => referenced.has(ref)), true);
+  assert.equal(seats.every((ref) => {
+    if (referenced.has(ref)) return true;
+    const seatPrefix = ref.slice(0, -"opening".length);
+    return referenced.has(`${seatPrefix}beatScenes.B01`);
+  }), true);
   const decisionPointRefs = compiled.beats.map((beat) => beat.catalogDecisionPointRef);
   assert.deepEqual(decisionPointRefs, N1_DECISION_POINT_IDS);
   assert.equal(new Set(decisionPointRefs).size, 8);

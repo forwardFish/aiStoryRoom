@@ -43,8 +43,13 @@
         "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
       },
       "sourceMaterialRefs": [
-        "publicMainline.opening",
-        "publicMainline.npcUrgent"
+        "publicMainline.beatScenes.B01",
+        "seatLenses.seat.zhejiang_governor.beatScenes.B01",
+        "seatLenses.seat.zhejiang_administration.beatScenes.B01",
+        "seatLenses.seat.jiangnan_merchant.beatScenes.B01",
+        "seatLenses.seat.qingliu_law.opening",
+        "seatLenses.seat.sili_weaving.opening",
+        "seatLenses.seat.cabinet_finance.opening"
       ],
       "actions": [
         {
@@ -136,9 +141,23 @@
         "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
       },
       "sourceMaterialRefs": [
-        "publicMainline.afterPrepareCommon",
+        "publicMainline.beatScenes.B02",
+        "seatLenses.seat.zhejiang_governor.beatScenes.B02",
+        "seatLenses.seat.zhejiang_administration.beatScenes.B02",
+        "seatLenses.seat.jiangnan_merchant.beatScenes.B02",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.controlled",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.contested",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.controlled",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.contested",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.controlled",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.contested",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.lostInitiative",
+        "npcReactions.01",
         "npcReactions.02",
-        "npcReactions.03"
+        "npcReactions.03",
+        "npcReactions.04"
       ],
       "actions": [
         {
@@ -194,9 +213,23 @@
         "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
       },
       "sourceMaterialRefs": [
-        "publicMainline.afterPrepareVariants.contested",
+        "publicMainline.beatScenes.B03",
+        "seatLenses.seat.zhejiang_governor.beatScenes.B03",
+        "seatLenses.seat.zhejiang_administration.beatScenes.B03",
+        "seatLenses.seat.jiangnan_merchant.beatScenes.B03",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.controlled",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.contested",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.controlled",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.contested",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.controlled",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.contested",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.lostInitiative",
         "npcReactions.05",
-        "npcReactions.06"
+        "npcReactions.06",
+        "npcReactions.07",
+        "npcReactions.08"
       ],
       "actions": [
         {
@@ -262,9 +295,23 @@
         "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
       },
       "sourceMaterialRefs": [
-        "publicMainline.npcUrgent",
+        "publicMainline.beatScenes.B04",
+        "seatLenses.seat.zhejiang_governor.beatScenes.B04",
+        "seatLenses.seat.zhejiang_administration.beatScenes.B04",
+        "seatLenses.seat.jiangnan_merchant.beatScenes.B04",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.controlled",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.contested",
+        "seatLenses.seat.qingliu_law.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.controlled",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.contested",
+        "seatLenses.seat.sili_weaving.afterPrepareReactions.lostInitiative",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.controlled",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.contested",
+        "seatLenses.seat.cabinet_finance.afterPrepareReactions.lostInitiative",
         "npcReactions.09",
-        "npcReactions.11"
+        "npcReactions.10",
+        "npcReactions.11",
+        "npcReactions.12"
       ],
       "actions": [
         {
@@ -330,10 +377,16 @@
         "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
       },
       "sourceMaterialRefs": [
-        "publicMainline.npcUrgent",
-        "publicMainline.commitConfrontation",
+        "publicMainline.beatScenes.B05",
+        "seatLenses.seat.zhejiang_governor.beatScenes.B05",
+        "seatLenses.seat.zhejiang_administration.beatScenes.B05",
+        "seatLenses.seat.jiangnan_merchant.beatScenes.B05",
+        "seatLenses.seat.qingliu_law.commitPressure",
+        "seatLenses.seat.sili_weaving.commitPressure",
+        "seatLenses.seat.cabinet_finance.commitPressure",
         "npcReactions.13",
-        "npcReactions.14"
+        "npcReactions.14",
+        "npcReactions.15"
       ],
       "actions": [
         {
@@ -407,10 +460,16 @@
         "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
       },
       "sourceMaterialRefs": [
-        "publicMainline.commitConfrontation",
+        "publicMainline.beatScenes.B06",
+        "seatLenses.seat.zhejiang_governor.beatScenes.B06",
+        "seatLenses.seat.zhejiang_administration.beatScenes.B06",
+        "seatLenses.seat.jiangnan_merchant.beatScenes.B06",
+        "seatLenses.seat.qingliu_law.commitPressure",
+        "seatLenses.seat.sili_weaving.commitPressure",
+        "seatLenses.seat.cabinet_finance.commitPressure",
         "npcReactions.16",
         "npcReactions.17",
-        "seatLenses.seat.zhejiang_governor.commitPressure"
+        "npcReactions.18"
       ],
       "actions": [
         {
@@ -476,9 +535,16 @@
         "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
       },
       "sourceMaterialRefs": [
-        "publicMainline.commitConfrontation",
+        "publicMainline.beatScenes.B07",
+        "seatLenses.seat.zhejiang_governor.beatScenes.B07",
+        "seatLenses.seat.zhejiang_administration.beatScenes.B07",
+        "seatLenses.seat.jiangnan_merchant.beatScenes.B07",
+        "seatLenses.seat.zhejiang_governor.beatNpcPressures.B07",
+        "seatLenses.seat.zhejiang_administration.beatNpcPressures.B07",
+        "seatLenses.seat.jiangnan_merchant.beatNpcPressures.B07",
         "seatLenses.seat.qingliu_law.commitPressure",
-        "seatLenses.seat.zhejiang_administration.commitPressure"
+        "seatLenses.seat.sili_weaving.commitPressure",
+        "seatLenses.seat.cabinet_finance.commitPressure"
       ],
       "actions": [
         {
@@ -544,9 +610,15 @@
         "selectionRule": "SOURCE_ORDER_AFTER_COMPLETED_DECISION"
       },
       "sourceMaterialRefs": [
-        "publicMainline.commitConfrontation",
-        "seatLenses.seat.zhejiang_governor.commitPressure",
-        "seatLenses.seat.jiangnan_merchant.commitPressure",
+        "publicMainline.beatScenes.B08",
+        "seatLenses.seat.zhejiang_governor.beatScenes.B08",
+        "seatLenses.seat.zhejiang_administration.beatScenes.B08",
+        "seatLenses.seat.jiangnan_merchant.beatScenes.B08",
+        "seatLenses.seat.zhejiang_governor.beatNpcPressures.B08",
+        "seatLenses.seat.zhejiang_administration.beatNpcPressures.B08",
+        "seatLenses.seat.jiangnan_merchant.beatNpcPressures.B08",
+        "seatLenses.seat.qingliu_law.commitPressure",
+        "seatLenses.seat.sili_weaving.commitPressure",
         "seatLenses.seat.cabinet_finance.commitPressure"
       ],
       "actions": [

@@ -63,7 +63,7 @@
       "artifactId": "n1_multibeat_decision_effect_authoring",
       "path": "../authoring/n1-decision-effects-v1.json",
       "version": "1.0.0",
-      "sha256": "1bd764cff1fdfd659f1476c3cb9b41f6a43e15da2c1544fc30ee96e49b033b2f",
+      "sha256": "20e29cbaef6c76b11f2c5da60730aca9ff3ecb0e9e4ce8c31a40fe43abf211eb",
       "hashMode": "CANONICAL_JSON"
     }
   ],
