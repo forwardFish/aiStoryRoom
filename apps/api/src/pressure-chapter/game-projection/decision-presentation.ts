@@ -48,6 +48,7 @@ export interface PressureTurnPresentationContextV1 {
     decisionPointId: string;
     actionType: string;
     displayText: string;
+    effectText: string;
     authority: "WORKING_LEDGER_ACCEPTED_ACTION";
   }> | null;
   authorialGuidance: Readonly<{
@@ -124,6 +125,7 @@ export interface PressureTurnPresentationInputV1 {
     decisionPointId: string;
     actionType: string;
     displayText: string;
+    effectText: string;
   }> | null;
   currentBeatStory?: Readonly<{
     beatId: string;
@@ -383,9 +385,16 @@ function fallbackTurnPresentation(
     const beatFallback = input.currentBeatStory
       ? compileBeatSceneGuidanceV1(input.currentBeatStory).text
       : storySource.currentScene.postBeatFrame.text;
-    fallback.summary = input.narrative.projectionKind === "GENESIS_NARRATIVE"
+    const continuityFallback = input.narrative.projectionKind === "GENESIS_NARRATIVE"
       ? beatFallback
       : publishedNarrative || beatFallback;
+    fallback.summary = input.previousPlayerAction
+      ? [
+          input.previousPlayerAction.displayText,
+          input.previousPlayerAction.effectText,
+          continuityFallback,
+        ].map((item) => item.trim()).filter(Boolean).join("\n\n")
+      : continuityFallback;
     return fallback;
   }
   if (publishedNarrative) {
@@ -514,7 +523,12 @@ export function compilePressureTurnPresentationContextV1(
     instruction: [
       "一次完成当前玩家可见的连续中文文学剧情，以及紧接着的决策表达。",
       ...(input.previousPlayerAction
-        ? [`首先自然表现玩家上一行动“${input.previousPlayerAction.displayText}”已经发生，再承接当前权威状态。`]
+        ? [
+            `首先自然表现玩家上一行动“${input.previousPlayerAction.displayText}”已经发生，并表现其权威效果“${input.previousPlayerAction.effectText}”，再承接当前状态。`,
+            ...(input.previousPlayerAction.actionType === "DEFAULT_PASS"
+              ? ["这是一次明确的不行动：必须让当前作者材料中已经出现的人物通过催促、等待落空、不满、留下记录或接管事务作出即时可见反应；不得把玩家写成已经履职，也不得凭空新增持久关系、数值或惩罚。"]
+              : []),
+          ]
         : []),
       ...(input.currentBeatStory
         ? ["使用本轮作者材料塑造场景和人物冲突；supportedByAuthority=false的材料只能作为未决压力或备选冲突，不得写成已经发生的结果。"]
@@ -643,6 +657,13 @@ export function validatePressureTurnPresentationCandidateV1(
   });
   if (new Set(usedFactRefs).size !== usedFactRefs.length) {
     throw new Error("PRESSURE_TURN_PRESENTATION_DUPLICATE_FACT_REF");
+  }
+  if (context.previousPlayerAction) {
+    for (const requiredFactRef of ["player.previousAction", "player.previousActionEffect"]) {
+      if (!usedFactRefs.includes(requiredFactRef)) {
+        throw new Error(`PRESSURE_TURN_PRESENTATION_PREVIOUS_ACTION_MISSING:${requiredFactRef}`);
+      }
+    }
   }
   if (!Array.isArray(candidate.claims) || candidate.claims.length !== 0) {
     throw new Error("PRESSURE_TURN_PRESENTATION_CLAIMS_FORBIDDEN");

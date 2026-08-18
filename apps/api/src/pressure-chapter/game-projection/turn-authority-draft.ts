@@ -45,6 +45,7 @@ export interface CompilePressureTurnAuthorityDraftInputV1 {
     decisionPointId: string;
     actionType: string;
     displayText: string;
+    effectText: string;
   }> | null;
 }
 
@@ -61,7 +62,10 @@ export function compilePressureTurnAuthorityDraftV1(
     fact("situation.risk", input.situation.risk),
     fact("situation.judgment", input.situation.judgment),
     ...(input.previousPlayerAction
-      ? [fact("player.previousAction", input.previousPlayerAction.displayText)]
+      ? [
+          fact("player.previousAction", input.previousPlayerAction.displayText),
+          fact("player.previousActionEffect", input.previousPlayerAction.effectText),
+        ]
       : []),
     ...input.metrics.map((metric) => fact(
       `metric.${metric.trackId}`,

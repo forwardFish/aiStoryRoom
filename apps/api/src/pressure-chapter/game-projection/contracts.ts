@@ -257,6 +257,7 @@ export interface PressureGameChapterSourceV1 {
       decisionPointId: string;
       actionType: string;
       displayText: string;
+      effectText: string;
     } | null;
   };
 }

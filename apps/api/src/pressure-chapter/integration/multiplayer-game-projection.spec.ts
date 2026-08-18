@@ -71,6 +71,10 @@ test("M4 projects a different durable Beat decision for each viewer seat", async
   assert.equal(administration.decision?.decisionPointId, first);
   assert.equal(governor.viewerBeatContext?.previousPlayerAction?.decisionPointId, first);
   assert.equal(governor.viewerBeatContext?.previousPlayerAction?.actionType, "DEFAULT_PASS");
+  assert.equal(
+    governor.viewerBeatContext?.previousPlayerAction?.effectText,
+    "不追加疏散、守堰或证据命令；水势、旧令和其他席位行动继续推进。",
+  );
   assert.equal(governor.viewerBeatContext?.story?.beatId, authoring.beats[1]!.beatId);
   assert.ok((governor.viewerBeatContext?.story?.authorialMaterials.length ?? 0) > 0);
   assert.equal(administration.viewerBeatContext?.previousPlayerAction, null);

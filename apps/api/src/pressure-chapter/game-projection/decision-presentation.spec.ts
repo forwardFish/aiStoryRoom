@@ -175,6 +175,7 @@ test("multiplayer continuation over Genesis authority calls Provider with the ac
     decisionPointId: "N1.weir_crisis",
     actionType: "EVACUATE_WEIRS",
     displayText: "先发堰区疏散令",
+    effectText: "先把可送达的差役与船路用于高风险村落疏散。",
   };
   input.currentBeatStory = {
     beatId: "N1.B02",
@@ -197,9 +198,13 @@ test("multiplayer continuation over Genesis authority calls Provider with the ac
       assert.equal(context.currentScene.title, "第一道令出门");
       assert.match(context.currentScene.text, /泥水和回报/u);
       assert.equal(context.previousPlayerAction?.displayText, "先发堰区疏散令");
+      assert.match(context.previousPlayerAction?.effectText ?? "", /高风险村落疏散/u);
       assert.equal(context.authorialGuidance?.authority, "AUTHORIAL_GUIDANCE_ONLY");
       assert.ok(context.authorityDraft.currentAuthorityState.some(
         (fact) => fact.factId === "player.previousAction" && fact.text === "先发堰区疏散令",
+      ));
+      assert.ok(context.authorityDraft.currentAuthorityState.some(
+        (fact) => fact.factId === "player.previousActionEffect" && /高风险村落疏散/u.test(fact.text),
       ));
       return candidate(context, {
         sceneText: literaryScene("疏散令已经由差役带出总督府"),
@@ -215,6 +220,71 @@ test("multiplayer continuation over Genesis authority calls Provider with the ac
   const result = await service.present(input);
   assert.equal(calls, 1);
   assert.match(result.summary, /疏散令已经由差役带出总督府/u);
+});
+
+test("DEFAULT_PASS makes player inaction and its NPC-facing consequence mandatory story facts", async () => {
+  const input = continuationFixture();
+  input.previousPlayerAction = {
+    decisionPointId: "N2.confession_custody",
+    actionType: "DEFAULT_PASS",
+    displayText: "不理他，继续回去睡觉",
+    effectText: "不改变供状当前的保管与附送状态。",
+  };
+  input.currentBeatStory = {
+    beatId: "N2.B03",
+    title: "签押仍在等人",
+    storyPurpose: "让未被处置的供状形成新的签押压力。",
+    authorialMaterials: [{
+      materialRef: "N2.B03.private.zhejiang_governor",
+      title: "书吏再来催问",
+      text: "书吏抱着没有处置批示的供状站在门外，签押房的人已经等得不耐烦。",
+      stopCondition: "停在玩家是否回应新的签押压力上。",
+      requiredFactRefs: [],
+      supportedByAuthority: true,
+    }],
+  };
+  let calls = 0;
+  const service = new PressureTurnPresentationServiceV1({
+    async renderTurnPresentation(context) {
+      calls += 1;
+      assert.match(context.instruction, /明确的不行动/u);
+      assert.match(context.instruction, /催促、等待落空、不满、留下记录或接管事务/u);
+      return candidate(context, {
+        sceneText: literaryScene("书吏第三次叩门，屋里仍没有回应"),
+        usedFactRefs: [
+          "situation.goal",
+          "situation.risk",
+          "player.previousAction",
+          "player.previousActionEffect",
+        ],
+      });
+    },
+  });
+
+  const result = await service.present(input);
+  assert.equal(calls, 1);
+  assert.match(result.summary, /第三次叩门/u);
+});
+
+test("generated continuation falls back when it omits the previous player action consequence", async () => {
+  const input = continuationFixture();
+  input.previousPlayerAction = {
+    decisionPointId: "N2.confession_custody",
+    actionType: "DEFAULT_PASS",
+    displayText: "不理他，继续回去睡觉",
+    effectText: "不改变供状当前的保管与附送状态。",
+  };
+  const service = new PressureTurnPresentationServiceV1({
+    async renderTurnPresentation(context) {
+      return candidate(context, { usedFactRefs: ["situation.goal", "situation.risk"] });
+    },
+  });
+
+  const result = await service.present(input);
+  assert.equal(result.title, "你准备如何应对？");
+  assert.match(result.summary, /不理他，继续回去睡觉/u);
+  assert.match(result.summary, /不改变供状当前的保管与附送状态/u);
+  assert.match(result.summary, new RegExp(input.narrative.text!));
 });
 
 test("compiled context is hash-bound and contains only the three visible Catalog actions", () => {
@@ -383,7 +453,13 @@ function candidate(
       label: action.fallbackLabel,
       description: action.intendedAction,
     })),
-    usedFactRefs: ["situation.goal", "situation.risk"],
+    usedFactRefs: [
+      "situation.goal",
+      "situation.risk",
+      ...(context.previousPlayerAction
+        ? ["player.previousAction", "player.previousActionEffect"]
+        : []),
+    ],
     claims: [],
     ...overrides,
   };

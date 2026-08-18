@@ -195,6 +195,13 @@ implements PressureGameChapterReaderPort {
           (option) => option.actionType === previousAccepted.action.actionType,
         ) ?? null
       : null;
+    const previousPresentation = previousAccepted
+      ? this.mapper.actionPresentation({
+          chapterId: state.currentChapterId,
+          decisionPointId: previousAccepted.action.decisionPointId,
+          actionType: previousAccepted.action.actionType,
+        })
+      : null;
     const customText = previousAccepted
       && typeof previousAccepted.action.payload.customText === "string"
       ? previousAccepted.action.payload.customText.trim()
@@ -242,6 +249,7 @@ implements PressureGameChapterReaderPort {
               displayText: customText
                 || previousOption?.label
                 || previousAccepted.action.actionType,
+              effectText: previousPresentation!.description,
             }
           : null,
       },

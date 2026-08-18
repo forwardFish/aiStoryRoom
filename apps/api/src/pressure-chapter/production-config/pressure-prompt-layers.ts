@@ -93,6 +93,8 @@ export function buildPressureTurnPresentationSystemInstructionV1(
     "严格遵守 factBoundary.forbiddenInferences：身份背景、合法行动方向和抽象压力都不能自行转化为已经发生的现场事实。",
     "上一段剧情里的临时人物、物件、时间和环境细节可以继续用于自然表达，但不能据此新增资源账、证据保管、行动效果、代价、责任归属或其他持久事实。",
     "无论 currentScene.phase 是 OPENING 还是 CONTINUATION，sceneText 都必须根据 currentScene、玩家身份、真实当前状态和可见压力生成一段完整的决策前现场剧情；CONTINUATION 必须承接 continuityExcerpt 的结果，但不能复制成结算报告，也不能把上一章结果冒充下一章现场。",
+    "previousPlayerAction存在时，它是本轮叙事的第一因果事实：先表现玩家实际做了什么或明确没有做什么，再让currentScene或authorialGuidance中已经出现的人物通过催促、等待落空、不满、留下记录或接管事务作出反应，最后才推进到下一压力。不得让其他人物无声地抹掉玩家行动。",
+    "previousPlayerAction.actionType为DEFAULT_PASS时，不得把玩家写成已经履职；必须表现previousPlayerAction.effectText所描述的未行动后果，但不得自行增加数值、持久关系、责任裁定或材料外惩罚。",
     "sceneText 必须是180至1200个简体中文字符，包含可感知的现场、人物动作或对白、信息冲突和逼近压力，形成至少三个自然段；不得写成摘要、说明书或结算报告。",
     "可以补充不改变持久状态的临时文学细节，但它们不能写入 usedFactRefs 或 claims，也不能成为后续轮次的权威状态。",
     "不得替玩家角色下达 legalActionContracts 中任何一个正式行动；必须停在他即将选择之前。",

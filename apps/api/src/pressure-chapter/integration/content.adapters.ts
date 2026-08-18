@@ -416,6 +416,31 @@ export class SangtianPressureGameContentMapperV1 {
     }));
   }
 
+  actionPresentation(input: Readonly<{
+    chapterId: ChapterIdV1;
+    decisionPointId: string;
+    actionType: string;
+  }>): Readonly<{ label: string; description: string }> {
+    const presentation = this.presentations.read({
+      contentPackageVersion: this.loaded.manifest.packageVersion,
+      contentPackageHash: this.loaded.manifest.contentSha256,
+      chapterId: input.chapterId,
+      decisionPointId: input.decisionPointId,
+      actionType: input.actionType,
+    });
+    if (!presentation.label.trim() || !presentation.description.trim()) {
+      failPressureChapterIntegration(
+        "INTEGRATION_CONTENT_MISMATCH",
+        "game.actionPresentation",
+        input.actionType,
+      );
+    }
+    return {
+      label: presentation.label,
+      description: presentation.description,
+    };
+  }
+
   decisionForSeat(input: Readonly<{
     chapter: AuthoredChapterRuntimeV1;
     activeDecision: ActiveDecisionStateV1 | null;
