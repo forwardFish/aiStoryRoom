@@ -13,7 +13,7 @@ export async function bootGamePage({
   loadContinuousStoryV2 = () => import("./continuous-story-v2-maneuver-client.js?v=20260809-remaining-count-v1"),
   loadContinuous = () => import("./continuous-game-client.js?v=20260717-draft-persistence-v3"),
   loadRoomStorage = () => import("./room-story-storage.js?v=20260715-1"),
-  loadSolo = () => import("./app.js?v=20260814-pressure-formal-page-v1"),
+  loadSolo = () => import("./app.js?v=20260818-notice-timeout-v1"),
   navigate = (url) => win?.location?.assign?.(url),
 } = {}) {
   if (!root) throw new TypeError("game root is required");

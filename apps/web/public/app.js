@@ -19,7 +19,8 @@ export function createStoryApp({
     fetchImpl: browserWindow?.fetch?.bind(browserWindow),
     localStorage: browserWindow?.localStorage
   }),
-  debugBuild = globalThis.__AI_STORY_DEBUG_BUILD__ === true
+  debugBuild = globalThis.__AI_STORY_DEBUG_BUILD__ === true,
+  noticeDurationMs = 3_000
 } = {}) {
   if (!root) throw new TypeError("createStoryApp requires a root element");
   const showOpeningByDefault = !new URL(browserWindow?.location?.href || "http://localhost/game").searchParams.has("debug");
@@ -58,6 +59,29 @@ export function createStoryApp({
   let resultAdvanceTimer = null;
   let openingTimer = null;
   let openingAdvanceTimer = null;
+  let noticeTimer = null;
+  let scheduledNotice = "";
+
+  function syncNoticeDismissal() {
+    const notice = String(state.notice || "");
+    if (!notice) {
+      if (noticeTimer !== null) browserWindow?.clearTimeout?.(noticeTimer);
+      noticeTimer = null;
+      scheduledNotice = "";
+      return;
+    }
+    if (noticeTimer !== null && scheduledNotice === notice) return;
+    if (noticeTimer !== null) browserWindow?.clearTimeout?.(noticeTimer);
+    scheduledNotice = notice;
+    noticeTimer = browserWindow?.setTimeout?.(() => {
+      const expiredNotice = scheduledNotice;
+      noticeTimer = null;
+      scheduledNotice = "";
+      if (state.notice !== expiredNotice) return;
+      state.notice = "";
+      render();
+    }, Math.max(0, Number(noticeDurationMs) || 0)) ?? null;
+  }
 
   async function boot() {
     state.loading = true;
@@ -598,6 +622,7 @@ export function createStoryApp({
         ${state.playAgainOpen ? renderPlayAgainDialog() : ""}
       </div>`;
     bindEvents();
+    syncNoticeDismissal();
     if (state.playAgainOpen) root.querySelector("#playAgainCancelBtn")?.focus?.();
     restoreResultScroll();
     restoreOpeningScroll();

@@ -431,6 +431,44 @@ test("stale Pressure decision reloads the latest projection instead of showing a
   dom.window.close();
 });
 
+test("ordinary game notices disappear automatically while errors remain persistent", async () => {
+  const input = projection();
+  const initialView = new PressureMainGameStorageV1({
+    runId: input.runId,
+    initialProjection: input,
+    fetchImpl: async () => new Response(JSON.stringify(input), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }),
+  }).toView(input);
+  const storage = {
+    savedRunId: input.runId,
+    async restoreOrCreate() { return initialView; },
+    async getRun() { return initialView; },
+  };
+  const dom = new JSDOM('<!doctype html><main id="app"></main>', {
+    url: `http://game.test/game?debug=1&runId=${input.runId}`,
+  });
+  const app = createStoryApp({
+    root: dom.window.document.querySelector("#app"),
+    window: dom.window,
+    storage,
+    noticeDurationMs: 10,
+  });
+
+  await app.boot();
+  await app.refresh();
+  assert.equal(app.getState().notice, "局势已刷新。");
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 25));
+  assert.equal(app.getState().notice, "");
+
+  app.getState().error = "需要用户处理的错误";
+  app.render();
+  await new Promise((resolve) => dom.window.setTimeout(resolve, 25));
+  assert.equal(app.getState().error, "需要用户处理的错误");
+  dom.window.close();
+});
+
 test("completed Pressure run uses the existing result route without mounting a parallel page", async () => {
   const runId = "run-pressure-complete";
   const dom = new JSDOM('<!doctype html><main id="app"></main>', { url: `http://game.test/game?runId=${runId}` });
