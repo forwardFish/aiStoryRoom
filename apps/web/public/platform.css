@@ -1506,7 +1506,7 @@ body:has(.rooms-page) {
 }
 
 body:has(.rooms-page) .rooms-table-card .room-table {
-  grid-template-columns: minmax(410px, 2.55fr) minmax(170px, .92fr) minmax(130px, .92fr) minmax(150px, 1.05fr) minmax(106px, .5fr);
+  grid-template-columns: minmax(360px, 2.3fr) minmax(150px, .85fr) minmax(90px, .55fr) minmax(145px, .78fr) minmax(135px, .8fr) minmax(100px, .5fr);
   column-gap: 18px;
   padding-inline: 31px;
 }
@@ -1589,6 +1589,21 @@ body:has(.rooms-page) .rooms-table-card .room-table {
 }
 
 .rooms-table-card .room-meta > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rooms-table-card .room-created-cell {
+  min-width: 0;
+  color: #626b8b;
+  font-family: var(--mw-font-body);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.rooms-table-card .room-created {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1677,7 +1692,7 @@ body:has(.rooms-page) .rooms-table-card .room-table {
   .rooms-page.page-frame { padding-inline: 38px; }
   .rooms-heading { padding-left: 24px; }
   .rooms-page .action-row .btn { min-width: 205px; }
-  body:has(.rooms-page) .rooms-table-card .room-table { grid-template-columns: minmax(330px, 1.9fr) minmax(160px, 1fr) 110px 130px 100px; padding-inline: 22px; }
+  body:has(.rooms-page) .rooms-table-card .room-table { grid-template-columns: minmax(280px, 1.8fr) minmax(130px, .9fr) 90px 135px 120px 90px; padding-inline: 22px; }
   .rooms-table-card .thumb { width: 190px; flex-basis: 190px; }
 }
 
@@ -1697,6 +1712,7 @@ body:has(.rooms-page) .rooms-table-card .room-table {
   .rooms-table-card .thumb { width: 180px; height: 82px; flex-basis: 180px; }
   .rooms-table-card .room-name::before { content: "Room: "; color: #727a97; }
   .rooms-table-card .player-count::before { content: "Players: "; color: #727a97; }
+  .rooms-table-card .room-created-cell::before { content: "Created: "; color: #727a97; }
   .rooms-table-card .room-action { justify-self: end; }
 }
 

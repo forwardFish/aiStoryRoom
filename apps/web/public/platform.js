@@ -780,15 +780,15 @@ function roomRow(room, index, view = "open") {
   const action = roomAction(room, view);
   const playerCount = Array.isArray(room.players) ? room.players.length : 0;
   const openRoomMetadata = view === "open"
-    ? `<span class="room-meta"><span class="room-creator">Creator ${esc(room.creatorLabel || "Player")}</span><time class="room-created" datetime="${esc(room.createdAt || "")}">Created ${esc(roomCreatedDisplay(room.createdAt))}</time></span>`
+    ? `<span class="room-meta"><span class="room-creator">Creator ${esc(room.creatorLabel || "Player")}</span></span>`
     : "";
-  return `<article class="room-table room-row"><div class="world-cell"><img class="thumb" src="${esc(roomWorldArtwork(room, index))}" alt=""><strong>${esc(roomWorldLabel(room.worldId))}</strong><span class="world-flourish" aria-hidden="true">❧</span></div><span class="room-name"><strong>${esc(roomDisplayTitle(room) || room.title || "Untitled room")}</strong>${openRoomMetadata}</span><span class="player-count">${playerCount} of ${esc(room.maxPlayers || "—")}</span><span><span class="badge ${status.tone}"><i aria-hidden="true"></i>${status.label}</span></span><span><button class="btn small room-action" ${action.attributes}>${action.label}</button></span></article>`;
+  return `<article class="room-table room-row"><div class="world-cell"><img class="thumb" src="${esc(roomWorldArtwork(room, index))}" alt=""><strong>${esc(roomWorldLabel(room.worldId))}</strong><span class="world-flourish" aria-hidden="true">❧</span></div><span class="room-name"><strong>${esc(roomDisplayTitle(room) || room.title || "Untitled room")}</strong>${openRoomMetadata}</span><span class="player-count">${playerCount} of ${esc(room.maxPlayers || "—")}</span><span class="room-created-cell"><time class="room-created" datetime="${esc(room.createdAt || "")}">${esc(roomCreatedDisplay(room.createdAt))}</time></span><span><span class="badge ${status.tone}"><i aria-hidden="true"></i>${status.label}</span></span><span><button class="btn small room-action" ${action.attributes}>${action.label}</button></span></article>`;
 }
 function renderRooms() {
   roomsView = { activeTab: "open", openRooms: [], myRooms: [] };
   const worldFilter = String(params.get("worldId") || "");
   const signedIn = Boolean(sessionToken());
-  appShell(`<section class="page-frame rooms-page"><div class="rooms-heading"><div><h1>Rooms</h1><p>Join an open room, create your own, or continue a room you already joined.</p></div><div class="action-row"><button class="btn rooms-join-code" data-action="join-code"><span aria-hidden="true">⌗</span>Join with Code</button><button class="btn primary rooms-create" data-action="create-room"><span aria-hidden="true">＋</span>Create Room</button></div></div><div class="tab-strip rooms-tabs" role="tablist" aria-label="Room lists"><button class="active" role="tab" aria-selected="true" data-action="open-tab">Open Rooms</button><button role="tab" aria-selected="false" data-action="my-tab">My Rooms</button></div><div data-notice class="notice" hidden></div><div class="rooms-layout"><div class="filters"><label class="select-box"><span aria-hidden="true">◎</span><select data-world-filter aria-label="Filter rooms by world"><option value="" selected>All Worlds</option><option value="sangtian">嘉靖财政危局</option><option value="caesar">Caesar: The Last Spring of the Republic</option></select><span class="select-chevron" aria-hidden="true">⌄</span></label>${roomFilterChip(worldFilter)}</div><section class="rooms-table-card" aria-live="polite"><div class="room-table head"><span>World</span><span>Room</span><span>Players</span><span>Status</span><span>Action</span></div><div data-live-rooms><p class="rooms-empty-state">Loading available rooms…</p></div></section><p class="refresh-note" data-room-refresh-note ${signedIn ? "" : "hidden"}><span aria-hidden="true">❧</span>Rooms refresh automatically.<span aria-hidden="true">❧</span></p></div></section>`, "rooms");
+  appShell(`<section class="page-frame rooms-page"><div class="rooms-heading"><div><h1>Rooms</h1><p>Join an open room, create your own, or continue a room you already joined.</p></div><div class="action-row"><button class="btn rooms-join-code" data-action="join-code"><span aria-hidden="true">⌗</span>Join with Code</button><button class="btn primary rooms-create" data-action="create-room"><span aria-hidden="true">＋</span>Create Room</button></div></div><div class="tab-strip rooms-tabs" role="tablist" aria-label="Room lists"><button class="active" role="tab" aria-selected="true" data-action="open-tab">Open Rooms</button><button role="tab" aria-selected="false" data-action="my-tab">My Rooms</button></div><div data-notice class="notice" hidden></div><div class="rooms-layout"><div class="filters"><label class="select-box"><span aria-hidden="true">◎</span><select data-world-filter aria-label="Filter rooms by world"><option value="" selected>All Worlds</option><option value="sangtian">嘉靖财政危局</option><option value="caesar">Caesar: The Last Spring of the Republic</option></select><span class="select-chevron" aria-hidden="true">⌄</span></label>${roomFilterChip(worldFilter)}</div><section class="rooms-table-card" aria-live="polite"><div class="room-table head"><span>World</span><span>Room</span><span>Players</span><span>Created</span><span>Status</span><span>Action</span></div><div data-live-rooms><p class="rooms-empty-state">Loading available rooms…</p></div></section><p class="refresh-note" data-room-refresh-note ${signedIn ? "" : "hidden"}><span aria-hidden="true">❧</span>Rooms refresh automatically.<span aria-hidden="true">❧</span></p></div></section>`, "rooms");
   if (signedIn) restoreRoomDialogDraft();
   else openRoomsLoginDialog();
 }
@@ -1205,7 +1205,18 @@ function roomAction(room, view) {
 }
 function roomRows(rooms, view = "open") {
   const emptyCopy = view === "open" ? "No open rooms yet. Create the first room." : "You have not joined a room yet.";
-  return rooms.map((room, index) => roomRow(room, index, view)).join("") || `<p class="rooms-empty-state">${emptyCopy}</p>`;
+  return newestRoomsFirst(rooms).map((room, index) => roomRow(room, index, view)).join("") || `<p class="rooms-empty-state">${emptyCopy}</p>`;
+}
+
+function newestRoomsFirst(rooms) {
+  return (Array.isArray(rooms) ? rooms : [])
+    .map((room, index) => ({ room, index, createdAt: Date.parse(String(room?.createdAt || "")) }))
+    .sort((left, right) => {
+      const leftTime = Number.isFinite(left.createdAt) ? left.createdAt : Number.NEGATIVE_INFINITY;
+      const rightTime = Number.isFinite(right.createdAt) ? right.createdAt : Number.NEGATIVE_INFINITY;
+      return rightTime - leftTime || left.index - right.index;
+    })
+    .map(({ room }) => room);
 }
 function renderRoomsView() {
   const target = root.querySelector("[data-live-rooms]");

@@ -268,18 +268,47 @@ test("rooms disclose automatic refresh only when live polling is active", async 
 test("Open Rooms and My Rooms switch the shared table data and action", async () => {
   const rendered = await renderRoomsPage(true, {
     rooms: [{ id: "open-1", code: "OPEN1", worldId: "caesar", title: "Night Council", status: "waiting_players", maxPlayers: 6, players: [{ id: "p1" }], creatorLabel: "forwa****rd", createdAt: "2026-08-15T03:38:34.480Z" }],
-    myRooms: [{ id: "mine-1", worldId: "caesar", title: "My Night Council", status: "waiting_players", maxPlayers: 6, players: [{ id: "p1" }, { id: "p2" }], nextAction: "open" }]
+    myRooms: [{ id: "mine-1", worldId: "caesar", title: "My Night Council", status: "waiting_players", maxPlayers: 6, players: [{ id: "p1" }, { id: "p2" }], nextAction: "open", createdAt: "2026-08-14T03:38:34.480Z" }]
   });
 
+  assert.match(rendered.document.querySelector(".room-table.head")?.textContent || "", /Created/);
   assert.equal(rendered.document.querySelector(".room-action")?.textContent, "Join");
   assert.equal(rendered.document.querySelector(".room-creator")?.textContent, "Creator forwa****rd");
   assert.equal(rendered.document.querySelector(".room-created")?.getAttribute("datetime"), "2026-08-15T03:38:34.480Z");
-  assert.match(rendered.document.querySelector(".room-created")?.textContent || "", /^Created /);
   rendered.document.querySelector('[data-action="my-tab"]')?.click();
   assert.equal(rendered.document.querySelector(".room-action")?.textContent, "Start");
   assert.equal(rendered.document.querySelector(".room-meta"), null);
+  assert.equal(rendered.document.querySelector(".room-created")?.getAttribute("datetime"), "2026-08-14T03:38:34.480Z");
   assert.equal(rendered.document.querySelector('[data-action="my-tab"]')?.getAttribute("aria-selected"), "true");
   assert.equal(rendered.document.querySelectorAll(".rooms-table-card").length, 1);
+  rendered.window.close();
+});
+
+test("Open Rooms and My Rooms display newest-created rooms first", async () => {
+  const room = (id, title, createdAt) => ({
+    id, worldId: "sangtian", title, status: "playing", maxPlayers: 6,
+    players: [{ id: `${id}-player` }], nextAction: "continue", createdAt,
+  });
+  const rendered = await renderRoomsPage(true, {
+    rooms: [
+      { ...room("open-old", "Open Old", "2026-08-12T08:00:00.000Z"), code: "OLD001" },
+      { ...room("open-new", "Open New", "2026-08-16T08:00:00.000Z"), code: "NEW001" },
+    ],
+    myRooms: [
+      room("mine-old", "Mine Old", "2026-08-11T08:00:00.000Z"),
+      room("mine-new", "Mine New", "2026-08-17T08:00:00.000Z"),
+    ],
+  });
+
+  assert.deepEqual(
+    [...rendered.document.querySelectorAll(".room-name > strong")].map((node) => node.textContent),
+    ["Open New", "Open Old"],
+  );
+  rendered.document.querySelector('[data-action="my-tab"]')?.click();
+  assert.deepEqual(
+    [...rendered.document.querySelectorAll(".room-name > strong")].map((node) => node.textContent),
+    ["Mine New", "Mine Old"],
+  );
   rendered.window.close();
 });
 

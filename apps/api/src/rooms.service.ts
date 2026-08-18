@@ -367,7 +367,7 @@ export class RoomsService {
         ...(worldId ? { templateKey: worldId } : {})
       },
       include: { players: { include: { user: true, role: true } }, roles: true, owner: true },
-      orderBy: { updatedAt: "desc" }, take: 50
+      orderBy: { createdAt: "desc" }, take: 50
     });
   }
 
@@ -1726,6 +1726,7 @@ export class RoomsService {
             claimedByCurrentUser: room.players.some((player: any) => player.roleId === role.id && player.userId === viewerId)
           };
         }),
+      createdAt: room.createdAt.toISOString(),
       updatedAt: room.updatedAt
     };
   }
