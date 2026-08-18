@@ -5,7 +5,7 @@
   "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
   "sourceBinding": {
     "contentPackageVersion": "1.0.2",
-    "contentPackageSha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9"
+    "contentPackageSha256": "9e195a3443853c928b44c0f9d58568427c23946cb601c65adf866fa8e9e738d4"
   },
   "authorityBoundary": {
     "allowedAuthoritySources": [
@@ -210,5 +210,5 @@
       }
     ]
   },
-  "policySha256": "e834b27195a36c2e3c910e652e796be23f992cb1cbfb01f9644a53891497178b"
+  "policySha256": "c98eef68d9fe0c354de7cbb4a0922cc5118eec715574e275e6572fb77a7eaec4"
 }

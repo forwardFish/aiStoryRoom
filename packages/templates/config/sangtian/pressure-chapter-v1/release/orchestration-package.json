@@ -7,19 +7,19 @@
     "packageId": "sangtian_pressure_chapter_v1",
     "packageVersion": "1.0.2",
     "path": "../content.json",
-    "contentSha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9"
+    "contentSha256": "9e195a3443853c928b44c0f9d58568427c23946cb601c65adf866fa8e9e738d4"
   },
   "actionCompilation": {
     "policyPath": "action-effect-policy.json",
     "policyVersion": "sangtian-action-effect-1.0.2",
-    "policySha256": "64da80f7230f011d1b3e2db6cde1bf78ccd0366e1ee2cf08ef58d75d2901ed25",
+    "policySha256": "d6f37f190765e87d6822804cc688ff002aa4bb74ccbf50084a2737cccb77bc19",
     "compilerCorePath": "action-effect-compiler.cjs",
     "compilerEsmWrapperPath": "action-effect-compiler.mjs",
     "compilerVersion": "sangtian-action-effect-compiler-1.0.0",
     "compilerCoreSha256RawBytes": "70a47dcb3a3e28e3c8261865f45a4c0834c22b261629a592a1bc4a3f7ea95f63",
     "compilerEsmWrapperSha256RawBytes": "335ca5e0c134aa6d48a896d3bbcf06ba5a0ca3b95997bafee25381aefd234405",
     "bindingKey": ["chapterId", "decisionPointKey", "seatId", "actionType"],
-    "expandedBindingCount": 414,
+    "expandedBindingCount": 422,
     "defaultTrajectoryApplication": "AT_MOST_ONCE_PER_CHAPTER",
     "resourcePolicy": "NONE",
     "unknownOrConflictingRule": "FAIL_CLOSED_ZERO_WRITE"
@@ -27,7 +27,7 @@
   "actionPresentation": {
     "catalogPath": "action-presentation-catalog.json",
     "catalogVersion": "sangtian-action-presentation-1.0.2",
-    "catalogSha256": "89ffb32717e228fca90a96d7de68c38ba6c7fdbe28df94e65f775f51b6f6f4b9",
+    "catalogSha256": "0bf14b4b13893a5d2bb77d38c9aafb8990e28fb7ac1c814882758c5b5c615a19",
     "locale": "zh-CN",
     "authority": "PRESENTATION_ONLY"
   },
@@ -36,10 +36,10 @@
     "policyRef": "sangtian.ai.decision.v1",
     "policyVersion": "sangtian-ai-decision-1.0.2",
     "selectorVersion": "sangtian-ai-decision-selector-1.0.0",
-    "policySha256": "9f5897baa3a2044905064b4cf0fa2cdbfc752781ffcbbac12e2a30c0b3a2c399",
-    "artifactSha256": "2ec7a3d17e418cfde6aa4ecdcbe395d7c271bfa9772cd39fd8c9a534176fe78f",
+    "policySha256": "56fc5d757465c5894f5341bc7e0154bdec0906bf80761fad10cde982f4ec6700",
+    "artifactSha256": "9f826c0796fd04767dd63ef6c97ea64def16165771a58a23e07b56e820567553",
     "selectionAlgorithm": "SHA256_CANONICAL_PREFIX_MODULO_RANKED_NON_DEFAULT_V1",
-    "applicableSeatBindingCount": 142,
+    "applicableSeatBindingCount": 145,
     "defaultFallback": "DEFAULT_PASS_ONLY",
     "unknownOrConflictingRule": "FAIL_CLOSED_ZERO_WRITE"
   },

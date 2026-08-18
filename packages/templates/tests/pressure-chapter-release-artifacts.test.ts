@@ -557,7 +557,7 @@ test("T3 action-effect compiler expands every accepted decision-seat-action bind
   assert.deepEqual({ decisionCount, pairCount, expandedCount }, {
     decisionCount: 33,
     pairCount: 93,
-    expandedCount: 414,
+    expandedCount: 422,
   });
   assert.equal(expandedCount, policy.bindingExpansion.expectedExpandedBindingCount);
   expectActionPolicyCode(
@@ -761,7 +761,7 @@ test("continuous runtime rejects the fixed PREPARE/COMMIT/REACTION route and eve
   assert.equal(orchestration.terminalTrigger.sourceChapterId, "N7");
   assert.equal(orchestration.terminalTrigger.terminalDecisionCount, 1);
   assert.equal(orchestration.contentPackage.contentSha256, loaded.manifest.contentSha256);
-  assert.equal(orchestration.actionCompilation.expandedBindingCount, 414);
+  assert.equal(orchestration.actionCompilation.expandedBindingCount, 422);
   assert.equal(orchestration.actionCompilation.resourcePolicy, "NONE");
 
   const contentCounts = loaded.content.chapters.map((chapter) => chapter.decisionPoints.length);

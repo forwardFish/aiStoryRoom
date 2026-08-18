@@ -26,7 +26,7 @@ const DEFAULT_RELEASE_ROOT = resolve(
 const ARTIFACT_ID = "ai_decision_policy" as const;
 const ARTIFACT_PATH = "ai-decision-policy.json" as const;
 const EXPECTED_ARTIFACT_SHA256 =
-  "2ec7a3d17e418cfde6aa4ecdcbe395d7c271bfa9772cd39fd8c9a534176fe78f";
+  "9f826c0796fd04767dd63ef6c97ea64def16165771a58a23e07b56e820567553";
 const EXPECTED_ROUTE_KEY = "sangtian_pressure_chapter_v1" as const;
 
 const ACCEPTED_INPUT_FIELDS = Object.freeze([
@@ -262,14 +262,14 @@ export function validateSangtianAiDecisionPolicyV1(
   ], "policy.coverage");
   literal(coverage.chapterCount, 7, "policy.coverage.chapterCount");
   literal(coverage.decisionPointCount, 33, "policy.coverage.decisionPointCount");
-  literal(coverage.applicableSeatBindingCount, 142, "policy.coverage.applicableSeatBindingCount");
+  literal(coverage.applicableSeatBindingCount, 145, "policy.coverage.applicableSeatBindingCount");
   literal(
     coverage.coverageRule,
     "EXACT_ACCEPTED_DECISION_REQUIRED_SEAT_BINDINGS",
     "policy.coverage.coverageRule",
   );
-  if (seatBindingCount !== 142) {
-    fail("POLICY_INVALID", "policy.decisions.seatPolicies", "EXPECTED_142");
+  if (seatBindingCount !== 145) {
+    fail("POLICY_INVALID", "policy.decisions.seatPolicies", "EXPECTED_145");
   }
   sha(policy.policySha256, "policy.policySha256");
   if (hashWithoutField(policy, "policySha256") !== policy.policySha256) {
@@ -391,7 +391,7 @@ function assertPolicyMatchesAcceptedContent(
     }
     seatBindingCount += configured.seatPolicies.length;
   });
-  if (seatBindingCount !== 142) {
+  if (seatBindingCount !== 145) {
     fail("CONTENT_BINDING_MISMATCH", "policy.coverage.applicableSeatBindingCount");
   }
 }

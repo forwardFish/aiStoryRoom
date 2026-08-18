@@ -22,7 +22,7 @@ const PACKAGE_ROOT = path.resolve(
 );
 const RELEASE_ROOT = path.resolve(PACKAGE_ROOT, "release");
 
-test("published AI policy exactly covers 33 accepted decisions and 142 applicable seats", () => {
+test("published AI policy exactly covers 33 accepted decisions and 145 applicable seats", () => {
   const published = loadPublishedSangtianAiDecisionPolicyV1();
   const loaded = loadSangtianPressureChapterPackageV1(PACKAGE_ROOT);
   assert.equal(
@@ -35,7 +35,7 @@ test("published AI policy exactly covers 33 accepted decisions and 142 applicabl
       (count, decision) => count + decision.seatPolicies.length,
       0,
     ),
-    142,
+    145,
   );
   assert.deepEqual(published.policy.authorityBoundary.selectionEntropyFields, [
     "runSeed",
@@ -125,7 +125,7 @@ test("selection is deterministic, eligible, non-default when possible and struct
       assert.equal(selectionHash, sha256Canonical(body));
     }
   }
-  assert.equal(selectionCount, 142);
+  assert.equal(selectionCount, 145);
 
   const variableDecision = published.policy.decisions.find(
     (decision) => decision.publishedAllowedActionTypes.length > 2,
@@ -215,7 +215,7 @@ function buildInput(input: Readonly<{
     runSeed: input.runSeed,
     contentPackageVersion: "1.0.2",
     contentPackageSha256:
-    "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
+    "9e195a3443853c928b44c0f9d58568427c23946cb601c65adf866fa8e9e738d4",
     chapterRuntimeId: `runtime-${input.chapterId}`,
     chapterId: input.chapterId,
     decisionPointId: input.decisionPointId,

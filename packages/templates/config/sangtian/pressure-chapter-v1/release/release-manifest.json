@@ -25,9 +25,9 @@
           "resultSchemaVersion": "sangtian_pressure_result_v1"
         },
         "contentPackageVersion": "1.0.2",
-        "contentPackageSha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
+        "contentPackageSha256": "9e195a3443853c928b44c0f9d58568427c23946cb601c65adf866fa8e9e738d4",
         "orchestrationPackageVersion": "sangtian-orchestration-1.0.2",
-        "orchestrationPackageSha256": "f7b80c66660cbda16d568afd9997400e648cdb8cad6bf9093a16d2bcdd7b09a4",
+        "orchestrationPackageSha256": "f2aedf4e9ee8dda6e48fdfd0133300a375bd0fe9e9a0d6422dffd90a85a05d8e",
         "runtimeContractVersion": "pressure-runtime-contract-1.0.2",
         "runtimeContractSha256": "bd970a678d45f9ccb6d16575b3b1a415366d6128affee84a495a826d773c6944",
         "testMatrixVersion": "pressure-test-matrix-1.0.0",
@@ -42,21 +42,21 @@
         "rendererKey": "sangtian_pressure_endgame_v1"
       }
     ],
-    "registryHash": "3303b13984ace2e9d20660fc5039b11dd9af7864e9e3c2be28da3ad147ed9f91"
+    "registryHash": "87dac610424d5c72f66030afcf2887e8df0895ed1e74e9be60bb499db72ebcd9"
   },
   "immutableInputs": [
     {
       "artifactId": "accepted_content_package",
       "path": "../content.json",
       "version": "1.0.2",
-      "sha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
+      "sha256": "9e195a3443853c928b44c0f9d58568427c23946cb601c65adf866fa8e9e738d4",
       "hashMode": "CANONICAL_JSON"
     },
     {
       "artifactId": "accepted_content_manifest",
       "path": "../manifest.json",
       "version": "1.0.2",
-      "sha256": "9d198415de07c6fca1228a48a23b209a91d31d7c1f16f4673e9f542b1e99d52d",
+      "sha256": "7f69580878d090289655a9504f807a5eab2f4bd8a044b0f3d7b4c040d6f772fc",
       "hashMode": "CANONICAL_JSON"
     },
     {
@@ -79,7 +79,7 @@
       "artifactId": "a_emotion_policy",
       "path": "a-emotion-policy.json",
       "version": "sangtian-a-emotion-1.0.2",
-      "sha256": "c9b2169de22044d772ca8a0d6b430144570d8e7d5b5e0926f5358298d6fa933d",
+      "sha256": "c05a3d3e2b925cd81ad96435376dbbea02e352b0d4b6d6c3bb134be42f443f88",
       "hashMode": "CANONICAL_JSON"
     },
     {
@@ -100,21 +100,21 @@
       "artifactId": "action_effect_policy",
       "path": "action-effect-policy.json",
       "version": "sangtian-action-effect-1.0.2",
-      "sha256": "8854d46333f15fe740cd84d4c671325e7c4355bcc3eacf3b803f1e37a7e57fee",
+      "sha256": "3b4a8729690a5845961e20444f052809f63734f4ccfb012400c560e298dec767",
       "hashMode": "CANONICAL_JSON"
     },
     {
       "artifactId": "action_presentation_catalog",
       "path": "action-presentation-catalog.json",
       "version": "sangtian-action-presentation-1.0.2",
-      "sha256": "b33d05773ed89f2c90dc699feaf264e4a9aecd057039f2b27610d2b38aebed2f",
+      "sha256": "349023fc50d223d075d521338cb13bc728b326b1a2c9e29efb9985f1e8a8cf77",
       "hashMode": "CANONICAL_JSON"
     },
     {
       "artifactId": "ai_decision_policy",
       "path": "ai-decision-policy.json",
       "version": "sangtian-ai-decision-1.0.2",
-      "sha256": "2ec7a3d17e418cfde6aa4ecdcbe395d7c271bfa9772cd39fd8c9a534176fe78f",
+      "sha256": "9f826c0796fd04767dd63ef6c97ea64def16165771a58a23e07b56e820567553",
       "hashMode": "CANONICAL_JSON"
     },
     {
@@ -156,7 +156,7 @@
       "artifactId": "orchestration_package",
       "path": "orchestration-package.json",
       "version": "sangtian-orchestration-1.0.2",
-      "sha256": "f7b80c66660cbda16d568afd9997400e648cdb8cad6bf9093a16d2bcdd7b09a4",
+      "sha256": "f2aedf4e9ee8dda6e48fdfd0133300a375bd0fe9e9a0d6422dffd90a85a05d8e",
       "hashMode": "CANONICAL_JSON"
     },
     {
@@ -177,7 +177,7 @@
       "artifactId": "source_regression_manifest",
       "path": "source-regression-manifest.json",
       "version": "pressure-source-regression-1.0.0",
-      "sha256": "de66303673d7973de0fe0103abae6970feaf0db4e4027ca9653e7e023133d230",
+      "sha256": "99c648836aad1506c2a8187991a59ef7d31af0bdc93e750f1c4758d98e83497f",
       "hashMode": "CANONICAL_JSON"
     },
     {

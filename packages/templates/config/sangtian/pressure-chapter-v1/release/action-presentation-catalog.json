@@ -6,7 +6,7 @@
   "locale": "zh-CN",
   "sourceBinding": {
     "contentPackageVersion": "1.0.2",
-    "contentPackageSha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
+    "contentPackageSha256": "9e195a3443853c928b44c0f9d58568427c23946cb601c65adf866fa8e9e738d4",
     "sourceCommitSha": "5badb6fa62a823de7019ce6a046efffbd74268d8"
   },
   "authorityBoundary": {
@@ -488,5 +488,5 @@
     "decisionActionPairCount": 93,
     "coverageRule": "EXACT_ACCEPTED_CONTENT_DECISION_ACTION_PAIRS"
   },
-  "catalogSha256": "89ffb32717e228fca90a96d7de68c38ba6c7fdbe28df94e65f775f51b6f6f4b9"
+  "catalogSha256": "0bf14b4b13893a5d2bb77d38c9aafb8990e28fb7ac1c814882758c5b5c615a19"
 }

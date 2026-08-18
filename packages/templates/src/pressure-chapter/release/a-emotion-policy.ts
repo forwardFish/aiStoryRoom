@@ -16,7 +16,7 @@ const DEFAULT_RELEASE_ROOT = resolve(
 const ARTIFACT_ID = "a_emotion_policy" as const;
 const ARTIFACT_PATH = "a-emotion-policy.json" as const;
 const EXPECTED_ARTIFACT_SHA256 =
-  "c9b2169de22044d772ca8a0d6b430144570d8e7d5b5e0926f5358298d6fa933d";
+  "c05a3d3e2b925cd81ad96435376dbbea02e352b0d4b6d6c3bb134be42f443f88";
 const EXPECTED_ROUTE_KEY = "sangtian_pressure_chapter_v1" as const;
 
 const SOURCE_KINDS = [

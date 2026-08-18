@@ -22,7 +22,7 @@
   },
   "sourceBinding": {
     "contentPackageVersion": "1.0.2",
-    "contentPackageSha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9",
+    "contentPackageSha256": "9e195a3443853c928b44c0f9d58568427c23946cb601c65adf866fa8e9e738d4",
     "sourceCommitSha": "5badb6fa62a823de7019ce6a046efffbd74268d8",
     "derivationClass": "VERSIONED_T3_ADAPTATION_FROM_ACCEPTED_ACTION_SEMANTICS_AND_SELECTOR_BOUNDARIES",
     "sourceContainedExactActionEffectValues": false
@@ -37,7 +37,7 @@
     "rule": "CARTESIAN_REQUIRED_SEATS_X_DECLARED_ACTIONS",
     "expectedDecisionPointCount": 33,
     "expectedDecisionActionPairCount": 93,
-    "expectedExpandedBindingCount": 414,
+    "expectedExpandedBindingCount": 422,
     "unknownBinding": "SANGTIAN_ACTION_EFFECT_BINDING_NOT_FOUND",
     "duplicateBinding": "SANGTIAN_ACTION_EFFECT_BINDING_DUPLICATE",
     "contentDrift": "SANGTIAN_ACTION_EFFECT_CONTENT_DRIFT",
@@ -1575,7 +1575,7 @@
       "decisions": [
         {
           "decisionPointKey": "N4.prisoner_review",
-          "requiredSeatIds": ["qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
+          "requiredSeatIds": ["jiangnan_merchant", "qingliu_law", "sili_weaving", "zhejiang_administration", "zhejiang_governor"],
           "actions": [
             { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_REVIEW_OR_PROTECTION"] },
             { "actionType": "PROTECT_WITNESS", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "wrongfulExecutionCount", "value": 0 }, { "factRef": "keyWitnessAliveCount", "value": 2 }], "derivationRefs": ["ACTION_SEMANTICS_WITNESS_PROTECTION", "HIGH_SELECTOR_ZERO_AND_GTE_2"] },
@@ -1585,7 +1585,7 @@
         },
         {
           "decisionPointKey": "N4.case_file_seal",
-          "requiredSeatIds": ["qingliu_law", "zhejiang_administration"],
+          "requiredSeatIds": ["jiangnan_merchant", "qingliu_law", "zhejiang_administration", "zhejiang_governor"],
           "actions": [
             { "actionType": "DEFAULT_PASS", "workingIntentMode": "DEFAULT_PRIVATE", "factContributions": [], "derivationRefs": ["ACTION_SEMANTICS_NO_SEAL"] },
             { "actionType": "SEAL_CASE_FILE", "workingIntentMode": "PARTICIPANT_EFFECT", "factContributions": [{ "factRef": "wrongfulExecutionCount", "value": 0 }, { "factRef": "caseFileState", "value": "CONTESTED_REVIEW" }], "derivationRefs": ["DECISION_PURPOSE_SEAL_REVIEW_VERSION", "MID_SELECTOR_WITNESS"] }
@@ -1841,5 +1841,5 @@
     "allSourceDefaultTrajectoriesReproducible": true,
     "resourceConservationMode": "ZERO_RESOURCE_MVP"
   },
-  "policySha256": "64da80f7230f011d1b3e2db6cde1bf78ccd0366e1ee2cf08ef58d75d2901ed25"
+  "policySha256": "d6f37f190765e87d6822804cc688ff002aa4bb74ccbf50084a2737cccb77bc19"
 }

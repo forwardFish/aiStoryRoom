@@ -6,7 +6,7 @@
   "runtimeProfile": "SANGTIAN_CONTINUOUS_CHAPTER_V1",
   "sourceBinding": {
     "contentPackageVersion": "1.0.2",
-    "contentPackageSha256": "9627adc458a88384dd3c80b22e66ca952e51393ea12197666be82f0bd0ea30d9"
+    "contentPackageSha256": "9e195a3443853c928b44c0f9d58568427c23946cb601c65adf866fa8e9e738d4"
   },
   "authorityBoundary": {
     "acceptedInputFields": [
@@ -784,6 +784,14 @@
       ],
       "seatPolicies": [
         {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "PROTECT_WITNESS",
+            "REQUEST_REVIEW",
+            "SIGN_EXECUTION"
+          ]
+        },
+        {
           "seatId": "qingliu_law",
           "rankedNonDefaultActionTypes": [
             "PROTECT_WITNESS",
@@ -826,6 +834,12 @@
       ],
       "seatPolicies": [
         {
+          "seatId": "jiangnan_merchant",
+          "rankedNonDefaultActionTypes": [
+            "SEAL_CASE_FILE"
+          ]
+        },
+        {
           "seatId": "qingliu_law",
           "rankedNonDefaultActionTypes": [
             "SEAL_CASE_FILE"
@@ -833,6 +847,12 @@
         },
         {
           "seatId": "zhejiang_administration",
+          "rankedNonDefaultActionTypes": [
+            "SEAL_CASE_FILE"
+          ]
+        },
+        {
+          "seatId": "zhejiang_governor",
           "rankedNonDefaultActionTypes": [
             "SEAL_CASE_FILE"
           ]
@@ -1385,8 +1405,8 @@
   "coverage": {
     "chapterCount": 7,
     "decisionPointCount": 33,
-    "applicableSeatBindingCount": 142,
+    "applicableSeatBindingCount": 145,
     "coverageRule": "EXACT_ACCEPTED_DECISION_REQUIRED_SEAT_BINDINGS"
   },
-  "policySha256": "9f5897baa3a2044905064b4cf0fa2cdbfc752781ffcbbac12e2a30c0b3a2c399"
+  "policySha256": "56fc5d757465c5894f5341bc7e0154bdec0906bf80761fad10cde982f4ec6700"
 }
