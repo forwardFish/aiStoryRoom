@@ -114,6 +114,21 @@ test("Multiplayer intermediate submit persists one seat without convergence; fin
   assert.equal(finalBeat.actionWrites, 0);
 });
 
+test("Registered Solo multi-Beat submit persists only the human seat until the chapter gate", async () => {
+  const harness = createHarness({
+    independentSolo: true,
+    multiplayerSeatStatus: "AWAITING_DECISION",
+  });
+  await harness.facade.submitDecision(
+    harness.principal,
+    ROOM_ID,
+    decisionCommand(harness.stored.snapshot.routeHash),
+  );
+  assert.equal(harness.multiplayerProgressionCalls, 1);
+  assert.equal(harness.multiplayerConvergenceCalls, 0);
+  assert.equal(harness.actionWrites, 0);
+});
+
 test("GET game alone uses the dedicated mode-bound reader and preserves pagination", async () => {
   const explicit = createHarness({ dedicatedGameRead: true });
   await explicit.facade.getGame(explicit.principal, ROOM_ID, {
@@ -864,6 +879,7 @@ function createHarness(options: {
   gameReadMode?: PressureGameReadModeV1;
   gameReadObserver?: PressureGameReadRuntimeObserverPortV1;
   multiplayer?: boolean;
+  independentSolo?: boolean;
   multiplayerPhase?: "ACTIVE" | "RESOLVING_BEAT" | "SETTLING";
   multiplayerSeatStatus?: "AWAITING_DECISION" | "CHAPTER_READY_FOR_CONVERGENCE";
 } = {}) {
@@ -1146,7 +1162,7 @@ function createHarness(options: {
     selectedGameRead,
     options.gameReadMode,
     options.gameReadObserver,
-    options.multiplayer ? {
+    options.multiplayer || options.independentSolo ? {
       async read() { throw new Error("read is not used by HTTP submit"); },
       async submit() {
         multiplayerProgressionCalls += 1;
@@ -1160,7 +1176,7 @@ function createHarness(options: {
         } as never;
       },
     } : null,
-    options.multiplayer ? {
+    options.multiplayer || options.independentSolo ? {
       async convergeIfReady() {
         multiplayerConvergenceCalls += 1;
         return {
@@ -1171,6 +1187,9 @@ function createHarness(options: {
         } as never;
       },
     } : null,
+    options.independentSolo ? {
+      usesIndependentSeatBeats() { return true; },
+    } : undefined,
   );
   return {
     facade,

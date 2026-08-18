@@ -29,8 +29,8 @@ export class MultiplayerSeatBeatPlanErrorV1 extends Error {
 export function planMultiplayerSeatBeatCursorV1(
   input: Readonly<PlanMultiplayerSeatBeatCursorInputV1>,
 ): MultiplayerSeatBeatCursorPlanV1 {
-  if (input.participantMode !== "MULTIPLAYER") {
-    fail(MULTIPLAYER_SEAT_BEAT_ERROR_CODES_V1.MODE_INVALID, "participantMode", "MULTIPLAYER_REQUIRED");
+  if (input.participantMode !== "SOLO" && input.participantMode !== "MULTIPLAYER") {
+    fail(MULTIPLAYER_SEAT_BEAT_ERROR_CODES_V1.MODE_INVALID, "participantMode", "SUPPORTED_MODE_REQUIRED");
   }
   const chapterRuntimeId = text(input.chapterRuntimeId, "chapterRuntimeId");
   const chapterId = text(input.package.chapterId, "package.chapterId");

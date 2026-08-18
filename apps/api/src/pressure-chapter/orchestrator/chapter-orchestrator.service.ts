@@ -21,6 +21,7 @@ import {
 } from "@ai-story/templates";
 import { planWorkingLedgerOpeningV1 } from "../working-ledger/working-ledger.service";
 import { workingLedgerProjectionCacheHashV1 } from "../working-ledger/projection-cache";
+import { usesIndependentSeatBeatFlowV1 } from "../beat-submit-policy/policy";
 import {
   measurePressureDecisionStageV1,
   recordPressureDecisionCommittedAuthorityV1,
@@ -231,11 +232,15 @@ export class PressureChapterOrchestratorService {
     nowMs: number;
   }>): Promise<ChapterOrchestratorStateV1> {
     const route = validateRunRouteSnapshotV1(input.routeSnapshot);
-    if (route.participantMode !== "MULTIPLAYER") {
-      failChapterOrchestrator(ERROR.STALE_ACTION, "MULTIPLAYER_REQUIRED");
+    const currentState = await this.requireActive(route);
+    if (!usesIndependentSeatBeatFlowV1({
+      participantMode: route.participantMode,
+      chapterId: currentState.currentChapterId,
+    })) {
+      failChapterOrchestrator(ERROR.STALE_ACTION, "INDEPENDENT_SEAT_BEATS_REQUIRED");
     }
     assertNow(input.nowMs);
-    let state = await this.requireActive(route);
+    let state = currentState;
     const active = requireActiveDecision(state);
     const descriptor = await this.loadDescriptor(route, state.currentChapterId, state.descriptorHash);
     const decision = requireDecision(descriptor, active.decisionPointId);

@@ -13,6 +13,7 @@ import type {
   WorkingProjectionReaderPort,
 } from "../orchestrator/contracts";
 import type { StoredRunRouteReaderPort } from "../run-router";
+import type { PressureBeatSubmitPolicyPortV1 } from "../beat-submit-policy/policy";
 
 /** Read-only narrowing: the adapter cannot ingest or mark A-Emotion records. */
 export class AEmotionPressureGameFeedReaderAdapterV1
@@ -38,6 +39,7 @@ export interface ViewerScopedChapterReaderDependenciesV1 {
   working: WorkingProjectionReaderPort;
   content: AuthoredChapterContentPort;
   mapper: SangtianPressureGameContentMapperV1;
+  beatSubmitPolicy?: PressureBeatSubmitPolicyPortV1;
 }
 
 /** Wires the current viewerSeatId-bearing ChapterReader; no run-only shim. */
@@ -50,5 +52,6 @@ export function createViewerScopedPressureGameChapterReaderV1(
     dependencies.working,
     dependencies.content,
     dependencies.mapper,
+    dependencies.beatSubmitPolicy,
   );
 }

@@ -45,6 +45,10 @@ import type { PressureTurnPresentationServiceV1 } from "./decision-presentation"
 import type { GameReadP0ResolvedSourcesV1 } from "./game-read-snapshot";
 import { projectPressureMetricDisplayLabelV1 } from "./metric-display-labels";
 import { projectPressureSharedGenesisOpeningV1 } from "./shared-genesis-opening";
+import {
+  LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
+  type PressureBeatSubmitPolicyPortV1,
+} from "../beat-submit-policy/policy";
 
 const NON_EMPTY = /\S/u;
 const CHAPTER_IDS = Object.freeze(["P0", "N1", "N2", "N3", "N4", "N5", "N6", "N7"] as const);
@@ -85,6 +89,8 @@ export class PressureChapterGameProjectionService {
     private readonly capabilities: PressureGameCapabilityReaderPort,
     private readonly turnPresentations: PressureTurnPresentationServiceV1 | null = null,
     private readonly chapterSummaries: PressureGameChapterSummaryReaderPort | null = null,
+    private readonly beatSubmitPolicy: PressureBeatSubmitPolicyPortV1 =
+      LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
   ) {}
 
   async read(
@@ -328,7 +334,11 @@ export class PressureChapterGameProjectionService {
       if (!narrativeSource) {
         failPressureGameProjection(ERROR.NARRATIVE_NOT_FOUND, chapter.chapter.chapterRuntimeId);
       }
-      const rawCapabilities = seeded || routeSnapshot.participantMode === "MULTIPLAYER"
+      const independentSeatFlow = this.beatSubmitPolicy.usesIndependentSeatBeats({
+        participantMode: routeSnapshot.participantMode,
+        chapterId: chapter.chapter.chapterId,
+      });
+      const rawCapabilities = seeded || independentSeatFlow
         ? null
         : await measureProjectionStage(timings, "capabilitiesReadMs", () => (
           this.capabilities.readCapabilities({
@@ -469,7 +479,10 @@ export class PressureChapterGameProjectionService {
       ? [...new Set(decision.options.map((option) => option.actionType))]
       : [];
     const resolvedCapabilities = sanitizeCapabilities(
-      routeSnapshot.participantMode === "MULTIPLAYER"
+      this.beatSubmitPolicy.usesIndependentSeatBeats({
+        participantMode: routeSnapshot.participantMode,
+        chapterId: chapter.chapter.chapterId,
+      })
         ? capabilitiesFromCommittedAuthority(
             viewer.viewer.control,
             chapter.chapter.phase,

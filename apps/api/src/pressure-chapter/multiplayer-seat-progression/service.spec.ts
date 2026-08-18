@@ -138,17 +138,22 @@ test("M3 replays an already persisted command before checking the advanced seat 
   assert.equal(result.cursor.decisionPointId, authoring.beats[1]!.catalogDecisionPointRef);
 });
 
-test("M2/M3 reject Solo before reading or writing", () => {
+test("M2/M3 advance a Solo human without writing AI seat actions", () => {
   const route = routeFixture([GOVERNOR]);
-  const projection = projectionFixture(route, []);
-  assert.throws(() => projectMultiplayerSeatProgressionV1(
+  const firstDecision = authoring.beats[0]!.catalogDecisionPointRef;
+  const projection = projectionFixture(route, [
+    acceptedFixture(route, GOVERNOR, firstDecision, "action-solo-governor-1"),
+  ]);
+  const result = projectMultiplayerSeatProgressionV1(
     route,
     runtimeId,
     "N1",
     GOVERNOR,
     projection,
     "NOT_SUBMITTED",
-  ), /MULTIPLAYER_REQUIRED/u);
+  );
+  assert.equal(result.cursor.decisionPointId, authoring.beats[1]!.catalogDecisionPointRef);
+  assert.equal(result.accepted.actions.length, 1);
 });
 
 function projectionFixture(

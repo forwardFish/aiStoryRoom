@@ -34,9 +34,6 @@ export function readAcceptedMultiplayerSeatActionsV1(
   input: Readonly<ReadAcceptedMultiplayerSeatActionsInputV1>,
 ): DurableAcceptedMultiplayerSeatActionsV1 {
   const route = validateRunRouteSnapshotV1(input.routeSnapshot);
-  if (route.participantMode !== "MULTIPLAYER") {
-    fail(MULTIPLAYER_SEAT_PROGRESSION_ERROR_CODES_V1.MODE_INVALID, "route.participantMode", "MULTIPLAYER_REQUIRED");
-  }
   const runtimeId = nonEmpty(input.chapterRuntimeId, "chapterRuntimeId");
   const chapterId = input.chapterId;
   const projection = input.projection;

@@ -54,17 +54,16 @@ test("all authored Beats make only that seat ready for chapter convergence", () 
   assert.equal(plan.decisionPointId, null);
 });
 
-test("solo is rejected so multiplayer progression cannot affect Solo", () => {
-  assert.throws(
-    () => planMultiplayerSeatBeatCursorV1({
-      participantMode: "SOLO",
-      chapterRuntimeId: "chapter-runtime-1",
-      seatId,
-      package: authoring,
-      acceptedActions: [],
-    }),
-    /PRESSURE_MULTIPLAYER_SEAT_BEAT_MODE_INVALID/,
-  );
+test("solo uses the same authored cursor without creating AI actions", () => {
+  const plan = planMultiplayerSeatBeatCursorV1({
+    participantMode: "SOLO",
+    chapterRuntimeId: "chapter-runtime-1",
+    seatId,
+    package: authoring,
+    acceptedActions: [],
+  });
+  assert.equal(plan.status, "AWAITING_DECISION");
+  assert.equal(plan.decisionPointId, "N1.weir_crisis");
 });
 
 test("a skipped or reordered Beat is rejected", () => {

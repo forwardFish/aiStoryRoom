@@ -52,7 +52,7 @@ test("published loader pins the full route and rejects a tampered CJS core", (t)
   assert.deepEqual(reconstructedRegistry.routes, [release.routeRegistration]);
   assert.equal(
     reconstructedRegistry.registryHash,
-    "3303b13984ace2e9d20660fc5039b11dd9af7864e9e3c2be28da3ad147ed9f91",
+    "87dac610424d5c72f66030afcf2887e8df0895ed1e74e9be60bb499db72ebcd9",
   );
 
   const sourceRoot = resolve(

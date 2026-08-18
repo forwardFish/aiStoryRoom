@@ -95,17 +95,17 @@ test("M5 preserves actions submitted before a human seat hands off and lets AI f
   assert.equal(harness.reconciled.length, authoring.beats.length + 2);
 });
 
-test("M5 cannot be entered by Solo", async () => {
+test("M5 converges a registered Solo chapter only after the sole human completes all Beats", async () => {
   const harness = createHarness(true, routeFixture([GOVERNOR]));
-  await assert.rejects(
-    harness.service.convergeIfReady({
-      routeSnapshot: harness.route,
-      chapterRuntimeId: runtimeId,
-      chapterId: "N1",
-      nowMs: 10,
-    }),
-    /MULTIPLAYER_REQUIRED/u,
-  );
+  const result = await harness.service.convergeIfReady({
+    routeSnapshot: harness.route,
+    chapterRuntimeId: runtimeId,
+    chapterId: "N1",
+    nowMs: 10,
+  });
+  assert.equal(result.status, "CONVERGED");
+  assert.equal(harness.convergenceCalls, authoring.beats.length);
+  assert.equal(harness.reconciled.length, authoring.beats.length);
 });
 
 function createHarness(
@@ -115,7 +115,8 @@ function createHarness(
   handedOffSeatId?: SeatIdV1,
 ) {
   const route = routeValue ?? routeFixture(humans);
-  const accepted = humans.flatMap((seatId) => authoring.beats.flatMap((beat, index) => (
+  const routeHumans = route.humanSeatIdsAtStart as SeatIdV1[];
+  const accepted = routeHumans.flatMap((seatId) => authoring.beats.flatMap((beat, index) => (
     (allReady || seatId === ADMINISTRATION)
       && (seatId !== handedOffSeatId || index < 2)
       ? [acceptedFixture(route, seatId, beat.catalogDecisionPointRef, `action-${seatId}-${index}`)]

@@ -37,6 +37,10 @@ import { planMultiplayerSeatBeatCursorV1 } from "../multiplayer-seat-beat/plan";
 import { readAcceptedMultiplayerSeatActionsV1 } from "../multiplayer-seat-progression/accepted-actions";
 import { compileMultiplayerSeatBeatStoryContextV1 } from "../multiplayer-seat-progression/story-context";
 import { SANGTIAN_INITIAL_PLAYER_METRICS_V1 } from "../initial-player-state/sangtian-initial-player-state";
+import {
+  LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
+  type PressureBeatSubmitPolicyPortV1,
+} from "../beat-submit-policy/policy";
 
 /**
  * Viewer-scoped chapter read composition. It joins only the frozen route,
@@ -52,6 +56,8 @@ implements PressureGameChapterReaderPort {
     private readonly working: WorkingProjectionReaderPort,
     private readonly content: AuthoredChapterContentPort,
     private readonly mapper: SangtianPressureGameContentMapperV1,
+    private readonly beatSubmitPolicy: PressureBeatSubmitPolicyPortV1 =
+      LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
   ) {}
 
   async readCurrent(input: {
@@ -99,7 +105,10 @@ implements PressureGameChapterReaderPort {
       }),
     ]);
     return {
-      chapter: stored.snapshot.participantMode === "MULTIPLAYER"
+      chapter: this.beatSubmitPolicy.usesIndependentSeatBeats({
+        participantMode: stored.snapshot.participantMode,
+        chapterId: state.currentChapterId,
+      })
         ? this.projectMultiplayerCurrent({
             runId: input.runId,
             routeHash: input.routeHash,
@@ -134,7 +143,10 @@ implements PressureGameChapterReaderPort {
     const projection = input.projection;
     const chapter = input.chapter;
     if (
-      input.routeSnapshot.participantMode !== "MULTIPLAYER"
+      !this.beatSubmitPolicy.usesIndependentSeatBeats({
+        participantMode: input.routeSnapshot.participantMode,
+        chapterId: state.currentChapterId,
+      })
       || state.runId !== input.runId
       || state.routeHash !== input.routeHash
       || projection.key.runId !== input.runId

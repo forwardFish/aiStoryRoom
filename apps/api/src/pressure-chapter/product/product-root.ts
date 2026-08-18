@@ -17,6 +17,7 @@ import { ChapterSettlementOrchestrator } from "../chapter-settlement";
 import {
   createPressureDecisionAutomationProductionV1,
 } from "../decision-automation";
+import { SangtianRegisteredBeatSubmitPolicyV1 } from "../beat-submit-policy/policy";
 import {
   MultiplayerFormalDecisionActivityServiceV1,
   MultiplayerSeatProgressionServiceV1,
@@ -316,6 +317,7 @@ export async function createPressureChapterProductRootV1(input: {
     seatPersistence.decisionAuthority,
   );
 
+  const beatSubmitPolicy = new SangtianRegisteredBeatSubmitPolicyV1();
   const content = new SangtianAuthoredChapterContentAdapterV1();
   const ledgerRepository = new PrismaWorkingLedgerRepository(
     asPrisma<WorkingLedgerPrismaClient>(input.prisma),
@@ -324,7 +326,10 @@ export async function createPressureChapterProductRootV1(input: {
   const interactionAccess = new PrismaPressureInteractionAccessRepository(
     asPrisma<InteractionAccessPrismaClient>(input.prisma),
   );
-  const multiplayerDecisionActivity = new MultiplayerFormalDecisionActivityServiceV1(content);
+  const multiplayerDecisionActivity = new MultiplayerFormalDecisionActivityServiceV1(
+    content,
+    beatSubmitPolicy,
+  );
   const formalInteraction = new FormalPressureInteractionService(
     interactionAccess,
     ledgerRepository,
@@ -530,6 +535,7 @@ export async function createPressureChapterProductRootV1(input: {
     working: onlineProjections,
     content,
     mapper: gameContentMapper,
+    beatSubmitPolicy,
   });
   const oneCallStoryGenerator = new PressureOneCallStoryGeneratorV1(
     input.oneCallStoryProvider ?? null,
@@ -559,6 +565,7 @@ export async function createPressureChapterProductRootV1(input: {
       input.turnPresentationProvider ?? null,
     ),
     input.chapterSummaryReader ?? chapterSummaryProduction.reader,
+    beatSubmitPolicy,
   );
   const gameReadSnapshot = new PrismaGameReadSnapshotReaderV1(
     asPrisma<GameReadSnapshotPrismaClientV1>(input.prisma),
@@ -643,6 +650,8 @@ export async function createPressureChapterProductRootV1(input: {
     },
     decisionAutomation.snapshots,
     decisionAutomation.policy.artifactSha256,
+    undefined,
+    beatSubmitPolicy,
   );
   const narrativeLane: PressureWorkerLanePortV1 = Object.freeze({
     tick: (workerId: string) => narrative.consumeNext(workerId),
@@ -716,15 +725,16 @@ export async function createPressureChapterProductRootV1(input: {
     httpPorts.replay,
     httpPorts.clock,
     decisionAutomation.service,
-    // Every Beat, including the first N1 decision, uses the same generic
-    // convergence authority. The historical first-N1 SQL7 service remains
-    // available for isolated performance work but is not a product writer.
+    // Registered multi-Beat chapters persist each human seat independently
+    // and enter the shared convergence authority only at chapter end. The
+    // historical first-N1 SQL7 service is not a product writer.
     undefined,
     gameRead.reader,
     gameReadConfiguration.mode,
     gameReadRuntimeObserver,
     multiplayerProgression,
     multiplayerChapterConvergence,
+    beatSubmitPolicy,
   );
   const roomsGateway = new PressureChapterRoomsGatewayV1(production.bridge);
   return Object.freeze({

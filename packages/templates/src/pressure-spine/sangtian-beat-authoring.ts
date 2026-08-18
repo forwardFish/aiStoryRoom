@@ -35,6 +35,33 @@ type RegistryEntry = {
 };
 
 const cache = new Map<string, SangtianPressureBeatAuthoringSourceV1>();
+let registeredChapterIdsCache: ReadonlySet<string> | null = null;
+
+/**
+ * Returns whether a chapter has the complete authored multi-Beat package
+ * required by the independent per-seat flow. Invalid registered content still
+ * fails closed when loaded; this only distinguishes an absent registration.
+ */
+export function isSangtianPressureChapterBeatAuthoringRegisteredV1(
+  chapterId: string,
+): boolean {
+  const normalizedChapterId = text(chapterId, "chapterId");
+  if (!registeredChapterIdsCache) {
+    const registry = record(
+      readSangtianAuthoringJsonV1(CONFIG_ROOT, REGISTRY_PATH),
+      "registry",
+    );
+    if (registry.schemaVersion !== "pressure_chapter_beat_authoring_registry_v1") {
+      invalid("registry.schemaVersion", "UNSUPPORTED");
+    }
+    const chapters = record(registry.chapters, "registry.chapters");
+    registeredChapterIdsCache = new Set(Object.keys(chapters).map((id) => text(
+      id,
+      "registry.chapters.chapterId",
+    )));
+  }
+  return registeredChapterIdsCache.has(normalizedChapterId);
+}
 
 /**
  * Content-driven loader. Chapter registration selects files; the TypeScript
@@ -98,6 +125,7 @@ export function loadSangtianPressureChapterBeatAuthoringSourceV1(
 
 export function clearSangtianPressureBeatAuthoringCacheForTestsV1(): void {
   cache.clear();
+  registeredChapterIdsCache = null;
 }
 
 function registryEntry(value: unknown, chapterId: string): RegistryEntry {

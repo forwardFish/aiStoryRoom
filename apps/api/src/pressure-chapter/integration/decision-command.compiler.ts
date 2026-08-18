@@ -51,6 +51,10 @@ import type { StoredRunRouteRecordV1 } from "../run-router/types";
 import type { WorkingActionIntentV1 } from "../working-ledger/contracts";
 import { PressureCatalogCustomActionGuardV1 } from "./custom-action.guard";
 import { failPressureChapterIntegration } from "./errors";
+import {
+  LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
+  type PressureBeatSubmitPolicyPortV1,
+} from "../beat-submit-policy/policy";
 
 export interface ServerDecisionWorkingIntentCompilerPortV1 {
   compile(input: Readonly<{
@@ -161,6 +165,8 @@ implements PressureChapterHttpDecisionCompilerPort {
     private readonly submitSnapshots?: DecisionConvergenceSnapshotReaderPortV1,
     private readonly aiPolicyArtifactHash?: string,
     private readonly customActions = new PressureCatalogCustomActionGuardV1(),
+    private readonly beatSubmitPolicy: PressureBeatSubmitPolicyPortV1 =
+      LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
   ) {}
 
   async compile(input: Readonly<{
@@ -185,7 +191,10 @@ implements PressureChapterHttpDecisionCompilerPort {
     const storedRoute = assertStoredRunRouteRecord(input.storedRoute);
     const route = validateRunRouteSnapshotV1(storedRoute.snapshot);
     const publicCommand = validatePublicCommand(input.command);
-    if (route.participantMode === "MULTIPLAYER") {
+    if (this.beatSubmitPolicy.usesIndependentSeatBeats({
+      participantMode: route.participantMode,
+      chapterId: publicCommand.chapterId,
+    })) {
       return {
         command: await this.compileInternal({
           access,
@@ -281,7 +290,11 @@ implements PressureChapterHttpDecisionCompilerPort {
     ) {
       mismatch("decision.route", "STORED_ROUTE_BINDING_MISMATCH");
     }
-    const multiplayerProjection = route.participantMode === "MULTIPLAYER"
+    const independentSeatFlow = this.beatSubmitPolicy.usesIndependentSeatBeats({
+      participantMode: route.participantMode,
+      chapterId: publicCommand.chapterId,
+    });
+    const multiplayerProjection = independentSeatFlow
       ? await this.working.load({
           runId: route.runId,
           chapterRuntimeId: publicCommand.chapterRuntimeId,
@@ -348,7 +361,7 @@ implements PressureChapterHttpDecisionCompilerPort {
       runId: route.runId,
       chapterRuntimeId: publicCommand.chapterRuntimeId,
     });
-    const multiplayerDecisionPointId = route.participantMode === "MULTIPLAYER"
+    const multiplayerDecisionPointId = independentSeatFlow
       ? multiplayerDecisionPointForSeatV1({
           route,
           projection,
@@ -364,7 +377,7 @@ implements PressureChapterHttpDecisionCompilerPort {
       || projection.chapterId !== publicCommand.chapterId
       || projection.state.revision !== publicCommand.expectedWorkingRevision
       || (
-        route.participantMode === "MULTIPLAYER"
+        independentSeatFlow
           ? multiplayerDecisionPointId !== publicCommand.decisionPointId
           : projection.nextDecisionPin?.decisionPointId !== publicCommand.decisionPointId
       )
@@ -560,7 +573,10 @@ implements PressureChapterHttpDecisionCompilerPort {
       || projection.chapterId !== command.chapterId
       || projection.state.revision !== command.expectedWorkingRevision
       || (
-        route.participantMode === "MULTIPLAYER"
+        this.beatSubmitPolicy.usesIndependentSeatBeats({
+          participantMode: route.participantMode,
+          chapterId: command.chapterId,
+        })
           ? multiplayerDecisionPointForSeatV1({
               route,
               projection,
@@ -582,7 +598,10 @@ implements PressureChapterHttpDecisionCompilerPort {
       || chapter.decision.decisionPointId !== command.decisionPointId
       || chapter.decision.expectedWorkingRevision !== command.expectedWorkingRevision
     ) mismatch("decision.authority", "STALE_OR_NOT_AUTHORIZED");
-    if (route.participantMode === "MULTIPLAYER") {
+    if (this.beatSubmitPolicy.usesIndependentSeatBeats({
+      participantMode: route.participantMode,
+      chapterId: command.chapterId,
+    })) {
       return { decision: chapter.decision, projection };
     }
     const capabilities = await this.authority!.capabilities.readCapabilities({

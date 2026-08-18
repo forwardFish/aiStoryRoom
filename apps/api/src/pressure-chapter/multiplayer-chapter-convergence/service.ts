@@ -18,6 +18,7 @@ import { validateOrchestratorStateV1 } from "../orchestrator/validation";
 import type { SeatControlAuthorityPort } from "../seat-control/types";
 import { planMultiplayerSeatBeatCursorV1 } from "../multiplayer-seat-beat/plan";
 import { readAcceptedMultiplayerSeatActionsV1 } from "../multiplayer-seat-progression/accepted-actions";
+import { usesIndependentSeatBeatFlowV1 } from "../beat-submit-policy/policy";
 import type {
   MultiplayerChapterConvergenceCommandV1,
   MultiplayerChapterConvergencePortV1,
@@ -43,7 +44,7 @@ export class MultiplayerChapterConvergenceErrorV1 extends Error {
 }
 
 /**
- * Chapter-end-only reconciliation. Human actions have already been persisted;
+ * Chapter-end-only reconciliation for registered multi-Beat chapters. Human actions have already been persisted;
  * this service replays them through the shared orchestrator, then delegates AI
  * filling and the single authoritative Beat/Settlement path to the existing
  * convergence service.
@@ -65,8 +66,15 @@ implements MultiplayerChapterConvergencePortV1 {
     raw: Readonly<MultiplayerChapterConvergenceCommandV1>,
   ): Promise<MultiplayerChapterConvergenceResultV1> {
     const route = validateRunRouteSnapshotV1(raw.routeSnapshot);
-    if (route.participantMode !== "MULTIPLAYER") {
-      return fail(MULTIPLAYER_CHAPTER_CONVERGENCE_ERROR_CODES_V1.MODE_INVALID, "route.participantMode", "MULTIPLAYER_REQUIRED");
+    if (!usesIndependentSeatBeatFlowV1({
+      participantMode: route.participantMode,
+      chapterId: raw.chapterId,
+    })) {
+      return fail(
+        MULTIPLAYER_CHAPTER_CONVERGENCE_ERROR_CODES_V1.MODE_INVALID,
+        "chapter.beatSubmitPolicy",
+        "INDEPENDENT_SEAT_BEATS_REQUIRED",
+      );
     }
     if (!Number.isSafeInteger(raw.nowMs) || raw.nowMs < 0) {
       return fail(MULTIPLAYER_CHAPTER_CONVERGENCE_ERROR_CODES_V1.AUTHORITY_MISMATCH, "nowMs", "NON_NEGATIVE_SAFE_INTEGER");

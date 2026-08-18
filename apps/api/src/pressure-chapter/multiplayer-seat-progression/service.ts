@@ -17,6 +17,11 @@ import type {
   SubmitFormalInteractionCommandV1,
 } from "../interaction/contracts";
 import type { WorkingLedgerProjectionV1 } from "../working-ledger/contracts";
+import {
+  LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
+  type PressureBeatSubmitPolicyPortV1,
+  usesIndependentSeatBeatFlowV1,
+} from "../beat-submit-policy/policy";
 import { planMultiplayerSeatBeatCursorV1 } from "../multiplayer-seat-beat/plan";
 import {
   MULTIPLAYER_SEAT_PROGRESSION_ERROR_CODES_V1,
@@ -29,7 +34,7 @@ import type {
 } from "./contracts";
 
 /**
- * Multiplayer-only application service. Accepted actions remain in the
+ * Per-seat application service for registered multi-Beat chapters. Accepted actions remain in the
  * existing Working Ledger; the cursor is rebuilt on every read and is never a
  * second mutable authority.
  */
@@ -47,11 +52,14 @@ implements MultiplayerSeatProgressionPortV1 {
     seatId: SeatIdV1;
   }>): Promise<MultiplayerSeatProgressionResultV1> {
     const route = validateRunRouteSnapshotV1(input.routeSnapshot);
-    if (route.participantMode !== "MULTIPLAYER") {
+    if (!usesIndependentSeatBeatFlowV1({
+      participantMode: route.participantMode,
+      chapterId: input.chapterId,
+    })) {
       failMultiplayerSeatProgressionV1(
         MULTIPLAYER_SEAT_PROGRESSION_ERROR_CODES_V1.MODE_INVALID,
-        "route.participantMode",
-        "MULTIPLAYER_REQUIRED",
+        "chapter.beatSubmitPolicy",
+        "INDEPENDENT_SEAT_BEATS_REQUIRED",
       );
     }
     const projection = await this.working.load({
@@ -68,11 +76,14 @@ implements MultiplayerSeatProgressionPortV1 {
   ): Promise<MultiplayerSeatProgressionResultV1> {
     const command = structuredClone(raw);
     const route = validateRunRouteSnapshotV1(command.routeSnapshot);
-    if (route.participantMode !== "MULTIPLAYER") {
+    if (!usesIndependentSeatBeatFlowV1({
+      participantMode: route.participantMode,
+      chapterId: command.action.chapterId,
+    })) {
       failMultiplayerSeatProgressionV1(
         MULTIPLAYER_SEAT_PROGRESSION_ERROR_CODES_V1.MODE_INVALID,
-        "route.participantMode",
-        "MULTIPLAYER_REQUIRED",
+        "chapter.beatSubmitPolicy",
+        "INDEPENDENT_SEAT_BEATS_REQUIRED",
       );
     }
     const before = await this.working.load({
@@ -147,6 +158,8 @@ export class MultiplayerFormalDecisionActivityServiceV1
 implements PressureFormalDecisionActivityPortV1 {
   constructor(
     private readonly content: Pick<AuthoredChapterContentPort, "load">,
+    private readonly beatSubmitPolicy: PressureBeatSubmitPolicyPortV1 =
+      LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
   ) {}
 
   async resolve(input: Readonly<{
@@ -155,7 +168,10 @@ implements PressureFormalDecisionActivityPortV1 {
     access: PressureInteractionAccessV1;
   }>): Promise<"DELEGATE" | "ACTIVE" | "INACTIVE"> {
     const route = validateRunRouteSnapshotV1(input.command.routeSnapshot);
-    if (route.participantMode !== "MULTIPLAYER") return "DELEGATE";
+    if (!this.beatSubmitPolicy.usesIndependentSeatBeats({
+      participantMode: route.participantMode,
+      chapterId: input.command.action.chapterId,
+    })) return "DELEGATE";
     if (
       input.access.routeHash !== route.routeHash
       || !input.access.controlledSeatIds.includes(input.command.action.seatId)

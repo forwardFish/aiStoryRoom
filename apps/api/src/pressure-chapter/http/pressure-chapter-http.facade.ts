@@ -10,6 +10,10 @@ import {
 import type { PressureDecisionConvergencePortV1 } from "../decision-automation/contracts";
 import type { MultiplayerSeatProgressionPortV1 } from "../multiplayer-seat-progression/contracts";
 import type { MultiplayerChapterConvergencePortV1 } from "../multiplayer-chapter-convergence/contracts";
+import {
+  LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
+  type PressureBeatSubmitPolicyPortV1,
+} from "../beat-submit-policy/policy";
 import type { PressureSql7FirstSubmitServiceV1 } from "../sql7-fast-path/service";
 import type { PressureGameReadModeV1 } from "../observability/game-read-observation";
 import {
@@ -100,6 +104,8 @@ export class PressureChapterHttpFacade {
       new NoopPressureGameReadRuntimeObserverV1(),
     private readonly multiplayerProgression: MultiplayerSeatProgressionPortV1 | null = null,
     private readonly multiplayerChapterConvergence: MultiplayerChapterConvergencePortV1 | null = null,
+    private readonly beatSubmitPolicy: PressureBeatSubmitPolicyPortV1 =
+      LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
   ) {}
 
   getGame(
@@ -131,7 +137,11 @@ export class PressureChapterHttpFacade {
           ...query,
         });
         if (
-          multiplayer
+          access.participantMode !== undefined
+          && this.beatSubmitPolicy.usesIndependentSeatBeats({
+              participantMode: access.participantMode,
+              chapterId: projection.chapter.chapterId,
+            })
           && this.multiplayerChapterConvergence
           && projection.chapter.chapterId !== "P0"
           && ["RESOLVING_BEAT", "SETTLING"].includes(projection.chapter.phase)
@@ -307,7 +317,10 @@ export class PressureChapterHttpFacade {
         command,
         nowMs,
       );
-      if (context.stored.snapshot.participantMode === "MULTIPLAYER") {
+      if (this.beatSubmitPolicy.usesIndependentSeatBeats({
+        participantMode: context.stored.snapshot.participantMode,
+        chapterId: compiled.action.chapterId,
+      })) {
         if (!this.multiplayerProgression || !this.multiplayerChapterConvergence) {
           failPressureChapterHttp(
             ERROR.DEPENDENCY_FAILURE,
