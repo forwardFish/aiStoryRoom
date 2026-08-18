@@ -52,6 +52,7 @@ test("production composition never reads an undeclared Provider/OpenAI/OpenNovel
     "clock",
     "config",
     "aiPolicyOptions",
+    "submitPageSnapshots",
   ]);
   const undeclaredCapabilityReads: string[] = [];
   const input = new Proxy({

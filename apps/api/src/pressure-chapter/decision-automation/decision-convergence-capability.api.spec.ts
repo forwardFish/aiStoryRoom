@@ -92,12 +92,12 @@ test("HTTP waits only for authority convergence and viewer-safe final projection
   );
   const submitIndex = http.indexOf("await this.actions.submitAction(compiled)");
   const convergeIndex = http.indexOf("await this.convergence.converge");
-  const projectionIndex = http.indexOf("const projection = this.gameReadMode !== \"REPLAY\"");
+  const projectionIndex = http.indexOf("let projection:");
   assert.ok(submitIndex >= 0 && convergeIndex > submitIndex && projectionIndex > convergeIndex);
   assert.doesNotMatch(http.slice(submitIndex, projectionIndex), /narrative|aEmotion|provider/iu);
   assert.match(http.slice(projectionIndex), /this\.gameRead\.read/u);
-  assert.match(http.slice(projectionIndex), /readFromCommittedAuthority/u);
-  assert.match(http.slice(projectionIndex), /: await this\.game\.read/u);
+  assert.match(http.slice(projectionIndex), /this\.game\.projectFromResolvedSources/u);
+  assert.match(http.slice(projectionIndex), /compilePostCommitResolvedSourcesV1/u);
 });
 
 test("public submit-decision response remains schemaVersion/idempotencyKey/projection", () => {

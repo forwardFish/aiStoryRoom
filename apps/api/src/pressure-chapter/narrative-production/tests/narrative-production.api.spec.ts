@@ -191,7 +191,7 @@ test("production consumer publishes Genesis, Beat, Chapter, and Finale sources t
 
 test("configured Provider receives only compiled audience-safe context", async () => {
   const runtime = await runtimeModule();
-  const job = jobFixture();
+  const job = jobForProjectionKind("BEAT_NARRATIVE");
   const outbox = new SingleJobOutbox(job);
   const persistence = new DurableNarrativeProjectionDouble();
   let captured: unknown = null;
@@ -215,7 +215,7 @@ test("configured Provider receives only compiled audience-safe context", async (
   };
   const execution = await createPressureNarrativeProductionExecutionV1({
     outbox,
-    authority: { async readCommitted() { return rawAuthorityFixture(job); } },
+    authority: { async readCommitted() { return rawAuthorityForProjectionKind(job); } },
     projectionPersistence: persistence,
     runtimeLoader: staticOpenNovelPressureNarrativeRuntimeLoaderV1(runtime),
     provider,
@@ -235,7 +235,7 @@ test("configured Provider receives only compiled audience-safe context", async (
 
 test("publisher crash resumes pending artifact without a second Provider call", async () => {
   const runtime = await runtimeModule();
-  const job = jobFixture();
+  const job = jobForProjectionKind("BEAT_NARRATIVE");
   const persistence = new DurableNarrativeProjectionDouble();
   persistence.failAfterFirstArtifactStage = true;
   const clock = new MutableClock(30_000);
@@ -750,6 +750,19 @@ function rawAuthorityFixture(job: OpenNovelNarrativeProjectionJobV1) {
 }
 
 function audienceSafeSourceFixture(job: OpenNovelNarrativeProjectionJobV1) {
+  const variant = job.projectionKind === "BEAT_NARRATIVE"
+    ? {
+      kind: "BEAT" as const,
+      chapterId: "N1" as const,
+      workingRevision: 1,
+      temporalBoundary: "WORKING_NOT_FROZEN" as const,
+    }
+    : {
+      kind: "CHAPTER" as const,
+      chapterId: "N1" as const,
+      committedWorldSequence: 1,
+      nextChapterId: "N2" as const,
+    };
   return {
     schemaVersion: "audience_safe_narrative_source_v1",
     projectionKind: job.projectionKind,
@@ -768,12 +781,7 @@ function audienceSafeSourceFixture(job: OpenNovelNarrativeProjectionJobV1) {
       { kind: "FACT", refId: "fact.public", statement: "Public fact", required: true },
       { kind: "FACT", refId: "fact.viewer", statement: "Viewer fact", required: true },
     ],
-    variant: {
-      kind: "CHAPTER",
-      chapterId: "N1",
-      committedWorldSequence: 1,
-      nextChapterId: "N2",
-    },
+    variant,
   };
 }
 

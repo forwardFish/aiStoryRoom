@@ -1133,7 +1133,10 @@ function chapterWorld(sequence: number): WorldStateV1 {
 }
 
 function worldState(sequence: number, factValues: Record<string, boolean>): WorldStateV1 {
-  const trackValue = sequence === 7 ? 3 : 0;
+  // This in-memory settlement double models the published MID branch for each
+  // chapter. MID has an empty track delta, so its frozen delta-scale snapshots
+  // remain at zero through N7.
+  const trackValue = 0;
   const tracksBody = {
     schemaVersion: "sangtian_track_state_v1" as const,
     values: Object.fromEntries(TRACK_IDS_V1.map((trackId) => [trackId, trackValue])) as Record<TrackIdV1, number>,
