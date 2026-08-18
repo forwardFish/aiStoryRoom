@@ -169,13 +169,22 @@ test("Narrative projection publishes artifact without any authority-table capabi
     fence: claim.fence,
     artifact,
   });
+  const transactionCountAfterAtomicPublish = fake.transactionCalls;
   assert.deepEqual(stored, artifact);
+  assert.equal(fake.row.status, "PUBLISHED");
+  assert.equal(fake.row.checkpoint, "PUBLISHED");
+  assert.deepEqual(fake.row.artifactJson, artifact);
+  assert.equal(fake.row.artifactContentHash, artifact.contentHash);
+  assert.ok(fake.row.publishedAt instanceof Date);
+  assert.equal(fake.row.leaseOwner, null);
+  assert.equal(fake.row.leaseExpiresAt, null);
   await repository.markPublished({
     projectionId: claim.projectionId,
     fence: claim.fence,
     status: "PUBLISHED",
     artifact,
   });
+  assert.equal(fake.transactionCalls, transactionCountAfterAtomicPublish);
   assert.equal(fake.row.status, "PUBLISHED");
   assert.deepEqual(fake.row.artifactJson, artifact);
   assert.equal(fake.row.artifactContentHash, artifact.contentHash);
@@ -250,6 +259,7 @@ test("Narrative artifact publication fails closed on projection binding or statu
     fence: 1,
     artifact,
   });
+  assert.equal(fake.row.status, "PUBLISHED");
   await assert.rejects(
     repository.markPublished({
       projectionId: fake.row.id,
@@ -260,8 +270,121 @@ test("Narrative artifact publication fails closed on projection binding or statu
     (error: unknown) => error instanceof PressurePersistenceError
       && error.code === "PRESSURE_PERSISTENCE_RECORD_INVALID",
   );
-  assert.equal(fake.row.status, "GENERATING");
+  assert.equal(fake.row.status, "PUBLISHED");
   assert.equal(fake.authorityWriteCalls, 0);
+});
+
+test("Narrative publication atomically repairs an identical legacy staged artifact", async () => {
+  const job = jobFixture();
+  const logicalProjectionKey = sha256Canonical({
+    sourceCommitHash: job.sourceCommitHash,
+    audience: job.audience,
+    projectionKind: job.projectionKind,
+  });
+  const projectorVersion = "openovel-projector-v1";
+  const requestFingerprint = computeNarrativeProjectionFingerprint(job, projectorVersion);
+  const artifact = artifactFixture(job, projectorVersion);
+  const fake = new ProjectionFake({
+    id: "projection-legacy-staged",
+    runId: job.runId,
+    projectionKind: job.projectionKind,
+    sourceAuthority: job.sourceAuthority,
+    sourceId: job.sourceId,
+    sourceCommitHash: job.sourceCommitHash,
+    sourceContentHash: job.sourceContentHash,
+    narrativeProfileVersion: job.narrativeProfileVersion,
+    projectorVersion,
+    audienceKind: job.audience.kind,
+    audienceSeatId: job.audience.seatId,
+    audienceKey: "public",
+    status: "VALIDATING",
+    checkpoint: "VALIDATED",
+    publishedAt: null,
+    requestFingerprint,
+    attempt: 0,
+    maxAttempts: 3,
+    leaseOwner: "worker-a",
+    leaseExpiresAt: new Date(NOW + 30_000),
+    leaseVersion: 1,
+    lastError: createNarrativeProjectionMetaV1({ logicalProjectionKey, jobId: job.jobId }),
+    artifactJson: artifact,
+    artifactContentHash: artifact.contentHash,
+  });
+  const repository = new PrismaNarrativeProjectionStateRepository(fake.client);
+
+  const stored = await repository.publish({
+    logicalProjectionKey,
+    requestFingerprint,
+    projectionId: fake.row.id,
+    fence: 1,
+    artifact,
+  });
+
+  assert.deepEqual(stored, artifact);
+  assert.equal(fake.row.status, "PUBLISHED");
+  assert.equal(fake.row.checkpoint, "PUBLISHED");
+  assert.ok(fake.row.publishedAt instanceof Date);
+  assert.equal(fake.row.leaseOwner, null);
+  assert.equal(fake.row.leaseExpiresAt, null);
+});
+
+test("Narrative publication rejects a different artifact without changing the published row", async () => {
+  const job = jobFixture();
+  const logicalProjectionKey = sha256Canonical({
+    sourceCommitHash: job.sourceCommitHash,
+    audience: job.audience,
+    projectionKind: job.projectionKind,
+  });
+  const projectorVersion = "openovel-projector-v1";
+  const requestFingerprint = computeNarrativeProjectionFingerprint(job, projectorVersion);
+  const artifact = artifactFixture(job, projectorVersion);
+  const fake = new ProjectionFake({
+    id: "projection-conflicting-artifact",
+    runId: job.runId,
+    projectionKind: job.projectionKind,
+    sourceAuthority: job.sourceAuthority,
+    sourceId: job.sourceId,
+    sourceCommitHash: job.sourceCommitHash,
+    sourceContentHash: job.sourceContentHash,
+    narrativeProfileVersion: job.narrativeProfileVersion,
+    projectorVersion,
+    audienceKind: job.audience.kind,
+    audienceSeatId: job.audience.seatId,
+    audienceKey: "public",
+    status: "PUBLISHED",
+    checkpoint: "PUBLISHED",
+    publishedAt: new Date(NOW),
+    requestFingerprint,
+    attempt: 0,
+    maxAttempts: 3,
+    leaseOwner: null,
+    leaseExpiresAt: null,
+    leaseVersion: 1,
+    lastError: createNarrativeProjectionMetaV1({ logicalProjectionKey, jobId: job.jobId }),
+    artifactJson: artifact,
+    artifactContentHash: artifact.contentHash,
+  });
+  const repository = new PrismaNarrativeProjectionStateRepository(fake.client);
+  const conflicting = {
+    ...artifact,
+    text: `${artifact.text} conflict`,
+  };
+  conflicting.contentHash = computeNarrativeArtifactContentHash(conflicting);
+
+  await assert.rejects(
+    repository.publish({
+      logicalProjectionKey,
+      requestFingerprint,
+      projectionId: fake.row.id,
+      fence: 1,
+      artifact: conflicting,
+    }),
+    (error: unknown) => error instanceof PressurePersistenceError
+      && error.code === "PRESSURE_PERSISTENCE_FINGERPRINT_MISMATCH",
+  );
+  assert.deepEqual(fake.row.artifactJson, artifact);
+  assert.equal(fake.row.artifactContentHash, artifact.contentHash);
+  assert.equal(fake.row.status, "PUBLISHED");
 });
 
 test("Narrative authority reader reconstructs a hash-verifiable committed Beat envelope", async () => {
@@ -351,6 +474,7 @@ class OutboxFake {
 
 class ProjectionFake {
   authorityWriteCalls = 0;
+  transactionCalls = 0;
   constructor(readonly row: Record<string, any>) {}
   readonly tx = {
     pressureNarrativeProjection: {
@@ -361,6 +485,7 @@ class ProjectionFake {
   };
   readonly client: NarrativeProjectionPrismaClient = {
     $transaction: async <T>(operation: (tx: any) => Promise<T>): Promise<T> => {
+      this.transactionCalls += 1;
       this.install();
       return operation(this.tx);
     },

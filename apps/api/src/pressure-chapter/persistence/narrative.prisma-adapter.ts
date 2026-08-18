@@ -248,6 +248,8 @@ interface ProjectionRow {
   audienceSeatId: string | null;
   audienceKey: string;
   status: string;
+  checkpoint: string;
+  publishedAt: Date | null;
   requestFingerprint: string;
   attempt: number;
   maxAttempts: number;
@@ -421,17 +423,36 @@ implements NarrativeProjectionStatePortV1, NarrativeArtifactPublisherPortV1 {
             { projectionId: row.id, contentHash: artifact.contentHash },
           );
         }
-        return prior;
+        if (
+          row.status === artifact.status
+          && row.checkpoint === "PUBLISHED"
+          && row.publishedAt !== null
+          && row.leaseOwner === null
+          && row.leaseExpiresAt === null
+        ) {
+          return prior;
+        }
       }
       const updated = await tx.pressureNarrativeProjection.updateMany({
         where: {
           id: row.id,
           leaseVersion: request.fence,
-          artifactContentHash: null,
+          artifactContentHash: row.artifactContentHash,
         },
         data: {
           artifactJson: json(artifact),
           artifactContentHash: artifact.contentHash,
+          status: artifact.status,
+          checkpoint: "PUBLISHED",
+          publishedAt: new Date(),
+          leaseOwner: null,
+          leaseExpiresAt: null,
+          lastError: encodeProjectionMeta({
+            ...meta,
+            pendingArtifact: null,
+            lastErrorCode: null,
+            nextAttemptAtMs: null,
+          }),
         },
       });
       assertProjectionFence(updated.count, request.projectionId, request.fence);
@@ -446,37 +467,12 @@ implements NarrativeProjectionStatePortV1, NarrativeArtifactPublisherPortV1 {
     artifact: OpenNovelNarrativeArtifactV1;
   }): Promise<void> {
     const artifact = validateOpenNovelNarrativeArtifactV1(request.artifact);
-    await pressureSerializableTransaction(this.prisma, async (tx) => {
-      const row = await requireProjectionFence(tx, request.projectionId, request.fence);
-      assertArtifactBoundToProjection(row, artifact);
-      if (request.status !== artifact.status) {
-        throw invalid("Narrative publication status does not match its artifact");
-      }
-      if (
-        row.artifactContentHash !== artifact.contentHash
-        || sha256Canonical(decodeProjectionArtifact(row)) !== sha256Canonical(artifact)
-      ) {
-        throw invalid("Published NarrativeArtifact was not durably staged");
-      }
-      const meta = decodeProjectionMeta(row);
-      const updated = await tx.pressureNarrativeProjection.updateMany({
-        where: { id: row.id, leaseVersion: request.fence },
-        data: {
-          status: request.status,
-          checkpoint: "PUBLISHED",
-          publishedAt: new Date(),
-          leaseOwner: null,
-          leaseExpiresAt: null,
-          lastError: encodeProjectionMeta({
-            ...meta,
-            pendingArtifact: null,
-            lastErrorCode: null,
-            nextAttemptAtMs: null,
-          }),
-        },
-      });
-      assertProjectionFence(updated.count, request.projectionId, request.fence);
-    });
+    if (request.status !== artifact.status) {
+      throw invalid("Narrative publication status does not match its artifact");
+    }
+    // publish() is the production atomic publication boundary. The runtime
+    // retains this callback for port compatibility, but it must not create a
+    // second transaction that exposes an artifact before its published state.
   }
 
   async deadLetter(request: {
@@ -875,6 +871,8 @@ function projectionSelect(): Record<string, true> {
     audienceSeatId: true,
     audienceKey: true,
     status: true,
+    checkpoint: true,
+    publishedAt: true,
     requestFingerprint: true,
     attempt: true,
     maxAttempts: true,
