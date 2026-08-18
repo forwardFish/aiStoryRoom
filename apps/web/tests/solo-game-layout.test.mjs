@@ -37,3 +37,14 @@ test("Pressure decision cards stay centered and long generated copy cannot widen
     /\.causal-shell\[data-pressure-chapter="true"\] \.decision-composer \.decision-zone-head h2,[^}]*\.option-copy \{[^}]*min-width: 0;[^}]*white-space: normal;[^}]*overflow-wrap: anywhere;/,
   );
 });
+
+test("Pressure decision cards hide redundant titles and enlarge the actionable detail", () => {
+  assert.match(
+    styles,
+    /\.causal-shell\[data-pressure-chapter="true"\] \.decision-composer \.option-copy > b \{\s*display: none;/,
+  );
+  assert.match(
+    styles,
+    /\.causal-shell\[data-pressure-chapter="true"\] \.decision-composer \.option-copy > span \{[^}]*font-size: 16px;[^}]*line-height: 1\.55;/,
+  );
+});

@@ -481,6 +481,15 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
   white-space: normal;
   overflow-wrap: anywhere;
 }
+.causal-shell[data-pressure-chapter="true"] .decision-composer .option-copy > b {
+  display: none;
+}
+.causal-shell[data-pressure-chapter="true"] .decision-composer .option-copy > span {
+  color: #4d4668;
+  font-family: "Noto Serif SC", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
 
 /* Shared room connection failure: full-screen recovery state. */
 .shared-room-error {
