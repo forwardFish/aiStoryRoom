@@ -1071,7 +1071,16 @@ export class RoomsService {
     user: AuthenticatedUser,
     roomId: string,
     chapterRuntimeId: string,
+    updateKey?: string,
   ) {
+    if (updateKey) {
+      return this.requirePressureHttp().narrativeUpdate(
+        user,
+        roomId,
+        chapterRuntimeId,
+        updateKey,
+      );
+    }
     const engine = await this.prisma.storyRun.findUnique({
       where: { id: roomId },
       select: { engineVersion: true },
@@ -1086,6 +1095,7 @@ export class RoomsService {
       user,
       roomId,
       chapterRuntimeId,
+      updateKey,
     );
   }
 

@@ -2,6 +2,8 @@ const PRESSURE_SCHEMA = "pressure_chapter_game_projection_v1";
 const PRESSURE_COMMAND_SCHEMA = "pressure_chapter_game_command_v1";
 const PRESSURE_SUBMIT_RESPONSE_SCHEMA = "pressure_chapter_submit_decision_http_response_v1";
 const PRESSURE_NARRATIVE_UPDATE_SCHEMA = "pressure_game_narrative_update_v1";
+const PRESSURE_TURN_RECEIPT_SCHEMA = "pressure_post_commit_turn_receipt_v1";
+const PRESSURE_TURN_UPDATE_SCHEMA = "pressure_post_commit_turn_update_v1";
 
 const METRIC_PRESENTATION = [
   ["fiscal_military", "国库银两"],
@@ -28,6 +30,8 @@ export class PressureMainGameStorageV1 {
     createIdempotencyKey,
     narrativePollIntervalMs = 300,
     narrativePollAttempts = 20,
+    turnPollIntervalMs = 500,
+    turnPollAttempts = 80,
     waitImpl = defaultWait,
   } = {}) {
     if (!runId) throw new TypeError("PressureMainGameStorageV1 requires runId");
@@ -39,7 +43,10 @@ export class PressureMainGameStorageV1 {
     this.createIdempotencyKey = createIdempotencyKey || defaultIdempotencyKey;
     this.narrativePollIntervalMs = narrativePollIntervalMs;
     this.narrativePollAttempts = narrativePollAttempts;
+    this.turnPollIntervalMs = turnPollIntervalMs;
+    this.turnPollAttempts = turnPollAttempts;
     this.waitImpl = waitImpl;
+    this.asyncViewHandler = null;
   }
 
   async restoreOrCreate() {
@@ -53,6 +60,13 @@ export class PressureMainGameStorageV1 {
 
   async createRun() {
     return this.getRun();
+  }
+
+  subscribeAsyncUpdates(handler) {
+    this.asyncViewHandler = typeof handler === "function" ? handler : null;
+    return () => {
+      if (this.asyncViewHandler === handler) this.asyncViewHandler = null;
+    };
   }
 
   async submitDecision(_view, { optionKey, customText } = {}) {
@@ -103,6 +117,15 @@ export class PressureMainGameStorageV1 {
     ) {
       throw new Error("决定响应与本次提交不一致。");
     }
+    if (payload.projection === null && payload.receipt) {
+      const receipt = assertTurnReceipt(payload.receipt, projection);
+      void this.waitForTurnUpdate(receipt).then((readyProjection) => {
+        if (!readyProjection) return;
+        this.projection = assertProjection(readyProjection, this.runId);
+        this.asyncViewHandler?.(this.toView(this.projection));
+      }).catch(() => {});
+      return pendingTurnView(this.toView(this.projection), receipt);
+    }
     this.projection = assertProjection(payload.projection, this.runId);
     if (needsNarrativeUpdate(this.projection)) {
       this.projection = await this.waitForNarrativeUpdate(this.projection);
@@ -127,6 +150,28 @@ export class PressureMainGameStorageV1 {
       if (!needsNarrativeUpdate(projection)) return projection;
     }
     return projection;
+  }
+
+  async waitForTurnUpdate(receipt) {
+    for (let attempt = 0; attempt < this.turnPollAttempts; attempt += 1) {
+      if (attempt > 0) await this.waitImpl(this.turnPollIntervalMs);
+      const query = new URLSearchParams({
+        chapterRuntimeId: receipt.chapterRuntimeId,
+        updateKey: receipt.updateKey,
+      });
+      const response = await this.fetchImpl(
+        `/api/v4/rooms/${encodeURIComponent(this.runId)}/game/narrative-update?${query}`,
+        { credentials: "include", headers: { accept: "application/json" } },
+      );
+      const update = await response.json().catch(() => null);
+      if (!response.ok) throw httpError(response, update, "下一段剧情暂时无法读取。");
+      assertTurnUpdate(update, receipt);
+      if (update.status === "READY") return assertProjection(update.projection, this.runId);
+      if (update.status === "FAILED" || update.status === "EXPIRED") {
+        return this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
+      }
+    }
+    return null;
   }
 
   async confirmChapterSummary(_view) {
@@ -355,6 +400,52 @@ function assertNarrativeUpdate(value, projection) {
     throw new Error("剧情更新与当前游戏不一致。");
   }
   return value;
+}
+
+function assertTurnReceipt(value, projection) {
+  if (
+    !value
+    || value.schemaVersion !== PRESSURE_TURN_RECEIPT_SCHEMA
+    || value.runId !== projection.runId
+    || value.chapterRuntimeId !== projection.chapter.chapterRuntimeId
+    || value.chapterId !== projection.chapter.chapterId
+    || value.viewerSeatId !== projection.viewer.seatId
+    || value.status !== "ACTION_SAVED"
+    || !/^[a-f0-9]{64}$/.test(String(value.updateKey || ""))
+    || typeof value.savedActionId !== "string"
+    || !value.savedActionId
+  ) throw new Error("行动保存回执与当前游戏不一致。");
+  return value;
+}
+
+function assertTurnUpdate(value, receipt) {
+  if (
+    !value
+    || value.schemaVersion !== PRESSURE_TURN_UPDATE_SCHEMA
+    || value.runId !== receipt.runId
+    || value.updateKey !== receipt.updateKey
+    || value.chapterRuntimeId !== receipt.chapterRuntimeId
+    || !["PENDING", "READY", "FAILED", "EXPIRED"].includes(value.status)
+    || (value.status === "READY") !== Boolean(value.projection)
+  ) throw new Error("剧情与局势更新回执无效。");
+  return value;
+}
+
+function pendingTurnView(view, receipt) {
+  return {
+    ...view,
+    run: {
+      ...view.run,
+      status: "resolving",
+    },
+    v2CurrentTurn: {
+      ...view.v2CurrentTurn,
+      title: "行动已保存，下一段剧情正在生成",
+      status: "RESOLVING",
+    },
+    activeDecision: null,
+    postCommitReceipt: structuredClone(receipt),
+  };
 }
 
 function defaultWait(ms) {

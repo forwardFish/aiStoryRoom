@@ -62,6 +62,17 @@ export function createStoryApp({
   let noticeTimer = null;
   let scheduledNotice = "";
 
+  storage.subscribeAsyncUpdates?.((nextView) => {
+    const previousView = state.view;
+    acceptView(nextView);
+    state.busy = false;
+    const completed = completedResultKind(previousView, nextView);
+    if (completed === "maneuver") startManeuverResultStream(nextView);
+    else if (completed === "decision") startResultStream(nextView);
+    state.notice = "下一段剧情和局势已经更新。";
+    render();
+  });
+
   function syncNoticeDismissal() {
     const notice = String(state.notice || "");
     if (!notice) {

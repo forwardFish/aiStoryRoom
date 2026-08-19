@@ -30,6 +30,7 @@ export interface PressureRoomsEntryHttpDelegateV1 {
     user: { id: string },
     roomId: string,
     chapterRuntimeId: string,
+    updateKey?: string,
   ): Promise<unknown> | unknown;
   result(user: { id: string }, roomId: string): Promise<unknown> | unknown;
   action(user: { id: string }, roomId: string, body: unknown): Promise<unknown> | unknown;

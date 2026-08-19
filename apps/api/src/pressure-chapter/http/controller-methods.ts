@@ -43,11 +43,13 @@ export class PressureChapterHttpControllerMethods {
     user: Pick<AuthenticatedUser, "id">,
     roomId: string,
     chapterRuntimeId: string,
+    updateKey?: string,
   ) {
     return this.pressure.getNarrativeUpdate(
       toPrincipal(user),
       roomId,
       chapterRuntimeId,
+      updateKey,
     );
   }
 

@@ -18,6 +18,7 @@ import {
   createPressureDecisionAutomationProductionV1,
 } from "../decision-automation";
 import { SangtianRegisteredBeatSubmitPolicyV1 } from "../beat-submit-policy/policy";
+import { PressurePostCommitTurnUpdateCoordinatorV1 } from "../post-commit-turn-update";
 import {
   MultiplayerFormalDecisionActivityServiceV1,
   MultiplayerSeatProgressionServiceV1,
@@ -318,6 +319,7 @@ export async function createPressureChapterProductRootV1(input: {
   );
 
   const beatSubmitPolicy = new SangtianRegisteredBeatSubmitPolicyV1();
+  const postCommitTurnUpdates = new PressurePostCommitTurnUpdateCoordinatorV1();
   const content = new SangtianAuthoredChapterContentAdapterV1();
   const ledgerRepository = new PrismaWorkingLedgerRepository(
     asPrisma<WorkingLedgerPrismaClient>(input.prisma),
@@ -735,6 +737,7 @@ export async function createPressureChapterProductRootV1(input: {
     multiplayerProgression,
     multiplayerChapterConvergence,
     beatSubmitPolicy,
+    postCommitTurnUpdates,
   );
   const roomsGateway = new PressureChapterRoomsGatewayV1(production.bridge);
   return Object.freeze({

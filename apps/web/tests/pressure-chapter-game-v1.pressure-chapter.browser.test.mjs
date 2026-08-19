@@ -386,6 +386,71 @@ test("pending Narrative uses only the lightweight update endpoint and becomes pl
   assert.equal(result.v2CurrentTurn.status, "OPEN");
 });
 
+test("saved intermediate Beat returns immediately and receives the completed turn asynchronously", async () => {
+  const initial = projection({ runId: "run-pressure-immediate-receipt" });
+  const ready = projection({
+    runId: initial.runId,
+    optionCode: "NEXT_AUTHORIZED_OPTION",
+  });
+  const updateKey = "a".repeat(64);
+  const requests = [];
+  const storage = new PressureMainGameStorageV1({
+    runId: initial.runId,
+    initialProjection: initial,
+    turnPollAttempts: 3,
+    waitImpl: async () => {},
+    createIdempotencyKey: () => "idem-immediate-receipt-1",
+    fetchImpl: async (url) => {
+      requests.push(String(url));
+      if (String(url).endsWith("/game/action")) {
+        return new Response(JSON.stringify({
+          schemaVersion: "pressure_chapter_submit_decision_http_response_v1",
+          idempotencyKey: "idem-immediate-receipt-1",
+          projection: null,
+          receipt: {
+            schemaVersion: "pressure_post_commit_turn_receipt_v1",
+            updateKey,
+            runId: initial.runId,
+            chapterRuntimeId: initial.chapter.chapterRuntimeId,
+            chapterId: initial.chapter.chapterId,
+            viewerSeatId: initial.viewer.seatId,
+            savedActionId: "saved-action-1",
+            nextBeatId: "N1.B02",
+            nextDecisionPointId: "N1.dispatch_route",
+            status: "ACTION_SAVED",
+          },
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      const readyNow = requests.filter((item) => item.includes("narrative-update")).length > 1;
+      return new Response(JSON.stringify({
+        schemaVersion: "pressure_post_commit_turn_update_v1",
+        updateKey,
+        runId: initial.runId,
+        chapterRuntimeId: initial.chapter.chapterRuntimeId,
+        status: readyNow ? "READY" : "PENDING",
+        projection: readyNow ? ready : null,
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    },
+  });
+  const asyncView = new Promise((resolve) => storage.subscribeAsyncUpdates(resolve));
+  const pendingView = await storage.submitDecision(
+    pressureProjectionToMainGameViewV1(initial),
+    { optionKey: "A", customText: "" },
+  );
+  assert.equal(pendingView.v2CurrentTurn.status, "RESOLVING");
+  assert.match(pendingView.v2CurrentTurn.title, /行动已保存/u);
+  assert.equal(pendingView.activeDecision, null);
+
+  const completedView = await asyncView;
+  assert.equal(completedView.v2CurrentTurn.status, "OPEN");
+  assert.equal(
+    completedView.pressureProjection.decision.options[0].code,
+    "NEXT_AUTHORIZED_OPTION",
+  );
+  assert.equal(requests.filter((item) => item.endsWith("/game")).length, 0);
+  assert.equal(requests.filter((item) => item.includes("narrative-update")).length, 2);
+});
+
 test("stale Pressure decision reloads the latest projection instead of showing a generic failure", async () => {
   const initial = projection({ runId: "run-pressure-stale-decision" });
   const latest = projection({

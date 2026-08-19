@@ -17,6 +17,7 @@ import type {
 } from "../interaction/contracts";
 import type { SubmitOrchestratedActionCommandV1 } from "../orchestrator/contracts";
 import type { DecisionSubmitSnapshotV1 } from "../decision-automation/contracts";
+import type { PressurePostCommitTurnReceiptV1 } from "../post-commit-turn-update/contracts";
 import type {
   StoredRunRouteDispatchV1,
   StoredRunRouteRecordV1,
@@ -153,11 +154,18 @@ export interface PressureChapterGameHttpQueryV1 {
   feedLimit?: number;
 }
 
-export interface PressureChapterSubmitDecisionHttpResponseV1 {
-  schemaVersion: "pressure_chapter_submit_decision_http_response_v1";
-  idempotencyKey: string;
-  projection: PressureChapterGameProjectionV1;
-}
+export type PressureChapterSubmitDecisionHttpResponseV1 =
+  | Readonly<{
+      schemaVersion: "pressure_chapter_submit_decision_http_response_v1";
+      idempotencyKey: string;
+      projection: PressureChapterGameProjectionV1;
+    }>
+  | Readonly<{
+      schemaVersion: "pressure_chapter_submit_decision_http_response_v1";
+      idempotencyKey: string;
+      projection: null;
+      receipt: PressurePostCommitTurnReceiptV1;
+    }>;
 
 export interface PressureChapterChatHttpBodyV1 {
   schemaVersion: "pressure_chapter_chat_http_v1";

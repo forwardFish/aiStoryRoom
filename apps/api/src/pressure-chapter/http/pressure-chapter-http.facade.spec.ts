@@ -117,15 +117,20 @@ test("Multiplayer intermediate submit persists one seat without convergence; fin
 test("Registered Solo multi-Beat submit persists only the human seat until the chapter gate", async () => {
   const harness = createHarness({
     independentSolo: true,
+    immediateTurnUpdate: true,
     multiplayerSeatStatus: "AWAITING_DECISION",
   });
-  await harness.facade.submitDecision(
+  const response = await harness.facade.submitDecision(
     harness.principal,
     ROOM_ID,
     decisionCommand(harness.stored.snapshot.routeHash),
   );
+  assert.equal(response.projection, null);
+  assert.equal("receipt" in response && response.receipt.status, "ACTION_SAVED");
   assert.equal(harness.multiplayerProgressionCalls, 1);
   assert.equal(harness.multiplayerConvergenceCalls, 0);
+  assert.equal(harness.postCommitTurnStarts, 1);
+  assert.equal(harness.gameReads, 0);
   assert.equal(harness.actionWrites, 0);
 });
 
@@ -384,6 +389,8 @@ test("public decision is server-compiled and same-key replay writes once", async
   );
 
   assert.deepEqual(Object.keys(first).sort(), ["idempotencyKey", "projection", "schemaVersion"]);
+  assert.ok(first.projection);
+  assert.ok(second.projection);
   assert.equal(first.schemaVersion, "pressure_chapter_submit_decision_http_response_v1");
   assert.equal(first.idempotencyKey, body.idempotencyKey);
   assert.equal(first.projection.runId, RUN_ID);
@@ -478,6 +485,24 @@ test("GET Narrative update authorizes once and skips full game and route dispatc
   assert.equal(harness.gameReads, 0);
 });
 
+test("GET post-commit turn update reads only the process-local coordinator after authorization", async () => {
+  const harness = createHarness({ immediateTurnUpdate: true });
+  const updateKey = sha256Canonical({ key: "turn-update" });
+  const value = await harness.facade.getNarrativeUpdate(
+    harness.principal,
+    ROOM_ID,
+    "chapter-runtime-1",
+    updateKey,
+  );
+  assert.equal(value.schemaVersion, "pressure_post_commit_turn_update_v1");
+  if (value.schemaVersion !== "pressure_post_commit_turn_update_v1") {
+    assert.fail("expected post-commit turn update");
+  }
+  assert.equal(value.status, "PENDING");
+  assert.equal(harness.postCommitTurnReads, 1);
+  assert.equal(harness.gameReads, 0);
+});
+
 test("FAST post-submit projection uses the configured aggregate reader", async () => {
   const harness = createHarness({
     convergence: true,
@@ -506,6 +531,7 @@ test("SQL7 COMMITTED returns directly without legacy authorization or reads", as
     decisionCommand(harness.stored.snapshot.routeHash),
   );
 
+  assert.ok(response.projection);
   assert.equal(response.projection.runId, RUN_ID);
   assert.deepEqual(harness.calls, ["sql7"]);
   assert.equal(harness.sql7Submits, 1);
@@ -522,6 +548,7 @@ test("SQL7 NOT_APPLICABLE falls back through the complete legacy path", async ()
     decisionCommand(harness.stored.snapshot.routeHash),
   );
 
+  assert.ok(response.projection);
   assert.equal(response.projection.runId, RUN_ID);
   assert.equal(harness.sql7Submits, 1);
   assert.deepEqual(harness.calls.slice(0, 4), [
@@ -544,6 +571,7 @@ test("SQL7 REPLAYED performs no write and returns the currently authorized proje
   );
 
   assert.equal(response.idempotencyKey, "action-http-key-1");
+  assert.ok(response.projection);
   assert.equal(response.projection.runId, RUN_ID);
   assert.deepEqual(harness.calls, [
     "sql7",
@@ -880,6 +908,7 @@ function createHarness(options: {
   gameReadObserver?: PressureGameReadRuntimeObserverPortV1;
   multiplayer?: boolean;
   independentSolo?: boolean;
+  immediateTurnUpdate?: boolean;
   multiplayerPhase?: "ACTIVE" | "RESOLVING_BEAT" | "SETTLING";
   multiplayerSeatStatus?: "AWAITING_DECISION" | "CHAPTER_READY_FOR_CONVERGENCE";
 } = {}) {
@@ -895,6 +924,8 @@ function createHarness(options: {
   let sql7Submits = 0;
   let multiplayerProgressionCalls = 0;
   let multiplayerConvergenceCalls = 0;
+  let postCommitTurnStarts = 0;
+  let postCommitTurnReads = 0;
   const selectedGameReadQueries: Parameters<PressureChapterHttpGamePort["read"]>[0][] = [];
   const actionCommands: SubmitOrchestratedActionCommandV1[] = [];
   const compilerInputs: Parameters<PressureChapterHttpDecisionCompilerPort["compile"]>[0][] = [];
@@ -1190,6 +1221,34 @@ function createHarness(options: {
     options.independentSolo ? {
       usesIndependentSeatBeats() { return true; },
     } : undefined,
+    options.immediateTurnUpdate ? {
+      start(input) {
+        postCommitTurnStarts += 1;
+        return {
+          schemaVersion: "pressure_post_commit_turn_receipt_v1",
+          updateKey: sha256Canonical({ key: input.idempotencyKey }),
+          runId: input.runId,
+          chapterRuntimeId: input.chapterRuntimeId,
+          chapterId: input.chapterId,
+          viewerSeatId: input.viewerSeatId,
+          savedActionId: input.savedActionId,
+          nextBeatId: input.nextBeatId,
+          nextDecisionPointId: input.nextDecisionPointId,
+          status: "ACTION_SAVED",
+        };
+      },
+      read(input) {
+        postCommitTurnReads += 1;
+        return {
+          schemaVersion: "pressure_post_commit_turn_update_v1",
+          updateKey: input.updateKey,
+          runId: input.runId,
+          chapterRuntimeId: input.chapterRuntimeId,
+          status: "PENDING",
+          projection: null,
+        };
+      },
+    } : null,
   );
   return {
     facade,
@@ -1213,6 +1272,8 @@ function createHarness(options: {
     get sql7Submits() { return sql7Submits; },
     get multiplayerProgressionCalls() { return multiplayerProgressionCalls; },
     get multiplayerConvergenceCalls() { return multiplayerConvergenceCalls; },
+    get postCommitTurnStarts() { return postCommitTurnStarts; },
+    get postCommitTurnReads() { return postCommitTurnReads; },
   };
 }
 

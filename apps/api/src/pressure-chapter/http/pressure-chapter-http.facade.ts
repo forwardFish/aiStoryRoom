@@ -14,6 +14,7 @@ import {
   LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
   type PressureBeatSubmitPolicyPortV1,
 } from "../beat-submit-policy/policy";
+import type { PressurePostCommitTurnUpdatePortV1 } from "../post-commit-turn-update/contracts";
 import type { PressureSql7FirstSubmitServiceV1 } from "../sql7-fast-path/service";
 import type { PressureGameReadModeV1 } from "../observability/game-read-observation";
 import {
@@ -106,6 +107,7 @@ export class PressureChapterHttpFacade {
     private readonly multiplayerChapterConvergence: MultiplayerChapterConvergencePortV1 | null = null,
     private readonly beatSubmitPolicy: PressureBeatSubmitPolicyPortV1 =
       LEGACY_MULTIPLAYER_ONLY_BEAT_SUBMIT_POLICY_V1,
+    private readonly postCommitTurnUpdates: PressurePostCommitTurnUpdatePortV1 | null = null,
   ) {}
 
   getGame(
@@ -172,6 +174,7 @@ export class PressureChapterHttpFacade {
     principalValue: PressureChapterHttpPrincipalV1,
     roomIdValue: string,
     chapterRuntimeIdValue: string,
+    updateKeyValue?: string,
   ) {
     return pressureHttpBoundary(async () => {
       const principal = parsePrincipal(principalValue);
@@ -180,6 +183,14 @@ export class PressureChapterHttpFacade {
         chapterRuntimeIdValue,
         "chapterRuntimeId",
       );
+      if (updateKeyValue && this.postCommitTurnUpdates) {
+        return this.postCommitTurnUpdates.read({
+          runId: roomId,
+          subjectId: principal.subjectId,
+          updateKey: requiredString(updateKeyValue, "updateKey"),
+          chapterRuntimeId,
+        });
+      }
       const access = await this.resolveAccess(principal, roomId);
       if (!this.game.readNarrativeUpdate) {
         failPressureChapterHttp(ERROR.DEPENDENCY_FAILURE, "game.readNarrativeUpdate");
@@ -331,6 +342,35 @@ export class PressureChapterHttpFacade {
         const humanSubmitStartedAt = performance.now();
         const seatProgression = await this.multiplayerProgression.submit(compiled);
         httpTimings.humanSubmitMs = elapsed(humanSubmitStartedAt);
+        if (
+          seatProgression.cursor.status === "AWAITING_DECISION"
+          && this.postCommitTurnUpdates
+        ) {
+          const receipt = this.postCommitTurnUpdates.start({
+            runId: context.access.runId,
+            subjectId: context.access.subjectId,
+            idempotencyKey: command.idempotencyKey,
+            chapterRuntimeId: compiled.action.chapterRuntimeId,
+            chapterId: compiled.action.chapterId,
+            viewerSeatId: compiled.action.seatId,
+            savedActionId: compiled.action.actionId,
+            nextBeatId: seatProgression.cursor.beatId,
+            nextDecisionPointId: seatProgression.cursor.decisionPointId,
+            load: () => this.game.read({
+              runId: context.access.runId,
+              subjectId: context.access.subjectId,
+            }),
+          });
+          responseStatus = "SUCCESS";
+          responseOutcome = "ACTION_SAVED";
+          responseStage = "RESPONSE_READY";
+          return {
+            schemaVersion: "pressure_chapter_submit_decision_http_response_v1" as const,
+            idempotencyKey: command.idempotencyKey,
+            projection: null,
+            receipt,
+          };
+        }
         if (seatProgression.cursor.status === "CHAPTER_READY_FOR_CONVERGENCE") {
           failureStage = "CONVERGENCE";
           const convergenceStartedAt = performance.now();
