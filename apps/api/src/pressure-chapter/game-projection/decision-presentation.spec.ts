@@ -350,6 +350,31 @@ test("unknown fact refs and non-empty claims reject the whole generated turn", a
   });
 });
 
+test("an overlong question is shortened without discarding valid literary scene or options", async () => {
+  const input = continuationFixture();
+  const sceneText = literaryScene("签押房外的脚步停在门槛前");
+  const question = [
+    "这最后一道命令，是照已核验的去向、收件、见证和具名责任送出，",
+    "还是把尚未解决的冲突一并封缄，交由下一轮复核后再决定是否改动，",
+    "并要求所有经手人分别确认自己的签押、送达、回执与责任边界？",
+  ].join("");
+  assert.ok([...question].length > 80);
+  const service = new PressureTurnPresentationServiceV1({
+    async renderTurnPresentation(context) {
+      return candidate(context, { sceneText, question });
+    },
+  });
+
+  const result = await service.present(input);
+  assert.equal(result.summary, sceneText);
+  assert.ok([...result.title].length <= 80);
+  assert.notEqual(result.title, "你准备如何应对？");
+  assert.deepEqual(
+    result.options.map((option) => option.actionType),
+    input.decision.options.map((option) => option.actionType),
+  );
+});
+
 function fixture(): PressureTurnPresentationInputV1 {
   return {
     chapter: {

@@ -144,6 +144,8 @@ export interface PressureTurnPresentationInputV1 {
 
 const ENGINEERING_COPY = /(actionType|decisionPointId|WorkingDelta|stateAfter|Catalog|Pressure\s*Spine|系统字段|规则结算)/iu;
 const FALSE_GUARANTEE = /(一定成功|必然成功|彻底解决|全部解决|保证成功|直接获胜|已经完成全部)/u;
+const QUESTION_DISPLAY_MAX = 80;
+const QUESTION_PROVIDER_HARD_MAX = 600;
 
 type PressureTurnPresentationTimingStatusV1 =
   | "GENESIS_BYPASS"
@@ -604,7 +606,7 @@ export function validatePressureTurnPresentationCandidateV1(
     "candidate",
   );
   const sceneText = boundedText(candidate.sceneText, "candidate.sceneText", 180, 1_200);
-  const question = boundedText(candidate.question, "candidate.question", 4, 80);
+  const question = normalizePlayerQuestion(candidate.question);
   if (ENGINEERING_COPY.test(sceneText) || ENGINEERING_COPY.test(question)) {
     throw new Error("PRESSURE_DECISION_PRESENTATION_ENGINEERING_COPY");
   }
@@ -717,4 +719,24 @@ function boundedText(
     throw new Error(`PRESSURE_DECISION_PRESENTATION_LENGTH:${path}:${length}`);
   }
   return text;
+}
+
+/**
+ * Question length is presentation-only. A modest Provider overrun must not
+ * discard an otherwise valid literary scene and action binding.
+ */
+function normalizePlayerQuestion(value: unknown): string {
+  const text = boundedText(
+    value,
+    "candidate.question",
+    4,
+    QUESTION_PROVIDER_HARD_MAX,
+  );
+  const characters = [...text];
+  if (characters.length <= QUESTION_DISPLAY_MAX) return text;
+  const prefix = characters
+    .slice(0, QUESTION_DISPLAY_MAX - 1)
+    .join("")
+    .replace(/[，、；：。！？?\s]+$/u, "");
+  return `${prefix || characters.slice(0, QUESTION_DISPLAY_MAX - 1).join("")}？`;
 }
