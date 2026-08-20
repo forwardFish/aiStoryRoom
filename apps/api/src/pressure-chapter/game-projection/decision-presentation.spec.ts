@@ -151,21 +151,56 @@ test("pending Narrative fallback never exposes internal decision purpose as play
   assert.deepEqual(result.options, input.decision.options);
 });
 
-test("frozen Genesis uses the authored first scene without calling the Provider", async () => {
+test("opening decision uses the viewer identity to produce role-voiced options without changing action bindings", async () => {
   const input = fixture();
   let calls = 0;
   const service = new PressureTurnPresentationServiceV1({
-    async renderTurnPresentation() {
+    async renderTurnPresentation(context) {
       calls += 1;
-      throw new Error("Genesis must remain authored");
+      assert.equal(context.currentScene.phase, "OPENING");
+      assert.equal(context.playerIdentity.actorName, "胡宗宪");
+      assert.equal(context.viewer.roleName, "浙江总督");
+      assert.match(context.instruction, /当前viewer对应角色/u);
+      return candidate(context, {
+        sceneText: literaryScene("驿卒的水报刚压到河图边"),
+        question: "百姓、堰口和证据同时告急，你先下哪一道令？",
+        options: [
+          {
+            actionType: "EVACUATE_WEIRS",
+            label: "先救北岸百姓",
+            description: "“先救人。能动的船与差役，立刻送往北岸村落。”",
+          },
+          {
+            actionType: "SEAL_BREACH_RECORD",
+            label: "先封存毁堤记录",
+            description: "“水能冲堤，不能冲掉证据。把命令、经手人与见证立即封存。”",
+          },
+          {
+            actionType: "SUPPORT_WEIR",
+            label: "先增援关键堰口",
+            description: "“先保九堰。能立即赶到的人手与物资，全数增援关键堰口。”",
+          },
+        ],
+      });
     },
   });
 
   const result = await service.present(input);
-  assert.equal(calls, 0);
-  assert.match(result.summary, /驿卒刚跨进总督府内厅/u);
-  assert.match(result.summary, /第一道令先下给谁/u);
-  assert.deepEqual(result.options, input.decision.options);
+  assert.equal(calls, 1);
+  assert.match(result.summary, /水报刚压到河图边/u);
+  assert.equal(result.title, "百姓、堰口和证据同时告急，你先下哪一道令？");
+  assert.deepEqual(
+    result.options.map((option) => option.actionType),
+    input.decision.options.map((option) => option.actionType),
+  );
+  assert.deepEqual(
+    result.options.map((option) => option.description),
+    [
+      "“先救人。能动的船与差役，立刻送往北岸村落。”",
+      "“水能冲堤，不能冲掉证据。把命令、经手人与见证立即封存。”",
+      "“先保九堰。能立即赶到的人手与物资，全数增援关键堰口。”",
+    ],
+  );
 });
 
 test("multiplayer continuation over Genesis authority calls Provider with the accepted previous action", async () => {

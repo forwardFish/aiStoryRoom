@@ -148,7 +148,6 @@ const QUESTION_DISPLAY_MAX = 80;
 const QUESTION_PROVIDER_HARD_MAX = 600;
 
 type PressureTurnPresentationTimingStatusV1 =
-  | "GENESIS_BYPASS"
   | "FALLBACK_NO_PROVIDER"
   | "FALLBACK_NO_OPTIONS"
   | "CACHE_HIT"
@@ -194,21 +193,6 @@ export class PressureTurnPresentationServiceV1 {
       const fallbackStartedAt = performance.now();
       const fallback = fallbackTurnPresentation(input);
       timings.fallbackBuildMs = elapsedTurnPresentationMs(fallbackStartedAt);
-      if (isOpeningDecisionV1(input)) {
-        const storySourceStartedAt = performance.now();
-        const storySource = loadSangtianPressureStorySourceV1(
-          input.chapter.chapterId,
-          input.viewer.seatId,
-        );
-        timings.genesisStorySourceMs = elapsedTurnPresentationMs(
-          storySourceStartedAt,
-        );
-        status = "GENESIS_BYPASS";
-        return {
-          ...fallback,
-          summary: storySource.currentScene.text,
-        };
-      }
       if (!this.provider) {
         status = "FALLBACK_NO_PROVIDER";
         return fallback;
@@ -537,6 +521,7 @@ export function compilePressureTurnPresentationContextV1(
         : []),
       "先写完整场景，再由场景末尾的具体压力自然逼出问题。",
       "逐一改写已有合法行动，不新增行动，不替玩家执行行动，不宣告行动结果。",
+      "每个选项都必须使用当前viewer对应角色的身份、权限和dialogueExamples语气，写成他在现场会说出的命令、表态或内心决断；不得写成流程说明或功能目录。",
       "临时文学细节只服务本轮阅读，不得升级成claims或下一轮权威状态。",
     ].join(" "),
   };

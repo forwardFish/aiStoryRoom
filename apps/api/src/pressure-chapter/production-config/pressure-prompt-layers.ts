@@ -102,6 +102,7 @@ export function buildPressureTurnPresentationSystemInstructionV1(
     "options 必须逐项返回 legalActionContracts 中完全相同的 actionType，数量、集合均不得改变；每一个选项对象都必须显式包含 actionType、label、description 三个字段。",
     "严格仿照 outputExample 的 JSON 结构，但不要照抄示例占位文案；尤其不得遗漏 actionType。",
     "label 和 description 只能改写各行动合同的 intendedAction，说明玩家现在准备做什么及其直接目的；不能从身份背景、历史常识或想象推导新代价。",
+    "每个选项必须符合 viewer、playerIdentity 和 dialogueExamples 对应角色的身份、权限与说话方式。description 必须像该角色在现场亲口下令、表态或作出内心决断的一句话，不得写成规则说明、流程说明、功能目录或公文摘要。",
     "只有 legalActionContracts.realTradeoff 非 null 时才可简短表达该真实代价；为 null 时禁止提及其他选项、仍需另行安排、顾不上什么或无人补位。",
     "选项不得保证结果已经发生，也不得重复解释页面上已经可见的其他选项。",
     "本轮停在决策之前，没有产生新的持久结算，因此 claims 必须返回空数组。",

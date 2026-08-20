@@ -36,5 +36,7 @@ test("one-call turn prompt binds literary story and decision to the same authori
   assert.match(prompt, /realTradeoff 非 null/u);
   assert.match(prompt, /为 null 时禁止提及其他选项/u);
   assert.match(prompt, /不能从身份背景、历史常识或想象推导新代价/u);
+  assert.match(prompt, /像该角色在现场亲口下令/u);
+  assert.match(prompt, /不得写成规则说明、流程说明、功能目录或公文摘要/u);
   assert.match(prompt, /不得保证结果已经发生/u);
 });
