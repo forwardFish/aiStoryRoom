@@ -520,6 +520,7 @@ export class PressureChapterGameProjectionService {
             routeHash,
             chapterRuntimeId: chapter.chapter.chapterRuntimeId,
             viewerSeatId: viewer.viewer.seatId,
+            onClosingNarrative: query.onChapterSummaryClosingText,
           })
         ))
       : Promise.resolve(null);

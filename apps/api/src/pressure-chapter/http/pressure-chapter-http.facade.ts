@@ -386,36 +386,6 @@ export class PressureChapterHttpFacade {
             nextBeatId: seatProgression.cursor.beatId,
             nextDecisionPointId: seatProgression.cursor.decisionPointId,
             load: async (publishSceneText) => {
-              let prefixPromise: Promise<unknown> | null = null;
-              const startPrefixConvergence = () => {
-                if (prefixPromise || !this.multiplayerChapterConvergence?.convergeReadyPrefix) {
-                  return prefixPromise;
-                }
-                prefixPromise = this.multiplayerChapterConvergence.convergeReadyPrefix({
-                  routeSnapshot: context.stored.snapshot,
-                  chapterRuntimeId: compiled.action.chapterRuntimeId,
-                  chapterId: compiled.action.chapterId,
-                  nowMs: requiredInteger(this.clock.nowMs(), "clock.nowMs", 0),
-                }).catch((error) => {
-                  const diagnostic = error && typeof error === "object"
-                    ? error as { name?: string; code?: string; path?: string; detail?: string }
-                    : null;
-                  console.error("Pressure chapter prefix convergence failed", {
-                    runId: context.access.runId,
-                    chapterId: compiled.action.chapterId,
-                    errorName: diagnostic?.name ?? "UNKNOWN",
-                    errorCode: diagnostic?.code ?? "UNKNOWN",
-                    errorPath: diagnostic?.path ?? "UNKNOWN",
-                    errorDetail: diagnostic?.detail ?? "UNKNOWN",
-                  });
-                  return null;
-                });
-                return prefixPromise;
-              };
-              const publishSceneTextAndStartPrefix = (sceneText: string) => {
-                publishSceneText(sceneText);
-                startPrefixConvergence();
-              };
               const readLatestPlayableProjection = async () => {
                 let latest: Awaited<ReturnType<PressureChapterHttpGamePort["read"]>> | null = null;
                 for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -435,9 +405,8 @@ export class PressureChapterHttpFacade {
                 await this.game.read({
                   runId: context.access.runId,
                   subjectId: context.access.subjectId,
-                  onTurnPresentationSceneText: publishSceneTextAndStartPrefix,
+                  onTurnPresentationSceneText: publishSceneText,
                 });
-                await startPrefixConvergence();
                 return readLatestPlayableProjection();
               }
               const seededInput = {
@@ -449,7 +418,7 @@ export class PressureChapterHttpFacade {
                 chapter: compilation.snapshot!.authority.chapter,
                 workingProjection: seatProgression.committedWorkingProjection!,
                 chapterDescriptor: compilation.preparedChapterDescriptor!,
-                onTurnPresentationSceneText: publishSceneTextAndStartPrefix,
+                onTurnPresentationSceneText: publishSceneText,
               };
               const preparedTurnPresentation =
                 this.game.warmTurnPresentationFromCommittedAuthority
@@ -463,7 +432,6 @@ export class PressureChapterHttpFacade {
                   ? { preparedTurnPresentation }
                   : {}),
               });
-              await startPrefixConvergence();
               return readLatestPlayableProjection();
             },
           });
@@ -499,7 +467,7 @@ export class PressureChapterHttpFacade {
                 return this.game.read({
                   runId: context.access.runId,
                   subjectId: context.access.subjectId,
-                  onTurnPresentationSceneText: publishSceneText,
+                  onChapterSummaryClosingText: publishSceneText,
                 });
               },
             });

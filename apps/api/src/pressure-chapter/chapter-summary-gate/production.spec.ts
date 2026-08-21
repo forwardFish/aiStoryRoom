@@ -118,6 +118,19 @@ test("current N2 projection is blocked by the latest unconfirmed N1 summary and 
   assert.doesNotMatch(JSON.stringify(first), /EVACUATE_WEIRS/u);
 });
 
+test("summary reader streams settlement-bound closing prose before publication completes", async () => {
+  const state = fixture();
+  const updates: string[] = [];
+  const summary = await state.production.reader.readCurrent({
+    ...state.scope,
+    onClosingNarrative: (text) => updates.push(text),
+  });
+  assert.ok(summary);
+  assert.ok(updates.length >= 1);
+  assert.equal(updates.at(-1), summary?.closingNarrative);
+  assert.equal(summary?.chapterId, "N1");
+});
+
 test("confirmation is viewer-scoped, idempotent and reveals the already authoritative next chapter", async () => {
   const state = fixture();
   await state.production.reader.readCurrent(state.scope);

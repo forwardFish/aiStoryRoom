@@ -23,6 +23,8 @@ import type {
   PreparedAutomationActionBatchV1,
   PreparedAutomationActionStaleReasonV1,
   PreparedAutomationActionSubmissionPortV1,
+  PreparedChapterReplayBatchResultV1,
+  PreparedChapterReplayBatchV1,
 } from "../decision-automation/contracts";
 import { computePreparedAutomationActionBatchHashV1 } from "../decision-automation/prepared-action-batch";
 import type { ChapterOrchestratorStateV1 } from "../orchestrator/contracts";
@@ -58,6 +60,7 @@ import {
 } from "../projection-plan/authority-downstream";
 import { compileCommittedInvestigationLifecycleEmissionsV1 } from "../a-emotion-production/investigation-lifecycle.prisma-bridge";
 import { planPreparedActionLedgerV1 } from "../decision-automation/prepared-action-batch";
+import { planPreparedChapterReplayV1 } from "../decision-automation/prepared-chapter-replay";
 import {
   decodeWorkingLedgerProjectionCacheV1,
   withWorkingLedgerProjectionCacheHashV1,
@@ -197,12 +200,197 @@ export class PrismaPreparedAutomationActionSubmissionV1
 implements PreparedAutomationActionSubmissionPortV1 {
   constructor(private readonly prisma: PreparedAutomationPrismaClientV1) {}
 
+  async submitPreparedChapterReplay(
+    batch: PreparedChapterReplayBatchV1,
+  ): Promise<PreparedChapterReplayBatchResultV1> {
+    const route = validateRunRouteSnapshotV1(batch.routeSnapshot);
+    const { batchHash: suppliedBatchHash, ...batchBody } = structuredClone(batch);
+    if (
+      batch.schemaVersion !== "pressure_prepared_chapter_replay_batch_v1"
+      || !batch.beats.length
+      || batch.runId !== route.runId
+      || batch.routeHash !== route.routeHash
+      || batch.chapterRuntimeId !== batch.finalOrchestratorState.chapterRuntimeId
+      || batch.chapterId !== batch.finalOrchestratorState.currentChapterId
+      || suppliedBatchHash !== sha256Canonical(batchBody)
+      || batch.finalOrchestratorState.phase !== "ACTIVE"
+      || !batch.finalOrchestratorState.activeDecision
+    ) throw invalid("Prepared chapter replay binding is invalid", batch.batchId);
+
+    try {
+      return await pressureFastSerializableTransaction(this.prisma, async (tx) => {
+        const [runtime, orchestratorRow] = await Promise.all([
+          tx.pressureChapterRuntime.findUnique({
+            where: { id: batch.chapterRuntimeId },
+            select: {
+              id: true,
+              runId: true,
+              chapterId: true,
+              routeHash: true,
+              workingRevision: true,
+              workingStateJson: true,
+              workingStateHash: true,
+              ledgerProjectionJson: true,
+              lockVersion: true,
+              decisionStateJson: true,
+              state: true,
+            },
+          }),
+          tx.storyEvent.findUnique({
+            where: { dedupeKey: orchestratorDedupeKey(batch.runId, batch.expectedOrchestratorRevision) },
+            select: { id: true, runId: true, type: true, payloadJson: true, dedupeKey: true },
+          }),
+        ]);
+        if (!runtime || !orchestratorRow) return chapterReplayConflict(batch, "CHAPTER_OR_DECISION");
+        if (
+          runtime.runId !== batch.runId
+          || runtime.routeHash !== batch.routeHash
+          || runtime.chapterId !== batch.chapterId
+        ) return chapterReplayConflict(batch, "ROUTE");
+        const chapter = validateStoredOrchestratorEvent(
+          orchestratorRow,
+          batch.runId,
+          batch.expectedOrchestratorRevision,
+        );
+        const projection = decodeWorkingLedgerProjectionCacheV1(
+          runtime.ledgerProjectionJson,
+          {
+            runId: runtime.runId,
+            chapterRuntimeId: runtime.id,
+            chapterId: runtime.chapterId,
+            routeHash: runtime.routeHash,
+            workingRevision: runtime.workingRevision,
+            workingState: runtime.workingStateJson,
+            workingStateHash: runtime.workingStateHash,
+          },
+        );
+        if (
+          chapter.orchestratorHash !== batch.expectedOrchestratorHash
+          || chapter.chapterRuntimeId !== batch.chapterRuntimeId
+          || chapter.currentChapterId !== batch.chapterId
+          || chapter.phase !== "ACTIVE"
+          || runtime.workingRevision !== batch.expectedWorkingRevision
+          || runtime.workingStateHash !== batch.expectedWorkingStateHash
+          || projection.state.revision !== batch.expectedWorkingRevision
+          || projection.stateHash !== batch.expectedWorkingStateHash
+          || projection.headHash !== batch.expectedLedgerHeadHash
+          || !["DECISION_POINT_OPEN", "ACTION_DRAFTING"].includes(runtime.state)
+        ) return chapterReplayConflict(batch, "ORCHESTRATOR_REVISION", projection.headHash);
+
+        const recomputed = planPreparedChapterReplayV1({
+          batchId: batch.batchId,
+          snapshot: {
+            routeSnapshot: route,
+            chapter,
+            projection,
+            snapshotHash: batch.snapshotHash,
+          },
+          chapterDescriptor: batch.chapterDescriptor,
+          nowMs: batch.nowMs,
+        });
+        if (!recomputed || recomputed.batchHash !== batch.batchHash) {
+          throw invalid("Prepared chapter replay plan mismatch", batch.batchId);
+        }
+
+        const eventRows: Record<string, unknown>[] = [];
+        let finalManifest: unknown = null;
+        let currentProjection = projection;
+        for (const beat of recomputed.beats) {
+          currentProjection = appendBeatEventToWorkingLedgerProjection(currentProjection, beat.event);
+          const lifecycleEmissions = await compileCommittedInvestigationLifecycleEmissionsV1({
+            tx,
+            beatEvent: beat.event,
+            projection: currentProjection,
+            committedAt: new Date(batch.nowMs).toISOString(),
+          });
+          const beatEmissions = [...beat.aEmotionEmissions, ...lifecycleEmissions];
+          await insertNarrativeProjectionPlanV1(
+            tx,
+            "PROJECT_BEAT_NARRATIVE",
+            beat.narrativeJobs,
+          );
+          await insertAEmotionAuthorityEmissionsV1(
+            tx,
+            "CHAPTER_WORKING",
+            beatEmissions,
+          );
+          finalManifest = buildAuthorityDownstreamManifestV1({
+            authorityKind: "BEAT",
+            sourceId: beat.resolution.resolutionHash,
+            sourceCommitHash: beat.resolution.resolutionHash,
+            dedupeKeys: downstreamDedupeKeysV1({
+              narrativeJobs: beat.narrativeJobs,
+              aEmotionEmissions: beatEmissions,
+            }),
+          });
+          eventRows.push(
+            preparedLedgerEventRowV1(beat.event),
+            preparedOrchestratorEventRowV1(beat.recordedOrchestratorState),
+            preparedOrchestratorEventRowV1(beat.postBeatOrchestratorState),
+          );
+        }
+        if (tx.storyEvent.createMany) {
+          const inserted = await tx.storyEvent.createMany({ data: eventRows });
+          if (inserted.count !== eventRows.length) {
+            throw invalid("Prepared chapter replay event count mismatch", batch.batchId);
+          }
+        } else {
+          for (const row of eventRows) await tx.storyEvent.create({ data: row });
+        }
+        const finalState = recomputed.finalOrchestratorState;
+        const requiredSeatIds = finalState.activeDecision?.seats
+          .filter((seat) => seat.requirement === "REQUIRED")
+          .map((seat) => seat.seatId) ?? [];
+        const locked = await tx.pressureChapterRuntime.updateMany({
+          where: {
+            id: runtime.id,
+            runId: runtime.runId,
+            lockVersion: runtime.lockVersion,
+            workingRevision: batch.expectedWorkingRevision,
+            workingStateHash: batch.expectedWorkingStateHash,
+          },
+          data: {
+            lockVersion: { increment: 1 },
+            decisionStateJson: json(preparedDecisionStateFromProjectionV1(
+              currentProjection,
+              requiredSeatIds,
+              finalState.activeDecision?.policyHash,
+              finalState.orchestratorHash,
+            )),
+            workingRevision: currentProjection.state.revision,
+            workingStateJson: json(currentProjection.state),
+            workingStateHash: currentProjection.stateHash,
+            ledgerProjectionJson: json(serializePreparedLedgerProjectionV1(
+              currentProjection,
+              finalManifest,
+            )),
+            state: "DECISION_POINT_OPEN",
+          },
+        });
+        if (locked.count !== 1) throw new PreparedLedgerRace();
+        return {
+          status: "COMMITTED",
+          batchId: batch.batchId,
+          beatEventHashes: recomputed.beats.map((beat) => beat.event.eventHash),
+          ledgerHeadHash: currentProjection.headHash,
+          orchestratorState: structuredClone(finalState),
+          projection: structuredClone(currentProjection),
+          conflictReason: null,
+        };
+      });
+    } catch (error) {
+      if (!(error instanceof PreparedLedgerRace) && !isUniqueConflict(error)) throw error;
+      return chapterReplayConflict(batch, "HEAD_CONFLICT");
+    }
+  }
+
   async submitPreparedBatch(
     batch: PreparedAutomationActionBatchV1,
   ): Promise<PreparedAutomationActionBatchResultV1> {
     const first = batch.actions[0];
     if (!first) throw invalid("Prepared automation batch is empty", batch.batchId);
     const route = validateRunRouteSnapshotV1(first.command.routeSnapshot);
+    const existingAcceptedActions = batch.existingAcceptedActions ?? [];
     const routeSeatIds = route.seatIds.map((seatId, index) =>
       validateSeatIdV1(seatId, `routeSnapshot.seatIds[${index}]`));
     const { batchHash: suppliedBatchHash, ...batchBody } = structuredClone(batch);
@@ -216,6 +404,15 @@ implements PreparedAutomationActionSubmissionPortV1 {
       || suppliedBatchHash !== expectedBatchHash
       || batch.frozenSeatOrder.length !== routeSeatIds.length
       || batch.frozenSeatOrder.some((seatId, index) => seatId !== routeSeatIds[index])
+      || new Set(existingAcceptedActions.map((item) => item.seatId)).size
+        !== existingAcceptedActions.length
+      || existingAcceptedActions.some((item) => (
+        !routeSeatIds.includes(item.seatId)
+        || !item.actionId.trim()
+        || !Number.isSafeInteger(item.actionBudget)
+        || item.actionBudget < 1
+        || batch.actions.some((candidate) => candidate.command.action.seatId === item.seatId)
+      ))
       || new Set(batch.actions.map((item) => item.command.action.seatId)).size !== batch.actions.length
       || batch.actions.some((item, index) => item.command.action.seatId !== selectedSeatOrder[index])
       || batch.actions.some((item) => (
@@ -292,12 +489,15 @@ implements PreparedAutomationActionSubmissionPortV1 {
         );
         const expectedNextOrchestrator = planRecordedActionsV1(
           chapter,
-          batch.actions.map((item) => ({
-            seatId: item.command.action.seatId,
-            actionId: item.command.action.actionId,
-            defaultCode: null,
-            actionBudget: 1,
-          })),
+          [
+            ...existingAcceptedActions.map((item) => ({ ...item, defaultCode: null })),
+            ...batch.actions.map((item) => ({
+              seatId: item.command.action.seatId,
+              actionId: item.command.action.actionId,
+              defaultCode: null,
+              actionBudget: 1,
+            })),
+          ],
           true,
         );
         const descriptor = validateAuthoredChapterRuntimeV1(batch.chapterDescriptor);
@@ -358,6 +558,22 @@ implements PreparedAutomationActionSubmissionPortV1 {
           payload: FormalActionAcceptedPayloadV1;
         }> = [];
         const replayedActionIds: string[] = [];
+        for (const item of existingAcceptedActions) {
+          const accepted = projection.acceptedActions.get(item.actionId);
+          const seat = active?.seats.find((candidate) => candidate.seatId === item.seatId);
+          if (
+            !accepted || !seat
+            || accepted.action.runId !== batch.runId
+            || accepted.action.chapterRuntimeId !== batch.chapterRuntimeId
+            || accepted.action.chapterId !== batch.chapterId
+            || accepted.action.decisionPointId !== batch.decisionPointId
+            || accepted.action.seatId !== item.seatId
+            || seat.requirement !== "REQUIRED"
+            || seat.completion !== "PENDING"
+            || seat.actionCount !== 0
+            || seat.actionIds.length !== 0
+          ) return batchConflict(batch, "CHAPTER_OR_DECISION", currentHead);
+        }
         for (const item of batch.actions) {
           const action = validateDecisionActionV1(item.command.action);
           const seat = active?.seats.find((candidate) => candidate.seatId === action.seatId);
@@ -1218,6 +1434,22 @@ function batchConflict(
     eventHashes: [],
     ledgerHeadHash: head,
     orchestratorState: structuredClone(batch.nextOrchestratorState),
+    projection: null,
+    conflictReason: reason,
+  };
+}
+
+function chapterReplayConflict(
+  batch: PreparedChapterReplayBatchV1,
+  reason: Exclude<PreparedChapterReplayBatchResultV1["conflictReason"], null>,
+  head = batch.expectedLedgerHeadHash,
+): PreparedChapterReplayBatchResultV1 {
+  return {
+    status: "CONFLICT",
+    batchId: batch.batchId,
+    beatEventHashes: [],
+    ledgerHeadHash: head,
+    orchestratorState: structuredClone(batch.finalOrchestratorState),
     projection: null,
     conflictReason: reason,
   };

@@ -82,5 +82,8 @@ export type PressureOneCallStoryOutputV1 =
   | PressureGeneratedChapterSummaryV1;
 
 export interface PressureOneCallStoryProviderPortV1 {
-  renderOneCallStory(context: Readonly<Record<string, unknown>>): Promise<unknown>;
+  renderOneCallStory(
+    context: Readonly<Record<string, unknown>>,
+    onPrimaryText?: (text: string) => void,
+  ): Promise<unknown>;
 }

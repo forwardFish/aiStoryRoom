@@ -32,6 +32,7 @@ export function createPreparedAutomationActionBatchV1(input: Readonly<{
   expectedWorkingStateHash: string;
   expectedLedgerHeadHash: string;
   expectedSeatAuthorityStateHash: string;
+  existingAcceptedActions?: readonly NonNullable<PreparedAutomationActionBatchV1["existingAcceptedActions"]>[number][];
   actions: readonly AppendPreparedAutomationActionCommandV1[];
   chapterDescriptor: PreparedAutomationActionBatchV1["chapterDescriptor"];
   nextOrchestratorState: PreparedAutomationActionBatchV1["nextOrchestratorState"];
@@ -39,6 +40,12 @@ export function createPreparedAutomationActionBatchV1(input: Readonly<{
 }>): PreparedAutomationActionBatchV1 {
   const route = validateRunRouteSnapshotV1(input.routeSnapshot);
   const actions = canonicalizePreparedAutomationActionsV1(route, input.actions);
+  const seatOrder = new Map(route.seatIds.map((seatId, index) => [seatId, index]));
+  const existingAcceptedActions = [...(input.existingAcceptedActions ?? [])]
+    .map((item) => ({ ...item }))
+    .sort((left, right) => (
+      requireSeatOrder(seatOrder, left.seatId) - requireSeatOrder(seatOrder, right.seatId)
+    ));
   if (!actions.length) throw new Error("Prepared automation batch cannot be empty");
   if (!input.batchId.trim() || !isSha256(input.snapshotHash)) {
     throw new Error("Prepared automation batch identity is invalid");
@@ -54,6 +61,16 @@ export function createPreparedAutomationActionBatchV1(input: Readonly<{
   ))) {
     throw new Error("Prepared automation batch authority binding is invalid");
   }
+  const actionSeats = new Set(actions.map((item) => item.command.action.seatId));
+  if (
+    new Set(existingAcceptedActions.map((item) => item.seatId)).size !== existingAcceptedActions.length
+    || existingAcceptedActions.some((item) => (
+      !item.actionId.trim()
+      || !Number.isSafeInteger(item.actionBudget)
+      || item.actionBudget < 1
+      || actionSeats.has(item.seatId)
+    ))
+  ) throw new Error("Prepared automation accepted action binding is invalid");
   const body = {
     schemaVersion: "pressure_prepared_automation_action_batch_v1" as const,
     batchId: input.batchId,
@@ -71,6 +88,7 @@ export function createPreparedAutomationActionBatchV1(input: Readonly<{
     expectedSeatAuthorityStateHash: input.expectedSeatAuthorityStateHash,
     frozenSeatOrder: route.seatIds.map((seatId, index) =>
       validateSeatIdV1(seatId, `routeSnapshot.seatIds[${index}]`)),
+    existingAcceptedActions,
     actions,
     chapterDescriptor: structuredClone(input.chapterDescriptor),
     nextOrchestratorState: structuredClone(input.nextOrchestratorState),

@@ -171,14 +171,21 @@ export class PressureChapterSummaryProductionCoordinatorV2 {
   ): ReturnType<PressureGameChapterSummaryReaderPort["readCurrent"]> {
     const identity = await this.resolveLatestSettledIdentity(scope);
     if (!identity || await this.dependencies.store.hasConfirmation(identity)) return null;
-    const summary = await this.readOrPublish(identity);
+    const summary = await this.readOrPublish(identity, scope.onClosingNarrative);
     return summary ? projectSource(identity, summary) : null;
   }
 
-  async readOrPublish(identity: PressureChapterSummaryIdentityV2): Promise<PressureGeneratedChapterSummaryV1 | null> {
+  async readOrPublish(
+    identity: PressureChapterSummaryIdentityV2,
+    onClosingNarrative?: (closingNarrative: string) => void,
+  ): Promise<PressureGeneratedChapterSummaryV1 | null> {
     assertIdentity(identity);
     const existing = await this.dependencies.store.readSummary(identity);
-    if (existing?.status === "PUBLISHED") return publishedSummary(existing);
+    if (existing?.status === "PUBLISHED") {
+      const summary = publishedSummary(existing);
+      if (summary?.closingNarrative) onClosingNarrative?.(summary.closingNarrative);
+      return summary;
+    }
     if (existing?.status === "GENERATING") return null;
     const inputs = await this.loadGenerationInputs(identity);
     if (!inputs) return null;
@@ -188,7 +195,7 @@ export class PressureChapterSummaryProductionCoordinatorV2 {
       mode: "CHAPTER_SUMMARY",
       storyPack: inputs.storyPack,
       summaryAuthority: inputs.summaryAuthority,
-    });
+    }, onClosingNarrative);
     if (generated.mode !== "CHAPTER_SUMMARY") throw new Error("PRESSURE_CHAPTER_SUMMARY_GENERATION_MODE_MISMATCH");
     await this.dependencies.store.publishSummary(identity, generated);
     return generated;

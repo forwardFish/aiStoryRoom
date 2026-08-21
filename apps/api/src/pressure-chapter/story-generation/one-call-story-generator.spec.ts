@@ -106,6 +106,33 @@ test("Provider failure or invalid authority data falls back completely without a
   assert.ok(warnings.every((message) => !message.includes("offline") || message.includes('"reason":"offline"')));
 });
 
+test("chapter summary forwards only validated closing prose to the streaming observer", async () => {
+  const authority = summaryAuthority();
+  const updates: string[] = [];
+  const service = new PressureOneCallStoryGeneratorV1({
+    async renderOneCallStory(context, onPrimaryText) {
+      onPrimaryText?.("章末正文正在生成。");
+      return {
+        closingNarrative: longScene,
+        playerActions: authority.playerActions.map((item) => ({ actionId: item.actionId, text: item.text })),
+        actualResults: authority.actualResults.map((item) => ({ resultRef: item.resultRef, text: item.text })),
+        completedObjectives: authority.completedObjectives.map((item) => ({ objectiveRef: item.objectiveRef, text: item.text })),
+        incompleteObjectives: authority.incompleteObjectives.map((item) => ({ objectiveRef: item.objectiveRef, text: item.text })),
+        metricChanges: authority.metricChanges.map((item) => ({ ...item })),
+        remainingPressures: authority.remainingPressures.map((item) => ({ pressureRef: item.pressureRef, text: item.text })),
+        nextChapterHook: authority.nextChapterHookFallback,
+      };
+    },
+  });
+  const result = await service.generate(
+    { mode: "CHAPTER_SUMMARY", storyPack: pack(), summaryAuthority: authority },
+    (text) => updates.push(text),
+  );
+  assert.equal(result.mode, "CHAPTER_SUMMARY");
+  assert.match(updates[0] ?? "", /正在生成/u);
+  assert.equal(updates.at(-1), longScene);
+});
+
 function pack(): PressureViewerStoryPackV1 {
   const body = {
     schemaVersion: "pressure_viewer_story_pack_v1" as const,

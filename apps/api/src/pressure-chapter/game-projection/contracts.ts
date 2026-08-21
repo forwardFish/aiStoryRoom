@@ -189,6 +189,7 @@ export interface PressureGameChapterSummaryReaderPort {
     routeHash: string;
     chapterRuntimeId: string;
     viewerSeatId: SeatIdV1;
+    onClosingNarrative?: (closingNarrative: string) => void;
   }): Promise<PressureGameChapterSummarySourceV1 | null>;
 }
 
@@ -368,6 +369,8 @@ export interface ReadPressureChapterGameProjectionQueryV1 {
   feedLimit?: number;
   /** Internal post-commit delivery hook; never serialized into the public projection. */
   onTurnPresentationSceneText?: (sceneText: string) => void;
+  /** Internal chapter-end hook; streams only Settlement-bound closing prose. */
+  onChapterSummaryClosingText?: (closingNarrative: string) => void;
   /** Internal latency-hiding result; never accepted from an HTTP client. */
   preparedTurnPresentation?: Promise<PressureGameDecisionProjectionV1 | null>;
 }

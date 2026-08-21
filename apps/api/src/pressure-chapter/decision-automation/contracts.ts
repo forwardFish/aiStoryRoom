@@ -294,6 +294,11 @@ export interface PreparedAutomationActionBatchV1 {
   expectedLedgerHeadHash: string;
   expectedSeatAuthorityStateHash: string;
   frozenSeatOrder: SeatIdV1[];
+  existingAcceptedActions?: Array<{
+    seatId: SeatIdV1;
+    actionId: string;
+    actionBudget: number;
+  }>;
   actions: AppendPreparedAutomationActionCommandV1[];
   chapterDescriptor: AuthoredChapterRuntimeV1;
   nextOrchestratorState: ChapterOrchestratorStateV1;
@@ -325,6 +330,58 @@ export interface PreparedAutomationActionBatchResultV1 {
   conflictReason: PreparedAutomationActionBatchConflictReasonV1 | null;
 }
 
+/** One already-accepted authored Beat folded without any database access. */
+export interface PreparedChapterReplayBeatV1 {
+  decisionPointId: string;
+  actionIds: string[];
+  recordedOrchestratorState: ChapterOrchestratorStateV1;
+  event: WorkingLedgerEventV1;
+  resolution: BeatResolutionV1;
+  postBeatOrchestratorState: ChapterOrchestratorStateV1;
+  narrativeJobs: OpenNovelNarrativeProjectionJobV1[];
+  aEmotionEmissions: AEmotionAuthorityEmissionV1[];
+  downstreamManifest: AuthorityDownstreamManifestV1;
+}
+
+/**
+ * A chapter-prefix replay is planned entirely in memory from durable human
+ * actions. It crosses persistence once and stops at the authored final Beat;
+ * the existing final-Beat convergence and Settlement remain authoritative.
+ */
+export interface PreparedChapterReplayBatchV1 {
+  schemaVersion: "pressure_prepared_chapter_replay_batch_v1";
+  batchId: string;
+  snapshotHash: string;
+  routeSnapshot: RunRouteSnapshotV1;
+  runId: string;
+  routeHash: string;
+  chapterRuntimeId: string;
+  chapterId: ChapterIdV1;
+  nowMs: number;
+  expectedOrchestratorRevision: number;
+  expectedOrchestratorHash: string;
+  expectedWorkingRevision: number;
+  expectedWorkingStateHash: string;
+  expectedLedgerHeadHash: string;
+  chapterDescriptor: AuthoredChapterRuntimeV1;
+  beats: PreparedChapterReplayBeatV1[];
+  finalOrchestratorState: ChapterOrchestratorStateV1;
+  finalWorkingRevision: number;
+  finalWorkingStateHash: string;
+  finalLedgerHeadHash: string;
+  batchHash: string;
+}
+
+export interface PreparedChapterReplayBatchResultV1 {
+  status: "COMMITTED" | "REPLAYED" | "CONFLICT";
+  batchId: string;
+  beatEventHashes: string[];
+  ledgerHeadHash: string;
+  orchestratorState: ChapterOrchestratorStateV1;
+  projection: WorkingLedgerProjectionV1 | null;
+  conflictReason: PreparedAutomationActionBatchConflictReasonV1 | null;
+}
+
 export interface AppendPreparedAutomationActionResultV1 {
   status: "APPENDED" | "REPLAYED" | "HEAD_CONFLICT" | "STALE";
   actionId: string;
@@ -341,6 +398,9 @@ export interface PreparedAutomationActionSubmissionPortV1 {
   submitPreparedBatch?(
     batch: PreparedAutomationActionBatchV1,
   ): Promise<PreparedAutomationActionBatchResultV1>;
+  submitPreparedChapterReplay?(
+    batch: PreparedChapterReplayBatchV1,
+  ): Promise<PreparedChapterReplayBatchResultV1>;
 }
 
 /** Existing runtime surface retained for the legacy recovery source. */
@@ -460,6 +520,21 @@ export interface PressureDecisionConvergencePortV1 {
     result: Readonly<DecisionConvergenceResultV1>,
     input: Readonly<{ projectionMs: number; endToEndMs: number }>,
   ): Promise<void>;
+  replayReadyChapterPrefix?(
+    command: Readonly<{
+      runId: string;
+      expectedRouteHash: string;
+      chapterRuntimeId: string;
+      chapterId: ChapterIdV1;
+      nowMs: number;
+      authority?: Readonly<{
+        routeSnapshot: RunRouteSnapshotV1;
+        chapter: ChapterOrchestratorStateV1;
+        projection: WorkingLedgerProjectionV1;
+        seatAuthority: SeatControlSnapshotV1;
+      }>;
+    }>,
+  ): Promise<PreparedChapterReplayBatchResultV1 | null>;
 }
 
 /** Original per-seat dependency surface retained but no longer production-wired. */

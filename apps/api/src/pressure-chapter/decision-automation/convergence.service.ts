@@ -61,12 +61,14 @@ import type {
   DecisionConvergenceResultV1,
   DecisionConvergenceStageTimingsV1,
   PreparedAutomationActionStaleReasonV1,
+  PreparedChapterReplayBatchResultV1,
 } from "./contracts";
 import {
   canonicalizePreparedAutomationActionsV1,
   createPreparedAutomationActionBatchV1,
   planPreparedActionLedgerV1,
 } from "./prepared-action-batch";
+import { planPreparedChapterReplayV1 } from "./prepared-chapter-replay";
 
 const DEFAULT_CONFIG: DecisionAutomationConfigV1 = Object.freeze({
   retryMs: 1_000,
@@ -259,8 +261,27 @@ export class PressureDecisionConvergenceServiceV1 {
     const preparedHuman = command.humanAction
       ? prepareDecisionHumanActionV1(snapshot, classified.humans, command.humanAction)
       : null;
+    const existingAcceptedHumans = classified.humans.flatMap((item) => {
+      if (item.seat.seatId === preparedHuman?.command.action.seatId) return [];
+      const accepted = [...snapshot.projection.acceptedActions.values()].filter((candidate) => (
+        candidate.action.runId === route.runId
+        && candidate.action.chapterRuntimeId === chapter.chapterRuntimeId
+        && candidate.action.chapterId === chapter.currentChapterId
+        && candidate.action.decisionPointId === active.decisionPointId
+        && candidate.action.seatId === item.seat.seatId
+      ));
+      if (accepted.length > 1) {
+        mismatch(ERROR.AUTHORITY_MISMATCH, "acceptedHumanActions", `DUPLICATE:${item.seat.seatId}`);
+      }
+      if (!accepted.length) return [];
+      return [{
+        seatId: item.seat.seatId,
+        actionId: accepted[0]!.action.actionId,
+      }];
+    });
     const unresolvedHumans = classified.humans.filter((item) => (
       item.seat.seatId !== preparedHuman?.command.action.seatId
+      && !existingAcceptedHumans.some((accepted) => accepted.seatId === item.seat.seatId)
     ));
     if (route.participantMode === "MULTIPLAYER" && unresolvedHumans.length > 0) {
       // Persist the authenticated human action before waiting for another
@@ -312,6 +333,16 @@ export class PressureDecisionConvergenceServiceV1 {
     if (!eligibleActionTypes.length) {
       mismatch(ERROR.CONTENT_MISMATCH, "content.allowedActionTypes", "EMPTY");
     }
+    const existingAcceptedActions = existingAcceptedHumans.map((item) => {
+      const accepted = snapshot.projection.acceptedActions.get(item.actionId);
+      const actionBudget = decision.execution.perSeatActionBudget[item.seatId];
+      if (
+        !accepted
+        || !actionBudget
+        || !eligibleActionTypes.includes(accepted.action.actionType)
+      ) mismatch(ERROR.CONTENT_MISMATCH, "acceptedHumanActions", item.seatId);
+      return { ...item, actionBudget };
+    });
 
     const compileStartedAt = performance.now();
     const actionIds: string[] = [];
@@ -405,7 +436,7 @@ export class PressureDecisionConvergenceServiceV1 {
     // cached projection still lags (for example after an interrupted resume).
     // Do not manufacture an empty write batch: let the idempotent runtime
     // recovery reconcile the accepted actions and continue from W4.
-    if (prepared.length === 0) {
+    if (prepared.length === 0 && existingAcceptedActions.length === 0) {
       const resumed = await this.resumeOnce(snapshot, metrics, command.nowMs);
       return this.finish(
         command,
@@ -432,12 +463,15 @@ export class PressureDecisionConvergenceServiceV1 {
       );
       const recordedState = planRecordedActionsV1(
         chapter,
-        canonicalPrepared.map((item) => ({
-          seatId: item.command.action.seatId,
-          actionId: item.command.action.actionId,
-          defaultCode: null,
-          actionBudget: decision.execution.perSeatActionBudget[item.command.action.seatId]!,
-        })),
+        [
+          ...existingAcceptedActions.map((item) => ({ ...item, defaultCode: null })),
+          ...canonicalPrepared.map((item) => ({
+            seatId: item.command.action.seatId,
+            actionId: item.command.action.actionId,
+            defaultCode: null,
+            actionBudget: decision.execution.perSeatActionBudget[item.command.action.seatId]!,
+          })),
+        ],
         true,
       );
       const actionPlan = planPreparedActionLedgerV1({
@@ -492,6 +526,7 @@ export class PressureDecisionConvergenceServiceV1 {
         expectedWorkingStateHash: snapshot.projection.stateHash,
         expectedLedgerHeadHash: snapshot.projection.headHash,
         expectedSeatAuthorityStateHash: snapshot.seatAuthority.stateHash,
+        existingAcceptedActions,
         actions: canonicalPrepared,
         chapterDescriptor: descriptor,
         nextOrchestratorState: recordedState,
@@ -515,6 +550,7 @@ export class PressureDecisionConvergenceServiceV1 {
         || result.actionIds.some((actionId) => !prepared.some((item) => item.command.action.actionId === actionId))
       ) mismatch(ERROR.PORT_RESULT_INVALID, "preparedBatch.result", "INVALID_BINDING");
       actionIds.push(...result.actionIds);
+      actionIds.push(...existingAcceptedActions.map((item) => item.actionId));
       committedBatchState = structuredClone(result.orchestratorState);
       committedBatchProjection = result.projection
         ? structuredClone(result.projection)
@@ -637,6 +673,109 @@ export class PressureDecisionConvergenceServiceV1 {
       endToEndStartedAt,
       committedAuthority,
     );
+  }
+
+  async replayReadyChapterPrefix(raw: Readonly<{
+    runId: string;
+    expectedRouteHash: string;
+    chapterRuntimeId: string;
+    chapterId: DecisionConvergenceAuthoritySnapshotV1["chapter"]["currentChapterId"];
+    nowMs: number;
+    authority?: Readonly<{
+      routeSnapshot: DecisionConvergenceAuthoritySnapshotV1["routeSnapshot"];
+      chapter: DecisionConvergenceAuthoritySnapshotV1["chapter"];
+      projection: DecisionConvergenceAuthoritySnapshotV1["projection"];
+      seatAuthority: DecisionConvergenceAuthoritySnapshotV1["seatAuthority"];
+    }>;
+  }>): Promise<PreparedChapterReplayBatchResultV1 | null> {
+    const replayStartedAt = performance.now();
+    if (!this.ports.preparedActions.submitPreparedChapterReplay) {
+      mismatch(ERROR.PORT_RESULT_INVALID, "preparedChapterReplay", "PORT_NOT_CONFIGURED");
+    }
+    const snapshotRaw = raw.authority
+      ? withDecisionConvergenceSnapshotHashV1({
+          schemaVersion: "pressure_decision_convergence_authority_snapshot_v1",
+          routeSnapshot: structuredClone(raw.authority.routeSnapshot),
+          chapter: structuredClone(raw.authority.chapter),
+          projection: structuredClone(raw.authority.projection),
+          seatAuthority: structuredClone(raw.authority.seatAuthority),
+          aiPolicyArtifactHash: this.ports.policy.artifactSha256,
+          capturedAtMs: raw.nowMs,
+        })
+      : await this.ports.snapshots.capture({
+          runId: raw.runId,
+          expectedRouteHash: raw.expectedRouteHash,
+          aiPolicyArtifactHash: this.ports.policy.artifactSha256,
+          capturedAtMs: raw.nowMs,
+        });
+    if (!snapshotRaw) return null;
+    const snapshot = validateDecisionConvergenceSnapshotV1(
+      snapshotRaw,
+      raw.runId,
+      raw.expectedRouteHash,
+      this.ports.policy.artifactSha256,
+    );
+    if (
+      snapshot.chapter.chapterRuntimeId !== raw.chapterRuntimeId
+      || snapshot.chapter.currentChapterId !== raw.chapterId
+      || snapshot.chapter.phase !== "ACTIVE"
+      || !snapshot.chapter.activeDecision
+    ) return null;
+    const descriptor = validateAuthoredChapterRuntimeV1(await this.ports.content.load({
+      routeSnapshot: snapshot.routeSnapshot,
+      chapterId: raw.chapterId,
+    }));
+    const batchId = sha256Canonical({
+      kind: "PRESSURE_CHAPTER_PREFIX_REPLAY_V1",
+      snapshotHash: snapshot.snapshotHash,
+      chapterRuntimeId: raw.chapterRuntimeId,
+      chapterId: raw.chapterId,
+      nowMs: raw.nowMs,
+    });
+    const batch = planPreparedChapterReplayV1({
+      batchId,
+      snapshot,
+      chapterDescriptor: descriptor,
+      nowMs: raw.nowMs,
+    });
+    if (!batch) return null;
+    console.info("Pressure chapter replay timing", JSON.stringify({
+      runId: raw.runId,
+      chapterId: raw.chapterId,
+      stage: "PLANNED",
+      beatCount: batch.beats.length,
+      elapsedMs: performance.now() - replayStartedAt,
+    }));
+    let result: PreparedChapterReplayBatchResultV1;
+    try {
+      result = await this.ports.preparedActions.submitPreparedChapterReplay(batch);
+    } catch (error) {
+      console.error("Pressure chapter replay failed", {
+        runId: raw.runId,
+        chapterId: raw.chapterId,
+        stage: "PERSISTENCE",
+        elapsedMs: performance.now() - replayStartedAt,
+        errorName: error instanceof Error ? error.name : "UNKNOWN",
+        errorMessage: error instanceof Error ? error.message : "UNKNOWN",
+      });
+      throw error;
+    }
+    console.info("Pressure chapter replay timing", JSON.stringify({
+      runId: raw.runId,
+      chapterId: raw.chapterId,
+      stage: result.status,
+      beatCount: batch.beats.length,
+      elapsedMs: performance.now() - replayStartedAt,
+    }));
+    if (
+      result.batchId !== batch.batchId
+      || !isSha256(result.ledgerHeadHash)
+      || (result.status !== "CONFLICT" && (
+        result.orchestratorState.orchestratorHash !== batch.finalOrchestratorState.orchestratorHash
+        || result.ledgerHeadHash !== batch.finalLedgerHeadHash
+      ))
+    ) mismatch(ERROR.PORT_RESULT_INVALID, "preparedChapterReplay.result", "INVALID_BINDING");
+    return result;
   }
 
   private async persistWaitingHuman(

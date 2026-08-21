@@ -136,7 +136,53 @@ implements MultiplayerChapterConvergencePortV1 {
       return result("WAITING_FOR_HUMANS", waitingSeatIds, initial);
     }
 
+    // Intermediate submissions never mutate shared Beat authority. The whole
+    // completed prefix is replayed in memory only when every human seat has
+    // reached chapter end, then crosses persistence once.
+    if (!requireWholeChapterReady) {
+      return result("WAITING_FOR_HUMANS", waitingSeatIds, initial);
+    }
+
     let chapter = initial;
+    let replayedPrefix = false;
+    if (this.convergence.replayReadyChapterPrefix) {
+      let replay;
+      try {
+        replay = await this.convergence.replayReadyChapterPrefix({
+          runId: route.runId,
+          expectedRouteHash: route.routeHash,
+          chapterRuntimeId: raw.chapterRuntimeId,
+          chapterId: raw.chapterId,
+          nowMs: raw.nowMs,
+          authority: {
+            routeSnapshot: route,
+            chapter: initial,
+            projection: initialProjection,
+            seatAuthority: authority,
+          },
+        });
+      } catch (error) {
+        console.error("Pressure chapter replay failed", {
+          runId: route.runId,
+          chapterId: raw.chapterId,
+          stage: "PLANNING_OR_AUTHORITY",
+          errorName: error instanceof Error ? error.name : "UNKNOWN",
+          errorMessage: error instanceof Error ? error.message : "UNKNOWN",
+        });
+        throw error;
+      }
+      if (replay?.status === "CONFLICT") {
+        return fail(
+          MULTIPLAYER_CHAPTER_CONVERGENCE_ERROR_CODES_V1.CONVERGENCE_STALLED,
+          "chapterReplay",
+          replay.conflictReason ?? "CONFLICT",
+        );
+      }
+      if (replay) {
+        replayedPrefix = true;
+        chapter = validateOrchestratorStateV1(replay.orchestratorState);
+      }
+    }
     const limit = (authoring.beats.length * 2) + 2;
     for (let pass = 0; pass < limit; pass += 1) {
       if (
@@ -176,41 +222,46 @@ implements MultiplayerChapterConvergencePortV1 {
       if (missingCurrentHumanSeatIds.length) {
         return result("WAITING_FOR_HUMANS", missingCurrentHumanSeatIds, chapter);
       }
-      for (const seatId of humanAudienceSeatIds) {
-        const activeSeat = activeDecision.seats.find((seat) => seat.seatId === seatId);
-        if (!activeSeat || activeSeat.requirement !== "REQUIRED" || activeSeat.completion !== "PENDING") {
-          continue;
+      // The production convergence batch records already accepted final-Beat
+      // human actions together with AI gap fills. Legacy test doubles without
+      // the chapter replay capability retain the old per-seat reconciliation.
+      if (!replayedPrefix) {
+        for (const seatId of humanAudienceSeatIds) {
+          const activeSeat = activeDecision.seats.find((seat) => seat.seatId === seatId);
+          if (!activeSeat || activeSeat.requirement !== "REQUIRED" || activeSeat.completion !== "PENDING") {
+            continue;
+          }
+          const accepted = [...projection.acceptedActions.values()].filter((item) => (
+            item.action.seatId === seatId
+            && item.action.decisionPointId === decisionPointId
+            && item.action.chapterRuntimeId === raw.chapterRuntimeId
+          ));
+          const controller = authority.seatControls.find((seat) => seat.seatId === seatId);
+          if (!controller) {
+            return fail(
+              MULTIPLAYER_CHAPTER_CONVERGENCE_ERROR_CODES_V1.AUTHORITY_MISMATCH,
+              `seatAuthority.${seatId}`,
+              "CONTROLLER_MISSING",
+            );
+          }
+          if (accepted.length > 1 || (controller.mode === "HUMAN_ACTIVE" && accepted.length !== 1)) {
+            return fail(
+              MULTIPLAYER_CHAPTER_CONVERGENCE_ERROR_CODES_V1.ACTION_PREFIX_INVALID,
+              `actions.${decisionPointId}.${seatId}`,
+              `EXPECTED_ONE_GOT_${accepted.length}`,
+            );
+          }
+          if (!accepted.length) continue;
+          if (controller.mode === "HUMAN_ACTIVE"
+            && controller.controlEpoch !== accepted[0]!.action.controlEpoch) {
+            return fail(MULTIPLAYER_CHAPTER_CONVERGENCE_ERROR_CODES_V1.AUTHORITY_MISMATCH, `seatAuthority.${seatId}`, "HUMAN_CONTROLLER_MISMATCH");
+          }
+          chapter = validateOrchestratorStateV1(await this.runtime.reconcileAcceptedMultiplayerAction({
+            routeSnapshot: route,
+            actionId: accepted[0]!.action.actionId,
+            nowMs: raw.nowMs,
+          }));
         }
-        const accepted = [...projection.acceptedActions.values()].filter((item) => (
-          item.action.seatId === seatId
-          && item.action.decisionPointId === decisionPointId
-          && item.action.chapterRuntimeId === raw.chapterRuntimeId
-        ));
-        const controller = authority.seatControls.find((seat) => seat.seatId === seatId);
-        if (!controller) {
-          return fail(
-            MULTIPLAYER_CHAPTER_CONVERGENCE_ERROR_CODES_V1.AUTHORITY_MISMATCH,
-            `seatAuthority.${seatId}`,
-            "CONTROLLER_MISSING",
-          );
-        }
-        if (accepted.length > 1 || (controller.mode === "HUMAN_ACTIVE" && accepted.length !== 1)) {
-          return fail(
-            MULTIPLAYER_CHAPTER_CONVERGENCE_ERROR_CODES_V1.ACTION_PREFIX_INVALID,
-            `actions.${decisionPointId}.${seatId}`,
-            `EXPECTED_ONE_GOT_${accepted.length}`,
-          );
-        }
-        if (!accepted.length) continue;
-        if (controller.mode === "HUMAN_ACTIVE"
-          && controller.controlEpoch !== accepted[0]!.action.controlEpoch) {
-          return fail(MULTIPLAYER_CHAPTER_CONVERGENCE_ERROR_CODES_V1.AUTHORITY_MISMATCH, `seatAuthority.${seatId}`, "HUMAN_CONTROLLER_MISMATCH");
-        }
-        chapter = validateOrchestratorStateV1(await this.runtime.reconcileAcceptedMultiplayerAction({
-          routeSnapshot: route,
-          actionId: accepted[0]!.action.actionId,
-          nowMs: raw.nowMs,
-        }));
       }
 
       const convergence = await this.convergence.converge({

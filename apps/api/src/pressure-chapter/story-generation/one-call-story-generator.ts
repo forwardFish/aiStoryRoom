@@ -15,39 +15,58 @@ export class PressureOneCallStoryGeneratorV1 {
 
   constructor(private readonly provider: PressureOneCallStoryProviderPortV1 | null) {}
 
-  async generate(input: Readonly<GeneratePressureOneCallStoryInputV1>): Promise<PressureOneCallStoryOutputV1> {
+  async generate(
+    input: Readonly<GeneratePressureOneCallStoryInputV1>,
+    onPrimaryText?: (text: string) => void,
+  ): Promise<PressureOneCallStoryOutputV1> {
     const context = compileContext(input);
     const key = sha256Canonical(context);
     const cached = this.cache.get(key);
-    if (cached) return structuredClone(await cached);
-    const pending = this.generateUncached(input, context);
+    if (cached) {
+      const result = structuredClone(await cached);
+      publishPrimaryText(result, onPrimaryText);
+      return result;
+    }
+    const pending = this.generateUncached(input, context, onPrimaryText);
     this.cache.set(key, pending);
     try {
       return structuredClone(await pending);
     } catch (error) {
       this.cache.delete(key);
       logFallback(input, context, error, "GENERATOR");
-      return fallback(input);
+      const result = fallback(input);
+      publishPrimaryText(result, onPrimaryText);
+      return result;
     }
   }
 
   private async generateUncached(
     input: Readonly<GeneratePressureOneCallStoryInputV1>,
     context: Readonly<Record<string, unknown>>,
+    onPrimaryText?: (text: string) => void,
   ): Promise<PressureOneCallStoryOutputV1> {
     if (!this.provider) {
       logFallback(input, context, new Error("PROVIDER_NOT_CONFIGURED"), "PROVIDER");
-      return fallback(input);
+      const result = fallback(input);
+      publishPrimaryText(result, onPrimaryText);
+      return result;
     }
     const startedAt = performance.now();
     try {
-      const raw = await this.provider.renderOneCallStory(structuredClone(context));
-      return input.mode === "TURN"
+      const raw = await this.provider.renderOneCallStory(
+        structuredClone(context),
+        input.mode === "CHAPTER_SUMMARY" ? onPrimaryText : undefined,
+      );
+      const result = input.mode === "TURN"
         ? validateTurn(raw, input)
         : validateSummary(raw, requiredSummary(input), input.storyPack.identity.chapterId);
+      publishPrimaryText(result, onPrimaryText);
+      return result;
     } catch (error) {
       logFallback(input, context, error, "PROVIDER_OR_VALIDATION", performance.now() - startedAt);
-      return fallback(input);
+      const result = fallback(input);
+      publishPrimaryText(result, onPrimaryText);
+      return result;
     }
   }
 }
@@ -216,6 +235,14 @@ function fallback(input: Readonly<GeneratePressureOneCallStoryInputV1>): Pressur
     sourceCommitHash: authority.sourceCommitHash,
     renderMode: "DETERMINISTIC_FALLBACK" as const,
   });
+}
+
+function publishPrimaryText(
+  output: PressureOneCallStoryOutputV1,
+  observer?: (text: string) => void,
+): void {
+  if (!observer || output.mode !== "CHAPTER_SUMMARY" || !output.closingNarrative.trim()) return;
+  try { observer(output.closingNarrative); } catch {}
 }
 
 function readableSummaryFallback(authority: PressureChapterSummaryAuthorityV1): string {

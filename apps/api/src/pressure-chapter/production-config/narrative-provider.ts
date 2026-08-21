@@ -229,7 +229,7 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, Pres
       throw new Error(`DECISION_PRESENTATION_PROVIDER_HTTP_${response.status}`);
     }
     const content = streaming
-      ? await readStreamingTurnPresentationV1(response, onSceneText!)
+      ? await readStreamingJsonTextFieldV1(response, "sceneText", onSceneText!)
       : await readBufferedTurnPresentationV1(response);
     if (typeof content !== "string" || !content.trim()) {
       throw new Error("DECISION_PRESENTATION_PROVIDER_EMPTY_RESPONSE");
@@ -248,7 +248,11 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, Pres
       throw new Error("DECISION_PRESENTATION_PROVIDER_INVALID_JSON");
     }
   }
-  async renderOneCallStory(context: Readonly<Record<string, unknown>>): Promise<unknown> {
+  async renderOneCallStory(
+    context: Readonly<Record<string, unknown>>,
+    onPrimaryText?: (text: string) => void,
+  ): Promise<unknown> {
+    const streaming = context.mode === "CHAPTER_SUMMARY" && typeof onPrimaryText === "function";
     const response = await this.options.fetchImpl(this.options.endpoint, {
       method: "POST",
       headers: {
@@ -261,11 +265,18 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, Pres
         response_format: { type: "json_object" },
         max_tokens: context.mode === "CHAPTER_SUMMARY" ? 3_072 : 2_048,
         temperature: 0.5,
+        ...(streaming ? {
+          stream: true,
+          stream_options: { include_usage: true },
+        } : {}),
         messages: [
           {
             role: "system",
             content: context.mode === "CHAPTER_SUMMARY"
-              ? buildPressureChapterSummarySystemInstructionV1()
+              ? [
+                  buildPressureChapterSummarySystemInstructionV1(),
+                  ...(streaming ? ["closingNarrative必须是返回JSON的第一个字段；其后再返回其余章末结构字段。"] : []),
+                ].join("\n")
               : "一次输出连续文学剧情、具体问题与全部合法选项表达。不得新增行动、事实、效果或结果。只返回JSON。",
           },
           { role: "user", content: JSON.stringify(context) },
@@ -274,8 +285,9 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, Pres
       signal: AbortSignal.timeout(60_000),
     });
     if (!response.ok) throw new Error(`PRESSURE_ONE_CALL_PROVIDER_HTTP_${response.status}`);
-    const payload = await response.json() as { choices?: Array<{ message?: { content?: unknown } }> };
-    const content = payload.choices?.[0]?.message?.content;
+    const content = streaming
+      ? await readStreamingJsonTextFieldV1(response, "closingNarrative", onPrimaryText!)
+      : await readBufferedTurnPresentationV1(response);
     if (typeof content !== "string" || !content.trim()) {
       throw new Error("PRESSURE_ONE_CALL_PROVIDER_EMPTY_RESPONSE");
     }
@@ -295,9 +307,10 @@ async function readBufferedTurnPresentationV1(response: Response): Promise<unkno
   return payload.choices?.[0]?.message?.content;
 }
 
-async function readStreamingTurnPresentationV1(
+async function readStreamingJsonTextFieldV1(
   response: Response,
-  onSceneText: PressureTurnPresentationSceneObserverV1,
+  field: string,
+  observer: PressureTurnPresentationSceneObserverV1,
 ): Promise<string> {
   if (!response.body) throw new Error("DECISION_PRESENTATION_PROVIDER_STREAM_MISSING");
   const reader = response.body.getReader();
@@ -322,11 +335,11 @@ async function readStreamingTurnPresentationV1(
       const delta = event.choices?.[0]?.delta?.content;
       if (typeof delta !== "string" || !delta) continue;
       content += delta;
-      const scene = extractStreamingJsonStringFieldV1(content, "sceneText").value;
-      if (scene.length <= publishedLength) continue;
-      publishedLength = scene.length;
+      const primaryText = extractStreamingJsonStringFieldV1(content, field).value;
+      if (primaryText.length <= publishedLength) continue;
+      publishedLength = primaryText.length;
       try {
-        onSceneText(scene);
+        observer(primaryText);
       } catch {
         // A disconnected viewer cannot fail the Provider request.
       }

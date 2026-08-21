@@ -37,7 +37,7 @@ test("M5 waits without reconciling or filling AI until every human is chapter-re
   assert.equal(harness.convergenceCalls, 0);
 });
 
-test("chapter prefix convergence advances completed human-only Beats but leaves the final Beat untouched", async () => {
+test("intermediate prefix observation performs no shared Beat writes", async () => {
   const harness = createHarness(true, routeFixture([GOVERNOR]));
   const result = await harness.service.convergeReadyPrefix({
     routeSnapshot: harness.route,
@@ -45,10 +45,11 @@ test("chapter prefix convergence advances completed human-only Beats but leaves 
     chapterId: "N1",
     nowMs: 10,
   });
-  assert.equal(result.status, "CONVERGED");
-  assert.equal(result.chapter?.activeDecision?.decisionPointId, authoring.beats.at(-1)?.catalogDecisionPointRef);
-  assert.equal(harness.convergenceCalls, authoring.beats.length - 1);
-  assert.equal(harness.reconciled.length, authoring.beats.length - 1);
+  assert.equal(result.status, "WAITING_FOR_HUMANS");
+  assert.equal(result.chapter?.activeDecision?.decisionPointId, authoring.beats[0]?.catalogDecisionPointRef);
+  assert.equal(harness.replayCalls, 0);
+  assert.equal(harness.convergenceCalls, 0);
+  assert.equal(harness.reconciled.length, 0);
 });
 
 test("chapter prefix convergence waits without writing when the current human Beat is incomplete", async () => {
@@ -64,7 +65,7 @@ test("chapter prefix convergence waits without writing when the current human Be
   assert.equal(harness.convergenceCalls, 0);
 });
 
-test("M5 reconciles preserved human actions and invokes existing AI convergence once per Beat", async () => {
+test("M5 replays the completed prefix once and invokes AI convergence only for the final Beat", async () => {
   const harness = createHarness(true);
   const result = await harness.service.convergeIfReady({
     routeSnapshot: harness.route,
@@ -73,8 +74,9 @@ test("M5 reconciles preserved human actions and invokes existing AI convergence 
     nowMs: 10,
   });
   assert.equal(result.status, "CONVERGED");
-  assert.equal(harness.convergenceCalls, authoring.beats.length);
-  assert.equal(harness.reconciled.length, authoring.beats.length * humans.length);
+  assert.equal(harness.replayCalls, 1);
+  assert.equal(harness.convergenceCalls, 1);
+  assert.equal(harness.reconciled.length, 0);
   assert.equal(harness.humanActionValues.every((value) => value === null), true);
   assert.equal(result.chapter?.phase, "FROZEN");
 });
@@ -118,8 +120,9 @@ test("M5 preserves actions submitted before a human seat hands off and lets AI f
   });
   assert.equal(result.status, "CONVERGED");
   assert.equal(result.chapter?.phase, "FROZEN");
-  assert.equal(harness.convergenceCalls, authoring.beats.length);
-  assert.equal(harness.reconciled.length, authoring.beats.length + 2);
+  assert.equal(harness.replayCalls, 1);
+  assert.equal(harness.convergenceCalls, 1);
+  assert.equal(harness.reconciled.length, 0);
 });
 
 test("M5 converges a registered Solo chapter only after the sole human completes all Beats", async () => {
@@ -131,8 +134,9 @@ test("M5 converges a registered Solo chapter only after the sole human completes
     nowMs: 10,
   });
   assert.equal(result.status, "CONVERGED");
-  assert.equal(harness.convergenceCalls, authoring.beats.length);
-  assert.equal(harness.reconciled.length, authoring.beats.length);
+  assert.equal(harness.replayCalls, 1);
+  assert.equal(harness.convergenceCalls, 1);
+  assert.equal(harness.reconciled.length, 0);
 });
 
 function createHarness(
@@ -159,6 +163,7 @@ function createHarness(
   const reconciled: string[] = [];
   const humanActionValues: Array<unknown> = [];
   let convergenceCalls = 0;
+  let replayCalls = 0;
   const service = new MultiplayerChapterConvergenceServiceV1(
     { async read() { return state; } },
     { async load() { return projection; } },
@@ -190,6 +195,20 @@ function createHarness(
       },
     },
     {
+      async replayReadyChapterPrefix() {
+        if (!allReady || state.phase !== "ACTIVE") return null;
+        replayCalls += 1;
+        state = activeState(route, authoring.beats.length - 1, state.revision + ((authoring.beats.length - 1) * 2));
+        return {
+          status: "COMMITTED",
+          batchId: "chapter-replay",
+          beatEventHashes: authoring.beats.slice(0, -1).map((_, index) => digest(`beat-${index}`)),
+          ledgerHeadHash: digest("replay-head"),
+          orchestratorState: state,
+          projection,
+          conflictReason: null,
+        };
+      },
       async converge(command) {
         convergenceCalls += 1;
         humanActionValues.push(command.humanAction);
@@ -214,6 +233,7 @@ function createHarness(
     service,
     reconciled,
     humanActionValues,
+    get replayCalls() { return replayCalls; },
     get convergenceCalls() { return convergenceCalls; },
   };
 }

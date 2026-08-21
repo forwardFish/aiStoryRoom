@@ -157,7 +157,7 @@ test("registered final Beat returns ACTION_SAVED before chapter convergence", as
   assert.equal(harness.postCommitTurnStarts, 1);
 });
 
-test("intermediate turn starts prefix convergence only after the first scene text is published", async () => {
+test("intermediate turn streams the next scene without starting shared prefix convergence", async () => {
   const harness = createHarness({
     independentSolo: true,
     immediateTurnUpdate: true,
@@ -172,7 +172,7 @@ test("intermediate turn starts prefix convergence only after the first scene tex
   );
   assert.equal("receipt" in response && response.receipt.status, "ACTION_SAVED");
   await harness.turnUpdateLoadPromise;
-  assert.equal(harness.multiplayerPrefixConvergenceCalls, 1);
+  assert.equal(harness.multiplayerPrefixConvergenceCalls, 0);
 });
 
 test("authoritative submit compilation replaces access and route pre-reads with one aggregate snapshot", async () => {

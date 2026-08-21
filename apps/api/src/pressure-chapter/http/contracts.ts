@@ -85,6 +85,7 @@ export interface PressureChapterHttpGamePort {
     feedCursor?: string | null;
     feedLimit?: number;
     onTurnPresentationSceneText?: (sceneText: string) => void;
+    onChapterSummaryClosingText?: (closingNarrative: string) => void;
   }): Promise<PressureChapterGameProjectionV1>;
   readFromCommittedAuthority?(
     input: ReadPressureChapterGameProjectionFromAuthorityV1,
