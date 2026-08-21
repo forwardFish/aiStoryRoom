@@ -20,6 +20,9 @@ export interface MultiplayerChapterConvergenceResultV1 {
 }
 
 export interface MultiplayerChapterConvergencePortV1 {
+  convergeReadyPrefix?(
+    command: Readonly<MultiplayerChapterConvergenceCommandV1>,
+  ): Promise<MultiplayerChapterConvergenceResultV1>;
   convergeIfReady(
     command: Readonly<MultiplayerChapterConvergenceCommandV1>,
   ): Promise<MultiplayerChapterConvergenceResultV1>;

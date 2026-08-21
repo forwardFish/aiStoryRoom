@@ -423,6 +423,42 @@ test("orchestrator runs N1-N7 with content-authored 1/4/7/dynamic point counts a
   assert.ok(env.settlement.inputs[2]!.settlementInput.sealedDecisionActionIds.some((id) => id.startsWith("default_")));
 });
 
+test("independent multi-Beat chapters require only real humans before the final shared Beat", async () => {
+  const env = environment({ ...POINT_COUNTS, N1: 2 });
+  const descriptor = env.content.descriptors.get("N1")!;
+  for (const decision of descriptor.decisions) {
+    decision.execution.mode = "SYNC_CONTEST";
+    decision.execution.requiredSeatIds = [...PRESSURE_CHAPTER_SEAT_IDS_V1];
+    decision.execution.perSeatActionBudget = Object.fromEntries(
+      PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => [seatId, 1]),
+    ) as typeof decision.execution.perSeatActionBudget;
+    decision.seatRequirements = Object.fromEntries(
+      PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId) => [seatId, "REQUIRED"]),
+    ) as typeof decision.seatRequirements;
+  }
+  const { descriptorHash: _oldHash, ...descriptorBody } = descriptor;
+  descriptor.descriptorHash = sha256Canonical(descriptorBody);
+  const service = env.create();
+  const routeSnapshot = route();
+  let state = await service.start({
+    routeSnapshot,
+    genesisWorldStateHash: digest("genesis-world"),
+    genesisHash: digest("genesis"),
+    nowMs: 1,
+  });
+  assert.deepEqual(
+    state.activeDecision?.seats.filter((seat) => seat.requirement === "REQUIRED").map((seat) => seat.seatId),
+    [ACTOR],
+  );
+  const command = await humanAction(env, routeSnapshot, state, 0);
+  state = await service.submitAction({ ...command, nowMs: 2 });
+  assert.equal(state.activeDecision?.decisionPointId, "n1-point-2");
+  assert.deepEqual(
+    state.activeDecision?.seats.filter((seat) => seat.requirement === "REQUIRED").map((seat) => seat.seatId),
+    [...PRESSURE_CHAPTER_SEAT_IDS_V1],
+  );
+});
+
 test("chapter participation is MIXED_ACTIONS when one seat acts and later defaults", async () => {
   const env = environment({ ...POINT_COUNTS, N1: 2 });
   const routeSnapshot = route();

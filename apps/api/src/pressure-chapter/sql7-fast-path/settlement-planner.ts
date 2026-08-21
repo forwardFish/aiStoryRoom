@@ -175,6 +175,7 @@ export async function planN1DecisionToN2SettlementV1(input: Readonly<{
     resolution: input.batch.beatPlan.resolution,
     nowMs,
     participantMode: input.snapshot.routeSnapshot.participantMode,
+    humanSeatIds: input.snapshot.routeSnapshot.humanSeatIdsAtStart,
   });
   if (!progression.settlementInput || progression.nextState.phase !== "SETTLING") {
     invalid("N1_BATCH_DID_NOT_CLOSE_CHAPTER");

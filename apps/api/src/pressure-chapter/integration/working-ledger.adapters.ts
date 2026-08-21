@@ -129,7 +129,10 @@ implements DecisionCloseEvaluatorPort {
     }
     for (const seat of input.active.seats) {
       const expected = input.decision.seatRequirements[seat.seatId];
-      if (seat.requirement !== expected) {
+      if (
+        seat.requirement !== expected
+        && !(expected === "REQUIRED" && seat.requirement === "NOT_REQUIRED")
+      ) {
         failPressureChapterIntegration(
           "INTEGRATION_AUTHORITY_SOURCE_MISMATCH",
           `decisionClose.seats.${seat.seatId}.requirement`,

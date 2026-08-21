@@ -65,6 +65,19 @@ implements MultiplayerChapterConvergencePortV1 {
   async convergeIfReady(
     raw: Readonly<MultiplayerChapterConvergenceCommandV1>,
   ): Promise<MultiplayerChapterConvergenceResultV1> {
+    return this.convergeInternal(raw, true);
+  }
+
+  async convergeReadyPrefix(
+    raw: Readonly<MultiplayerChapterConvergenceCommandV1>,
+  ): Promise<MultiplayerChapterConvergenceResultV1> {
+    return this.convergeInternal(raw, false);
+  }
+
+  private async convergeInternal(
+    raw: Readonly<MultiplayerChapterConvergenceCommandV1>,
+    requireWholeChapterReady: boolean,
+  ): Promise<MultiplayerChapterConvergenceResultV1> {
     const route = validateRunRouteSnapshotV1(raw.routeSnapshot);
     if (!usesIndependentSeatBeatFlowV1({
       participantMode: route.participantMode,
@@ -119,7 +132,9 @@ implements MultiplayerChapterConvergencePortV1 {
         acceptedActions: accepted.actions,
       }).status !== "CHAPTER_READY_FOR_CONVERGENCE";
     });
-    if (waitingSeatIds.length) return result("WAITING_FOR_HUMANS", waitingSeatIds, initial);
+    if (requireWholeChapterReady && waitingSeatIds.length) {
+      return result("WAITING_FOR_HUMANS", waitingSeatIds, initial);
+    }
 
     let chapter = initial;
     const limit = (authoring.beats.length * 2) + 2;
@@ -132,6 +147,12 @@ implements MultiplayerChapterConvergencePortV1 {
 
       const activeDecision = chapter.activeDecision;
       const decisionPointId = activeDecision.decisionPointId;
+      if (
+        !requireWholeChapterReady
+        && decisionPointId === authoring.beats.at(-1)?.catalogDecisionPointRef
+      ) {
+        return result("CONVERGED", [], chapter);
+      }
       if (chapter.phase === "RESOLVING_BEAT" || chapter.phase === "SETTLING") {
         chapter = validateOrchestratorStateV1(await this.runtime.resume(route, raw.nowMs));
         continue;
@@ -141,6 +162,20 @@ implements MultiplayerChapterConvergencePortV1 {
         runId: route.runId,
         chapterRuntimeId: raw.chapterRuntimeId,
       });
+      const missingCurrentHumanSeatIds = activeHumanSeatIds.filter((seatId) => {
+        const activeSeat = activeDecision.seats.find((seat) => seat.seatId === seatId);
+        if (!activeSeat || activeSeat.requirement !== "REQUIRED" || activeSeat.completion !== "PENDING") {
+          return false;
+        }
+        return [...projection.acceptedActions.values()].filter((item) => (
+          item.action.seatId === seatId
+          && item.action.decisionPointId === decisionPointId
+          && item.action.chapterRuntimeId === raw.chapterRuntimeId
+        )).length !== 1;
+      });
+      if (missingCurrentHumanSeatIds.length) {
+        return result("WAITING_FOR_HUMANS", missingCurrentHumanSeatIds, chapter);
+      }
       for (const seatId of humanAudienceSeatIds) {
         const activeSeat = activeDecision.seats.find((seat) => seat.seatId === seatId);
         if (!activeSeat || activeSeat.requirement !== "REQUIRED" || activeSeat.completion !== "PENDING") {

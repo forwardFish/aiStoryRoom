@@ -470,6 +470,7 @@ export class PressureDecisionConvergenceServiceV1 {
         resolution: beat.resolution,
         nowMs: command.nowMs,
         participantMode: route.participantMode,
+        humanSeatIds: route.humanSeatIdsAtStart,
       });
       const downstream = planBeatAuthorityDownstreamV1({
         projection: postBeatProjection,

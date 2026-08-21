@@ -503,6 +503,57 @@ test("missing or duplicated central metrics fail closed instead of filling brows
   );
 });
 
+test("turn presentation and chapter summary generation start concurrently", async () => {
+  const harness = await createHarness({
+    runId: "game-projection-parallel-ending",
+    metricSeed: 41,
+    goal: "Generate the next scene and chapter ending together.",
+    resourceValue: 11,
+    tokenLabel: "Parallel ending token",
+  });
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  let turnStarted = false;
+  let summaryStarted = false;
+  const service = new PressureChapterGameProjectionService(
+    { readStoredRoute: async () => structuredClone(harness.route) },
+    {
+      readCurrent: async () => structuredClone(harness.chapterSource),
+      projectCurrent: () => structuredClone(harness.chapterSource),
+    },
+    { readViewer: async () => structuredClone(harness.viewerSource) },
+    { readWorld: async () => structuredClone(harness.worldSource) },
+    { readCurrent: async () => structuredClone(harness.narrativeSource) },
+    { list: async () => structuredClone(harness.feedPage) },
+    { readCapabilities: async () => structuredClone(harness.capabilities) },
+    {
+      present: async () => {
+        turnStarted = true;
+        await gate;
+        return structuredClone(harness.chapterSource.decision!);
+      },
+    } as any,
+    {
+      readCurrent: async () => {
+        summaryStarted = true;
+        await gate;
+        return null;
+      },
+    },
+  );
+  const pending = service.read({
+    runId: harness.runId,
+    subjectId: harness.viewerSource.subjectId,
+  });
+  for (let index = 0; index < 20 && (!turnStarted || !summaryStarted); index += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1));
+  }
+  assert.equal(turnStarted, true);
+  assert.equal(summaryStarted, true);
+  release();
+  await pending;
+});
+
 test("game projection owns the five player-facing metric labels by track identity", async () => {
   const harness = await createHarness({
     runId: "game-projection-display-labels",

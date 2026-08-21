@@ -428,6 +428,7 @@ export class PressureChapterOrchestratorService {
         nextPin.decisionPointId,
         nowMs,
         route.participantMode,
+        route.humanSeatIdsAtStart,
       );
       assertKernelPin(descriptor, result.projection, nextPin.decisionPointId);
       const next = nextState(state, {
@@ -900,6 +901,7 @@ export function planChapterOpeningV1(input: Readonly<{
     workingSet.decisionPoint.decisionPointId,
     input.nowMs,
     route.participantMode,
+    route.humanSeatIdsAtStart,
   );
   const state = withOrchestratorHashV1({
     schemaVersion: "pressure_chapter_orchestrator_state_v1",
@@ -964,6 +966,7 @@ export function planBeatProgressionV1(input: Readonly<{
   resolution: Parameters<typeof validateBeatResolutionV1>[0];
   nowMs: number;
   participantMode: RunRouteSnapshotV1["participantMode"];
+  humanSeatIds?: readonly string[];
 }>): Readonly<{
   nextState: ChapterOrchestratorStateV1;
   settlementInput: ReturnType<typeof compileSettlementInputV1> | null;
@@ -1001,6 +1004,7 @@ export function planBeatProgressionV1(input: Readonly<{
           nextPin.decisionPointId,
           input.nowMs,
           input.participantMode,
+          input.humanSeatIds,
         ),
       }),
       settlementInput: null,
@@ -1023,9 +1027,16 @@ function buildActiveDecision(
   decisionPointId: string,
   nowMs: number,
   participantMode: RunRouteSnapshotV1["participantMode"],
+  humanSeatIds: readonly string[] = PRESSURE_CHAPTER_SEAT_IDS_V1,
 ): ActiveDecisionStateV1 {
   const decision = requireDecision(descriptor, decisionPointId);
   const deadline = decision.execution.deadlinePolicy;
+  const independentSeatFlow = usesIndependentSeatBeatFlowV1({
+    participantMode,
+    chapterId: descriptor.chapterId,
+  });
+  const finalDecisionPointId = descriptor.decisions.at(-1)?.decisionPointId;
+  const humanSeats = new Set(humanSeatIds);
   return {
     decisionPointId,
     policyHash: sha256Canonical(decision),
@@ -1037,7 +1048,12 @@ function buildActiveDecision(
       ? nowMs + deadline.durationMs
       : null,
     seats: PRESSURE_CHAPTER_SEAT_IDS_V1.map((seatId): ActiveDecisionSeatV1 => {
-      const requirement = decision.seatRequirements[seatId];
+      const authoredRequirement = decision.seatRequirements[seatId];
+      const requirement = independentSeatFlow
+        && decisionPointId !== finalDecisionPointId
+        && !humanSeats.has(seatId)
+        ? "NOT_REQUIRED"
+        : authoredRequirement;
       return {
         seatId,
         requirement,

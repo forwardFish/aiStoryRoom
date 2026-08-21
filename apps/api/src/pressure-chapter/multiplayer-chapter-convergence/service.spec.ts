@@ -37,6 +37,33 @@ test("M5 waits without reconciling or filling AI until every human is chapter-re
   assert.equal(harness.convergenceCalls, 0);
 });
 
+test("chapter prefix convergence advances completed human-only Beats but leaves the final Beat untouched", async () => {
+  const harness = createHarness(true, routeFixture([GOVERNOR]));
+  const result = await harness.service.convergeReadyPrefix({
+    routeSnapshot: harness.route,
+    chapterRuntimeId: runtimeId,
+    chapterId: "N1",
+    nowMs: 10,
+  });
+  assert.equal(result.status, "CONVERGED");
+  assert.equal(result.chapter?.activeDecision?.decisionPointId, authoring.beats.at(-1)?.catalogDecisionPointRef);
+  assert.equal(harness.convergenceCalls, authoring.beats.length - 1);
+  assert.equal(harness.reconciled.length, authoring.beats.length - 1);
+});
+
+test("chapter prefix convergence waits without writing when the current human Beat is incomplete", async () => {
+  const harness = createHarness(false);
+  const result = await harness.service.convergeReadyPrefix({
+    routeSnapshot: harness.route,
+    chapterRuntimeId: runtimeId,
+    chapterId: "N1",
+    nowMs: 10,
+  });
+  assert.equal(result.status, "WAITING_FOR_HUMANS");
+  assert.deepEqual(result.waitingSeatIds, [GOVERNOR]);
+  assert.equal(harness.convergenceCalls, 0);
+});
+
 test("M5 reconciles preserved human actions and invokes existing AI convergence once per Beat", async () => {
   const harness = createHarness(true);
   const result = await harness.service.convergeIfReady({

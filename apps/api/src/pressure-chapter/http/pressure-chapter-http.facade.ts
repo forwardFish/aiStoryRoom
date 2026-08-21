@@ -386,12 +386,59 @@ export class PressureChapterHttpFacade {
             nextBeatId: seatProgression.cursor.beatId,
             nextDecisionPointId: seatProgression.cursor.decisionPointId,
             load: async (publishSceneText) => {
+              let prefixPromise: Promise<unknown> | null = null;
+              const startPrefixConvergence = () => {
+                if (prefixPromise || !this.multiplayerChapterConvergence?.convergeReadyPrefix) {
+                  return prefixPromise;
+                }
+                prefixPromise = this.multiplayerChapterConvergence.convergeReadyPrefix({
+                  routeSnapshot: context.stored.snapshot,
+                  chapterRuntimeId: compiled.action.chapterRuntimeId,
+                  chapterId: compiled.action.chapterId,
+                  nowMs: requiredInteger(this.clock.nowMs(), "clock.nowMs", 0),
+                }).catch((error) => {
+                  const diagnostic = error && typeof error === "object"
+                    ? error as { name?: string; code?: string; path?: string; detail?: string }
+                    : null;
+                  console.error("Pressure chapter prefix convergence failed", {
+                    runId: context.access.runId,
+                    chapterId: compiled.action.chapterId,
+                    errorName: diagnostic?.name ?? "UNKNOWN",
+                    errorCode: diagnostic?.code ?? "UNKNOWN",
+                    errorPath: diagnostic?.path ?? "UNKNOWN",
+                    errorDetail: diagnostic?.detail ?? "UNKNOWN",
+                  });
+                  return null;
+                });
+                return prefixPromise;
+              };
+              const publishSceneTextAndStartPrefix = (sceneText: string) => {
+                publishSceneText(sceneText);
+                startPrefixConvergence();
+              };
+              const readLatestPlayableProjection = async () => {
+                let latest: Awaited<ReturnType<PressureChapterHttpGamePort["read"]>> | null = null;
+                for (let attempt = 0; attempt < 3; attempt += 1) {
+                  latest = await this.game.read({
+                    runId: context.access.runId,
+                    subjectId: context.access.subjectId,
+                  });
+                  if (
+                    latest.decision?.decisionPointId === seatProgression.cursor.decisionPointId
+                    && latest.capabilities?.canSubmitDecision
+                  ) return latest;
+                  if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 150));
+                }
+                return latest!;
+              };
               if (!canProjectFromCommittedAuthority) {
-                return this.game.read({
+                await this.game.read({
                   runId: context.access.runId,
                   subjectId: context.access.subjectId,
-                  onTurnPresentationSceneText: publishSceneText,
+                  onTurnPresentationSceneText: publishSceneTextAndStartPrefix,
                 });
+                await startPrefixConvergence();
+                return readLatestPlayableProjection();
               }
               const seededInput = {
                 runId: context.access.runId,
@@ -402,7 +449,7 @@ export class PressureChapterHttpFacade {
                 chapter: compilation.snapshot!.authority.chapter,
                 workingProjection: seatProgression.committedWorkingProjection!,
                 chapterDescriptor: compilation.preparedChapterDescriptor!,
-                onTurnPresentationSceneText: publishSceneText,
+                onTurnPresentationSceneText: publishSceneTextAndStartPrefix,
               };
               const preparedTurnPresentation =
                 this.game.warmTurnPresentationFromCommittedAuthority
@@ -410,12 +457,14 @@ export class PressureChapterHttpFacade {
                       seededInput,
                     ).catch(() => null)
                   : undefined;
-              return this.game.readFromCommittedAuthority!({
+              await this.game.readFromCommittedAuthority!({
                 ...seededInput,
                 ...(preparedTurnPresentation
                   ? { preparedTurnPresentation }
                   : {}),
               });
+              await startPrefixConvergence();
+              return readLatestPlayableProjection();
             },
           });
           responseStatus = "SUCCESS";

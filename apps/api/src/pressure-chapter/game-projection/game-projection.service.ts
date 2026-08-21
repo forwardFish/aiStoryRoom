@@ -513,6 +513,16 @@ export class PressureChapterGameProjectionService {
     timings.sourceValidationAndSanitizationMs = elapsedProjectionMs(
       sanitizationStartedAt,
     );
+    const chapterSummaryPromise = this.chapterSummaries
+      ? measureProjectionStage(timings, "chapterSummaryReadMs", () => (
+          this.chapterSummaries!.readCurrent({
+            runId: query.runId,
+            routeHash,
+            chapterRuntimeId: chapter.chapter.chapterRuntimeId,
+            viewerSeatId: viewer.viewer.seatId,
+          })
+        ))
+      : Promise.resolve(null);
     const turnPresentationStartedAt = performance.now();
     let decision: PressureGameDecisionProjectionV1 | null;
     try {
@@ -545,6 +555,9 @@ export class PressureChapterGameProjectionService {
               : null,
           }, query.onTurnPresentationSceneText)
         : fallbackDecision;
+    } catch (error) {
+      await chapterSummaryPromise.catch(() => null);
+      throw error;
     } finally {
       timings.turnPresentationMs = elapsedProjectionMs(turnPresentationStartedAt);
     }
@@ -586,16 +599,7 @@ export class PressureChapterGameProjectionService {
     timings.postPresentationSanitizationMs = elapsedProjectionMs(
       postPresentationSanitizationStartedAt,
     );
-    const chapterSummarySource = this.chapterSummaries
-      ? await measureProjectionStage(timings, "chapterSummaryReadMs", () => (
-          this.chapterSummaries!.readCurrent({
-            runId: query.runId,
-            routeHash,
-            chapterRuntimeId: chapter.chapter.chapterRuntimeId,
-            viewerSeatId: viewer.viewer.seatId,
-          })
-        ))
-      : null;
+    const chapterSummarySource = await chapterSummaryPromise;
     const chapterSummarySanitizationStartedAt = performance.now();
     const chapterSummary = sanitizeChapterSummary(chapterSummarySource, {
       runId: query.runId, routeHash, chapterRuntimeId: chapter.chapter.chapterRuntimeId,

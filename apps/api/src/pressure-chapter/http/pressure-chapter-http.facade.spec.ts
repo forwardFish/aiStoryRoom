@@ -157,6 +157,24 @@ test("registered final Beat returns ACTION_SAVED before chapter convergence", as
   assert.equal(harness.postCommitTurnStarts, 1);
 });
 
+test("intermediate turn starts prefix convergence only after the first scene text is published", async () => {
+  const harness = createHarness({
+    independentSolo: true,
+    immediateTurnUpdate: true,
+    executeTurnUpdateLoad: true,
+    sharedSnapshot: true,
+    authoritativeCompilation: true,
+  });
+  const response = await harness.facade.submitDecision(
+    harness.principal,
+    ROOM_ID,
+    decisionCommand(harness.stored.snapshot.routeHash),
+  );
+  assert.equal("receipt" in response && response.receipt.status, "ACTION_SAVED");
+  await harness.turnUpdateLoadPromise;
+  assert.equal(harness.multiplayerPrefixConvergenceCalls, 1);
+});
+
 test("authoritative submit compilation replaces access and route pre-reads with one aggregate snapshot", async () => {
   const harness = createHarness({
     independentSolo: true,
@@ -954,6 +972,7 @@ function createHarness(options: {
   multiplayer?: boolean;
   independentSolo?: boolean;
   immediateTurnUpdate?: boolean;
+  executeTurnUpdateLoad?: boolean;
   multiplayerPhase?: "ACTIVE" | "RESOLVING_BEAT" | "SETTLING";
   multiplayerSeatStatus?: "AWAITING_DECISION" | "CHAPTER_READY_FOR_CONVERGENCE";
 } = {}) {
@@ -970,6 +989,8 @@ function createHarness(options: {
   let multiplayerProgressionCalls = 0;
   const multiplayerPreparedProjections: unknown[] = [];
   let multiplayerConvergenceCalls = 0;
+  let multiplayerPrefixConvergenceCalls = 0;
+  let turnUpdateLoadPromise: Promise<unknown> | null = null;
   let postCommitTurnStarts = 0;
   const preparedWorkingProjection = options.sharedSnapshot
     ? ({
@@ -1032,9 +1053,10 @@ function createHarness(options: {
     return Promise.resolve(dispatch);
   }
   const game: PressureChapterHttpGamePort = {
-    async read() {
+    async read(query) {
       calls.push("game-read");
       gameReads += 1;
+      query.onTurnPresentationSceneText?.("第一段真实剧情已经出现。");
       return {
         schemaVersion: "pressure_chapter_game_projection_v1",
         runId: RUN_ID,
@@ -1049,9 +1071,10 @@ function createHarness(options: {
         },
       } as unknown as PressureChapterGameProjectionV1;
     },
-    async readFromCommittedAuthority() {
+    async readFromCommittedAuthority(query) {
       calls.push("game-read-committed");
       seededGameReads += 1;
+      query.onTurnPresentationSceneText?.("第一段真实剧情已经出现。");
       return {
         schemaVersion: "pressure_chapter_game_projection_v1",
         runId: RUN_ID,
@@ -1296,6 +1319,15 @@ function createHarness(options: {
       },
     } : null,
     options.multiplayer || options.independentSolo ? {
+      async convergeReadyPrefix() {
+        multiplayerPrefixConvergenceCalls += 1;
+        return {
+          schemaVersion: "pressure_multiplayer_chapter_convergence_result_v1",
+          status: "CONVERGED",
+          waitingSeatIds: [],
+          chapter: null,
+        } as never;
+      },
       async convergeIfReady() {
         multiplayerConvergenceCalls += 1;
         return {
@@ -1312,6 +1344,9 @@ function createHarness(options: {
     options.immediateTurnUpdate ? {
       start(input) {
         postCommitTurnStarts += 1;
+        if (options.executeTurnUpdateLoad) {
+          turnUpdateLoadPromise = input.load(() => {});
+        }
         return {
           schemaVersion: "pressure_post_commit_turn_receipt_v1",
           updateKey: sha256Canonical({ key: input.idempotencyKey }),
@@ -1363,6 +1398,8 @@ function createHarness(options: {
     multiplayerPreparedProjections,
     preparedWorkingProjection,
     get multiplayerConvergenceCalls() { return multiplayerConvergenceCalls; },
+    get multiplayerPrefixConvergenceCalls() { return multiplayerPrefixConvergenceCalls; },
+    get turnUpdateLoadPromise() { return turnUpdateLoadPromise; },
     get postCommitTurnStarts() { return postCommitTurnStarts; },
     get postCommitTurnReads() { return postCommitTurnReads; },
   };
