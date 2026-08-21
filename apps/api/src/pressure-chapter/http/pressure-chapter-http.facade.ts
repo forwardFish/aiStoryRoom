@@ -369,6 +369,12 @@ export class PressureChapterHttpFacade {
           seatProgression.cursor.status === "AWAITING_DECISION"
           && this.postCommitTurnUpdates
         ) {
+          const canProjectFromCommittedAuthority = Boolean(
+            this.game.readFromCommittedAuthority
+            && compilation.snapshot
+            && compilation.preparedChapterDescriptor
+            && seatProgression.committedWorkingProjection,
+          );
           const receipt = this.postCommitTurnUpdates.start({
             runId: context.access.runId,
             subjectId: context.access.subjectId,
@@ -379,10 +385,38 @@ export class PressureChapterHttpFacade {
             savedActionId: compiled.action.actionId,
             nextBeatId: seatProgression.cursor.beatId,
             nextDecisionPointId: seatProgression.cursor.decisionPointId,
-            load: () => this.game.read({
-              runId: context.access.runId,
-              subjectId: context.access.subjectId,
-            }),
+            load: async (publishSceneText) => {
+              if (!canProjectFromCommittedAuthority) {
+                return this.game.read({
+                  runId: context.access.runId,
+                  subjectId: context.access.subjectId,
+                  onTurnPresentationSceneText: publishSceneText,
+                });
+              }
+              const seededInput = {
+                runId: context.access.runId,
+                roomId: context.access.roomId,
+                subjectId: context.access.subjectId,
+                routeSnapshot: context.stored.snapshot,
+                viewerSeatId: compiled.action.seatId,
+                chapter: compilation.snapshot!.authority.chapter,
+                workingProjection: seatProgression.committedWorkingProjection!,
+                chapterDescriptor: compilation.preparedChapterDescriptor!,
+                onTurnPresentationSceneText: publishSceneText,
+              };
+              const preparedTurnPresentation =
+                this.game.warmTurnPresentationFromCommittedAuthority
+                  ? this.game.warmTurnPresentationFromCommittedAuthority(
+                      seededInput,
+                    ).catch(() => null)
+                  : undefined;
+              return this.game.readFromCommittedAuthority!({
+                ...seededInput,
+                ...(preparedTurnPresentation
+                  ? { preparedTurnPresentation }
+                  : {}),
+              });
+            },
           });
           responseStatus = "SUCCESS";
           responseOutcome = "ACTION_SAVED";

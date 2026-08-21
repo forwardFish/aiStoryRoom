@@ -150,7 +150,7 @@ implements MultiplayerSeatProgressionPortV1 {
         runId: route.runId,
         chapterRuntimeId: command.action.chapterRuntimeId,
       });
-    return projectMultiplayerSeatProgressionV1(
+    const result = projectMultiplayerSeatProgressionV1(
       route,
       command.action.chapterRuntimeId,
       command.action.chapterId,
@@ -158,6 +158,10 @@ implements MultiplayerSeatProgressionPortV1 {
       after,
       submitted.status,
     );
+    return {
+      ...result,
+      committedWorkingProjection: structuredClone(after),
+    };
   }
 
 }

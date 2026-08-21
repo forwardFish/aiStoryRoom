@@ -35,6 +35,7 @@ import {
 } from "../interaction/formal-interaction.service";
 import type {
   AuthoredChapterContentPort,
+  AuthoredChapterRuntimeV1,
   AuthoredDecisionRuntimeV1,
   SubmitOrchestratedActionCommandV1,
   WorkingProjectionReaderPort,
@@ -252,6 +253,7 @@ implements PressureChapterHttpDecisionCompilerPort {
     command: SubmitOrchestratedActionCommandV1;
     snapshot: DecisionSubmitSnapshotV1;
     preparedWorkingProjection: WorkingLedgerProjectionV1;
+    preparedChapterDescriptor: AuthoredChapterRuntimeV1;
   }>> {
     const publicCommand = validatePublicCommand(input.command);
     if (
@@ -297,18 +299,26 @@ implements PressureChapterHttpDecisionCompilerPort {
         chapterId: publicCommand.chapterId,
       }),
     );
+    if (publicCommand.chapterId === "P0") {
+      mismatch("decision.chapterId", "P0_HAS_NO_FORMAL_DECISION");
+    }
+    const preparedChapterDescriptor = await this.content.load({
+      routeSnapshot: route,
+      chapterId: publicCommand.chapterId,
+    });
     const command = await this.compileInternal({
       access,
       storedRoute,
       command: publicCommand,
       nowMs: input.nowMs,
-    }, snapshot);
+    }, snapshot, null, null, preparedChapterDescriptor);
     return {
       access,
       storedRoute,
       command,
       snapshot: structuredClone(snapshot),
       preparedWorkingProjection: structuredClone(snapshot.authority.projection),
+      preparedChapterDescriptor: structuredClone(preparedChapterDescriptor),
     };
   }
 
@@ -351,6 +361,7 @@ implements PressureChapterHttpDecisionCompilerPort {
   }>, submitSnapshot: DecisionSubmitSnapshotV1 | null,
   preparedAuthority: PreparedDecisionAuthorityV1 | null = null,
   preparedProjection: WorkingLedgerProjectionV1 | null = null,
+  preparedDescriptor: AuthoredChapterRuntimeV1 | null = null,
   ): Promise<SubmitOrchestratedActionCommandV1> {
     const access = validateAccess(input.access);
     const storedRoute = assertStoredRunRouteRecord(input.storedRoute);
@@ -471,7 +482,7 @@ implements PressureChapterHttpDecisionCompilerPort {
     ) {
       mismatch("decision.workingProjection", "STALE_OR_WRONG_DECISION");
     }
-    const descriptor = await this.content.load({
+    const descriptor = preparedDescriptor ?? await this.content.load({
       routeSnapshot: route,
       chapterId,
     });

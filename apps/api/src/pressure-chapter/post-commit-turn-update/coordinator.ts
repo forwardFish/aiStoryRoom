@@ -11,7 +11,8 @@ type EntryV1 = {
   subjectId: string;
   startedAtMs: number;
   expiresAtMs: number;
-  status: "PENDING" | "READY" | "FAILED";
+  status: "PENDING" | "STREAMING" | "READY" | "FAILED";
+  sceneText: string | null;
   projection: PressureChapterGameProjectionV1 | null;
 };
 
@@ -59,12 +60,27 @@ implements PressurePostCommitTurnUpdatePortV1 {
       startedAtMs: this.nowMs(),
       expiresAtMs: this.nowMs() + this.ttlMs(),
       status: "PENDING",
+      sceneText: null,
       projection: null,
     };
     this.entries.set(updateKey, entry);
     this.trim();
     this.schedule()(() => {
-      void input.load().then((projection) => {
+      const publishSceneText = (sceneText: string) => {
+        const current = this.entries.get(updateKey);
+        const text = typeof sceneText === "string" ? sceneText.trim() : "";
+        if (
+          !current
+          || current.subjectId !== input.subjectId
+          || current.status === "READY"
+          || current.status === "FAILED"
+          || !text
+          || text.length < (current.sceneText?.length ?? 0)
+        ) return;
+        current.status = "STREAMING";
+        current.sceneText = text;
+      };
+      void input.load(publishSceneText).then((projection) => {
         const current = this.entries.get(updateKey);
         if (!current || current.subjectId !== input.subjectId) return;
         if (
@@ -76,12 +92,14 @@ implements PressurePostCommitTurnUpdatePortV1 {
           return;
         }
         current.status = "READY";
+        current.sceneText = null;
         current.projection = structuredClone(projection);
         logCompletion(current, "READY", this.nowMs());
       }).catch(() => {
         const current = this.entries.get(updateKey);
         if (!current || current.subjectId !== input.subjectId) return;
         current.status = "FAILED";
+        current.sceneText = null;
         current.projection = null;
         logCompletion(current, "FAILED", this.nowMs());
       });
@@ -106,6 +124,7 @@ implements PressurePostCommitTurnUpdatePortV1 {
       input,
       entry.status,
       entry.status === "READY" ? entry.projection : null,
+      entry.status === "STREAMING" ? entry.sceneText : null,
     );
   }
 
@@ -145,6 +164,7 @@ function update(
   input: Readonly<{ runId: string; updateKey: string; chapterRuntimeId: string }>,
   status: PressurePostCommitTurnUpdateV1["status"],
   projection: PressureChapterGameProjectionV1 | null,
+  sceneText: string | null = null,
 ): PressurePostCommitTurnUpdateV1 {
   return Object.freeze({
     schemaVersion: "pressure_post_commit_turn_update_v1",
@@ -152,6 +172,7 @@ function update(
     runId: input.runId,
     chapterRuntimeId: input.chapterRuntimeId,
     status,
+    sceneText,
     projection: projection ? structuredClone(projection) : null,
   });
 }

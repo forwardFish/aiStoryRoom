@@ -304,6 +304,16 @@ export interface PressureGameChapterReaderPort {
     projection: WorkingLedgerProjectionV1;
     chapter: AuthoredChapterRuntimeV1;
   }>): PressureGameChapterSourceV1;
+  /** Pure per-seat Beat projection over an already committed W4/W5 authority pair. */
+  projectMultiplayerCurrent?(input: Readonly<{
+    runId: string;
+    routeHash: string;
+    viewerSeatId: SeatIdV1;
+    routeSnapshot: RunRouteSnapshotV1;
+    state: ChapterOrchestratorStateV1;
+    projection: WorkingLedgerProjectionV1;
+    chapter: AuthoredChapterRuntimeV1;
+  }>): PressureGameChapterSourceV1;
 }
 
 /** Must be backed by W7's seat-scoped Audience Projector. */
@@ -356,6 +366,10 @@ export interface ReadPressureChapterGameProjectionQueryV1 {
   subjectId: string;
   feedCursor?: string | null;
   feedLimit?: number;
+  /** Internal post-commit delivery hook; never serialized into the public projection. */
+  onTurnPresentationSceneText?: (sceneText: string) => void;
+  /** Internal latency-hiding result; never accepted from an HTTP client. */
+  preparedTurnPresentation?: Promise<PressureGameDecisionProjectionV1 | null>;
 }
 
 export interface ReadPressureChapterGameProjectionFromAuthorityV1

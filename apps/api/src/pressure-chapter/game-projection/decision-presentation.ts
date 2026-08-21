@@ -110,8 +110,13 @@ export interface PressureTurnPresentationCandidateV1 {
 export interface PressureTurnPresentationProviderPortV1 {
   renderTurnPresentation(
     context: Readonly<PressureTurnPresentationContextV1>,
+    onSceneText?: PressureTurnPresentationSceneObserverV1,
   ): Promise<unknown>;
 }
+
+export type PressureTurnPresentationSceneObserverV1 = (
+  sceneText: string,
+) => void;
 
 export interface PressureTurnPresentationInputV1 {
   chapter: PressureGameChapterProjectionV1;
@@ -177,6 +182,7 @@ export class PressureTurnPresentationServiceV1 {
     string,
     Promise<PressureGameDecisionProjectionV1>
   >();
+  private readonly latestInputs = new Map<string, PressureTurnPresentationInputV1>();
 
   constructor(
     private readonly provider: PressureTurnPresentationProviderPortV1 | null,
@@ -184,7 +190,9 @@ export class PressureTurnPresentationServiceV1 {
 
   async present(
     input: Readonly<PressureTurnPresentationInputV1>,
+    onSceneText?: PressureTurnPresentationSceneObserverV1,
   ): Promise<PressureGameDecisionProjectionV1> {
+    this.rememberInput(input);
     const startedAt = performance.now();
     const timings = emptyTurnPresentationStageTimings();
     let status: PressureTurnPresentationTimingStatusV1 = "PRESENTATION_FAILURE";
@@ -210,6 +218,7 @@ export class PressureTurnPresentationServiceV1 {
         const cacheStartedAt = performance.now();
         try {
           const result = structuredClone(await cached);
+          publishSceneText(onSceneText, result.summary);
           timings.resultCloneMs = elapsedTurnPresentationMs(cacheStartedAt);
           status = "CACHE_HIT";
           return result;
@@ -229,6 +238,7 @@ export class PressureTurnPresentationServiceV1 {
         fallback,
         timings,
         generationOutcome,
+        onSceneText,
       );
       this.cache.set(context.contextHash, pending);
       try {
@@ -257,11 +267,48 @@ export class PressureTurnPresentationServiceV1 {
     }
   }
 
+  async presentNextFromCachedBase(input: Readonly<{
+    chapter: PressureGameChapterProjectionV1;
+    viewerSeatId: string;
+    decision: PressureGameDecisionProjectionV1;
+    previousPlayerAction: PressureTurnPresentationInputV1["previousPlayerAction"];
+    currentBeatStory: PressureTurnPresentationInputV1["currentBeatStory"];
+    onSceneText?: PressureTurnPresentationSceneObserverV1;
+  }>): Promise<PressureGameDecisionProjectionV1 | null> {
+    const cached = this.latestInputs.get(
+      presentationInputKey(input.chapter.chapterRuntimeId, input.viewerSeatId),
+    );
+    if (!cached) return null;
+    return this.present({
+      ...structuredClone(cached),
+      chapter: structuredClone(input.chapter),
+      decision: structuredClone(input.decision),
+      previousPlayerAction: input.previousPlayerAction
+        ? structuredClone(input.previousPlayerAction)
+        : null,
+      currentBeatStory: input.currentBeatStory
+        ? structuredClone(input.currentBeatStory)
+        : null,
+    }, input.onSceneText);
+  }
+
+  private rememberInput(input: Readonly<PressureTurnPresentationInputV1>): void {
+    const key = presentationInputKey(input.chapter.chapterRuntimeId, input.viewer.seatId);
+    this.latestInputs.delete(key);
+    this.latestInputs.set(key, structuredClone(input));
+    while (this.latestInputs.size > 200) {
+      const oldest = this.latestInputs.keys().next().value as string | undefined;
+      if (!oldest) break;
+      this.latestInputs.delete(oldest);
+    }
+  }
+
   private async generate(
     context: PressureTurnPresentationContextV1,
     fallback: PressureGameDecisionProjectionV1,
     timings: PressureTurnPresentationStageTimingsV1,
     outcome: { status: "PROVIDER_SUCCESS" | "PROVIDER_FALLBACK" },
+    onSceneText?: PressureTurnPresentationSceneObserverV1,
   ): Promise<PressureGameDecisionProjectionV1> {
     try {
       const providerStartedAt = performance.now();
@@ -269,6 +316,7 @@ export class PressureTurnPresentationServiceV1 {
       try {
         raw = await this.provider!.renderTurnPresentation(
           structuredClone(context),
+          onSceneText,
         );
       } finally {
         timings.providerMs = elapsedTurnPresentationMs(providerStartedAt);
@@ -306,6 +354,7 @@ export class PressureTurnPresentationServiceV1 {
         timings.optionMappingMs = elapsedTurnPresentationMs(mappingStartedAt);
       }
       outcome.status = "PROVIDER_SUCCESS";
+      publishSceneText(onSceneText, result.summary);
       return result;
     } catch (error) {
       outcome.status = "PROVIDER_FALLBACK";
@@ -645,6 +694,7 @@ export function validatePressureTurnPresentationCandidateV1(
   if (new Set(usedFactRefs).size !== usedFactRefs.length) {
     throw new Error("PRESSURE_TURN_PRESENTATION_DUPLICATE_FACT_REF");
   }
+
   if (context.previousPlayerAction) {
     for (const requiredFactRef of ["player.previousAction", "player.previousActionEffect"]) {
       if (!usedFactRefs.includes(requiredFactRef)) {
@@ -704,6 +754,22 @@ function boundedText(
     throw new Error(`PRESSURE_DECISION_PRESENTATION_LENGTH:${path}:${length}`);
   }
   return text;
+}
+
+function presentationInputKey(chapterRuntimeId: string, viewerSeatId: string): string {
+  return `${chapterRuntimeId.trim()}:${viewerSeatId.trim()}`;
+}
+
+function publishSceneText(
+  observer: PressureTurnPresentationSceneObserverV1 | undefined,
+  sceneText: string,
+): void {
+  if (!observer || !sceneText.trim()) return;
+  try {
+    observer(sceneText);
+  } catch {
+    // Presentation observers are best-effort and cannot fail generation.
+  }
 }
 
 /**

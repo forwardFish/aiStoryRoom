@@ -1129,6 +1129,7 @@ function createHarness(options: {
         ),
         snapshot: {} as any,
         preparedWorkingProjection: preparedWorkingProjection as any,
+        preparedChapterDescriptor: {} as any,
       };
     };
   }
@@ -1315,6 +1316,7 @@ function createHarness(options: {
           runId: input.runId,
           chapterRuntimeId: input.chapterRuntimeId,
           status: "PENDING",
+          sceneText: null,
           projection: null,
         };
       },

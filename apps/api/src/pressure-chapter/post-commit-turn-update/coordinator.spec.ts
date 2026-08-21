@@ -97,6 +97,61 @@ test("turn update is viewer scoped and background failure is sanitized", async (
     runId: "run-2",
     chapterRuntimeId: "chapter-2",
     status: "FAILED",
+    sceneText: null,
     projection: null,
   });
+});
+
+test("scene text is published incrementally before the completed projection", async () => {
+  const scheduled: Array<() => void> = [];
+  let releaseProjection!: () => void;
+  const projectionGate = new Promise<void>((resolve) => { releaseProjection = resolve; });
+  const coordinator = new PressurePostCommitTurnUpdateCoordinatorV1({
+    schedule: (task) => scheduled.push(task),
+  });
+  const projection = {
+    schemaVersion: "pressure_chapter_game_projection_v1",
+    runId: "run-stream",
+    viewer: { seatId: "zhejiang_governor" },
+  } as never;
+  const receipt = coordinator.start({
+    runId: "run-stream",
+    subjectId: "user-stream",
+    idempotencyKey: "decision-stream",
+    chapterRuntimeId: "chapter-stream",
+    chapterId: "N1",
+    viewerSeatId: "zhejiang_governor",
+    savedActionId: "action-stream",
+    nextBeatId: "N1.B02",
+    nextDecisionPointId: "N1.dispatch_route",
+    async load(publishSceneText) {
+      publishSceneText("第一句真正的AI剧情。\n\n第二段正在继续生成。");
+      await projectionGate;
+      return projection;
+    },
+  });
+  scheduled[0]!();
+  await Promise.resolve();
+  const streaming = coordinator.read({
+    runId: "run-stream",
+    subjectId: "user-stream",
+    updateKey: receipt.updateKey,
+    chapterRuntimeId: "chapter-stream",
+  });
+  assert.equal(streaming.status, "STREAMING");
+  assert.match(streaming.sceneText ?? "", /真正的AI剧情/u);
+  assert.equal(streaming.projection, null);
+
+  releaseProjection();
+  await Promise.resolve();
+  await Promise.resolve();
+  const ready = coordinator.read({
+    runId: "run-stream",
+    subjectId: "user-stream",
+    updateKey: receipt.updateKey,
+    chapterRuntimeId: "chapter-stream",
+  });
+  assert.equal(ready.status, "READY");
+  assert.equal(ready.sceneText, null);
+  assert.deepEqual(ready.projection, projection);
 });

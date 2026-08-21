@@ -174,6 +174,39 @@ export class PressureChapterGameProjectionService {
     );
   }
 
+  async warmTurnPresentationFromCommittedAuthority(
+    query: ReadPressureChapterGameProjectionFromAuthorityV1,
+  ): Promise<PressureGameDecisionProjectionV1 | null> {
+    if (!this.turnPresentations || !query.onTurnPresentationSceneText) return null;
+    validateQuery(query);
+    const routeSnapshot = validateRunRouteSnapshotV1(query.routeSnapshot);
+    const chapter = this.projectCommittedChapter(query, routeSnapshot);
+    const decision = sanitizeDecision(
+      chapter.decision,
+      chapter.chapter.workingRevision,
+    );
+    if (!decision) return null;
+    return this.turnPresentations.presentNextFromCachedBase({
+      chapter: structuredClone(chapter.chapter),
+      viewerSeatId: query.viewerSeatId,
+      decision,
+      previousPlayerAction: chapter.viewerBeatContext?.previousPlayerAction
+        ? structuredClone(chapter.viewerBeatContext.previousPlayerAction)
+        : null,
+      currentBeatStory: chapter.viewerBeatContext?.story
+        ? {
+            beatId: chapter.viewerBeatContext.story.beatId,
+            title: chapter.viewerBeatContext.story.title,
+            storyPurpose: chapter.viewerBeatContext.story.storyPurpose,
+            authorialMaterials: structuredClone(
+              chapter.viewerBeatContext.story.authorialMaterials,
+            ),
+          }
+        : null,
+      onSceneText: query.onTurnPresentationSceneText,
+    });
+  }
+
   /** SQL7 post-commit projection: all sources are already authority-bound. */
   async projectFromResolvedSources(
     query:
@@ -258,14 +291,7 @@ export class PressureChapterGameProjectionService {
     const routeHash = routeSnapshot.routeHash;
     const seededChapter = seeded
       ? measureProjectionStageSync(timings, "chapterResolveMs", () => (
-          this.chapters.projectCurrent!({
-            runId: query.runId,
-            routeHash,
-            viewerSeatId: seeded.viewerSeatId,
-            state: seeded.chapter,
-            projection: seeded.workingProjection,
-            chapter: seeded.chapterDescriptor,
-          })
+          this.projectCommittedChapter(seeded, routeSnapshot)
         ))
       : null;
     const seededReads = seeded && seededChapter
@@ -392,6 +418,49 @@ export class PressureChapterGameProjectionService {
     }
   }
 
+  private projectCommittedChapter(
+    query: ReadPressureChapterGameProjectionFromAuthorityV1,
+    routeSnapshot: ReturnType<typeof validateRunRouteSnapshotV1>,
+  ): PressureGameChapterSourceV1 {
+    const routeHash = routeSnapshot.routeHash;
+    if (this.beatSubmitPolicy.usesIndependentSeatBeats({
+      participantMode: routeSnapshot.participantMode,
+      chapterId: query.chapter.currentChapterId,
+    })) {
+      if (!this.chapters.projectMultiplayerCurrent) {
+        failPressureGameProjection(
+          ERROR.INVALID_SOURCE,
+          "chapterReader.projectMultiplayerCurrent",
+          "CAPABILITY_REQUIRED",
+        );
+      }
+      return this.chapters.projectMultiplayerCurrent({
+        runId: query.runId,
+        routeHash,
+        viewerSeatId: query.viewerSeatId,
+        routeSnapshot,
+        state: query.chapter,
+        projection: query.workingProjection,
+        chapter: query.chapterDescriptor,
+      });
+    }
+    if (!this.chapters.projectCurrent) {
+      failPressureGameProjection(
+        ERROR.INVALID_SOURCE,
+        "chapterReader.projectCurrent",
+        "CAPABILITY_REQUIRED",
+      );
+    }
+    return this.chapters.projectCurrent({
+      runId: query.runId,
+      routeHash,
+      viewerSeatId: query.viewerSeatId,
+      state: query.chapter,
+      projection: query.workingProjection,
+      chapter: query.chapterDescriptor,
+    });
+  }
+
   private async projectResolvedSources(input: Readonly<{
     query: ReadPressureChapterGameProjectionQueryV1;
     routeSnapshot: ReadPressureChapterGameProjectionFromAuthorityV1["routeSnapshot"];
@@ -447,7 +516,12 @@ export class PressureChapterGameProjectionService {
     const turnPresentationStartedAt = performance.now();
     let decision: PressureGameDecisionProjectionV1 | null;
     try {
-      decision = fallbackDecision && this.turnPresentations
+      const prepared = fallbackDecision && query.preparedTurnPresentation
+        ? await query.preparedTurnPresentation
+        : null;
+      decision = prepared
+        ? preparedTurnPresentationV1(prepared, fallbackDecision!)
+        : fallbackDecision && this.turnPresentations
         ? await this.turnPresentations.present({
             chapter: structuredClone(chapter.chapter),
             viewer: structuredClone(viewer.viewer),
@@ -469,7 +543,7 @@ export class PressureChapterGameProjectionService {
                   ),
                 }
               : null,
-          })
+          }, query.onTurnPresentationSceneText)
         : fallbackDecision;
     } finally {
       timings.turnPresentationMs = elapsedProjectionMs(turnPresentationStartedAt);
@@ -846,6 +920,37 @@ function sanitizeDecision(
   string(decision.submitLabel, "decision.submitLabel");
   boolean(decision.customActionAllowed, "decision.customActionAllowed");
   return { ...decision, options };
+}
+
+function preparedTurnPresentationV1(
+  prepared: PressureGameDecisionProjectionV1,
+  fallback: PressureGameDecisionProjectionV1,
+): PressureGameDecisionProjectionV1 {
+  const value = sanitizeDecision(prepared, fallback.expectedWorkingRevision);
+  if (
+    !value
+    || value.decisionPointId !== fallback.decisionPointId
+    || value.mode !== fallback.mode
+    || value.requirement !== fallback.requirement
+    || value.expectedWorkingRevision !== fallback.expectedWorkingRevision
+    || value.submitLabel !== fallback.submitLabel
+    || value.customActionAllowed !== fallback.customActionAllowed
+    || value.options.length !== fallback.options.length
+    || value.options.some((option, index) => {
+      const source = fallback.options[index];
+      return !source
+        || option.code !== source.code
+        || option.actionType !== source.actionType
+        || option.preferredEntry !== source.preferredEntry;
+    })
+  ) {
+    failPressureGameProjection(
+      ERROR.INVALID_SOURCE,
+      "preparedTurnPresentation",
+      "ACTION_BINDING_MISMATCH",
+    );
+  }
+  return value;
 }
 
 function sanitizeCapabilities(value: PressureGameCapabilitiesV1): PressureGameCapabilitiesV1 {

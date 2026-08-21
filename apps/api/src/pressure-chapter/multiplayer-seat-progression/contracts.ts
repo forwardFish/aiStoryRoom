@@ -38,6 +38,8 @@ export interface MultiplayerSeatProgressionResultV1 {
   submissionStatus: "ACCEPTED" | "REPLAYED" | "NOT_SUBMITTED";
   cursor: MultiplayerSeatBeatCursorPlanV1;
   accepted: DurableAcceptedMultiplayerSeatActionsV1;
+  /** Internal post-submit seed; never serialized directly to the player. */
+  committedWorkingProjection?: WorkingLedgerProjectionV1;
 }
 
 export interface MultiplayerSeatProgressionPortV1 {

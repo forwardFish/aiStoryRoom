@@ -148,6 +148,7 @@ test("authority-seeded read is byte-equivalent and skips route/state/Working cha
     chapter: {} as any,
     workingProjection: {} as any,
     chapterDescriptor: committedChapterDescriptor(harness.chapterSource),
+    preparedTurnPresentation: Promise.resolve(structuredClone(ordinary.decision)),
   });
   assert.deepEqual(seeded, ordinary);
   assert.equal(harness.chapterReadScopes.length, chapterReadsBefore);

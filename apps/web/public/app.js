@@ -66,6 +66,10 @@ export function createStoryApp({
     const previousView = state.view;
     acceptView(nextView);
     state.busy = false;
+    if (nextView?.narrativeStreaming === true) {
+      render();
+      return;
+    }
     const completed = completedResultKind(previousView, nextView);
     if (completed === "maneuver") startManeuverResultStream(nextView);
     else if (completed === "decision") startResultStream(nextView);
@@ -619,7 +623,7 @@ export function createStoryApp({
           ${renderCausalRecalls(view)}
         </aside>
         <main class="causal-center ${mainMode === "history" ? "history-center" : ""} ${mainMode === "critical_pending" ? "critical-pending-center" : ""} ${mainMode === "decision" ? "decision-center" : ""}">
-          ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "chapter_summary" ? renderPressureChapterSummary(view, state) : decisionNarrativePending ? renderDecisionNarrative(view, { showContinue: true }) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
+          ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "chapter_summary" ? renderPressureChapterSummary(view, state) : decisionNarrativePending ? renderDecisionNarrative(view, { showContinue: view?.narrativeStreaming !== true }) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
           ${mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" && !decisionNarrativePending ? renderDecisionZone(view, state) : ""}
         </main>
         <aside class="causal-right" aria-label="${hasPressureSituationFeedV1(view) ? "局势动向与谋划中枢" : isEnglish(view) ? "Maneuver board" : "主动谋划中枢"}">

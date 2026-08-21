@@ -410,6 +410,44 @@ test("an overlong question is shortened without discarding valid literary scene 
   );
 });
 
+test("next Beat can start from the last validated presentation base before full page sources reread", async () => {
+  let calls = 0;
+  const streamed: string[] = [];
+  const service = new PressureTurnPresentationServiceV1({
+    async renderTurnPresentation(context, onSceneText) {
+      calls += 1;
+      const sceneText = literaryScene(
+        calls === 1 ? "第一道命令仍压在河图旁" : "第二批回执刚刚送进签押房",
+      );
+      onSceneText?.(sceneText.slice(0, 40));
+      return candidate(context, { sceneText });
+    },
+  });
+  const initial = fixture();
+  await service.present(initial);
+  const nextDecision = {
+    ...initial.decision,
+    decisionPointId: "N1.dispatch_route",
+    title: "下一条送令路线如何处置？",
+  };
+  const next = await service.presentNextFromCachedBase({
+    chapter: initial.chapter,
+    viewerSeatId: initial.viewer.seatId,
+    decision: nextDecision,
+    previousPlayerAction: {
+      decisionPointId: "N1.weir_crisis",
+      actionType: "EVACUATE_WEIRS",
+      displayText: "先撤人。",
+      effectText: "差役和船路先去高风险村落。",
+    },
+    currentBeatStory: null,
+    onSceneText: (text) => streamed.push(text),
+  });
+  assert.equal(calls, 2);
+  assert.match(next?.summary ?? "", /第二批回执/u);
+  assert.ok(streamed.length >= 1);
+});
+
 function fixture(): PressureTurnPresentationInputV1 {
   return {
     chapter: {

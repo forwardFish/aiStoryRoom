@@ -166,6 +166,14 @@ export class PressureMainGameStorageV1 {
       const update = await response.json().catch(() => null);
       if (!response.ok) throw httpError(response, update, "下一段剧情暂时无法读取。");
       assertTurnUpdate(update, receipt);
+      if (update.status === "STREAMING") {
+        this.asyncViewHandler?.(streamingTurnView(
+          this.toView(this.projection),
+          receipt,
+          update.sceneText,
+        ));
+        continue;
+      }
       if (update.status === "READY") return assertProjection(update.projection, this.runId);
       if (update.status === "FAILED" || update.status === "EXPIRED") {
         return this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
@@ -425,10 +433,35 @@ function assertTurnUpdate(value, receipt) {
     || value.runId !== receipt.runId
     || value.updateKey !== receipt.updateKey
     || value.chapterRuntimeId !== receipt.chapterRuntimeId
-    || !["PENDING", "READY", "FAILED", "EXPIRED"].includes(value.status)
+    || !["PENDING", "STREAMING", "READY", "FAILED", "EXPIRED"].includes(value.status)
     || (value.status === "READY") !== Boolean(value.projection)
+    || (value.status === "STREAMING") !== Boolean(String(value.sceneText || "").trim())
   ) throw new Error("剧情与局势更新回执无效。");
   return value;
+}
+
+function streamingTurnView(view, receipt, sceneText) {
+  const narrative = String(sceneText || "").trim();
+  return {
+    ...view,
+    run: {
+      ...view.run,
+      status: "awaiting_decision",
+    },
+    v2CurrentTurn: {
+      ...view.v2CurrentTurn,
+      title: "下一段剧情正在生成",
+      status: "OPEN",
+    },
+    decisionNarrative: narrative,
+    narrativeStreaming: true,
+    activeDecision: {
+      messageId: receipt.nextDecisionPointId || receipt.nextBeatId || receipt.savedActionId,
+      title: "剧情生成中",
+      options: [],
+    },
+    postCommitReceipt: structuredClone(receipt),
+  };
 }
 
 function pendingTurnView(view, receipt) {

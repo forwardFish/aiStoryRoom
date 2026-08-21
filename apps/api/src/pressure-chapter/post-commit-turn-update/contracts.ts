@@ -19,7 +19,8 @@ export type PressurePostCommitTurnUpdateV1 = Readonly<{
   updateKey: string;
   runId: string;
   chapterRuntimeId: string;
-  status: "PENDING" | "READY" | "FAILED" | "EXPIRED";
+  status: "PENDING" | "STREAMING" | "READY" | "FAILED" | "EXPIRED";
+  sceneText: string | null;
   projection: PressureChapterGameProjectionV1 | null;
 }>;
 
@@ -34,7 +35,9 @@ export interface PressurePostCommitTurnUpdatePortV1 {
     savedActionId: string;
     nextBeatId: string | null;
     nextDecisionPointId: string | null;
-    load: () => Promise<PressureChapterGameProjectionV1>;
+    load: (
+      publishSceneText: (sceneText: string) => void,
+    ) => Promise<PressureChapterGameProjectionV1>;
   }>): PressurePostCommitTurnReceiptV1;
   read(input: Readonly<{
     runId: string;

@@ -3,6 +3,7 @@ import type { NarrativeProviderPortV1 } from "@apps/openovel-runtime/pressure-na
 import type {
   PressureTurnPresentationContextV1,
   PressureTurnPresentationProviderPortV1,
+  PressureTurnPresentationSceneObserverV1,
 } from "../game-projection/decision-presentation";
 import {
   compilePressureDecisionStoryPackV1,
@@ -167,6 +168,7 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, Pres
 
   async renderTurnPresentation(
     context: Readonly<PressureTurnPresentationContextV1>,
+    onSceneText?: PressureTurnPresentationSceneObserverV1,
   ): Promise<unknown> {
     const logMode = clean(process.env.PRESSURE_DECISION_PRESENTATION_LOG).toLowerCase();
     if (logMode && logMode !== "off" && logMode !== "0") {
@@ -188,6 +190,7 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, Pres
         ...(logMode === "full" || logMode === "1" ? { context } : {}),
       }));
     }
+    const streaming = typeof onSceneText === "function";
     const response = await this.options.fetchImpl(this.options.endpoint, {
       method: "POST",
       headers: {
@@ -200,10 +203,19 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, Pres
         response_format: { type: "json_object" },
         max_tokens: 2_048,
         temperature: 0.55,
+        ...(streaming ? {
+          stream: true,
+          stream_options: { include_usage: true },
+        } : {}),
         messages: [
           {
             role: "system",
-            content: buildPressureTurnPresentationSystemInstructionV1(),
+            content: streaming
+              ? [
+                  buildPressureTurnPresentationSystemInstructionV1(),
+                  "sceneText必须是返回JSON的第一个字段；其后依次返回question、options、usedFactRefs、claims。JSON前后不得有其他文字。",
+                ].join("\n")
+              : buildPressureTurnPresentationSystemInstructionV1(),
           },
           {
             role: "user",
@@ -216,10 +228,9 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, Pres
     if (!response.ok) {
       throw new Error(`DECISION_PRESENTATION_PROVIDER_HTTP_${response.status}`);
     }
-    const payload = await response.json() as {
-      choices?: Array<{ message?: { content?: unknown } }>;
-    };
-    const content = payload.choices?.[0]?.message?.content;
+    const content = streaming
+      ? await readStreamingTurnPresentationV1(response, onSceneText!)
+      : await readBufferedTurnPresentationV1(response);
     if (typeof content !== "string" || !content.trim()) {
       throw new Error("DECISION_PRESENTATION_PROVIDER_EMPTY_RESPONSE");
     }
@@ -275,6 +286,95 @@ implements NarrativeProviderPortV1, PressureTurnPresentationProviderPortV1, Pres
     }
   }
 
+}
+
+async function readBufferedTurnPresentationV1(response: Response): Promise<unknown> {
+  const payload = await response.json() as {
+    choices?: Array<{ message?: { content?: unknown } }>;
+  };
+  return payload.choices?.[0]?.message?.content;
+}
+
+async function readStreamingTurnPresentationV1(
+  response: Response,
+  onSceneText: PressureTurnPresentationSceneObserverV1,
+): Promise<string> {
+  if (!response.body) throw new Error("DECISION_PRESENTATION_PROVIDER_STREAM_MISSING");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let lineBuffer = "";
+  let content = "";
+  let publishedLength = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    lineBuffer += decoder.decode(value, { stream: true });
+    const lines = lineBuffer.split(/\r?\n/u);
+    lineBuffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const data = trimmed.slice(5).trim();
+      if (!data || data === "[DONE]") continue;
+      const event = JSON.parse(data) as {
+        choices?: Array<{ delta?: { content?: unknown } }>;
+      };
+      const delta = event.choices?.[0]?.delta?.content;
+      if (typeof delta !== "string" || !delta) continue;
+      content += delta;
+      const scene = extractStreamingJsonStringFieldV1(content, "sceneText").value;
+      if (scene.length <= publishedLength) continue;
+      publishedLength = scene.length;
+      try {
+        onSceneText(scene);
+      } catch {
+        // A disconnected viewer cannot fail the Provider request.
+      }
+    }
+  }
+  return content;
+}
+
+function extractStreamingJsonStringFieldV1(
+  raw: string,
+  field: string,
+): { value: string; complete: boolean } {
+  const marker = `"${field}"`;
+  const markerIndex = raw.indexOf(marker);
+  if (markerIndex < 0) return { value: "", complete: false };
+  const colonIndex = raw.indexOf(":", markerIndex + marker.length);
+  if (colonIndex < 0) return { value: "", complete: false };
+  let cursor = colonIndex + 1;
+  while (/\s/u.test(raw[cursor] ?? "")) cursor += 1;
+  if (raw[cursor] !== '"') return { value: "", complete: false };
+  cursor += 1;
+  let value = "";
+  while (cursor < raw.length) {
+    const character = raw[cursor]!;
+    if (character === '"') return { value, complete: true };
+    if (character !== "\\") {
+      value += character;
+      cursor += 1;
+      continue;
+    }
+    if (cursor + 1 >= raw.length) break;
+    const escape = raw[cursor + 1]!;
+    const escapes: Record<string, string> = {
+      '"': '"', "\\": "\\", "/": "/", b: "\b", f: "\f",
+      n: "\n", r: "\r", t: "\t",
+    };
+    if (escape === "u") {
+      const hex = raw.slice(cursor + 2, cursor + 6);
+      if (!/^[0-9a-f]{4}$/iu.test(hex)) break;
+      value += String.fromCharCode(Number.parseInt(hex, 16));
+      cursor += 6;
+      continue;
+    }
+    if (!(escape in escapes)) break;
+    value += escapes[escape];
+    cursor += 2;
+  }
+  return { value, complete: false };
 }
 
 export function buildPressureChapterSummarySystemInstructionV1(): string {

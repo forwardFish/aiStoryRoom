@@ -7,6 +7,7 @@ import type {
 } from "@ai-story/shared";
 import type {
   PressureChapterGameProjectionV1,
+  PressureGameDecisionProjectionV1,
   PressureGameNarrativeUpdateV1,
   ReadPressureChapterGameProjectionFromAuthorityV1,
 } from "../game-projection";
@@ -15,7 +16,10 @@ import type {
   PressureChatMessageV1,
   SubmitPressureChatCommandV1,
 } from "../interaction/contracts";
-import type { SubmitOrchestratedActionCommandV1 } from "../orchestrator/contracts";
+import type {
+  AuthoredChapterRuntimeV1,
+  SubmitOrchestratedActionCommandV1,
+} from "../orchestrator/contracts";
 import type { DecisionSubmitSnapshotV1 } from "../decision-automation/contracts";
 import type { WorkingLedgerProjectionV1 } from "../working-ledger/contracts";
 import type { PressurePostCommitTurnReceiptV1 } from "../post-commit-turn-update/contracts";
@@ -80,10 +84,14 @@ export interface PressureChapterHttpGamePort {
     subjectId: string;
     feedCursor?: string | null;
     feedLimit?: number;
+    onTurnPresentationSceneText?: (sceneText: string) => void;
   }): Promise<PressureChapterGameProjectionV1>;
   readFromCommittedAuthority?(
     input: ReadPressureChapterGameProjectionFromAuthorityV1,
   ): Promise<PressureChapterGameProjectionV1>;
+  warmTurnPresentationFromCommittedAuthority?(
+    input: ReadPressureChapterGameProjectionFromAuthorityV1,
+  ): Promise<PressureGameDecisionProjectionV1 | null>;
   readNarrativeUpdate?(input: {
     runId: string;
     subjectId: string;
@@ -120,6 +128,7 @@ export interface PressureChapterHttpDecisionCompilerPort {
     command: SubmitOrchestratedActionCommandV1;
     snapshot: DecisionSubmitSnapshotV1;
     preparedWorkingProjection: WorkingLedgerProjectionV1;
+    preparedChapterDescriptor: AuthoredChapterRuntimeV1;
   }>>;
   compile(input: {
     access: PressureChapterHttpAccessV1;
@@ -136,6 +145,7 @@ export interface PressureChapterHttpDecisionCompilerPort {
     command: SubmitOrchestratedActionCommandV1;
     snapshot: DecisionSubmitSnapshotV1 | null;
     preparedWorkingProjection?: WorkingLedgerProjectionV1 | null;
+    preparedChapterDescriptor?: AuthoredChapterRuntimeV1 | null;
   }>>;
 }
 

@@ -427,12 +427,17 @@ test("saved intermediate Beat returns immediately and receives the completed tur
         updateKey,
         runId: initial.runId,
         chapterRuntimeId: initial.chapter.chapterRuntimeId,
-        status: readyNow ? "READY" : "PENDING",
+        status: readyNow ? "READY" : "STREAMING",
+        sceneText: readyNow ? null : "第一句真正针对玩家行动的AI剧情。",
         projection: readyNow ? ready : null,
       }), { status: 200, headers: { "content-type": "application/json" } });
     },
   });
-  const asyncView = new Promise((resolve) => storage.subscribeAsyncUpdates(resolve));
+  const streamedViews = [];
+  const asyncView = new Promise((resolve) => storage.subscribeAsyncUpdates((view) => {
+    streamedViews.push(view);
+    if (view.narrativeStreaming !== true) resolve(view);
+  }));
   const pendingView = await storage.submitDecision(
     pressureProjectionToMainGameViewV1(initial),
     { optionKey: "A", customText: "" },
@@ -442,6 +447,9 @@ test("saved intermediate Beat returns immediately and receives the completed tur
   assert.equal(pendingView.activeDecision, null);
 
   const completedView = await asyncView;
+  assert.equal(streamedViews[0].narrativeStreaming, true);
+  assert.match(streamedViews[0].decisionNarrative, /真正针对玩家行动/u);
+  assert.equal(streamedViews[0].activeDecision.options.length, 0);
   assert.equal(completedView.v2CurrentTurn.status, "OPEN");
   assert.equal(
     completedView.pressureProjection.decision.options[0].code,
