@@ -140,6 +140,23 @@ test("Registered Solo multi-Beat submit persists only the human seat until the c
   assert.equal(harness.actionWrites, 0);
 });
 
+test("registered final Beat returns ACTION_SAVED before chapter convergence", async () => {
+  const harness = createHarness({
+    independentSolo: true,
+    immediateTurnUpdate: true,
+    multiplayerSeatStatus: "CHAPTER_READY_FOR_CONVERGENCE",
+  });
+  const response = await harness.facade.submitDecision(
+    harness.principal,
+    ROOM_ID,
+    decisionCommand(harness.stored.snapshot.routeHash),
+  );
+  assert.equal(response.projection, null);
+  assert.equal("receipt" in response && response.receipt.status, "ACTION_SAVED");
+  assert.equal(harness.multiplayerConvergenceCalls, 0);
+  assert.equal(harness.postCommitTurnStarts, 1);
+});
+
 test("authoritative submit compilation replaces access and route pre-reads with one aggregate snapshot", async () => {
   const harness = createHarness({
     independentSolo: true,

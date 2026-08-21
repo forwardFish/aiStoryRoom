@@ -148,7 +148,7 @@ implements PressurePostCommitTurnUpdatePortV1 {
   }
 
   private ttlMs(): number {
-    return Math.max(30_000, this.options.ttlMs ?? 120_000);
+    return Math.max(30_000, this.options.ttlMs ?? 600_000);
   }
 
   private maxEntries(): number {

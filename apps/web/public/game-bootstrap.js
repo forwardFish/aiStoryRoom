@@ -9,7 +9,7 @@ export async function bootGamePage({
   root = document.getElementById("app"),
   window: win = globalThis.window,
   fetchImpl = win?.fetch?.bind(win),
-  loadPressureMainGameStorage = () => import("./pressure-main-game-storage-v1.js?v=20260821-streaming-narrative-v1"),
+  loadPressureMainGameStorage = () => import("./pressure-main-game-storage-v1.js?v=20260821-dynamic-chapters-v1"),
   loadContinuousStoryV2 = () => import("./continuous-story-v2-maneuver-client.js?v=20260809-remaining-count-v1"),
   loadContinuous = () => import("./continuous-game-client.js?v=20260717-draft-persistence-v3"),
   loadRoomStorage = () => import("./room-story-storage.js?v=20260715-1"),

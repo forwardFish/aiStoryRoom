@@ -429,6 +429,41 @@ export class PressureChapterHttpFacade {
           };
         }
         if (seatProgression.cursor.status === "CHAPTER_READY_FOR_CONVERGENCE") {
+          if (this.postCommitTurnUpdates) {
+            const receipt = this.postCommitTurnUpdates.start({
+              runId: context.access.runId,
+              subjectId: context.access.subjectId,
+              idempotencyKey: command.idempotencyKey,
+              chapterRuntimeId: compiled.action.chapterRuntimeId,
+              chapterId: compiled.action.chapterId,
+              viewerSeatId: compiled.action.seatId,
+              savedActionId: compiled.action.actionId,
+              nextBeatId: null,
+              nextDecisionPointId: null,
+              load: async (publishSceneText) => {
+                await this.multiplayerChapterConvergence!.convergeIfReady({
+                  routeSnapshot: context.stored.snapshot,
+                  chapterRuntimeId: compiled.action.chapterRuntimeId,
+                  chapterId: compiled.action.chapterId,
+                  nowMs: requiredInteger(this.clock.nowMs(), "clock.nowMs", 0),
+                });
+                return this.game.read({
+                  runId: context.access.runId,
+                  subjectId: context.access.subjectId,
+                  onTurnPresentationSceneText: publishSceneText,
+                });
+              },
+            });
+            responseStatus = "SUCCESS";
+            responseOutcome = "ACTION_SAVED";
+            responseStage = "RESPONSE_READY";
+            return {
+              schemaVersion: "pressure_chapter_submit_decision_http_response_v1" as const,
+              idempotencyKey: command.idempotencyKey,
+              projection: null,
+              receipt,
+            };
+          }
           failureStage = "CONVERGENCE";
           const convergenceStartedAt = performance.now();
           await this.multiplayerChapterConvergence.convergeIfReady({

@@ -31,7 +31,7 @@ export class PressureMainGameStorageV1 {
     narrativePollIntervalMs = 300,
     narrativePollAttempts = 20,
     turnPollIntervalMs = 500,
-    turnPollAttempts = 80,
+    turnPollAttempts = 720,
     waitImpl = defaultWait,
   } = {}) {
     if (!runId) throw new TypeError("PressureMainGameStorageV1 requires runId");
