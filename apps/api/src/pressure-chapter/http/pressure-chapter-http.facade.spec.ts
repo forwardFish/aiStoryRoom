@@ -118,6 +118,7 @@ test("Registered Solo multi-Beat submit persists only the human seat until the c
   const harness = createHarness({
     independentSolo: true,
     immediateTurnUpdate: true,
+    sharedSnapshot: true,
     multiplayerSeatStatus: "AWAITING_DECISION",
   });
   const response = await harness.facade.submitDecision(
@@ -128,10 +129,36 @@ test("Registered Solo multi-Beat submit persists only the human seat until the c
   assert.equal(response.projection, null);
   assert.equal("receipt" in response && response.receipt.status, "ACTION_SAVED");
   assert.equal(harness.multiplayerProgressionCalls, 1);
+  assert.equal(harness.multiplayerPreparedProjections.length, 1);
+  assert.equal(
+    harness.multiplayerPreparedProjections[0],
+    harness.preparedWorkingProjection,
+  );
   assert.equal(harness.multiplayerConvergenceCalls, 0);
   assert.equal(harness.postCommitTurnStarts, 1);
   assert.equal(harness.gameReads, 0);
   assert.equal(harness.actionWrites, 0);
+});
+
+test("authoritative submit compilation replaces access and route pre-reads with one aggregate snapshot", async () => {
+  const harness = createHarness({
+    independentSolo: true,
+    immediateTurnUpdate: true,
+    sharedSnapshot: true,
+    authoritativeCompilation: true,
+    multiplayerSeatStatus: "AWAITING_DECISION",
+  });
+  const response = await harness.facade.submitDecision(
+    harness.principal,
+    ROOM_ID,
+    decisionCommand(harness.stored.snapshot.routeHash),
+  );
+  assert.equal("receipt" in response && response.receipt.status, "ACTION_SAVED");
+  assert.equal(harness.calls.filter((call) => call === "decision-compile-authoritatively").length, 1);
+  assert.equal(harness.calls.includes("access"), false);
+  assert.equal(harness.calls.includes("stored-route"), false);
+  assert.equal(harness.calls.includes("route:ACTION"), false);
+  assert.equal(harness.multiplayerPreparedProjections[0], harness.preparedWorkingProjection);
 });
 
 test("GET game alone uses the dedicated mode-bound reader and preserves pagination", async () => {
@@ -900,6 +927,7 @@ function createHarness(options: {
   compilerErrorCode?: string;
   convergence?: boolean;
   sharedSnapshot?: boolean;
+  authoritativeCompilation?: boolean;
   committedAuthority?: boolean;
   sql7?: "COMMITTED" | "REPLAYED" | "NOT_APPLICABLE" | "AUTHORITY_FENCE_MISMATCH";
   dedicatedGameRead?: boolean;
@@ -923,8 +951,19 @@ function createHarness(options: {
   let resultReads = 0;
   let sql7Submits = 0;
   let multiplayerProgressionCalls = 0;
+  const multiplayerPreparedProjections: unknown[] = [];
   let multiplayerConvergenceCalls = 0;
   let postCommitTurnStarts = 0;
+  const preparedWorkingProjection = options.sharedSnapshot
+    ? ({
+        schemaVersion: "working_ledger_projection_v1",
+        head: {
+          headEventId: null,
+          headHash: sha256Canonical("prepared-http-working-ledger"),
+          workingRevision: 0,
+        },
+      } as any)
+    : null;
   let postCommitTurnReads = 0;
   const selectedGameReadQueries: Parameters<PressureChapterHttpGamePort["read"]>[0][] = [];
   const actionCommands: SubmitOrchestratedActionCommandV1[] = [];
@@ -1060,6 +1099,36 @@ function createHarness(options: {
           viewer: { seatId: SEAT_ID },
           submitSnapshotHash: sha256Canonical("shared-http-submit"),
         } as any,
+        preparedWorkingProjection,
+      };
+    };
+  }
+  if (options.authoritativeCompilation) {
+    decisionCompiler.compileAuthoritatively = async (input) => {
+      calls.push("decision-compile-authoritatively");
+      const authorizedAccess = {
+        schemaVersion: "pressure_chapter_http_access_v1" as const,
+        roomId: ROOM_ID,
+        runId: RUN_ID,
+        subjectId: USER_ID,
+        viewerId: USER_ID,
+        participantMode: "SOLO" as const,
+      };
+      const compilerInput = {
+        access: authorizedAccess,
+        storedRoute: structuredClone(stored),
+        command: structuredClone(input.command),
+        nowMs: input.nowMs,
+      };
+      return {
+        access: authorizedAccess,
+        storedRoute: structuredClone(stored),
+        command: compiledDecisionCommand(
+          compilerInput,
+          options.compilerSeatId ?? input.command.seatId,
+        ),
+        snapshot: {} as any,
+        preparedWorkingProjection: preparedWorkingProjection as any,
       };
     };
   }
@@ -1195,8 +1264,9 @@ function createHarness(options: {
     options.gameReadObserver,
     options.multiplayer || options.independentSolo ? {
       async read() { throw new Error("read is not used by HTTP submit"); },
-      async submit() {
+      async submit(_command, preparedProjection) {
         multiplayerProgressionCalls += 1;
+        multiplayerPreparedProjections.push(preparedProjection);
         return {
           schemaVersion: "pressure_multiplayer_seat_progression_result_v1",
           submissionStatus: "ACCEPTED",
@@ -1271,6 +1341,8 @@ function createHarness(options: {
     get resultReads() { return resultReads; },
     get sql7Submits() { return sql7Submits; },
     get multiplayerProgressionCalls() { return multiplayerProgressionCalls; },
+    multiplayerPreparedProjections,
+    preparedWorkingProjection,
     get multiplayerConvergenceCalls() { return multiplayerConvergenceCalls; },
     get postCommitTurnStarts() { return postCommitTurnStarts; },
     get postCommitTurnReads() { return postCommitTurnReads; },

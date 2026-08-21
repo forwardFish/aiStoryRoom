@@ -156,6 +156,48 @@ test("M2/M3 advance a Solo human without writing AI seat actions", () => {
   assert.equal(result.accepted.actions.length, 1);
 });
 
+test("M3 fast submit reuses the compiler projection and performs no progression reread", async () => {
+  const route = routeFixture([GOVERNOR, ADMINISTRATION]);
+  const firstDecision = authoring.beats[0]!.catalogDecisionPointRef;
+  const accepted = acceptedFixture(route, GOVERNOR, firstDecision, "action-governor-fast");
+  const before = projectionFixture(route, []);
+  const after = projectionFixture(route, [accepted]);
+  let reads = 0;
+  let preparedWrites = 0;
+  const service = new MultiplayerSeatProgressionServiceV1(
+    {
+      async load() {
+        reads += 1;
+        throw new Error("fast submit must not reload progression");
+      },
+    },
+    {
+      async submit() {
+        throw new Error("fast submit must use submitPrepared");
+      },
+      async submitPrepared(_command, projection) {
+        preparedWrites += 1;
+        assert.equal(projection.headHash, before.headHash);
+        return { status: "ACCEPTED", event: {} as never, projection: after };
+      },
+    },
+  );
+
+  const result = await service.submit({
+    routeSnapshot: route,
+    subjectId: "human-governor",
+    action: accepted.action,
+    intent: accepted.intent,
+    inputFingerprint: accepted.inputFingerprint,
+    nowMs: 1,
+  }, before);
+
+  assert.equal(reads, 0);
+  assert.equal(preparedWrites, 1);
+  assert.equal(result.cursor.decisionPointId, authoring.beats[1]!.catalogDecisionPointRef);
+  assert.equal(result.accepted.actions.length, 1);
+});
+
 function projectionFixture(
   route: RunRouteSnapshotV1,
   accepted: AcceptedFormalActionV1[],

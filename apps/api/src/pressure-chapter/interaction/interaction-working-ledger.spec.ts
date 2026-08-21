@@ -51,8 +51,10 @@ const OUTSIDER: SeatIdV1 = "qingliu_law";
 class MemoryLedger implements WorkingLedgerPort {
   readonly records = new Map<string, WorkingLedgerEventV1[]>();
   appendCalls = 0;
+  readCalls = 0;
 
   async read(key: WorkingLedgerKeyV1): Promise<WorkingLedgerEventV1[]> {
+    this.readCalls += 1;
     return structuredClone(this.records.get(keyOf(key)) ?? []);
   }
 
@@ -506,6 +508,33 @@ test("formal interaction seals route/action/intent, replays exactly, and protect
     },
     (error: unknown) => error instanceof PressureInteractionError
       && error.code === "PRESSURE_INTERACTION_IDEMPOTENCY_MISMATCH",
+  );
+});
+
+test("prepared formal interaction reuses the compiler projection and returns the committed projection without ledger rereads", async () => {
+  const fixture = await openedFixture();
+  const action = decisionAction({ routeSnapshot: fixture.routeSnapshot });
+  const workingIntent = intent();
+  const base = { routeSnapshot: fixture.routeSnapshot, action, intent: workingIntent };
+  const command = {
+    ...base,
+    subjectId: "user-a",
+    inputFingerprint: computeFormalInteractionInputFingerprint(base),
+  };
+  const access = new StaticAccess(accessFor(fixture.routeSnapshot, fixture.projection));
+  const service = new FormalPressureInteractionService(access, fixture.ledger);
+  fixture.ledger.readCalls = 0;
+  fixture.ledger.appendCalls = 0;
+
+  const accepted = await service.submitPrepared(command, fixture.projection);
+
+  assert.equal(accepted.status, "ACCEPTED");
+  assert.equal(fixture.ledger.readCalls, 0);
+  assert.equal(fixture.ledger.appendCalls, 1);
+  assert.equal(accepted.projection.acceptedActions.size, 1);
+  assert.equal(
+    accepted.projection.actionsByIdempotencyKey.get(action.idempotencyKey)?.action.actionId,
+    action.actionId,
   );
 });
 

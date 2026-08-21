@@ -12,7 +12,9 @@ import type {
   WorkingLedgerProjectionV1,
 } from "../working-ledger/contracts";
 import {
+  appendFormalActionEventsToWorkingLedgerProjection,
   buildWorkingLedgerEvents,
+  buildWorkingLedgerEventsFromProjection,
   projectWorkingLedger,
 } from "../working-ledger/working-ledger";
 import {
@@ -53,6 +55,24 @@ export class FormalPressureInteractionService {
   async submit(
     raw: SubmitFormalInteractionCommandV1,
   ): Promise<SubmitFormalInteractionResultV1> {
+    return this.submitInternal(raw, null);
+  }
+
+  async submitPrepared(
+    raw: SubmitFormalInteractionCommandV1,
+    preparedProjection: Readonly<WorkingLedgerProjectionV1>,
+  ): Promise<SubmitFormalInteractionResultV1 & {
+    projection: WorkingLedgerProjectionV1;
+  }> {
+    return this.submitInternal(raw, structuredClone(preparedProjection));
+  }
+
+  private async submitInternal(
+    raw: SubmitFormalInteractionCommandV1,
+    preparedProjection: WorkingLedgerProjectionV1 | null,
+  ): Promise<SubmitFormalInteractionResultV1 & {
+    projection: WorkingLedgerProjectionV1;
+  }> {
     const route = validateRunRouteSnapshotV1(raw.routeSnapshot);
     const action = validateDecisionActionV1(raw.action);
     const intent = canonicalizeWorkingActionIntentV1(raw.intent);
@@ -70,8 +90,8 @@ export class FormalPressureInteractionService {
     if (route.runId !== action.runId) failInteraction(ERROR.CONTEXT_MISMATCH, "route-run");
 
     const key = { runId: action.runId, chapterRuntimeId: action.chapterRuntimeId };
-    const events = await this.ledgerPort.read(key);
-    const projection = projectWorkingLedger(events);
+    let events = preparedProjection ? null : await this.ledgerPort.read(key);
+    let projection = preparedProjection ?? projectWorkingLedger(events!);
     assertProjectionBindings(command, projection);
     const access = await this.accessPort.load({
       subjectId: command.subjectId,
@@ -86,10 +106,15 @@ export class FormalPressureInteractionService {
       },
       systemDefault: command.authorizationContext,
     });
-    const replay = findReplay(command, projection, events);
+    if (projection.actionsByIdempotencyKey.has(command.action.idempotencyKey) && !events) {
+      events = await this.ledgerPort.read(key);
+      projection = projectWorkingLedger(events);
+      assertProjectionBindings(command, projection);
+    }
+    const replay = findReplay(command, projection, events ?? []);
     if (replay) {
       assertReplayAccess(command, access);
-      return { status: "REPLAYED", event: replay };
+      return { status: "REPLAYED", event: replay, projection };
     }
     const decisionActivity = this.decisionActivity
       ? await this.decisionActivity.resolve({ command, projection, access })
@@ -108,23 +133,36 @@ export class FormalPressureInteractionService {
       intent,
       audienceSeatIds,
     };
-    const [event] = buildWorkingLedgerEvents({
-      key,
-      chapterId: action.chapterId,
-      previousEvents: events,
-      payloads: [payload],
-    });
+    const [event] = events
+      ? buildWorkingLedgerEvents({
+          key,
+          chapterId: action.chapterId,
+          previousEvents: events,
+          payloads: [payload],
+        })
+      : buildWorkingLedgerEventsFromProjection({ projection, payloads: [payload] });
     const appended = await this.ledgerPort.append({
       key,
       expectedHeadHash: projection.headHash,
       events: [event!],
     });
-    if (appended.status === "APPENDED") return { status: "ACCEPTED", event: event! };
+    if (appended.status === "APPENDED") {
+      return {
+        status: "ACCEPTED",
+        event: event!,
+        projection: appendFormalActionEventsToWorkingLedgerProjection(
+          projection,
+          [event!],
+        ),
+      };
+    }
 
     const concurrentEvents = await this.ledgerPort.read(key);
     const concurrent = projectWorkingLedger(concurrentEvents);
     const concurrentReplay = findReplay(command, concurrent, concurrentEvents);
-    if (concurrentReplay) return { status: "REPLAYED", event: concurrentReplay };
+    if (concurrentReplay) {
+      return { status: "REPLAYED", event: concurrentReplay, projection: concurrent };
+    }
     failInteraction(ERROR.APPEND_CONFLICT);
   }
 }

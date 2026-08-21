@@ -300,26 +300,46 @@ export class PressureChapterHttpFacade {
           };
         }
       }
-      failureStage = "ACCESS_CONTEXT";
-      const contextStartedAt = performance.now();
-      const context = await this.resolveContext(principal, roomId, "ACTION");
-      httpTimings.accessContextMs = elapsed(contextStartedAt);
-      assertPublicDecisionScope(command, context.access, context.stored);
       const nowMs = requiredInteger(this.clock.nowMs(), "clock.nowMs", 0);
+      failureStage = "COMMAND_COMPILE";
+      const commandCompileStartedAt = performance.now();
+      const authoritativeCompilation = this.decisionCompiler.compileAuthoritatively
+        ? await this.decisionCompiler.compileAuthoritatively({
+            roomId,
+            subjectId: principal.subjectId,
+            viewerId: principal.viewerId,
+            command: structuredClone(command),
+            nowMs,
+          })
+        : null;
+      const context = authoritativeCompilation
+        ? {
+            access: authoritativeCompilation.access,
+            stored: authoritativeCompilation.storedRoute,
+          }
+        : await (async () => {
+            failureStage = "ACCESS_CONTEXT";
+            const contextStartedAt = performance.now();
+            const resolved = await this.resolveContext(principal, roomId, "ACTION");
+            httpTimings.accessContextMs = elapsed(contextStartedAt);
+            return resolved;
+          })();
+      assertPublicDecisionScope(command, context.access, context.stored);
       const compilerInput = {
         access: structuredClone(context.access),
         storedRoute: structuredClone(context.stored),
         command: structuredClone(command),
         nowMs,
       };
-      failureStage = "COMMAND_COMPILE";
-      const commandCompileStartedAt = performance.now();
-      const compilation = this.decisionCompiler.compileWithSnapshot
-        ? await this.decisionCompiler.compileWithSnapshot(compilerInput)
-        : {
-            command: await this.decisionCompiler.compile(compilerInput),
-            snapshot: null,
-          };
+      const compilation = authoritativeCompilation ?? (
+        this.decisionCompiler.compileWithSnapshot
+          ? await this.decisionCompiler.compileWithSnapshot(compilerInput)
+          : {
+              command: await this.decisionCompiler.compile(compilerInput),
+              snapshot: null,
+              preparedWorkingProjection: null,
+            }
+      );
       httpTimings.commandCompileMs = elapsed(commandCompileStartedAt);
       const compiled = validateCompiledDecisionCommand(
         compilation.command,
@@ -340,7 +360,10 @@ export class PressureChapterHttpFacade {
         }
         failureStage = "HUMAN_SUBMIT";
         const humanSubmitStartedAt = performance.now();
-        const seatProgression = await this.multiplayerProgression.submit(compiled);
+        const seatProgression = await this.multiplayerProgression.submit(
+          compiled,
+          compilation.preparedWorkingProjection ?? null,
+        );
         httpTimings.humanSubmitMs = elapsed(humanSubmitStartedAt);
         if (
           seatProgression.cursor.status === "AWAITING_DECISION"

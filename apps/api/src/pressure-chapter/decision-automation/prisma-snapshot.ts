@@ -20,9 +20,12 @@ import {
   DECISION_AUTOMATION_ERROR_CODES as ERROR,
   failDecisionAutomation,
 } from "./errors";
+import { usesIndependentSeatBeatFlowV1 } from "../beat-submit-policy/policy";
+import { currentIndependentSeatDecisionPointV1 } from "../multiplayer-seat-progression/current-decision";
 import type {
   DecisionConvergenceAuthoritySnapshotV1,
   DecisionConvergenceSnapshotReaderPortV1,
+  DecisionSubmitAuthorityBundleV1,
   DecisionSubmitSnapshotV1,
 } from "./contracts";
 import { withDecisionConvergenceSnapshotHashV1 } from "./convergence.service";
@@ -92,6 +95,10 @@ type CaptureInputV1 = Parameters<DecisionConvergenceSnapshotReaderPortV1["captur
 type CaptureSubmitInputV1 = Parameters<
   NonNullable<DecisionConvergenceSnapshotReaderPortV1["captureSubmit"]>
 >[0];
+type CapturedAuthorityBundleV1 = Readonly<{
+  storedRoute: DecisionSubmitAuthorityBundleV1["storedRoute"];
+  snapshot: DecisionConvergenceAuthoritySnapshotV1 | DecisionSubmitSnapshotV1;
+}>;
 
 export interface DecisionConvergenceSnapshotPrismaClientV1 {
   $transaction<TResult>(
@@ -133,10 +140,16 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
 
   async capture(input: CaptureInputV1): Promise<DecisionConvergenceAuthoritySnapshotV1 | null> {
     const result = await this.captureInternal(input, null);
-    return result as DecisionConvergenceAuthoritySnapshotV1 | null;
+    return result?.snapshot as DecisionConvergenceAuthoritySnapshotV1 | null;
   }
 
   async captureSubmit(input: CaptureSubmitInputV1): Promise<DecisionSubmitSnapshotV1 | null> {
+    return (await this.captureSubmitAuthority(input))?.snapshot ?? null;
+  }
+
+  async captureSubmitAuthority(
+    input: CaptureSubmitInputV1,
+  ): Promise<DecisionSubmitAuthorityBundleV1 | null> {
     if (
       !input.roomId?.trim()
       || input.roomId !== input.runId
@@ -150,7 +163,14 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
       || !isSha256(input.expectedSubmissionFenceToken)
     ) invalid("submit.command", "INVALID_INPUT", input.runId);
     const result = await this.captureInternal(input, input);
-    return result as DecisionSubmitSnapshotV1 | null;
+    if (!result) return null;
+    if (result.snapshot.schemaVersion !== "pressure_decision_submit_snapshot_v1") {
+      invalid("submit.snapshot", "WRONG_SNAPSHOT_KIND", input.runId);
+    }
+    return {
+      storedRoute: structuredClone(result.storedRoute),
+      snapshot: structuredClone(result.snapshot),
+    };
   }
 
   async loadWorkingProjection(input: Readonly<{
@@ -195,7 +215,7 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
   private async captureInternal(
     input: CaptureInputV1,
     submit: CaptureSubmitInputV1 | null,
-  ): Promise<DecisionConvergenceAuthoritySnapshotV1 | DecisionSubmitSnapshotV1 | null> {
+  ): Promise<CapturedAuthorityBundleV1 | null> {
     if (
       !input.runId?.trim()
       || !isSha256(input.expectedRouteHash)
@@ -290,11 +310,24 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
         aiPolicyArtifactHash: input.aiPolicyArtifactHash,
         capturedAtMs: input.capturedAtMs,
       });
-      if (!submit) return authority;
+      if (!submit) return { storedRoute: stored, snapshot: authority };
 
       const active = chapter.activeDecision;
       const activeSeat = active?.seats.find((seat) => seat.seatId === submit.seatId);
       const seat = seatAuthority.seatControls.find((item) => item.seatId === submit.seatId);
+      const independentSeatFlow = usesIndependentSeatBeatFlowV1({
+        participantMode: route.participantMode,
+        chapterId: chapter.currentChapterId,
+      });
+      const effectiveDecisionPointId = independentSeatFlow
+        ? currentIndependentSeatDecisionPointV1({
+            routeSnapshot: route,
+            projection,
+            chapterRuntimeId: chapter.chapterRuntimeId,
+            chapterId: chapter.currentChapterId,
+            seatId: submit.seatId as SeatIdV1,
+          })
+        : active?.decisionPointId ?? null;
       const authorityMismatches = [
         !viewerRow ? "viewer.missing" : null,
         viewerRow && viewerRow.runId !== submit.runId ? "viewer.run" : null,
@@ -304,9 +337,13 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
         viewerRow && viewerRow.role?.roleKey !== submit.seatId ? "viewer.seat" : null,
         chapter.phase !== "ACTIVE" ? "chapter.phase" : null,
         chapter.chapterRuntimeId !== submit.chapterRuntimeId ? "chapter.runtime" : null,
-        active?.decisionPointId !== submit.decisionPointId ? "decision.point" : null,
-        activeSeat?.requirement !== "REQUIRED" ? "decision.requirement" : null,
-        activeSeat?.completion !== "PENDING" ? "decision.completion" : null,
+        effectiveDecisionPointId !== submit.decisionPointId ? "decision.point" : null,
+        !independentSeatFlow && activeSeat?.requirement !== "REQUIRED"
+          ? "decision.requirement"
+          : null,
+        !independentSeatFlow && activeSeat?.completion !== "PENDING"
+          ? "decision.completion"
+          : null,
         projection.state.revision !== submit.expectedWorkingRevision ? "working.revision" : null,
         runtime.state !== "DECISION_POINT_OPEN" && runtime.state !== "ACTION_DRAFTING"
           ? "runtime.state"
@@ -328,17 +365,20 @@ implements DecisionConvergenceSnapshotReaderPortV1 {
         );
       }
 
-      return withDecisionSubmitSnapshotHashV1({
-        schemaVersion: "pressure_decision_submit_snapshot_v1",
-        authority,
-        viewer: {
-          roomId: submit.roomId,
-          runId: submit.runId,
-          subjectId: submit.subjectId,
-          seatId: submit.seatId as SeatIdV1,
-          humanControllerId: submit.subjectId,
-        },
-      });
+      return {
+        storedRoute: stored,
+        snapshot: withDecisionSubmitSnapshotHashV1({
+          schemaVersion: "pressure_decision_submit_snapshot_v1",
+          authority,
+          viewer: {
+            roomId: submit.roomId,
+            runId: submit.runId,
+            subjectId: submit.subjectId,
+            seatId: submit.seatId as SeatIdV1,
+            humanControllerId: submit.subjectId,
+          },
+        }),
+      };
     });
   }
 }

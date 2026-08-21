@@ -45,6 +45,9 @@ test("HTTP submit membership is joined inside the same snapshot transaction", ()
   assert.match(source, /runId_userId/u);
   assert.match(source, /seat\.submissionFenceToken !== submit\.expectedSubmissionFenceToken/u);
   assert.match(source, /withDecisionSubmitSnapshotHashV1/u);
+  assert.match(source, /captureSubmitAuthority/u);
+  assert.match(source, /currentIndependentSeatDecisionPointV1/u);
+  assert.match(source, /!independentSeatFlow && activeSeat\?\.requirement/u);
 });
 
 test("snapshot transaction performs no policy, content, Provider or write operation", () => {

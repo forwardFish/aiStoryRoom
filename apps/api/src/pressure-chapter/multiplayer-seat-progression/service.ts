@@ -42,7 +42,8 @@ export class MultiplayerSeatProgressionServiceV1
 implements MultiplayerSeatProgressionPortV1 {
   constructor(
     private readonly working: WorkingProjectionReaderPort,
-    private readonly formalActions: Pick<FormalPressureInteractionService, "submit">,
+    private readonly formalActions: Pick<FormalPressureInteractionService, "submit"> &
+      Partial<Pick<FormalPressureInteractionService, "submitPrepared">>,
   ) {}
 
   async read(input: Readonly<{
@@ -73,6 +74,7 @@ implements MultiplayerSeatProgressionPortV1 {
 
   async submit(
     raw: Readonly<SubmitOrchestratedActionCommandV1>,
+    preparedProjection: Readonly<WorkingLedgerProjectionV1> | null = null,
   ): Promise<MultiplayerSeatProgressionResultV1> {
     const command = structuredClone(raw);
     const route = validateRunRouteSnapshotV1(command.routeSnapshot);
@@ -86,10 +88,12 @@ implements MultiplayerSeatProgressionPortV1 {
         "INDEPENDENT_SEAT_BEATS_REQUIRED",
       );
     }
-    const before = await this.working.load({
-      runId: route.runId,
-      chapterRuntimeId: command.action.chapterRuntimeId,
-    });
+    const before = preparedProjection
+      ? structuredClone(preparedProjection)
+      : await this.working.load({
+          runId: route.runId,
+          chapterRuntimeId: command.action.chapterRuntimeId,
+        });
     const prior = before.actionsByIdempotencyKey.get(command.action.idempotencyKey);
     if (prior) {
       if (
@@ -131,17 +135,21 @@ implements MultiplayerSeatProgressionPortV1 {
         "SEAT_CURSOR_MISMATCH",
       );
     }
-    const submitted = await this.formalActions.submit({
+    const submitCommand = {
       routeSnapshot: route,
       subjectId: command.subjectId,
       action: command.action,
       intent: command.intent,
       inputFingerprint: command.inputFingerprint,
-    });
-    const after = await this.working.load({
-      runId: route.runId,
-      chapterRuntimeId: command.action.chapterRuntimeId,
-    });
+    };
+    const preparedSubmit = this.formalActions.submitPrepared
+      ? await this.formalActions.submitPrepared(submitCommand, before)
+      : null;
+    const submitted = preparedSubmit ?? await this.formalActions.submit(submitCommand);
+    const after = preparedSubmit?.projection ?? await this.working.load({
+        runId: route.runId,
+        chapterRuntimeId: command.action.chapterRuntimeId,
+      });
     return projectMultiplayerSeatProgressionV1(
       route,
       command.action.chapterRuntimeId,

@@ -49,5 +49,6 @@ export interface MultiplayerSeatProgressionPortV1 {
   }>): Promise<MultiplayerSeatProgressionResultV1>;
   submit(
     command: Readonly<SubmitOrchestratedActionCommandV1>,
+    preparedProjection?: Readonly<WorkingLedgerProjectionV1> | null,
   ): Promise<MultiplayerSeatProgressionResultV1>;
 }

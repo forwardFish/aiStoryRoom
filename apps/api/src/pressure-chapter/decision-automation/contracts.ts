@@ -19,6 +19,7 @@ import type { AuthorityDownstreamManifestV1 } from "../projection-plan/authority
 import type { OpenNovelNarrativeProjectionJobV1, SealedChapterSettlementInputV1 } from "@ai-story/shared";
 import type { BeatResolutionV1 } from "@ai-story/shared";
 import type { WorkingLedgerEventV1 } from "../working-ledger/contracts";
+import type { StoredRunRouteRecordV1 } from "../run-router/types";
 
 export interface DecisionAutomationTaskV1 {
   schemaVersion: "pressure_decision_automation_task_v1";
@@ -116,6 +117,12 @@ export interface DecisionSubmitSnapshotV1 {
   submitSnapshotHash: string;
 }
 
+/** Internal aggregate submit read: one frozen route record plus one sealed authority snapshot. */
+export interface DecisionSubmitAuthorityBundleV1 {
+  storedRoute: StoredRunRouteRecordV1;
+  snapshot: DecisionSubmitSnapshotV1;
+}
+
 export interface DecisionConvergenceSnapshotReaderPortV1 {
   capture(input: Readonly<{
     runId: string;
@@ -137,6 +144,20 @@ export interface DecisionConvergenceSnapshotReaderPortV1 {
     expectedControlEpoch: number;
     expectedSubmissionFenceToken: string;
   }>): Promise<DecisionSubmitSnapshotV1 | null>;
+  captureSubmitAuthority?(input: Readonly<{
+    runId: string;
+    expectedRouteHash: string;
+    aiPolicyArtifactHash: string;
+    capturedAtMs: number;
+    roomId: string;
+    subjectId: string;
+    seatId: SeatIdV1;
+    chapterRuntimeId: string;
+    decisionPointId: string;
+    expectedWorkingRevision: number;
+    expectedControlEpoch: number;
+    expectedSubmissionFenceToken: string;
+  }>): Promise<DecisionSubmitAuthorityBundleV1 | null>;
   /** One-row post-transition cache read used only when settlement opens a new chapter. */
   loadWorkingProjection?(input: Readonly<{
     runId: string;

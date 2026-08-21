@@ -17,6 +17,7 @@ import type {
 } from "../interaction/contracts";
 import type { SubmitOrchestratedActionCommandV1 } from "../orchestrator/contracts";
 import type { DecisionSubmitSnapshotV1 } from "../decision-automation/contracts";
+import type { WorkingLedgerProjectionV1 } from "../working-ledger/contracts";
 import type { PressurePostCommitTurnReceiptV1 } from "../post-commit-turn-update/contracts";
 import type {
   StoredRunRouteDispatchV1,
@@ -107,6 +108,19 @@ export interface PressureChapterHttpActionPort {
  * never allowed to self-report those fields.
  */
 export interface PressureChapterHttpDecisionCompilerPort {
+  compileAuthoritatively?(input: {
+    roomId: string;
+    subjectId: string;
+    viewerId: string;
+    command: PressureChapterSubmitDecisionCommandV1;
+    nowMs: number;
+  }): Promise<Readonly<{
+    access: PressureChapterHttpAccessV1;
+    storedRoute: StoredRunRouteRecordV1;
+    command: SubmitOrchestratedActionCommandV1;
+    snapshot: DecisionSubmitSnapshotV1;
+    preparedWorkingProjection: WorkingLedgerProjectionV1;
+  }>>;
   compile(input: {
     access: PressureChapterHttpAccessV1;
     storedRoute: StoredRunRouteRecordV1;
@@ -121,6 +135,7 @@ export interface PressureChapterHttpDecisionCompilerPort {
   }): Promise<Readonly<{
     command: SubmitOrchestratedActionCommandV1;
     snapshot: DecisionSubmitSnapshotV1 | null;
+    preparedWorkingProjection?: WorkingLedgerProjectionV1 | null;
   }>>;
 }
 

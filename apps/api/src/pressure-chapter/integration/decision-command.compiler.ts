@@ -16,8 +16,7 @@ import {
   loadSangtianPressureChapterBeatAuthoringV1,
   type PublishedSangtianActionReleaseV1,
 } from "@ai-story/templates";
-import { planMultiplayerSeatBeatCursorV1 } from "../multiplayer-seat-beat/plan";
-import { readAcceptedMultiplayerSeatActionsV1 } from "../multiplayer-seat-progression/accepted-actions";
+import { currentIndependentSeatDecisionPointV1 } from "../multiplayer-seat-progression/current-decision";
 import type {
   PressureChapterGameProjectionV1,
   PressureGameCapabilitiesV1,
@@ -48,7 +47,10 @@ import { withDecisionSubmitSnapshotHashV1 } from "../decision-automation/prisma-
 import { withDecisionConvergenceSnapshotHashV1 } from "../decision-automation/convergence.service";
 import { assertStoredRunRouteRecord } from "../run-router";
 import type { StoredRunRouteRecordV1 } from "../run-router/types";
-import type { WorkingActionIntentV1 } from "../working-ledger/contracts";
+import type {
+  WorkingActionIntentV1,
+  WorkingLedgerProjectionV1,
+} from "../working-ledger/contracts";
 import { PressureCatalogCustomActionGuardV1 } from "./custom-action.guard";
 import { failPressureChapterIntegration } from "./errors";
 import {
@@ -94,6 +96,11 @@ interface PressureGameCapabilitiesReaderV1 {
     decisionPointId: string | null;
   }): Promise<PressureGameCapabilitiesV1>;
 }
+
+type PreparedDecisionAuthorityV1 = Readonly<{
+  decision: NonNullable<Awaited<ReturnType<PressureGameChapterReaderPort["readCurrent"]>>>["decision"];
+  projection: WorkingLedgerProjectionV1;
+}>;
 
 const INVESTIGATION_ACTION_TYPES = Object.freeze([
   "INVESTIGATE_LEDGER_SOURCE",
@@ -186,25 +193,12 @@ implements PressureChapterHttpDecisionCompilerPort {
   }>): Promise<Readonly<{
     command: SubmitOrchestratedActionCommandV1;
     snapshot: DecisionSubmitSnapshotV1 | null;
+    preparedWorkingProjection?: WorkingLedgerProjectionV1 | null;
   }>> {
     const access = validateAccess(input.access);
     const storedRoute = assertStoredRunRouteRecord(input.storedRoute);
     const route = validateRunRouteSnapshotV1(storedRoute.snapshot);
     const publicCommand = validatePublicCommand(input.command);
-    if (this.beatSubmitPolicy.usesIndependentSeatBeats({
-      participantMode: route.participantMode,
-      chapterId: publicCommand.chapterId,
-    })) {
-      return {
-        command: await this.compileInternal({
-          access,
-          storedRoute,
-          command: publicCommand,
-          nowMs: input.nowMs,
-        }, null),
-        snapshot: null,
-      };
-    }
     if (
       !this.submitSnapshots?.captureSubmit
       || !this.aiPolicyArtifactHash
@@ -233,9 +227,89 @@ implements PressureChapterHttpDecisionCompilerPort {
       access,
       publicCommand,
       this.aiPolicyArtifactHash,
+      this.beatSubmitPolicy.usesIndependentSeatBeats({
+        participantMode: route.participantMode,
+        chapterId: publicCommand.chapterId,
+      }),
     );
     const command = await this.compileInternal(input, validatedSnapshot);
-    return { command, snapshot: structuredClone(validatedSnapshot) };
+    return {
+      command,
+      snapshot: structuredClone(validatedSnapshot),
+      preparedWorkingProjection: structuredClone(validatedSnapshot.authority.projection),
+    };
+  }
+
+  async compileAuthoritatively(input: Readonly<{
+    roomId: string;
+    subjectId: string;
+    viewerId: string;
+    command: PressureChapterSubmitDecisionCommandV1;
+    nowMs: number;
+  }>): Promise<Readonly<{
+    access: PressureChapterHttpAccessV1;
+    storedRoute: StoredRunRouteRecordV1;
+    command: SubmitOrchestratedActionCommandV1;
+    snapshot: DecisionSubmitSnapshotV1;
+    preparedWorkingProjection: WorkingLedgerProjectionV1;
+  }>> {
+    const publicCommand = validatePublicCommand(input.command);
+    if (
+      !input.roomId.trim()
+      || input.roomId !== publicCommand.runId
+      || !input.subjectId.trim()
+      || input.subjectId !== input.viewerId
+      || !this.submitSnapshots?.captureSubmitAuthority
+      || !this.aiPolicyArtifactHash
+    ) mismatch("decision.authoritativeSubmit", "UNAVAILABLE_OR_INVALID_SCOPE");
+    const bundle = await this.submitSnapshots.captureSubmitAuthority({
+      runId: publicCommand.runId,
+      expectedRouteHash: publicCommand.routeHash,
+      aiPolicyArtifactHash: this.aiPolicyArtifactHash,
+      capturedAtMs: input.nowMs,
+      roomId: input.roomId,
+      subjectId: input.subjectId,
+      seatId: publicCommand.seatId,
+      chapterRuntimeId: publicCommand.chapterRuntimeId,
+      decisionPointId: publicCommand.decisionPointId,
+      expectedWorkingRevision: publicCommand.expectedWorkingRevision,
+      expectedControlEpoch: publicCommand.controlEpoch,
+      expectedSubmissionFenceToken: publicCommand.submissionFenceToken,
+    });
+    if (!bundle) mismatch("decision.authoritativeSubmit", "NOT_FOUND");
+    const storedRoute = assertStoredRunRouteRecord(bundle.storedRoute);
+    const route = validateRunRouteSnapshotV1(storedRoute.snapshot);
+    const access: PressureChapterHttpAccessV1 = {
+      schemaVersion: "pressure_chapter_http_access_v1",
+      roomId: input.roomId,
+      runId: publicCommand.runId,
+      subjectId: input.subjectId,
+      viewerId: input.viewerId,
+      participantMode: route.participantMode,
+    };
+    const snapshot = validateSubmitSnapshot(
+      bundle.snapshot,
+      access,
+      publicCommand,
+      this.aiPolicyArtifactHash,
+      this.beatSubmitPolicy.usesIndependentSeatBeats({
+        participantMode: route.participantMode,
+        chapterId: publicCommand.chapterId,
+      }),
+    );
+    const command = await this.compileInternal({
+      access,
+      storedRoute,
+      command: publicCommand,
+      nowMs: input.nowMs,
+    }, snapshot);
+    return {
+      access,
+      storedRoute,
+      command,
+      snapshot: structuredClone(snapshot),
+      preparedWorkingProjection: structuredClone(snapshot.authority.projection),
+    };
   }
 
   /** SQL7 bridge: compiles from the already captured one-statement snapshot. */
@@ -256,6 +330,10 @@ implements PressureChapterHttpDecisionCompilerPort {
       access,
       publicCommand,
       this.aiPolicyArtifactHash,
+      this.beatSubmitPolicy.usesIndependentSeatBeats({
+        participantMode: input.snapshot.authority.routeSnapshot.participantMode,
+        chapterId: publicCommand.chapterId,
+      }),
     );
     return this.compileInternal({
       access,
@@ -270,7 +348,10 @@ implements PressureChapterHttpDecisionCompilerPort {
     storedRoute: StoredRunRouteRecordV1;
     command: PressureChapterSubmitDecisionCommandV1;
     nowMs: number;
-  }>, submitSnapshot: DecisionSubmitSnapshotV1 | null): Promise<SubmitOrchestratedActionCommandV1> {
+  }>, submitSnapshot: DecisionSubmitSnapshotV1 | null,
+  preparedAuthority: PreparedDecisionAuthorityV1 | null = null,
+  preparedProjection: WorkingLedgerProjectionV1 | null = null,
+  ): Promise<SubmitOrchestratedActionCommandV1> {
     const access = validateAccess(input.access);
     const storedRoute = assertStoredRunRouteRecord(input.storedRoute);
     const route = validateRunRouteSnapshotV1(storedRoute.snapshot);
@@ -294,8 +375,15 @@ implements PressureChapterHttpDecisionCompilerPort {
       participantMode: route.participantMode,
       chapterId: publicCommand.chapterId,
     });
+    const authority = preparedAuthority
+      ?? (!submitSnapshot && this.authority
+        ? await this.readDecisionAuthority(route, access, publicCommand)
+        : null);
     const multiplayerProjection = independentSeatFlow
-      ? await this.working.load({
+      ? submitSnapshot?.authority.projection
+        ?? preparedProjection
+        ?? authority?.projection
+        ?? await this.working.load({
           runId: route.runId,
           chapterRuntimeId: publicCommand.chapterRuntimeId,
         })
@@ -304,21 +392,23 @@ implements PressureChapterHttpDecisionCompilerPort {
       publicCommand.idempotencyKey,
     );
     if (multiplayerPrior) {
-      const viewer = this.authority
+      const viewer = !authority && this.authority
         ? await this.authority.viewer.readViewer({
             runId: route.runId,
             subjectId: access.subjectId,
           })
         : null;
       if (
-        !viewer
-        || viewer.runId !== publicCommand.runId
-        || viewer.roomId !== access.roomId
-        || viewer.routeHash !== publicCommand.routeHash
-        || viewer.subjectId !== access.subjectId
-        || viewer.viewer.seatId !== publicCommand.seatId
-        || viewer.viewer.control.controlEpoch !== publicCommand.controlEpoch
-        || viewer.viewer.control.submissionFenceToken !== publicCommand.submissionFenceToken
+        (!authority && (
+          !viewer
+          || viewer.runId !== publicCommand.runId
+          || viewer.roomId !== access.roomId
+          || viewer.routeHash !== publicCommand.routeHash
+          || viewer.subjectId !== access.subjectId
+          || viewer.viewer.seatId !== publicCommand.seatId
+          || viewer.viewer.control.controlEpoch !== publicCommand.controlEpoch
+          || viewer.viewer.control.submissionFenceToken !== publicCommand.submissionFenceToken
+        ))
         || multiplayerPrior.action.runId !== route.runId
         || multiplayerPrior.action.chapterRuntimeId !== publicCommand.chapterRuntimeId
         || multiplayerPrior.action.chapterId !== publicCommand.chapterId
@@ -345,9 +435,6 @@ implements PressureChapterHttpDecisionCompilerPort {
         },
       });
     }
-    const authority = !submitSnapshot && this.authority
-      ? await this.readDecisionAuthority(route, access, publicCommand)
-      : null;
     const game = authority || submitSnapshot
       ? null
       : await this.games.read({
@@ -627,23 +714,13 @@ function multiplayerDecisionPointForSeatV1(input: Readonly<{
   if (input.chapterId === "P0") {
     mismatch("decision.chapterId", "P0_HAS_NO_FORMAL_DECISION");
   }
-  const authoring = loadSangtianPressureChapterBeatAuthoringV1(input.chapterId);
-  const accepted = readAcceptedMultiplayerSeatActionsV1({
+  return currentIndependentSeatDecisionPointV1({
     routeSnapshot: input.route,
+    projection: input.projection,
     chapterRuntimeId: input.chapterRuntimeId,
     chapterId: input.chapterId,
     seatId: input.seatId,
-    package: authoring,
-    projection: input.projection,
   });
-  const plan = planMultiplayerSeatBeatCursorV1({
-    participantMode: input.route.participantMode,
-    chapterRuntimeId: input.chapterRuntimeId,
-    seatId: input.seatId,
-    package: authoring,
-    acceptedActions: accepted.actions,
-  });
-  return plan.status === "AWAITING_DECISION" ? plan.decisionPointId : null;
 }
 
 function matchesPriorPublicCommandV1(
@@ -689,6 +766,7 @@ function validateSubmitSnapshot(
   access: PressureChapterHttpAccessV1,
   command: PressureChapterSubmitDecisionCommandV1,
   aiPolicyArtifactHash: string,
+  independentSeatFlow: boolean,
 ): DecisionSubmitSnapshotV1 {
   if (
     raw.schemaVersion !== "pressure_decision_submit_snapshot_v1"
@@ -703,7 +781,17 @@ function validateSubmitSnapshot(
     || raw.authority.aiPolicyArtifactHash !== aiPolicyArtifactHash
     || raw.authority.chapter.chapterRuntimeId !== command.chapterRuntimeId
     || raw.authority.chapter.currentChapterId !== command.chapterId
-    || raw.authority.chapter.activeDecision?.decisionPointId !== command.decisionPointId
+    || (
+      independentSeatFlow
+        ? currentIndependentSeatDecisionPointV1({
+            routeSnapshot: raw.authority.routeSnapshot,
+            projection: raw.authority.projection,
+            chapterRuntimeId: command.chapterRuntimeId,
+            chapterId: command.chapterId,
+            seatId: command.seatId,
+          }) !== command.decisionPointId
+        : raw.authority.chapter.activeDecision?.decisionPointId !== command.decisionPointId
+    )
     || raw.authority.projection.state.revision !== command.expectedWorkingRevision
   ) mismatch("decision.submitSnapshot", "INVALID_BINDING");
   const expectedAuthority = withDecisionConvergenceSnapshotHashV1({
