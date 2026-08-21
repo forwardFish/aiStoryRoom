@@ -63,6 +63,7 @@ export async function bootGamePage({
       runId,
       initialProjection: payload,
       fetchImpl,
+      localStorage: (() => { try { return win?.localStorage ?? null; } catch { return null; } })(),
     });
     const app = createStoryApp({ root, window: win, storage });
     await app.boot();

@@ -33,6 +33,7 @@ export class PressureMainGameStorageV1 {
     turnPollIntervalMs = 500,
     turnPollAttempts = 720,
     waitImpl = defaultWait,
+    localStorage = safeTimelineStorage(globalThis),
   } = {}) {
     if (!runId) throw new TypeError("PressureMainGameStorageV1 requires runId");
     if (typeof fetchImpl !== "function") throw new TypeError("PressureMainGameStorageV1 requires fetch");
@@ -47,6 +48,10 @@ export class PressureMainGameStorageV1 {
     this.turnPollAttempts = turnPollAttempts;
     this.waitImpl = waitImpl;
     this.asyncViewHandler = null;
+    this.localStorage = localStorage;
+    this.timelineStorageKey = `many-worlds:pressure-story-timeline:v1:${encodeURIComponent(runId)}`;
+    this.storyTimeline = readStoredTimeline(this.localStorage, this.timelineStorageKey);
+    this.captureProjection(this.projection);
   }
 
   async restoreOrCreate() {
@@ -55,6 +60,7 @@ export class PressureMainGameStorageV1 {
 
   async getRun() {
     this.projection = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
+    this.captureProjection(this.projection);
     return this.toView(this.projection);
   }
 
@@ -117,16 +123,23 @@ export class PressureMainGameStorageV1 {
     ) {
       throw new Error("决定响应与本次提交不一致。");
     }
+    this.recordPlayerAction({
+      projection,
+      decision,
+      text: custom || option?.label || option?.description || "已提交决定",
+    });
     if (payload.projection === null && payload.receipt) {
       const receipt = assertTurnReceipt(payload.receipt, projection);
       void this.waitForTurnUpdate(receipt).then((readyProjection) => {
         if (!readyProjection) return;
         this.projection = assertProjection(readyProjection, this.runId);
+        this.captureProjection(this.projection);
         this.asyncViewHandler?.(this.toView(this.projection));
       }).catch(() => {});
       return pendingTurnView(this.toView(this.projection), receipt);
     }
     this.projection = assertProjection(payload.projection, this.runId);
+    this.captureProjection(this.projection);
     if (needsNarrativeUpdate(this.projection)) {
       this.projection = await this.waitForNarrativeUpdate(this.projection);
     }
@@ -167,6 +180,7 @@ export class PressureMainGameStorageV1 {
       if (!response.ok) throw httpError(response, update, "下一段剧情暂时无法读取。");
       assertTurnUpdate(update, receipt);
       if (update.status === "STREAMING") {
+        this.recordStreamingNarrative(receipt, update.sceneText);
         this.asyncViewHandler?.(streamingTurnView(
           this.toView(this.projection),
           receipt,
@@ -214,6 +228,7 @@ export class PressureMainGameStorageV1 {
       throw new Error("章末确认响应与本次请求不一致。");
     }
     this.projection = await this.request(`/api/v4/rooms/${encodeURIComponent(this.runId)}/game`);
+    this.captureProjection(this.projection);
     return this.toView(this.projection);
   }
 
@@ -222,7 +237,91 @@ export class PressureMainGameStorageV1 {
   }
 
   toView(projection) {
-    return pressureProjectionToMainGameViewV1(projection);
+    return pressureProjectionToMainGameViewV1(projection, this.storyTimeline);
+  }
+
+  captureProjection(projection) {
+    const chapter = projection?.chapter;
+    if (!chapter) return;
+    this.upsertTimeline({
+      itemId: `chapter:${chapter.chapterRuntimeId}`,
+      kind: "CHAPTER_DIVIDER",
+      chapterId: chapter.chapterId,
+      chapterNumber: chapter.chapterNumber,
+      title: chapter.title,
+      text: "",
+    });
+    if (
+      projection.narrative?.projectionKind === "GENESIS_NARRATIVE"
+      && String(projection.narrative.text || "").trim()
+    ) {
+      this.upsertTimeline({
+        itemId: `opening:${projection.runId}`,
+        kind: "NARRATIVE",
+        chapterId: chapter.chapterId,
+        chapterNumber: chapter.chapterNumber,
+        title: "前情",
+        text: String(projection.narrative.text).trim(),
+      });
+    }
+    const narrative = decisionNarrativeText(projection);
+    const awaitingSummary = projection.chapterSummary?.confirmationState === "AWAITING_CONFIRMATION";
+    if (!awaitingSummary && projection.decision && narrative) {
+      this.upsertTimeline({
+        itemId: `narrative:${chapter.chapterRuntimeId}:${projection.decision.decisionPointId}`,
+        kind: "NARRATIVE",
+        chapterId: chapter.chapterId,
+        chapterNumber: chapter.chapterNumber,
+        title: "",
+        text: narrative,
+        streaming: false,
+      });
+    }
+    const summary = projection.chapterSummary;
+    if (summary?.closingNarrative) {
+      this.upsertTimeline({
+        itemId: `summary:${summary.sourceChapterRuntimeId}`,
+        kind: "CHAPTER_SUMMARY",
+        chapterId: summary.chapterId,
+        chapterNumber: Math.max(1, chapter.chapterNumber - 1),
+        title: `${summary.title}·章末`,
+        text: summary.closingNarrative,
+      });
+    }
+  }
+
+  recordPlayerAction({ projection, decision, text }) {
+    this.upsertTimeline({
+      itemId: `action:${projection.chapter.chapterRuntimeId}:${decision.decisionPointId}`,
+      kind: "PLAYER_ACTION",
+      chapterId: projection.chapter.chapterId,
+      chapterNumber: projection.chapter.chapterNumber,
+      title: "你的选择",
+      text: String(text || "").trim(),
+    });
+  }
+
+  recordStreamingNarrative(receipt, sceneText) {
+    this.upsertTimeline({
+      itemId: `narrative:${receipt.chapterRuntimeId}:${receipt.nextDecisionPointId || receipt.nextBeatId || "next"}`,
+      kind: "NARRATIVE",
+      chapterId: receipt.chapterId,
+      chapterNumber: this.projection.chapter.chapterNumber,
+      title: "",
+      text: String(sceneText || "").trim(),
+      streaming: true,
+    });
+  }
+
+  upsertTimeline(item) {
+    if (!item?.itemId || (!item.text && item.kind !== "CHAPTER_DIVIDER")) return;
+    const index = this.storyTimeline.findIndex((candidate) => candidate.itemId === item.itemId);
+    if (index >= 0) this.storyTimeline[index] = { ...this.storyTimeline[index], ...item };
+    else this.storyTimeline.push(item);
+    if (this.storyTimeline.length > 240) {
+      this.storyTimeline.splice(0, this.storyTimeline.length - 240);
+    }
+    persistTimeline(this.localStorage, this.timelineStorageKey, this.storyTimeline);
   }
 
   async request(path) {
@@ -237,7 +336,7 @@ export class PressureMainGameStorageV1 {
 
 }
 
-export function pressureProjectionToMainGameViewV1(projectionValue) {
+export function pressureProjectionToMainGameViewV1(projectionValue, storyTimeline = []) {
   const projection = assertProjection(projectionValue, projectionValue?.runId);
   const role = ROLE_PRESENTATION[projection.viewer.seatId] || {
     name: projection.viewer.roleName,
@@ -324,6 +423,7 @@ export function pressureProjectionToMainGameViewV1(projectionValue) {
       causalRecallMessages: [],
     },
     decisionHistory: [],
+    storyTimeline: structuredClone(Array.isArray(storyTimeline) ? storyTimeline : []),
     dayProgress: { completed: 0, required: 1 },
     leverageHand: {
       items: tokens.map((item) => ({ label: item.label, description: item.description })),
@@ -479,6 +579,38 @@ function pendingTurnView(view, receipt) {
     activeDecision: null,
     postCommitReceipt: structuredClone(receipt),
   };
+}
+
+function safeTimelineStorage(root) {
+  try {
+    return root?.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function readStoredTimeline(storage, key) {
+  if (!storage) return [];
+  try {
+    const value = JSON.parse(storage.getItem(key) || "[]");
+    if (!Array.isArray(value)) return [];
+    return value.filter((item) => (
+      item
+      && typeof item === "object"
+      && typeof item.itemId === "string"
+      && typeof item.kind === "string"
+      && typeof item.text === "string"
+    )).slice(-240);
+  } catch {
+    return [];
+  }
+}
+
+function persistTimeline(storage, key, timeline) {
+  if (!storage) return;
+  try {
+    storage.setItem(key, JSON.stringify(timeline));
+  } catch {}
 }
 
 function defaultWait(ms) {

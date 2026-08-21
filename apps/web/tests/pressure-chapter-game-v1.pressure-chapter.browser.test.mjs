@@ -219,7 +219,7 @@ test("Pressure /game renders viewer-scoped situation Feed and preserves the exis
   dom.window.close();
 });
 
-test("fresh Pressure N1 shows the complete scene before releasing explained decisions", async () => {
+test("fresh Pressure N1 renders story and decision in one continuous timeline", async () => {
   const input = projection();
   const dom = new JSDOM('<!doctype html><main id="app"></main>', {
     url: `http://game.test/game?runId=${input.runId}`, pretendToBeVisual: true,
@@ -236,34 +236,26 @@ test("fresh Pressure N1 shows the complete scene before releasing explained deci
     loadSolo: async () => ({ createStoryApp }),
   });
 
-  await new Promise((resolve) => nativeSetTimeout(resolve, 700));
-  assert.match(root.querySelector('[data-testid="role-opening"]')?.textContent ?? "", /嘉靖三十五年/);
-  assert.ok(root.querySelector("#beginStoryBtn"));
-
-  root.querySelector("#beginStoryBtn").click();
-  const decisionNarrative = root.querySelector('[data-testid="decision-narrative"]');
-  assert.match(decisionNarrative?.textContent ?? "", /驿卒刚跨进总督府内厅/);
-  assert.match(decisionNarrative?.textContent ?? "", /胡宗宪按住河图：“谁调的兵？”/);
-  assert.match(decisionNarrative?.textContent ?? "", /第一道令先下给谁/);
-  assert.equal(root.querySelector('input[name="decision"]'), null);
-  assert.ok(root.querySelector("#beginDecisionBtn"));
-
-  root.querySelector("#beginDecisionBtn").click();
-  assert.equal(root.querySelector('[data-testid="decision-narrative"]'), null);
+  await new Promise((resolve) => nativeSetTimeout(resolve, 50));
+  const timeline = root.querySelector('[data-testid="pressure-story-timeline"]');
+  assert.ok(timeline);
+  assert.match(timeline.textContent ?? "", /嘉靖三十五年/);
+  assert.match(timeline.textContent ?? "", /驿卒刚跨进总督府内厅/);
+  assert.match(timeline.textContent ?? "", /胡宗宪按住河图：“谁调的兵？”/);
+  assert.match(timeline.textContent ?? "", /第一道令先下给谁/);
+  assert.equal(root.querySelector("#beginStoryBtn"), null);
+  assert.equal(root.querySelector("#beginDecisionBtn"), null);
+  assert.equal(root.querySelector('[data-testid="ai-simulating"]'), null);
   assert.ok(root.querySelector('input[name="decision"]'));
   assert.equal(root.querySelector(".decision-zone-head"), null);
   assert.doesNotMatch(root.textContent, new RegExp(input.decision.title));
   const firstOption = root.querySelector('input[name="decision"][value="A"]')?.closest("label");
   assert.match(firstOption?.querySelector(".option-copy span")?.textContent ?? "", /巡抚和县令只能派见证人参加/);
-  assert.ok(root.querySelector("#reviewDecisionNarrativeBtn"));
-
-  root.querySelector("#reviewDecisionNarrativeBtn").click();
-  assert.ok(root.querySelector('[data-testid="decision-narrative"]'));
-  assert.equal(root.querySelector('input[name="decision"]'), null);
+  assert.equal(root.querySelector("#reviewDecisionNarrativeBtn"), null);
   dom.window.close();
 });
 
-test("an advanced Pressure run resumes the current Beat without replaying Genesis", async () => {
+test("an advanced Pressure run resumes the current Beat in the timeline without replaying Genesis", async () => {
   const input = projection({ runId: "run-pressure-resume-current-beat" });
   input.chapter.workingRevision = 2;
   input.decision.expectedWorkingRevision = 2;
@@ -293,9 +285,43 @@ test("an advanced Pressure run resumes the current Beat without replaying Genesi
 
   assert.equal(root.querySelector('[data-testid="role-opening"]'), null);
   assert.equal(root.querySelector("#beginStoryBtn"), null);
-  assert.match(root.querySelector('[data-testid="decision-narrative"]')?.textContent ?? "", /驿卒掀帘进来时/u);
-  assert.doesNotMatch(root.querySelector('[data-testid="decision-narrative"]')?.textContent ?? "", /第二批回执已经送到案前/u);
-  assert.ok(root.querySelector("#beginDecisionBtn"));
+  const timeline = root.querySelector('[data-testid="pressure-story-timeline"]');
+  assert.match(timeline?.textContent ?? "", /驿卒掀帘进来时/u);
+  assert.doesNotMatch(timeline?.textContent ?? "", /第二批回执已经送到案前/u);
+  assert.equal(root.querySelector("#beginDecisionBtn"), null);
+  assert.ok(root.querySelector('input[name="decision"]'));
+  dom.window.close();
+});
+
+test("Pressure story timeline survives a same-browser refresh without a new database table", async () => {
+  const input = projection({ runId: "run-pressure-timeline-refresh" });
+  const dom = new JSDOM('<!doctype html><main id="app"></main>', {
+    url: `http://game.test/game?runId=${input.runId}`,
+    pretendToBeVisual: true,
+  });
+  const root = dom.window.document.querySelector("#app");
+  const firstStorage = new PressureMainGameStorageV1({
+    runId: input.runId,
+    initialProjection: input,
+    localStorage: dom.window.localStorage,
+    fetchImpl: async () => new Response(JSON.stringify(input), { status: 200, headers: { "content-type": "application/json" } }),
+  });
+  firstStorage.recordPlayerAction({
+    projection: input,
+    decision: input.decision,
+    text: "先把百姓撤到北岸高地。",
+  });
+  const refreshedStorage = new PressureMainGameStorageV1({
+    runId: input.runId,
+    initialProjection: input,
+    localStorage: dom.window.localStorage,
+    fetchImpl: async () => new Response(JSON.stringify(input), { status: 200, headers: { "content-type": "application/json" } }),
+  });
+  const app = createStoryApp({ root, window: dom.window, storage: refreshedStorage });
+  await app.boot();
+  const timeline = root.querySelector('[data-testid="pressure-story-timeline"]');
+  assert.match(timeline?.textContent ?? "", /先把百姓撤到北岸高地/);
+  assert.match(timeline?.textContent ?? "", /驿卒刚跨进总督府内厅/);
   dom.window.close();
 });
 

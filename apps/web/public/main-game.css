@@ -1663,3 +1663,157 @@ body { overflow: hidden; color: var(--ink); font-family: Inter, "Noto Sans SC", 
 .pressure-feed-expand span { margin-left:7px; }
 .pressure-feed-empty { margin:auto; padding:28px 12px; color:#8b91aa; font-size:12px; text-align:center; }
 @media (prefers-reduced-motion:reduce) { .pressure-right-tabs button::after,.pressure-feed-item { transition:none; } }
+
+/* Pressure story timeline: narrative, choices and chapter endings share one scrollable center. */
+.causal-shell[data-pressure-chapter="true"] .causal-center:has(.pressure-story-timeline) {
+  display: block;
+  min-height: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.5)), var(--game-scene-background, url('/assets/game/sangtian/background.png')) center bottom / cover no-repeat;
+}
+.pressure-story-timeline {
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(103,72,239,.42) rgba(103,72,239,.06);
+  scrollbar-width: thin;
+}
+.pressure-story-timeline::-webkit-scrollbar { width: 9px; }
+.pressure-story-timeline::-webkit-scrollbar-track { background: rgba(103,72,239,.06); }
+.pressure-story-timeline::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: rgba(103,72,239,.42); background-clip: padding-box; }
+.pressure-story-timeline__inner {
+  width: min(860px, calc(100% - 40px));
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 44px 0 70px;
+}
+.pressure-timeline-chapter {
+  margin: 0 0 26px;
+  padding: 0 0 18px;
+  border-bottom: 1px solid rgba(103,72,239,.17);
+  text-align: center;
+}
+.pressure-timeline-chapter span {
+  color: #7357ef;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+.pressure-timeline-chapter h2 {
+  margin: 7px 0 0;
+  color: #29305c;
+  font-family: "Songti SC", STSong, SimSun, serif;
+  font-size: 26px;
+}
+.pressure-timeline-item {
+  position: relative;
+  margin: 0 0 22px;
+  color: #303766;
+  font-family: "Songti SC", STSong, SimSun, serif;
+}
+.pressure-timeline-item h3 {
+  margin: 0 0 10px;
+  color: #2b315d;
+  font-size: 19px;
+}
+.pressure-timeline-item p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 2.05;
+  white-space: normal;
+}
+.pressure-timeline-action {
+  margin-left: auto;
+  width: min(620px, 88%);
+  padding: 14px 18px;
+  border: 1px solid rgba(111,79,239,.22);
+  border-radius: 14px 14px 4px 14px;
+  background: rgba(242,239,255,.9);
+  box-shadow: 0 7px 18px rgba(72,55,157,.06);
+}
+.pressure-timeline-action small {
+  display: block;
+  margin-bottom: 5px;
+  color: #7458ec;
+  font-family: Inter, "Noto Sans SC", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+.pressure-timeline-action p { font-size: 16px; line-height: 1.72; }
+.pressure-timeline-summary {
+  margin-top: 32px;
+  padding: 22px 24px;
+  border: 1px solid rgba(118,91,222,.2);
+  border-radius: 16px;
+  background: rgba(255,255,255,.82);
+  box-shadow: 0 10px 28px rgba(68,55,138,.07);
+}
+.pressure-timeline-summary::before {
+  display: block;
+  margin-bottom: 8px;
+  color: #7659e9;
+  font-family: Inter, "Noto Sans SC", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  content: "章末";
+}
+.pressure-timeline-pending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 26px 0;
+  padding: 14px;
+  color: #6f7290;
+  font-size: 13px;
+}
+.pressure-timeline-pending i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #7856ef;
+  box-shadow: 0 0 0 5px rgba(120,86,239,.1);
+  animation: pressureTimelinePulse 1.1s ease-in-out infinite alternate;
+}
+.pressure-timeline-decision {
+  margin: 28px 0 0;
+  padding-top: 26px;
+  border-top: 1px solid rgba(103,72,239,.17);
+}
+.pressure-timeline-decision .decision-zone {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.pressure-timeline-decision .decision-composer {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.pressure-timeline-next { display: flex; justify-content: center; margin: 28px 0; }
+.pressure-timeline-next button {
+  min-width: 260px;
+  min-height: 50px;
+  border: 0;
+  border-radius: 25px;
+  background: linear-gradient(90deg, #5937ef, #8758f6);
+  box-shadow: 0 9px 22px rgba(101,69,245,.22);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+}
+.pressure-timeline-empty { padding: 80px 20px; color: #73799b; text-align: center; }
+@keyframes pressureTimelinePulse { to { opacity: .35; transform: scale(.82); } }
+@media (max-width: 860px) {
+  .pressure-story-timeline__inner { width: min(100% - 24px, 760px); padding: 28px 0 46px; }
+  .pressure-timeline-item p { font-size: 16px; line-height: 1.9; }
+  .pressure-timeline-action { width: 94%; }
+}
+@media (prefers-reduced-motion: reduce) { .pressure-timeline-pending i { animation: none; } }

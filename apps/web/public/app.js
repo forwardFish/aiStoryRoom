@@ -51,6 +51,7 @@ export function createStoryApp({
     resultScroll: { top: 0, follow: true },
     openingScroll: { top: 0, follow: true },
     panelScroll: { left: 0, right: 0 },
+    timelineScroll: { top: 0, follow: true },
     openingStream: null,
     pressureSituationFeed: createPressureSituationFeedStateV1()
   };
@@ -577,10 +578,30 @@ export function createStoryApp({
     if (right) right.scrollTop = Math.min(state.panelScroll.right, Math.max(0, right.scrollHeight - right.clientHeight));
   }
 
+  function rememberTimelineScroll() {
+    const panel = root.querySelector('[data-testid="pressure-story-timeline"]');
+    if (!panel) return;
+    const maxScroll = Math.max(0, panel.scrollHeight - panel.clientHeight);
+    state.timelineScroll = {
+      top: panel.scrollTop,
+      follow: panel.scrollTop >= maxScroll - 16,
+    };
+  }
+
+  function restoreTimelineScroll() {
+    const panel = root.querySelector('[data-testid="pressure-story-timeline"]');
+    if (!panel) return;
+    const maxScroll = Math.max(0, panel.scrollHeight - panel.clientHeight);
+    panel.scrollTop = state.timelineScroll.follow
+      ? maxScroll
+      : Math.min(state.timelineScroll.top, maxScroll);
+  }
+
   function render() {
     rememberResultScroll();
     rememberOpeningScroll();
     rememberPanelScroll();
+    rememberTimelineScroll();
     root.className = "causal-player-root";
     if (state.loading) {
       root.innerHTML = renderLoading("Restoring your latest story state...");
@@ -610,6 +631,9 @@ export function createStoryApp({
       criticalPending
     });
     const decisionNarrativePending = mainMode === "decision" && isDecisionNarrativePending(view, state);
+    const pressureTimeline = Boolean(
+      view?.pressureProjection && Array.isArray(view?.storyTimeline),
+    );
     root.innerHTML = `
       <div class="causal-shell" data-testid="story-shell" data-game-locale="${esc(view.locale || "zh-CN")}" data-pressure-chapter="${view.pressureProjection ? "true" : "false"}" style="${esc(gameStyle(view))}">
         ${renderTopbar(view, state)}
@@ -623,8 +647,8 @@ export function createStoryApp({
           ${renderCausalRecalls(view)}
         </aside>
         <main class="causal-center ${mainMode === "history" ? "history-center" : ""} ${mainMode === "critical_pending" ? "critical-pending-center" : ""} ${mainMode === "decision" ? "decision-center" : ""}">
-          ${mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "chapter_summary" ? renderPressureChapterSummary(view, state) : decisionNarrativePending ? renderDecisionNarrative(view, { showContinue: view?.narrativeStreaming !== true }) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view, state) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
-          ${mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" && !decisionNarrativePending ? renderDecisionZone(view, state) : ""}
+          ${pressureTimeline ? renderPressureStoryTimeline(view, state) : mainMode === "history" ? renderHistory(view.decisionHistory, view.messages, state.historyFilter) : mainMode === "simulating" || mainMode === "room_resolving" ? renderSimulation(view, state) : mainMode === "room_waiting" ? renderRoomWaiting(view, state) : mainMode === "room_complete" ? renderRoomComplete(view) : mainMode === "opening_stream" || mainMode === "opening_ready" ? renderOpeningNarrative(view, state) : mainMode === "result_stream" ? renderResultNarrative(view, state) : mainMode === "chapter_summary" ? renderPressureChapterSummary(view, state) : decisionNarrativePending ? renderDecisionNarrative(view, { showContinue: view?.narrativeStreaming !== true }) : mainMode === "day_end" ? renderDayEndNarrative(view, state) : mainMode === "final_ready" ? renderFinalReadyNarrative(view) : mainMode === "final_judgement" ? renderFinalJudgement(view) : mainMode === "narrative_idle" ? renderNarrativeIdle() : ""}
+          ${pressureTimeline ? "" : mainMode === "opening_ready" ? renderOpeningStart(view) : mainMode === "decision" && !decisionNarrativePending ? renderDecisionZone(view, state) : ""}
         </main>
         <aside class="causal-right" aria-label="${hasPressureSituationFeedV1(view) ? "局势动向与谋划中枢" : isEnglish(view) ? "Maneuver board" : "主动谋划中枢"}">
           ${hasPressureSituationFeedV1(view) ? renderPressureRightRailV1({ view, uiState: state.pressureSituationFeed, maneuverHtml: renderManeuverPanel(view, state) }) : renderManeuverPanel(view, state)}
@@ -642,6 +666,7 @@ export function createStoryApp({
     restoreResultScroll();
     restoreOpeningScroll();
     restorePanelScroll();
+    restoreTimelineScroll();
     root.querySelector(".result-stream-status")?.remove();
     const stream = root.querySelector("#messageStream");
     if (stream && !state.historyOpen) stream.scrollTop = stream.scrollHeight;
@@ -693,6 +718,14 @@ export function createStoryApp({
       state.pressureSituationFeed.filter = event.target.value || "ALL";
       state.pressureSituationFeed.selectedEventId = null;
       render();
+    });
+    root.querySelector('[data-testid="pressure-story-timeline"]')?.addEventListener("scroll", (event) => {
+      const panel = event.currentTarget;
+      const maxScroll = Math.max(0, panel.scrollHeight - panel.clientHeight);
+      state.timelineScroll = {
+        top: panel.scrollTop,
+        follow: panel.scrollTop >= maxScroll - 16,
+      };
     });
     root.querySelector("[data-pressure-feed-expand]")?.addEventListener("click", () => {
       state.pressureSituationFeed.expanded = !state.pressureSituationFeed.expanded;
@@ -1192,6 +1225,44 @@ function isOpeningDecisionState(view) {
   return Boolean(view?.run) && Number(view.run.currentDay) === 1 && array(view.decisionHistory).length === 0;
 }
 
+function renderPressureStoryTimeline(view, state) {
+  const items = array(view.storyTimeline);
+  const timelineItems = items.length
+    ? items.map(renderPressureTimelineItem).join("")
+    : `<article class="pressure-timeline-empty"><p>${lineBreaks(view.decisionNarrative || view.openingNarrative || "剧情正在展开……")}</p></article>`;
+  const resolving = Boolean(
+    state.busy
+    || view.narrativeStreaming === true
+    || view.v2CurrentTurn?.status === "RESOLVING",
+  );
+  const summary = view.pressureProjection?.chapterSummary;
+  const awaitingSummary = summary?.confirmationState === "AWAITING_CONFIRMATION";
+  const summaryAction = awaitingSummary
+    ? `<div class="pressure-timeline-next"><button id="confirmChapterSummaryBtn" type="button" ${state.busy ? "disabled" : ""}>${state.busy ? "正在进入下一章……" : "进入下一章"}</button></div>`
+    : "";
+  const currentDecision = !awaitingSummary && !resolving && activePromptForView(view)
+    ? `<div class="pressure-timeline-decision">${renderDecisionZone(view, state, { inline: true })}</div>`
+    : "";
+  const pending = resolving
+    ? `<div class="pressure-timeline-pending" role="status"><i></i><span>${view.narrativeStreaming ? "AI正在续写下一段剧情……" : "行动已写入，世界正在回应……"}</span></div>`
+    : "";
+  return `<section class="pressure-story-timeline" data-testid="pressure-story-timeline"><div class="pressure-story-timeline__inner">${timelineItems}${summaryAction}${pending}${currentDecision}</div></section>`;
+}
+
+function renderPressureTimelineItem(item) {
+  const kind = String(item?.kind || "");
+  if (kind === "CHAPTER_DIVIDER") {
+    return `<header class="pressure-timeline-chapter"><span>第 ${number(item.chapterNumber)} 章</span><h2>${esc(item.title || item.chapterId || "新章")}</h2></header>`;
+  }
+  if (kind === "PLAYER_ACTION") {
+    return `<article class="pressure-timeline-item pressure-timeline-action"><small>${esc(item.title || "你的选择")}</small><p>${lineBreaks(item.text || "")}</p></article>`;
+  }
+  if (kind === "CHAPTER_SUMMARY") {
+    return `<article class="pressure-timeline-item pressure-timeline-summary"><h3>${esc(item.title || "章末")}</h3><p>${lineBreaks(item.text || "")}</p></article>`;
+  }
+  return `<article class="pressure-timeline-item pressure-timeline-narrative ${item?.streaming ? "is-streaming" : ""}">${item?.title ? `<h3>${esc(item.title)}</h3>` : ""}<p>${lineBreaks(item?.text || "")}${item?.streaming ? `<span class="result-caret" aria-hidden="true">▋</span>` : ""}</p></article>`;
+}
+
 function shouldShowOpeningForView(view) {
   const pressure = view?.pressureProjection;
   if (pressure) {
@@ -1249,7 +1320,7 @@ function renderMiniCausal(card = {}) {
   </div>`;
 }
 
-function renderDecisionZone(view, state) {
+function renderDecisionZone(view, state, { inline = false } = {}) {
   const run = view.run;
   if (run.status === "finished") return renderFinalJudgement(view);
 
@@ -1262,7 +1333,7 @@ function renderDecisionZone(view, state) {
     const customLabel = nextOptionLabel(options);
     const openingDecision = isOpeningDecisionState(view);
     const storyDecision = openingDecision || array(view.decisionHistory).length > 0 || prompt?.promptKind === "critical_response";
-    return renderDecisionComposer({ view, state, prompt, decision, options, selected, customLabel, progress, openingDecision, storyDecision, hasNarrative: Boolean(decisionNarrativeKey(view)) });
+    return renderDecisionComposer({ view, state, prompt, decision, options, selected, customLabel, progress, openingDecision, storyDecision, hasNarrative: inline ? false : Boolean(decisionNarrativeKey(view)) });
   }
 
   return "";
