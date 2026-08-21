@@ -52,6 +52,7 @@ export function createStoryApp({
     openingScroll: { top: 0, follow: true },
     panelScroll: { left: 0, right: 0 },
     timelineScroll: { top: 0, follow: true },
+    pressureDecisionTiming: null,
     openingStream: null,
     pressureSituationFeed: createPressureSituationFeedStateV1()
   };
@@ -63,12 +64,60 @@ export function createStoryApp({
   let noticeTimer = null;
   let scheduledNotice = "";
 
+  function pressureTimingNow() {
+    return Number(browserWindow?.performance?.now?.()) || Date.now();
+  }
+
+  function startPressureDecisionTiming(view) {
+    if (!view?.pressureProjection) return;
+    state.pressureDecisionTiming = {
+      runId: view.run?.id || "",
+      chapterId: view.pressureProjection.chapter?.chapterId || "",
+      decisionPointId: view.pressureProjection.decision?.decisionPointId || "",
+      startedAtMs: pressureTimingNow(),
+      actionSavedAtMs: null,
+      firstStoryVisibleAtMs: null,
+      readyAtMs: null,
+    };
+  }
+
+  function markPressureDecisionTiming(milestone) {
+    const timing = state.pressureDecisionTiming;
+    if (!timing) return;
+    const nowMs = pressureTimingNow();
+    if (milestone === "ACTION_SAVED") {
+      if (timing.actionSavedAtMs !== null) return;
+      timing.actionSavedAtMs = nowMs;
+    } else if (milestone === "FIRST_STORY_VISIBLE") {
+      if (timing.firstStoryVisibleAtMs !== null) return;
+      timing.firstStoryVisibleAtMs = nowMs;
+    } else if (milestone === "NEXT_DECISION_READY") {
+      if (timing.readyAtMs !== null) return;
+      if (timing.firstStoryVisibleAtMs === null) timing.firstStoryVisibleAtMs = nowMs;
+      timing.readyAtMs = nowMs;
+    } else {
+      return;
+    }
+    const elapsed = (value) => value === null ? null : Math.max(0, value - timing.startedAtMs);
+    browserWindow?.console?.info?.("Pressure visible story timing", JSON.stringify({
+      runId: timing.runId,
+      chapterId: timing.chapterId,
+      decisionPointId: timing.decisionPointId,
+      milestone,
+      actionSavedMs: elapsed(timing.actionSavedAtMs),
+      firstStoryVisibleMs: elapsed(timing.firstStoryVisibleAtMs),
+      nextDecisionReadyMs: elapsed(timing.readyAtMs),
+    }));
+    if (milestone === "NEXT_DECISION_READY") state.pressureDecisionTiming = null;
+  }
+
   storage.subscribeAsyncUpdates?.((nextView) => {
     const previousView = state.view;
     acceptView(nextView);
     state.busy = false;
     if (nextView?.narrativeStreaming === true) {
       render();
+      markPressureDecisionTiming("FIRST_STORY_VISIBLE");
       return;
     }
     const completed = completedResultKind(previousView, nextView);
@@ -76,6 +125,7 @@ export function createStoryApp({
     else if (completed === "decision") startResultStream(nextView);
     state.notice = "下一段剧情和局势已经更新。";
     render();
+    markPressureDecisionTiming("NEXT_DECISION_READY");
   });
 
   function syncNoticeDismissal() {
@@ -164,6 +214,7 @@ export function createStoryApp({
     state.error = "";
     state.notice = "";
     state.busy = true;
+    startPressureDecisionTiming(state.view);
     render();
 
     try {
@@ -180,6 +231,7 @@ export function createStoryApp({
         };
       } else {
         acceptView(result);
+        markPressureDecisionTiming("ACTION_SAVED");
         if (roomSessionForView(result)) state.notice = "你的角色决策已提交，正在等待其他玩家。";
         else if (completedResultKind(previousView, result)) startResultStream(result);
 
