@@ -123,7 +123,6 @@ export function createStoryApp({
     const completed = completedResultKind(previousView, nextView);
     if (completed === "maneuver") startManeuverResultStream(nextView);
     else if (completed === "decision") startResultStream(nextView);
-    state.notice = "下一段剧情和局势已经更新。";
     render();
     markPressureDecisionTiming("NEXT_DECISION_READY");
   });
