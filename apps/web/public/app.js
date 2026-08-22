@@ -51,7 +51,7 @@ export function createStoryApp({
     resultScroll: { top: 0, follow: true },
     openingScroll: { top: 0, follow: true },
     panelScroll: { left: 0, right: 0 },
-    timelineScroll: { top: 0, follow: true },
+    timelineScroll: { top: 0, follow: true, interacting: false, pendingRender: false },
     pressureDecisionTiming: null,
     openingStream: null,
     pressureSituationFeed: createPressureSituationFeedStateV1()
@@ -63,6 +63,11 @@ export function createStoryApp({
   let openingAdvanceTimer = null;
   let noticeTimer = null;
   let scheduledNotice = "";
+
+  browserWindow?.addEventListener?.("pointerup", finishTimelineScrollInteraction, true);
+  browserWindow?.addEventListener?.("mouseup", finishTimelineScrollInteraction, true);
+  browserWindow?.addEventListener?.("touchend", finishTimelineScrollInteraction, true);
+  browserWindow?.addEventListener?.("pointercancel", finishTimelineScrollInteraction, true);
 
   function pressureTimingNow() {
     return Number(browserWindow?.performance?.now?.()) || Date.now();
@@ -634,9 +639,38 @@ export function createStoryApp({
     if (!panel) return;
     const maxScroll = Math.max(0, panel.scrollHeight - panel.clientHeight);
     state.timelineScroll = {
+      ...state.timelineScroll,
       top: panel.scrollTop,
-      follow: panel.scrollTop >= maxScroll - 16,
+      follow: state.timelineScroll.interacting
+        ? false
+        : panel.scrollTop >= maxScroll - 16,
     };
+  }
+
+  function beginTimelineScrollInteraction() {
+    const panel = root.querySelector('[data-testid="pressure-story-timeline"]');
+    if (!panel) return;
+    state.timelineScroll = {
+      ...state.timelineScroll,
+      top: panel.scrollTop,
+      follow: false,
+      interacting: true,
+    };
+  }
+
+  function finishTimelineScrollInteraction() {
+    if (!state.timelineScroll.interacting) return;
+    const panel = root.querySelector('[data-testid="pressure-story-timeline"]');
+    const maxScroll = panel ? Math.max(0, panel.scrollHeight - panel.clientHeight) : 0;
+    const pendingRender = state.timelineScroll.pendingRender;
+    state.timelineScroll = {
+      ...state.timelineScroll,
+      top: panel ? Math.min(panel.scrollTop, maxScroll) : state.timelineScroll.top,
+      follow: false,
+      interacting: false,
+      pendingRender: false,
+    };
+    if (pendingRender) render();
   }
 
   function restoreTimelineScroll() {
@@ -649,6 +683,10 @@ export function createStoryApp({
   }
 
   function render() {
+    if (state.timelineScroll.interacting) {
+      state.timelineScroll.pendingRender = true;
+      return;
+    }
     rememberResultScroll();
     rememberOpeningScroll();
     rememberPanelScroll();
@@ -770,12 +808,19 @@ export function createStoryApp({
       state.pressureSituationFeed.selectedEventId = null;
       render();
     });
-    root.querySelector('[data-testid="pressure-story-timeline"]')?.addEventListener("scroll", (event) => {
+    const pressureStoryTimeline = root.querySelector('[data-testid="pressure-story-timeline"]');
+    pressureStoryTimeline?.addEventListener("pointerdown", beginTimelineScrollInteraction);
+    pressureStoryTimeline?.addEventListener("mousedown", beginTimelineScrollInteraction);
+    pressureStoryTimeline?.addEventListener("touchstart", beginTimelineScrollInteraction, { passive: true });
+    pressureStoryTimeline?.addEventListener("scroll", (event) => {
       const panel = event.currentTarget;
       const maxScroll = Math.max(0, panel.scrollHeight - panel.clientHeight);
       state.timelineScroll = {
+        ...state.timelineScroll,
         top: panel.scrollTop,
-        follow: panel.scrollTop >= maxScroll - 16,
+        follow: state.timelineScroll.interacting
+          ? false
+          : panel.scrollTop >= maxScroll - 16,
       };
     });
     root.querySelector("[data-pressure-feed-expand]")?.addEventListener("click", () => {

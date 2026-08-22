@@ -255,6 +255,57 @@ test("fresh Pressure N1 renders story and decision in one continuous timeline", 
   dom.window.close();
 });
 
+test("Pressure timeline preserves a scrollbar drag while streaming renders are pending", async () => {
+  const input = projection({ runId: "run-pressure-timeline-scroll-drag" });
+  const dom = new JSDOM('<!doctype html><main id="app"></main>', {
+    url: `http://game.test/game?runId=${input.runId}`,
+    pretendToBeVisual: true,
+  });
+  Object.defineProperty(dom.window.HTMLElement.prototype, "scrollHeight", {
+    configurable: true,
+    get() { return this.matches?.('[data-testid="pressure-story-timeline"]') ? 1_200 : 0; },
+  });
+  Object.defineProperty(dom.window.HTMLElement.prototype, "clientHeight", {
+    configurable: true,
+    get() { return this.matches?.('[data-testid="pressure-story-timeline"]') ? 400 : 0; },
+  });
+  const root = dom.window.document.querySelector("#app");
+  const storage = new PressureMainGameStorageV1({
+    runId: input.runId,
+    initialProjection: input,
+    fetchImpl: async () => new Response(JSON.stringify(input), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }),
+  });
+  const app = createStoryApp({ root, window: dom.window, storage });
+  await app.boot();
+
+  let timeline = root.querySelector('[data-testid="pressure-story-timeline"]');
+  timeline.scrollTop = 800;
+  timeline.dispatchEvent(new dom.window.Event("scroll"));
+  timeline.dispatchEvent(new dom.window.MouseEvent("mousedown", { bubbles: true }));
+  assert.equal(app.getState().timelineScroll.interacting, true);
+
+  const dragTarget = timeline;
+  app.render();
+  assert.equal(root.querySelector('[data-testid="pressure-story-timeline"]'), dragTarget);
+  assert.equal(app.getState().timelineScroll.pendingRender, true);
+
+  timeline.scrollTop = 220;
+  timeline.dispatchEvent(new dom.window.Event("scroll"));
+  dom.window.dispatchEvent(new dom.window.MouseEvent("mouseup", { bubbles: true }));
+  timeline = root.querySelector('[data-testid="pressure-story-timeline"]');
+  assert.notEqual(timeline, dragTarget);
+  assert.equal(timeline.scrollTop, 220);
+  assert.equal(app.getState().timelineScroll.follow, false);
+  assert.equal(app.getState().timelineScroll.interacting, false);
+
+  app.render();
+  assert.equal(root.querySelector('[data-testid="pressure-story-timeline"]').scrollTop, 220);
+  dom.window.close();
+});
+
 test("an advanced Pressure run resumes the current Beat in the timeline without replaying Genesis", async () => {
   const input = projection({ runId: "run-pressure-resume-current-beat" });
   input.chapter.workingRevision = 2;
